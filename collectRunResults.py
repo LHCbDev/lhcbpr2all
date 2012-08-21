@@ -1,4 +1,4 @@
-import os, sys, subprocess, inspect, json
+import os, sys, subprocess, inspect, json, logging
 from optparse import OptionParser
 from optparse import Option, OptionValueError
 
@@ -24,7 +24,9 @@ def JobDictionary(hostname,starttime,endtime,cmtconfig,jodDesId):
 
 def main():
     #this is used for checking
+    outputfile = 'json_results'
     needed_options = 12
+    
     description = """The program needs all the input arguments(options in order to run properly)"""
     parser = OptionParser(usage='usage: %prog [options]',
                           description=description)
@@ -42,13 +44,20 @@ def main():
                     dest="cmtconfig" , help="The cmtconfig of the job.")  
     parser.add_option( "-j" , "--jobDescription-id" , action="store", type="string" , 
                     dest="jobDescription_id" , help="The job description unique id.")
-    parser.add_option("-l" , "--list-handlers" , action="store", type="string" , 
-                    dest="handlers" , help="The list of handlers(comma separated.")  
+    parser.add_option("-l" , "--list-handlers" , action="store", type="string" ,
+                    dest="handlers" , help="The list of handlers(comma separated.")
+    parser.add_option("-q", "--quiet", action="store_true",
+                      dest="ssss", default=False,
+                      help="Just be quiet (do not print info from logger)")
     #check if all  the options were given
     if len(sys.argv) < needed_options:
         parser.parse_args(['--help'])
+        
 
     options, args = parser.parse_args()
+    
+    if not options.ssss:
+        logging.root.setLevel(logging.DEBUG)
     
     dataDict = JobDictionary(options.hostname,options.startTime,options.endTime,
                        options.cmtconfig,options.jobDescription_id)
@@ -66,8 +75,11 @@ def main():
         jobAttributes.extend(currentHandler.getResults())
     
     dataDict['JobAttributes'] = jobAttributes
-        
-    print json.dumps(dataDict)
+    
+    f = open(outputfile,'w')
+    f.write(json.dumps(DataDict))
+    f.close()
+    logging.info('Json file containing the results successfully produced.')
 
 if __name__ == '__main__':
     main()
