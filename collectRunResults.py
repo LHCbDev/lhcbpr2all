@@ -63,6 +63,7 @@ def main():
                        options.cmtconfig,options.jobDescription_id)
     
     jobAttributes = []
+    handlers_result = []
 
     for handler in options.handlers.split(','):
         module = ''.join(['handlers','.',handler])
