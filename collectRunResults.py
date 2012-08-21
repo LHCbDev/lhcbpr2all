@@ -25,7 +25,7 @@ def JobDictionary(hostname,starttime,endtime,cmtconfig,jodDesId):
 def main():
     #this is used for checking
     needed_options = 12
-    description = """The program needs all the input arguments(options in order to run properly"""
+    description = """The program needs all the input arguments(options in order to run properly)"""
     parser = OptionParser(usage='usage: %prog [options]',
                           description=description)
     parser.add_option('-r', '--results-directory', 
