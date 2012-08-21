@@ -77,7 +77,7 @@ def main():
     dataDict['JobAttributes'] = jobAttributes
     
     f = open(outputfile,'w')
-    f.write(json.dumps(DataDict))
+    f.write(json.dumps(dataDict))
     f.close()
     logging.info('Json file containing the results successfully produced.')
 
