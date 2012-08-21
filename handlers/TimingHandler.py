@@ -24,8 +24,10 @@ class TimingHandler(BaseHandler):
             f = open('timing.log')
             lines = f.readlines()
             f.close()
-        except Exception:
-            return False
+        except OSError:
+            raise Exception(str(self.__class__)+": No result directory, check the given result directory")
+        except IOError:
+            raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'timing.log' in the results directory' ")
 
         for line in lines:
             exp = re.compile('TimingAuditor\.T\.\.\.\s+INFO\s+EVENT LOOP\s*\|\s*[\d\.]+\s+\|\s*([\d\.]+)\s+\|.*$')

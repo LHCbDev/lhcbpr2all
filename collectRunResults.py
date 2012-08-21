@@ -72,8 +72,13 @@ def main():
         klass = getattr(mod, handler)
         currentHandler = klass()
         
-        currentHandler.collectResults(options.results)
-        jobAttributes.extend(currentHandler.getResults())
+        try:
+            currentHandler.collectResults(options.results)
+        except Exception,e:
+            logging.error("A handler failed:")
+            logging.error(e)
+        else:
+            jobAttributes.extend(currentHandler.getResults())
     
     dataDict['JobAttributes'] = jobAttributes
     
