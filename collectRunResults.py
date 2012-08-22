@@ -56,8 +56,12 @@ def main():
 
     options, args = parser.parse_args()
     
+    logging.basicConfig(level=logging.WARNING)
+
     if not options.ssss:
-        logging.root.setLevel(logging.DEBUG)
+        logging.root.setLevel(logging.INFO)
+        
+    logger = logging.getLogger('collectRunResults.py')
     
     dataDict = JobDictionary(options.hostname,options.startTime,options.endTime,
                        options.cmtconfig,options.jobDescription_id)
@@ -75,17 +79,23 @@ def main():
         try:
             currentHandler.collectResults(options.results)
         except Exception,e:
-            logging.error("A handler failed:")
-            logging.error(e)
+            logger.error('A handler failed:')
+            logger.error(e)
+            handlers_result.append({ 'handler' : handler, 'successful' : False })
         else:
             jobAttributes.extend(currentHandler.getResults())
+            handlers_result.append({ 'handler' : handler, 'successful' : True })
     
+    if not jobAttributes:
+        logger.warning('All handlers failed, no results were collected.')
+        
     dataDict['JobAttributes'] = jobAttributes
-    
+    dataDict['handlers_info'] = handlers_result
+        
     f = open(outputfile,'w')
     f.write(json.dumps(dataDict))
     f.close()
-    logging.info('Json file containing the results successfully produced.')
+    logger.info('Json file containing the results produced.')
 
 if __name__ == '__main__':
     main()
