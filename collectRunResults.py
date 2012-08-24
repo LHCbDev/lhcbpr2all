@@ -4,9 +4,8 @@ from optparse import Option, OptionValueError
 
 def JobDictionary(hostname,starttime,endtime,cmtconfig,jodDesId):
     """
-    For the time this method is needed to fill a dictionary,with some useful data,
-    which will be passed to the subprocesses, is used for testing for the moment,
-    later to be deleted
+    This method creates a dictionary with information about the job (like time_start/end etc)
+    which will be added to json_results along with the execution results
     """
     
     hostDict = { 'hostname': hostname, 'cpu_info': '', 'memoryinfo': ''}
@@ -23,6 +22,11 @@ def JobDictionary(hostname,starttime,endtime,cmtconfig,jodDesId):
     return DataDict
 
 def main():
+    """The collectRunResults scripts creates the json_results file which contains information about the 
+    the runned job(platform,host,status etc) along with the execution results, the output(logs, roots file,xmls)
+     of a job are collected by handlers. Each handler knows which file must parse, so this script imports dynamically 
+     each handler(from the input handler list, --list-handlers option) and calls the collectResults ,of each handler, and 
+     passes to the method the directory(the default is the . <-- current directory) to the results(output of the runned job)"""
     #this is used for checking
     outputfile = 'json_results'
     needed_options = 12
@@ -69,26 +73,35 @@ def main():
     jobAttributes = []
     handlers_result = []
 
+    #for each handler in the handlers list
     for handler in options.handlers.split(','):
         module = ''.join(['handlers','.',handler])
+        #import the current handler
         mod = __import__(module, fromlist=[module])
         
+        #create an instance of a the current handler
         klass = getattr(mod, handler)
         currentHandler = klass()
         
         try:
+            #collect results from the given directory(--results-directory, -r)
             currentHandler.collectResults(options.results)
         except Exception,e:
+            #if any error occurs and the handler fails, inform the user using the logger
+            #and save that the current handler failed
             logger.error('A handler failed:')
             logger.error(e)
             handlers_result.append({ 'handler' : handler, 'successful' : False })
         else:
+            #in case everything is fine , save that the current handler worked successfully
             jobAttributes.extend(currentHandler.getResults())
             handlers_result.append({ 'handler' : handler, 'successful' : True })
     
     if not jobAttributes:
         logger.warning('All handlers failed, no results were collected.')
-        
+    
+    #add the collected results and the handlers' information to the final
+    #data dictionary   
     dataDict['JobAttributes'] = jobAttributes
     dataDict['handlers_info'] = handlers_result
         

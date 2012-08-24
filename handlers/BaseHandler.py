@@ -1,4 +1,6 @@
 class BaseHandler(object):
+	"""For using this class in order to build a handler check the README
+	file in LHCbPRHandlers folder"""
 	
 	def __init__(self):
 		self.__results = []
