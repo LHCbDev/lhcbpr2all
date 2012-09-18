@@ -1,4 +1,4 @@
-import os, sys, subprocess, inspect, json, logging
+import os, sys, subprocess, inspect, json, logging, uuid
 from optparse import OptionParser
 from optparse import Option, OptionValueError
 
@@ -104,7 +104,9 @@ def main():
     #data dictionary   
     dataDict['JobAttributes'] = jobAttributes
     dataDict['handlers_info'] = handlers_result
-        
+    
+    
+       
     f = open(outputfile,'w')
     f.write(json.dumps(dataDict))
     f.close()

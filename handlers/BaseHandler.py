@@ -50,6 +50,20 @@ class BaseHandler(object):
 		dataDict['type'] = 'String'
 		
 		self.__results.append(dataDict)
+	
+	def saveFile(self,name,file,description="",group=""):
+		if name == '' or file == '':
+			return False
+		
+		dataDict = {
+				'name' : name,
+				'file' : data,
+				'description' : description,
+				'group' : group,
+				'type' : 'File'
+					}
+		
+		self.__results.append(dataDict)
 		
 	def getResults(self):
 		return self.__results
