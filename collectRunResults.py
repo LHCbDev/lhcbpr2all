@@ -103,6 +103,30 @@ def main():
     if not jobAttributes:
         logger.warning('All handlers failed, no results were collected.')
     
+    #str(uuid.uuid1())+
+    zipper = zipfile.ZipFile('results.zip', mode='w')
+    
+    for i in range(len(jobAttributes)):
+        if jobAttributes[i]['type'] == 'File':
+            head, tail = ntpath.split(jobAttributes[i]['file'])
+            fileName, fileExtension = os.path.splitext(tail)
+            new_filename = str(uuid.uuid1())+fileExtension
+
+            os.rename(head+os.sep+tail,head+os.sep+new_filename)
+            
+            try:
+                #write to the zip file the root file with a unique name
+                zipper.write(head+os.sep+new_filename, new_filename)
+            except Exception:
+                pass
+            
+            #rename file back to its original name
+            os.rename(head+os.sep+new_filename, head+os.sep+tail)   
+            
+            #update in the json_results the uuid new filename
+            jobAttributes[i]['file'] = new_filename
+
+    
     #add the collected results and the handlers' information to the final
     #data dictionary   
     dataDict['JobAttributes'] = jobAttributes
@@ -111,6 +135,12 @@ def main():
     f = open(outputfile,'w')
     f.write(json.dumps(dataDict))
     f.close()
+    
+    #add to the zip results file the json_result file
+    zipper.write(outputfile)
+    
+    #close the zipfile object
+    zipper.close()
     
     logger.info('Zip file containing the results produced.')
 
