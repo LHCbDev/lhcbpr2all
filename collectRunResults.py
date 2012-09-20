@@ -1,4 +1,4 @@
-import os, sys, subprocess, inspect, json, logging, uuid
+import os, sys, subprocess, inspect, json, logging, uuid, zipfile, ntpath
 from optparse import OptionParser
 from optparse import Option, OptionValueError
 
@@ -77,25 +77,28 @@ def main():
     for handler in options.handlers.split(','):
         module = ''.join(['handlers','.',handler])
         #import the current handler
-        mod = __import__(module, fromlist=[module])
-        
-        #create an instance of a the current handler
-        klass = getattr(mod, handler)
-        currentHandler = klass()
-        
         try:
-            #collect results from the given directory(--results-directory, -r)
-            currentHandler.collectResults(options.results)
-        except Exception,e:
-            #if any error occurs and the handler fails, inform the user using the logger
-            #and save that the current handler failed
-            logger.error('A handler failed:')
-            logger.error(e)
-            handlers_result.append({ 'handler' : handler, 'successful' : False })
+            mod = __import__(module, fromlist=[module])
+        except ImportError, e:
+            logger.error(str(e)+', please check your script or your LHCbPRHandlers directory')
         else:
-            #in case everything is fine , save that the current handler worked successfully
-            jobAttributes.extend(currentHandler.getResults())
-            handlers_result.append({ 'handler' : handler, 'successful' : True })
+            #create an instance of a the current handler
+            klass = getattr(mod, handler)
+            currentHandler = klass()
+            
+            try:
+                #collect results from the given directory(--results-directory, -r)
+                currentHandler.collectResults(options.results)
+            except Exception,e:
+                #if any error occurs and the handler fails, inform the user using the logger
+                #and save that the current handler failed
+                logger.error('A handler failed:')
+                logger.error(e)
+                handlers_result.append({ 'handler' : handler, 'successful' : False })
+            else:
+                #in case everything is fine , save that the current handler worked successfully
+                jobAttributes.extend(currentHandler.getResults())
+                handlers_result.append({ 'handler' : handler, 'successful' : True })
     
     if not jobAttributes:
         logger.warning('All handlers failed, no results were collected.')
@@ -105,12 +108,11 @@ def main():
     dataDict['JobAttributes'] = jobAttributes
     dataDict['handlers_info'] = handlers_result
     
-    
-       
     f = open(outputfile,'w')
     f.write(json.dumps(dataDict))
     f.close()
-    logger.info('Json file containing the results produced.')
+    
+    logger.info('Zip file containing the results produced.')
 
 if __name__ == '__main__':
     main()

@@ -57,7 +57,7 @@ class BaseHandler(object):
 		
 		dataDict = {
 				'name' : name,
-				'file' : data,
+				'file' : file,
 				'description' : description,
 				'group' : group,
 				'type' : 'File'
