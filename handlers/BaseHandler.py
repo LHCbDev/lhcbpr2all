@@ -51,13 +51,13 @@ class BaseHandler(object):
 		
 		self.__results.append(dataDict)
 	
-	def saveFile(self,name,file,description="",group=""):
-		if name == '' or file == '':
+	def saveFile(self,name,filename,description="",group=""):
+		if name == '' or filename == '':
 			return False
 		
 		dataDict = {
 				'name' : name,
-				'file' : file,
+				'filename' : filename,
 				'description' : description,
 				'group' : group,
 				'type' : 'File'

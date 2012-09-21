@@ -1,4 +1,6 @@
-import os, sys, subprocess, inspect, json, logging, uuid, zipfile, ntpath
+#!/usr/bin/env python
+
+import os, sys, subprocess, inspect, json, logging, uuid, zipfile, ntpath, sendToDB
 from optparse import OptionParser
 from optparse import Option, OptionValueError
 
@@ -53,10 +55,14 @@ def main():
     parser.add_option("-q", "--quiet", action="store_true",
                       dest="ssss", default=False,
                       help="Just be quiet (do not print info from logger)")
+    parser.add_option("-a", "--auto-send-results", action="store_true",
+                      dest="send", default=False,
+                      help="Automatically send the zip results to the database.")
+    
     #check if all  the options were given
     if len(sys.argv) < needed_options:
         parser.parse_args(['--help'])
-        
+        return
 
     options, args = parser.parse_args()
     
@@ -103,32 +109,26 @@ def main():
     if not jobAttributes:
         logger.warning('All handlers failed, no results were collected.')
     
-    #str(uuid.uuid1())+
-    zipper = zipfile.ZipFile('results.zip', mode='w')
+    unique_results_id = str(uuid.uuid1())
+    zipper = zipfile.ZipFile(unique_results_id+'.zip', mode='w')
     
     for i in range(len(jobAttributes)):
         if jobAttributes[i]['type'] == 'File':
-            head, tail = ntpath.split(jobAttributes[i]['file'])
-            fileName, fileExtension = os.path.splitext(tail)
-            new_filename = str(uuid.uuid1())+fileExtension
-
-            os.rename(head+os.sep+tail,head+os.sep+new_filename)
+            head, tail = ntpath.split(jobAttributes[i]['filename'])
             
             try:
                 #write to the zip file the root file with a unique name
-                zipper.write(head+os.sep+new_filename, new_filename)
+                zipper.write(jobAttributes[i]['filename'], tail)
             except Exception:
                 pass
             
-            #rename file back to its original name
-            os.rename(head+os.sep+new_filename, head+os.sep+tail)   
-            
             #update in the json_results the uuid new filename
-            jobAttributes[i]['file'] = new_filename
+            jobAttributes[i]['filename'] = tail
 
+    dataDict['results_id'] = unique_results_id
     
     #add the collected results and the handlers' information to the final
-    #data dictionary   
+    #data dictionary       
     dataDict['JobAttributes'] = jobAttributes
     dataDict['handlers_info'] = handlers_result
     
@@ -143,6 +143,10 @@ def main():
     zipper.close()
     
     logger.info('Zip file containing the results produced.')
+    
+    if options.send:
+        logger.info('Automatically sending the zip results file to the database...')
+        sendToDB.run(unique_results_id+'.zip' ,False)
 
 if __name__ == '__main__':
     main()
