@@ -16,6 +16,8 @@ def sendToDatabase(zipFile):
         logger.error('Sending zip file to database failed.')
     else:
         logger.info('Zip file was sent successfully to the database.')
+        
+    return
 
 def run(zipFile, ssss):
     if not ssss:
@@ -41,6 +43,8 @@ def run(zipFile, ssss):
     
     logger.info('Given zip file is valid, sending to database...')
     sendToDatabase(zipFile)
+    
+    return
 
 def main():
     #this is used for checking
