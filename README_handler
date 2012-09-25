@@ -10,7 +10,8 @@
 			* saveInt
 			* saveFloat
 			* saveString
-			* saveBinary(used for root files/object, under construction)
+			* saveBinary(used for binary objects)
+			* saveFile
 			
 		each of the above methods take 4 arguments ,2 of them are optional
 			example saveInt(name, data, description, group)

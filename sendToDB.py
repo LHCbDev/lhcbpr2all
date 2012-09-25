@@ -1,14 +1,18 @@
 #!/usr/bin/env python
-
 import sys, json, logging, zipfile, shutil
 from optparse import OptionParser
 from optparse import Option, OptionValueError
+from poster.encode import multipart_encode
+from poster.streaminghttp import register_openers
+import urllib2
 
 logger = logging.getLogger('sendToDB.py')
 
 destination_path='/afs/cern.ch/user/e/ekiagias/public/database'
 
-def sendToDatabase(zipFile):
+remote_host = 'https://alamages.cern.ch/django/lhcbPR/upload'
+
+def sendToDatabaseCopy(zipFile):
     try:
         shutil.copy(zipFile, destination_path)
     except Exception, e:
@@ -18,6 +22,23 @@ def sendToDatabase(zipFile):
         logger.info('Zip file was sent successfully to the database.')
         
     return
+
+def sendToDatabaseHttpPost(zipFile):
+    # Register the streaming http handlers with urllib2
+    register_openers()
+    
+    # Start the multipart/form-data encoding of the file "timing"
+    # "file" is the name of the parameter, which is normally set
+    # via the "name" parameter of the HTML <input> tag.
+    
+    # headers contains the necessary Content-Type and Content-Length
+    # datagen is a generator object that yields the encoded parameters
+    datagen, headers = multipart_encode({"file": open(zipFile, "rb")})
+    
+    # Create the Request object
+    request = urllib2.Request(remote_host, datagen, headers)
+    # Actually do the request, and get the response
+    logger.info(urllib2.urlopen(request).read())
 
 def run(zipFile, ssss):
     if not ssss:
@@ -42,7 +63,10 @@ def run(zipFile, ssss):
         return
     
     logger.info('Given zip file is valid, sending to database...')
-    sendToDatabase(zipFile)
+    
+    #choose method to send the results
+    #sendToDatabaseCopy(zipFile)
+    sendToDatabaseHttpPost(zipFile)
     
     return
 
@@ -58,7 +82,7 @@ def main():
                       dest='zipFile', help='Zip file with results to be pushed to database')
     parser.add_option("-q", "--quiet", action="store_true",
                       dest="ssss", default=False,
-                      help="Just be quiet (do not print info from logger)")
+                      help="Just be quiet (do not print info from logger), optional")
 
     if len(sys.argv) < needed_options:
         parser.parse_args(['--help'])
