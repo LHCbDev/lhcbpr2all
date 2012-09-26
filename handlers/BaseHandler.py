@@ -32,16 +32,6 @@ class BaseHandler(object):
 		
 		self.__results.append(dataDict)
 	
-	def saveBinary(self,name,data,ROOT_version,description="",group=""):
-		if name == '' or data == '' or ROOT_version == '':
-			return False
-		
-		dataDict = self.__save(name, data, description, group)
-		dataDict['type'] = 'Float'
-		dataDict['ROOT_version'] = ROOT_version
-		
-		self.__results.append(dataDict)
-	
 	def saveString(self,name,data,description="",group=""):
 		if name == '' or data == '':
 			return False

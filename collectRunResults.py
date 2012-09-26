@@ -25,10 +25,10 @@ def JobDictionary(hostname,starttime,endtime,cmtconfig,jodDesId):
 
 def main():
     """The collectRunResults scripts creates the json_results file which contains information about the 
-    the runned job(platform,host,status etc) along with the execution results, the output(logs, roots file,xmls)
+    the runned job(platform,host,status etc) along with the execution results, the output(logs, root files,xml files)
      of a job are collected by handlers. Each handler knows which file must parse, so this script imports dynamically 
-     each handler(from the input handler list, --list-handlers option) and calls the collectResults ,of each handler, and 
-     passes to the method the directory(the default is the . <-- current directory) to the results(output of the runned job)"""
+     each handler(from the input handler list, --list-handlers option) and calls the collectResults function, of each handler, and 
+     passes to the function the directory(the default is the . <-- current directory) to the results(output of the runned job)"""
     #this is used for checking
     outputfile = 'json_results'
     needed_options = 12
@@ -39,15 +39,15 @@ def main():
     parser.add_option('-r', '--results-directory', 
                       action='store', type='string',
                       dest='results', default=".", 
-                      help='Directory which contains results')
+                      help='(Optional)Directory which contains results, default is the current directory')
     parser.add_option( '-s' , '--start-time' , action='store', type='string' , 
                     dest='startTime' , help='The start time of the job.') 
     parser.add_option( '-e' , '--end-time' , action='store', type='string' , 
                     dest="endTime" , help="The end time of the job.") 
     parser.add_option( "-p" , "--hostname" , action="store", type="string" , 
                     dest="hostname" , help="The name of the host who runned the job.")
-    parser.add_option( "-c" , "--cmtconfig" , action="store", type="string" , 
-                    dest="cmtconfig" , help="The cmtconfig of the job.")  
+    parser.add_option( "-c" , "--platform" , action="store", type="string" , 
+                    dest="platform" , help="The platform(cmtconfig) of the job.")  
     parser.add_option( "-j" , "--jobDescription-id" , action="store", type="string" , 
                     dest="jobDescription_id" , help="The job description unique id.")
     parser.add_option("-l" , "--list-handlers" , action="store", type="string" ,
@@ -74,11 +74,14 @@ def main():
     logger = logging.getLogger('collectRunResults.py')
     
     dataDict = JobDictionary(options.hostname,options.startTime,options.endTime,
-                       options.cmtconfig,options.jobDescription_id)
+                       options.platform,options.jobDescription_id)
     
     jobAttributes = []
     handlers_result = []
-
+    
+    #save current directory, in case some handler chdir
+    saved_previous_directory = os.getcwd()
+    
     #for each handler in the handlers list
     for handler in options.handlers.split(','):
         module = ''.join(['handlers','.',handler])
@@ -108,6 +111,10 @@ def main():
     
     if not jobAttributes:
         logger.warning('All handlers failed, no results were collected.')
+        
+    #make sure you are in previous directory in case some handler chdir to different directory
+    if not os.getcwd() == saved_previous_directory:    
+        os.chdir(saved_previous_directory)
     
     unique_results_id = str(uuid.uuid1())
     zipper = zipfile.ZipFile(unique_results_id+'.zip', mode='w')
@@ -142,7 +149,7 @@ def main():
     #close the zipfile object
     zipper.close()
     
-    logger.info('Zip file containing the results produced.')
+    logger.info('Zip file containing the results produced. zip filename: '+ unique_results_id+'.zip')
     
     if options.send:
         logger.info('Automatically sending the zip results file to the database...')

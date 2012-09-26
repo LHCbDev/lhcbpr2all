@@ -19,15 +19,17 @@ class TimingHandler(BaseHandler):
             self.column_names.append(name)
     
     def collectResults(self,directory):
+        #save current directory before chdir
+        saved_previous_directory = os.getcwd()
         try:
             os.chdir(directory)
-            f = open('timing.log')
+            f = open('run.log')
             lines = f.readlines()
             f.close()
         except OSError:
             raise Exception(str(self.__class__)+": No result directory, check the given result directory")
         except IOError:
-            raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'timing.log' in the results directory' ")
+            raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'run.log' in the results directory' ")
 
         for line in lines:
             exp = re.compile('TimingAuditor\.T\.\.\.\s+INFO\s+EVENT LOOP\s*\|\s*[\d\.]+\s+\|\s*([\d\.]+)\s+\|.*$')
@@ -58,3 +60,5 @@ class TimingHandler(BaseHandler):
             for col in self.column_names:
                 self.saveFloat(str(col), str(e[col]))
 
+        #go back to previous directory
+        os.chdir(saved_previous_directory)

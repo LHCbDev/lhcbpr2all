@@ -1,0 +1,40 @@
+**CollectRunResults
+
+The collectRunResults.py script is responsible to collect your data by calling the requested/given handlers.
+	
+The needed arguments are given by typing --help:
+	
+Options:
+  -h, --help            show this help message and exit
+  -r RESULTS, --results-directory=RESULTS
+                        (Optional)Directory which contains results, default is the current directory
+  -s STARTTIME, --start-time=STARTTIME
+                        The start time of the job.
+  -e ENDTIME, --end-time=ENDTIME
+                        The end time of the job.
+  -p HOSTNAME, --hostname=HOSTNAME
+                        The name of the host who runned the job.
+  -c PLATFORM, --platform=PLATFORM
+                        The platform(cmtconfig) of the job.
+  -j JOBDESCRIPTION_ID, --jobDescription-id=JOBDESCRIPTION_ID
+                        The job description unique id.
+  -l HANDLERS, --list-handlers=HANDLERS
+                        The list of handlers(comma separated.
+  -q, --quiet           Just be quiet (do not print info from logger)
+  -a, --auto-send-results
+                        Automatically send the zip results to the database.
+
+                        
+Adding the -a argument , the collectRunResults will automatically upload the results zip file to the server, once it's produced.
+
+If you wish to manually upload your results to the server , do not add the -a argument but use the LHCbPRHandler/sendToDB.py 
+for help run sendToDB.py --help:
+	
+Options:
+  -h, --help            show this help message and exit
+  -s ZIPFILE, --send-results=ZIPFILE
+                        Zip file with results to be pushed to database
+  -q, --quiet           Just be quiet (do not print info from logger), optional
+
+The basic argument which is needed for the sendToDB is the -s in which you provide the path to the zipfile with results,
+ you want to manually upload to the server

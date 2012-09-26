@@ -10,10 +10,9 @@
 			* saveInt
 			* saveFloat
 			* saveString
-			* saveBinary(used for binary objects)
 			* saveFile
 			
-		each of the above methods take 4 arguments ,2 of them are optional
+		each of the above methods take 4 arguments,( 'group' and 'description' arguments are optional) 
 			example saveInt(name, data, description, group)
 			
 				* name : the name of the attribute you save( example : 'cpu_execute_time')  
@@ -33,9 +32,20 @@
 					
 					*** remember to use the right method for the right type, if you want to save string use the saveString function 
 						if you want to save an Integer use saveInt etc
-	
 		
-	*** How the structure of your handler must be
+		**saveFile(name,filename,description="",group="")
+			
+			if you want to save a file , call the saveFile function giving a 'name' for your file attribute 
+			and in 'filename' provide the path to the file you want to save. example: 
+				
+				lets say that you have a file: my_results_file = '/afs/cern.ch/.../path/my_file' you can save it :
+					##				attribute name 			path to file
+					self.saveFile('my_results_file' , '/afs/cern.ch/.../path/my_file' )
+					
+					also you can add a group or a description(like the explained above)
+		
+		
+*** How the structure of your handler must be
 		
 		You must create a class which will extend the BaseHandler as shown here:
 		#

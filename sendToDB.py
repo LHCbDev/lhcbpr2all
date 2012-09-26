@@ -8,7 +8,8 @@ import urllib2
 
 logger = logging.getLogger('sendToDB.py')
 
-destination_path='/afs/cern.ch/user/e/ekiagias/public/database'
+destination_path = ''
+#destination_path='/afs/cern.ch/user/e/ekiagias/public/database'
 
 remote_host = 'https://alamages.cern.ch/django/lhcbPR/upload'
 
@@ -45,7 +46,7 @@ def run(zipFile, ssss):
         logging.root.setLevel(logging.INFO)
     
     if not zipfile.is_zipfile(zipFile):
-        logger.error('Given oject is not a valid zip file, please give a valid one, aborting...')
+        logger.error('Given object is not a valid zip file, please give a valid one, aborting...')
         return
     
     #checking if the zip contains what it should contains
