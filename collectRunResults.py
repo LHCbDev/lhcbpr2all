@@ -139,9 +139,9 @@ def main():
     dataDict['JobAttributes'] = jobAttributes
     dataDict['handlers_info'] = handlers_result
     
-    #f = open(outputfile,'w')
-    #f.write(json.dumps(dataDict))
-    #f.close()
+    f = open(outputfile,'w')
+    f.write(json.dumps(dataDict))
+    f.close()
     
     #add to the zip results file the json_result file
     zipper.write(outputfile)
