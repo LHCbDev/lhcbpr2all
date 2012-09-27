@@ -11,7 +11,8 @@ logger = logging.getLogger('sendToDB.py')
 destination_path = ''
 #destination_path='/afs/cern.ch/user/e/ekiagias/public/database'
 
-remote_host = 'https://alamages.cern.ch/django/lhcbPR/upload'
+#remote_host = 'https://alamages.cern.ch/django/lhcbPR/upload'
+remote_host = 'https://lhcbpr.cern.ch/django/lhcbPR/upload'
 
 def sendToDatabaseCopy(zipFile):
     try:
