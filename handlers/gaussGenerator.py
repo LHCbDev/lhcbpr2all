@@ -101,7 +101,7 @@ class GeneratorLogFile:
     return float(self.TotalTime)
 
           
-class gaussHandler(BaseHandler):
+class gaussGenerator(BaseHandler):
     
     def __init__(self):
         super(self.__class__, self).__init__()
