@@ -138,7 +138,7 @@ class gaussGenerator(BaseHandler):
         else:
             pythia_version = TheLog.pythiaVersion()
       
-        self.saveFloat('eventType',TheLog.eventType())
+        #self.saveFloat('eventType',TheLog.eventType())
         #self.saveString('gaussVersion',gauss_version)
         #self.saveString('pythiaVersion',pythia_version)
         self.saveFloat('totalCrossSection',TheLog.totalCrossSection())

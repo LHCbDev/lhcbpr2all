@@ -1,47 +1,26 @@
 #!/usr/bin/env python
-import sys, json, logging, zipfile, shutil
+
+import sys, json, logging, zipfile, shutil, os
 from optparse import OptionParser
 from optparse import Option, OptionValueError
-from poster.encode import multipart_encode
-from poster.streaminghttp import register_openers
-import urllib2
 
 logger = logging.getLogger('sendToDB.py')
+diracStorageElementName = 'StatSE'
+#uploaded/ <--- this will be the official one
+diracStorageElementFolder = 'uploaded_test'
 
-destination_path = ''
-#destination_path='/afs/cern.ch/user/e/ekiagias/public/database'
-
-#remote_host = 'https://alamages.cern.ch/django/lhcbPR/upload'
-remote_host = 'https://lhcbpr.cern.ch/django/lhcbPR/upload'
-
-def sendToDatabaseCopy(zipFile):
-    try:
-        shutil.copy(zipFile, destination_path)
-    except Exception, e:
-        logger.error(e)
-        logger.error('Sending zip file to database failed.')
-    else:
-        logger.info('Zip file was sent successfully to the database.')
-        
-    return
-
-def sendToDatabaseHttpPost(zipFile):
-    # Register the streaming http handlers with urllib2
-    register_openers()
+def sendViaDiracStorageElement(zipFile):
+    head, tailzipFile = os.path.split(zipFile)
     
-    # Start the multipart/form-data encoding of the file "timing"
-    # "file" is the name of the parameter, which is normally set
-    # via the "name" parameter of the HTML <input> tag.
+    from DIRAC.Core.Base.Script import parseCommandLine, initialize
+    initialize(ignoreErrors = True, enableCommandLine = False)
     
-    # headers contains the necessary Content-Type and Content-Length
-    # datagen is a generator object that yields the encoded parameters
-    datagen, headers = multipart_encode({"file": open(zipFile, "rb")})
+    from DIRAC.Resources.Storage.StorageElement import StorageElement
+    statSE = StorageElement(diracStorageElementName)
     
-    # Create the Request object
-    request = urllib2.Request(remote_host, datagen, headers)
-    # Actually do the request, and get the response
-    logger.info(urllib2.urlopen(request).read())
-
+    log = statSE.putFile({ '{0}{1}{2}'.format(diracStorageElementFolder, os.sep, tailzipFile) : zipFile})
+    logger.info('{0}'.format(log))
+    
 def run(zipFile, ssss):
     if not ssss:
         logging.root.setLevel(logging.INFO)
@@ -65,11 +44,8 @@ def run(zipFile, ssss):
         return
     
     logger.info('Given zip file is valid, sending to database...')
-    
-    #choose method to send the results
-    #sendToDatabaseCopy(zipFile)
-    sendToDatabaseHttpPost(zipFile)
-    
+
+    sendViaDiracStorageElement(zipFile)
     return
 
 def main():
