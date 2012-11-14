@@ -18,20 +18,25 @@ class TimingHandler(BaseHandler):
       file     = open(filename)
       lines    = file.readlines()
 
-      cputime, real = 0,0
+      cputime, realtime = 0,0
 
-      for l in range(len(lines)-3, len(lines)-0):
+      for l in range(len(lines)-3, len(lines)):
          name,value  = lines[l].split()
          value = float( value )
          if name in ( 'User', 'System' ) :
             cputime += value
-         elif name == 'System' :
-            self.saveFloat('cputime', cputime, 'Unix time cmd')
          elif name == 'Real' :
-            real = value
-            self.saveFloat('realtime', realtime, 'Unix time cmd')
+            realtime = value
+
+      self.saveFloat('cputime', cputime, 'Unix time cmd')
+      self.saveFloat('realtime', realtime, 'Unix time cmd')
       
       #go back to previous directory
       os.chdir(saved_previous_directory)
 
+#def main():
+   #t = TimingHandler()
+   #t.collectResults()
 
+#if __name__ == "__main__":
+    #main()
