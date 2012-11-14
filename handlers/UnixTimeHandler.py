@@ -34,9 +34,3 @@ class TimingHandler(BaseHandler):
       #go back to previous directory
       os.chdir(saved_previous_directory)
 
-#def main():
-   #t = TimingHandler()
-   #t.collectResults()
-
-#if __name__ == "__main__":
-    #main()
