@@ -3,7 +3,7 @@ from BaseHandler import BaseHandler
 from xml.etree.ElementTree import ElementTree
 from xml.parsers.expat import ExpatError
 
-class TimingHandler(BaseHandler):
+class UnixTimeHandler(BaseHandler):
 
    def __init__(self):
       super(self.__class__, self).__init__()
