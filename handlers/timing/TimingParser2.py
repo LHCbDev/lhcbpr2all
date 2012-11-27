@@ -7,7 +7,7 @@ import re
 # Parser for the TimingAuditor logfile or ROOT dump
 #
 ################################################################################
-class TimingParse2:
+class TimingParser2:
     """ Class responsible for parsing the TimingAuditor log from the
     Gaudi run  log files """
     def __init__(self, filename):
