@@ -7,7 +7,7 @@ import re
 # Parser for the TimingAuditor logfile or ROOT dump
 #
 ################################################################################
-class TimingParser:
+class TimingParse2:
     """ Class responsible for parsing the TimingAuditor log from the
     Gaudi run  log files """
     def __init__(self, filename):
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     else:
         filename = sys.argv[1]
         print "Processing %s" % filename
-        t = TimingParser(filename)
+        t = TimingParser2(filename)
 
         #for s in ["RecoRICHSeq", "RecoTrSeq" ]:
             #pseq = t.findByName(s)
