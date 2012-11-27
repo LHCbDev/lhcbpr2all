@@ -5,7 +5,7 @@ from xml.parsers.expat import ExpatError
 
 
 
-class TimingHandler(BaseHandler):
+class TimingHandlerMoore(BaseHandler):
     
     
     def __init__(self):
@@ -17,7 +17,7 @@ class TimingHandler(BaseHandler):
         #save current directory before chdir
         saved_previous_directory = os.getcwd()
 
-        from timing.TimingParser import TimingParser2
+        from timing.TimingParser2 import TimingParser2
         tp = TimingParser2('run.log')
 
         # Now saving all the nodes
