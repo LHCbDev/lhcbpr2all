@@ -23,13 +23,13 @@ class TimingParser2:
         parent = None
         lastparent = [None]
         id = 0
-        regxp = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO([\s\w]+?)\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
+        regxp = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO([\s\w]+?)\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
         try:
             logf = open(logfilename, "r")
             for l in logf.readlines():
                 m = re.match(regxp, l)
                 if m != None:
-                    print m.group()
+                    print m.group(3), m.group(4), m.group(7), m.group(8) 
                     level = len(m.group(3)) - len(m.group(3).lstrip())
                     parent = None
                     if level > 0:
@@ -247,5 +247,6 @@ if __name__ == "__main__":
         #for c in pseq.children:
             #print "\t",  c.name, ":", c.perTotal(), "%"
 
-        for n in t.getTopN(10):
-            print n.name, " - ", n.perTotal()
+        if len(sys.argv) == 3:
+            for n in t.getAllSorted():
+                print n.name, " - ", n.perTotal()
