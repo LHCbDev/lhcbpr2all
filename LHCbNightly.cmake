@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.5)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
 include(lbnMacros)
 
 load_config()
@@ -25,10 +25,10 @@ foreach(project ${projects})
     set(SOURCE_DIR "${SLOT_BUILD_DIR}/${PR}/${PR}_${${project}_version}")
   endif()
 
-  configure_file("${CMAKE_CURRENT_LIST_DIR}/CTestConfig.template.cmake"
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestConfig.template.cmake"
                  "${SOURCE_DIR}/CTestConfig.cmake")
 
-  configure_file("${CMAKE_CURRENT_LIST_DIR}/CTestScript.template.cmake"
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestScript.template.cmake"
                  "${SOURCE_DIR}/CTestScript.cmake" @ONLY)
 
   configure_file("${CMAKE_CURRENT_LIST_DIR}/SlotConfig.cmake"
