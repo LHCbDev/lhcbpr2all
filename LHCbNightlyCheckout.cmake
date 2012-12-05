@@ -14,7 +14,7 @@ macro(checkout project version)
   if(${project} STREQUAL "Gaudi")
     execute_process(COMMAND git clone -b dev/cmake http://cern.ch/gaudi/Gaudi.git ${PROJECT}/${PROJECT}_${version}
                     WORKING_DIRECTORY ${SLOT_BUILD_DIR})
-    file(WRITE "${SLOT_SOURCES_DIR}/${PROJECT}/${PROJECT}_${version}/Makefile"
+    file(WRITE "${SLOT_BUILD_DIR}/${PROJECT}/${PROJECT}_${version}/Makefile"
          "include \$(LBCONFIGURATIONROOT)/data/Makefile\n")
   else()
     if(${version} STREQUAL "HEAD")
