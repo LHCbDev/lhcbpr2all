@@ -8,6 +8,6 @@ set(CTEST_PROJECT_NAME "@slot@")
 set(CTEST_NIGHTLY_START_TIME "00:00:00 CET")
 
 set(CTEST_DROP_METHOD "http")
-set(CTEST_DROP_SITE "pcphlbc16")
+set(CTEST_DROP_SITE "lbtestbuild.cern.ch")
 set(CTEST_DROP_LOCATION "/CDash/submit.php?project=@slot@")
 set(CTEST_DROP_SITE_CDASH TRUE)
