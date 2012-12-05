@@ -9,6 +9,7 @@ set(SLOT_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}/build")
 set(SLOT_SOURCES_DIR "${CMAKE_CURRENT_LIST_DIR}/sources")
 
 macro(checkout project version)
+  message(STATUS "Checking out ${project} ${version}...")
   string(TOUPPER "${project}" PROJECT)
   if(${project} STREQUAL "Gaudi")
     execute_process(COMMAND git clone -b dev/cmake http://cern.ch/gaudi/Gaudi.git ${PROJECT}/${PROJECT}_${version}
@@ -24,8 +25,6 @@ macro(checkout project version)
                       WORKING_DIRECTORY ${SLOT_BUILD_DIR})
     endif()
   endif()
-  execute_process(COMMAND tar cjf ${SLOT_SOURCES_DIR}/${project}.src.tar.bz2 ${PROJECT}/${PROJECT}_${version}
-                  WORKING_DIRECTORY ${SLOT_BUILD_DIR})
 endmacro()
 
 
@@ -35,3 +34,12 @@ file(MAKE_DIRECTORY "${SLOT_BUILD_DIR}" "${SLOT_SOURCES_DIR}")
 foreach(project ${projects})
   checkout(${project} ${${project}_version})
 endforeach()
+
+foreach(project ${projects})
+  message(STATUS "Packing ${project} ${${project}_version}...")
+  string(TOUPPER "${project}" PROJECT)
+  execute_process(COMMAND tar cjf ${SLOT_SOURCES_DIR}/${project}.src.tar.bz2 ${PROJECT}/${PROJECT}_${${project}_version}
+                  WORKING_DIRECTORY ${SLOT_BUILD_DIR})
+endforeach()
+
+message(STATUS "Sources ready for build")
