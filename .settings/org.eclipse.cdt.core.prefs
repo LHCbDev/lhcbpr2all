@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.toolchain.gnu.base.1371858083/PATH/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.base.1371858083/PATH/operation=replace
+environment/project/cdt.managedbuild.toolchain.gnu.base.1371858083/PATH/value=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/InstallArea/scripts\:/afs/cern.ch/sw/lcg/contrib/CMake/2.8.9/Linux-i386/bin\:${PATH}
+environment/project/cdt.managedbuild.toolchain.gnu.base.1371858083/append=true
+environment/project/cdt.managedbuild.toolchain.gnu.base.1371858083/appendContributed=true

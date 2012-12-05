@@ -1,0 +1,25 @@
+# Macros and functions used by the test driver
+
+# Macros
+macro(gen_projects_xml)
+  set(data "<Project name=\"${CTEST_PROJECT_NAME}\">")
+  foreach(p ${projects})
+    set(data "${data}\n  <SubProject name=\"${p}\">")
+    foreach(d ${${p}_dependencies})
+      set(data "${data}\n    <Dependency name=\"${d}\"/>")
+    endforeach()
+    set(data "${data}\n  </SubProject>")
+  endforeach()
+  set(data "${data}\n</Project>\n")
+  file(WRITE "${CTEST_BINARY_DIRECTORY}/Project.xml" "${data}")
+endmacro()
+
+macro(get_deps output)
+  foreach(name ${ARGN})
+    get_deps(${output} ${${name}_dependencies})
+    set(${output} ${${output}} ${name})
+  endforeach()
+  if(${output})
+    list(REMOVE_DUPLICATES ${output})
+  endif()
+endmacro()
