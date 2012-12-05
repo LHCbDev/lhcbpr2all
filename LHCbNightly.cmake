@@ -5,8 +5,8 @@ include(lbnMacros)
 
 load_config()
 
-#set(SLOT_BUILD_DIR "/tmp/marcocle/${slot}/build.${config}")
 set(SLOT_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}/build")
+set(SLOT_SOURCES_DIR "${CMAKE_CURRENT_LIST_DIR}/sources")
 
 prepare_build_dir()
 
