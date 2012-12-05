@@ -18,7 +18,6 @@ execute_process(COMMAND rm -rf "${CTEST_BINARY_DIRECTORY}")
 
 set(ENV{CMTCONFIG}      "${config}")
 set(ENV{CMTPROJECTPATH} "@SLOT_BUILD_DIR@:$ENV{CMTPROJECTPATH}")
-set(ENV{CMAKE_PREFIX_PATH} "/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbRelease/data/DataPkgEnvs:/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake")
 
 set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} -DCMAKE_TOOLCHAIN_FILE=${CTEST_SCRIPT_DIRECTORY}/toolchain.cmake")
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCMAKE_USE_DISTCC=TRUE ${CTEST_SCRIPT_DIRECTORY}")

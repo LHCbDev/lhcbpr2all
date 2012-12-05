@@ -46,6 +46,7 @@ macro(prepare_build_dir)
       message(STATUS "  unpacking ${source}")
       execute_process(COMMAND tar xf ${source}
                       WORKING_DIRECTORY ${SLOT_BUILD_DIR})
+    endforeach()
   else()
     message(FATAL_ERROR "No source tarball found: nothing to build.")
   endif()

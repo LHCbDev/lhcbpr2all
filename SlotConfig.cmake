@@ -1,6 +1,7 @@
 # Slot configuration
 set(slot lhcb-gaudi-head)
-set(config x86_64-slc6-gcc46-opt)
+#set(config x86_64-slc6-gcc46-opt)
+set(config $ENV{CMTCONFIG})
 
 set(projects DaVinci Gaudi Lbcom LHCb Rec Brunel Phys Analysis Stripping)
 
