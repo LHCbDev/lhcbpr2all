@@ -1,11 +1,13 @@
-# Macros and functions used by the test driver
+# Macros, functions and settings used by the test driver
+
+find_program(hostname_cmd hostname)
 
 macro(gen_projects_xml)
   set(data "<Project name=\"${slot}\">")
   foreach(p ${projects})
-    set(data "${data}\n  <SubProject name=\"${p}\">")
+    set(data "${data}\n  <SubProject name=\"${p} ${${p}_version}\">")
     foreach(d ${${p}_dependencies})
-      set(data "${data}\n    <Dependency name=\"${d}\"/>")
+      set(data "${data}\n    <Dependency name=\"${d} ${${p}_version}\"/>")
     endforeach()
     set(data "${data}\n  </SubProject>")
   endforeach()
@@ -33,7 +35,8 @@ macro(load_config)
   message(STATUS "Loading slot configuration.")
   include(SlotConfig)
   sort_projects()
-  message(STATUS "Building ${slot} for ${config}.")
+  get_site(site)
+  message(STATUS "Building ${slot} for ${config} on ${site}.")
 endmacro()
 
 macro(prepare_build_dir)
@@ -50,4 +53,9 @@ macro(prepare_build_dir)
   else()
     message(FATAL_ERROR "No source tarball found: nothing to build.")
   endif()
+endmacro()
+
+macro(get_site var)
+  execute_process(COMMAND ${hostname_cmd} OUTPUT_VARIABLE ${var})
+  string(STRIP "${${var}}" ${var})
 endmacro()
