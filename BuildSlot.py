@@ -123,7 +123,7 @@ if __name__ == '__main__':
     for p in sortedProjs:
         call(['ctest', '-VV', '-DSTEP=BUILD', '-S', 'CTestScript.cmake'],
              cwd=name2dir[p])
-        jobs.append(Popen(['ctest', '-DSTEP=BUILD', '-S', 'CTestScript.cmake'],
+        jobs.append(Popen(['ctest', '-DSTEP=TEST', '-S', 'CTestScript.cmake'],
                           cwd=name2dir[p]))
     for j in jobs:
         j.wait()
