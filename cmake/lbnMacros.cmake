@@ -86,13 +86,13 @@ macro(prepare_build_dir)
       set(SOURCE_DIR "${SLOT_BUILD_DIR}/${PROJECT}/${PROJECT}_${version}")
     endif()
 
-    configure_file("${CMAKE_CURRENT_LIST_DIR}/CTestConfig.template.cmake"
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestConfig.template.cmake"
                    "${SOURCE_DIR}/CTestConfig.cmake")
 
-    configure_file("${CMAKE_CURRENT_LIST_DIR}/CTestScript.template.cmake"
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestScript.template.cmake"
                    "${SOURCE_DIR}/CTestScript.cmake" @ONLY)
 
-    configure_file("${SLOT_CONFIG_DIR}/SlotConfig.cmake"
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/SlotConfig.cmake"
                    "${SOURCE_DIR}/SlotConfig.cmake" COPYONLY)
   endforeach()
 endmacro()
