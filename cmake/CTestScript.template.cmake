@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.5)
 include("${CTEST_SCRIPT_DIRECTORY}/SlotConfig.cmake")
 
 # CTest-specific configuration
-set(CTEST_SITE "pclhcb117")
+set(CTEST_SITE "@site@")
 set(CTEST_BUILD_NAME "${config}")
 set(CTEST_NOTES_FILES "${CTEST_SCRIPT_DIRECTORY}/SlotConfig.cmake")
 
@@ -35,14 +35,12 @@ ctest_start(Experimental)
 set_property(GLOBAL PROPERTY SubProject @project@)
 
 ##ctest_update()
-ctest_submit(FILES "@SLOT_BUILD_DIR@/Project.xml")
-ctest_submit(PARTS Update Notes)
-
 ctest_configure()
-ctest_submit(PARTS Configure)
+ctest_submit(FILES "@SLOT_BUILD_DIR@/Project.xml")
+ctest_submit(PARTS Update Notes Configure)
 
-ctest_build()
+ctest_build(APPEND)
 ctest_submit(PARTS Build)
 
-ctest_test()
+ctest_test() # it seems there is no need for APPEND here
 ctest_submit(PARTS Test)
