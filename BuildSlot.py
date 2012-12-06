@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     log.info('Cleaning directories.')
     shutil.rmtree(build_dir)
-    shutil.rmtree(sources_dir)
+    os.makedirs(build_dir)
 
     log.info('Preparing sources...')
     for f in os.listdir(sources_dir):
