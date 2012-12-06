@@ -28,10 +28,6 @@ set(CTEST_BUILD_COMMAND "make -j 8 -k install")
 # Start the session
 ctest_start(@Model@)
 
-##########################
-# Start the session
-ctest_start(Experimental)
-
 set_property(GLOBAL PROPERTY SubProject "@project@ @version@")
 
 ##ctest_update()
