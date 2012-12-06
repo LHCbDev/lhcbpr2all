@@ -37,6 +37,7 @@ set(CTEST_BUILD_COMMAND "make -j 8 -k install")
 ctest_start(@Model@)
 
 set_property(GLOBAL PROPERTY SubProject "@project@ @version@")
+set_property(GLOBAL PROPERTY Label "@project@ @version@")
 
 if(NOT STEP STREQUAL TEST)
   ##ctest_update()
