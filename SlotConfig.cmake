@@ -1,7 +1,9 @@
 # Slot configuration
 set(slot lhcb-gaudi-head)
 #set(config x86_64-slc6-gcc46-opt)
-set(config $ENV{CMTCONFIG})
+if(NOT DEFINED config)
+  set(config $ENV{CMTCONFIG})
+endif()
 
 set(projects DaVinci Gaudi Lbcom LHCb Rec Brunel Phys Analysis Stripping)
 
@@ -28,4 +30,5 @@ set(DaVinci_dependencies   Analysis Stripping Lbcom)
 set(CTEST_CUSTOM_WARNING_EXCEPTION
     ${CTEST_CUSTOM_WARNING_EXCEPTION}
     ".*/boost/.*"
-    "^--->> genreflex: WARNING:.*")
+    "^--->> genreflex: WARNING:.*"
+    " note:")
