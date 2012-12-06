@@ -13,6 +13,7 @@ if(STEP STREQUAL BUILD OR STEP STREQUAL ALL)
 endif()
 
 foreach(project ${projects})
+  get_source_dir(${project} SOURCE_DIR)
   execute_process(COMMAND ctest -VV -DSTEP=${STEP} -S CTestScript.cmake
                   WORKING_DIRECTORY ${SOURCE_DIR})
 endforeach()
