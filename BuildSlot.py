@@ -70,7 +70,8 @@ if __name__ == '__main__':
     sources_dir = join(os.getcwd(), 'sources')
 
     log.info('Cleaning directories.')
-    shutil.rmtree(build_dir)
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
     os.makedirs(build_dir)
 
     log.info('Preparing sources...')

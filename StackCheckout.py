@@ -146,8 +146,10 @@ if __name__ == '__main__':
     sources_dir = join(os.getcwd(), 'sources')
 
     log.info('Cleaning directories.')
-    shutil.rmtree(build_dir)
-    shutil.rmtree(sources_dir)
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+    if os.path.exists(sources_dir):
+        shutil.rmtree(sources_dir)
 
     log.info('Checking out projects.')
     os.makedirs(build_dir)
