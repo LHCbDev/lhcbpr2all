@@ -5,37 +5,15 @@ include(lbnMacros)
 
 load_config()
 
-set(SLOT_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}/build")
-set(SLOT_SOURCES_DIR "${CMAKE_CURRENT_LIST_DIR}/sources")
+set(SLOT_CONFIG_DIR   "${CMAKE_CURRENT_LIST_DIR}")
+set(SLOT_BUILD_DIR    "${CMAKE_CURRENT_LIST_DIR}/build")
+set(SLOT_SOURCES_DIR  "${CMAKE_CURRENT_LIST_DIR}/sources")
 
-prepare_build_dir()
-
-gen_projects_xml()
-
-# This choses which kind of build we are doing.
-if(NOT DEFINED Model)
-  set(Model Nightly)
+if(STEP STREQUAL BUILD OR STEP STREQUAL ALL)
+  prepare_build_dir()
 endif()
 
 foreach(project ${projects})
-  set(version ${${project}_version})
-  string(TOUPPER "${project}" PROJECT)
-
-  if(DEFINED ${project}_dir)
-    set(SOURCE_DIR "${SLOT_BUILD_DIR}/${${project}_dir}")
-  else()
-    set(SOURCE_DIR "${SLOT_BUILD_DIR}/${PROJECT}/${PROJECT}_${version}")
-  endif()
-
-  configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestConfig.template.cmake"
-                 "${SOURCE_DIR}/CTestConfig.cmake")
-
-  configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestScript.template.cmake"
-                 "${SOURCE_DIR}/CTestScript.cmake" @ONLY)
-
-  configure_file("${CMAKE_CURRENT_LIST_DIR}/SlotConfig.cmake"
-                 "${SOURCE_DIR}/SlotConfig.cmake" COPYONLY)
-
-  execute_process(COMMAND ctest -VV -S CTestScript.cmake
+  execute_process(COMMAND ctest -VV -DSTEP=${STEP} -S CTestScript.cmake
                   WORKING_DIRECTORY ${SOURCE_DIR})
 endforeach()

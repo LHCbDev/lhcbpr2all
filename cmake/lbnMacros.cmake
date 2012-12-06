@@ -1,6 +1,21 @@
 # Macros, functions and settings used by the test driver
 
+# - Settings
+
 find_program(hostname_cmd hostname)
+
+# This choses which kind of build we are doing.
+if(NOT DEFINED Model)
+  set(Model Nightly)
+endif()
+
+# STEP can be BUILD (do not run tests), TEST (do not build), ALL (run
+# everything, default).
+if(NOT DEFINED STEP)
+  set(STEP ALL)
+endif()
+
+# - Macros
 
 macro(gen_projects_xml)
   set(data "<Project name=\"${slot}\">")
@@ -39,8 +54,11 @@ macro(load_config)
   message(STATUS "Building ${slot} for ${config} on ${site}.")
 endmacro()
 
+# Prepare the build directories for the build
 macro(prepare_build_dir)
+
   message(STATUS "Preparing sources.")
+
   file(GLOB sources "sources/*.tar.bz2")
   if(sources)
     execute_process(COMMAND rm -rf ${SLOT_BUILD_DIR})
@@ -53,6 +71,30 @@ macro(prepare_build_dir)
   else()
     message(FATAL_ERROR "No source tarball found: nothing to build.")
   endif()
+
+  message(STATUS "Generating CTest scripts and configurations.")
+
+  gen_projects_xml()
+
+  foreach(project ${projects})
+    set(version ${${project}_version})
+    string(TOUPPER "${project}" PROJECT)
+
+    if(DEFINED ${project}_dir)
+      set(SOURCE_DIR "${SLOT_BUILD_DIR}/${${project}_dir}")
+    else()
+      set(SOURCE_DIR "${SLOT_BUILD_DIR}/${PROJECT}/${PROJECT}_${version}")
+    endif()
+
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/CTestConfig.template.cmake"
+                   "${SOURCE_DIR}/CTestConfig.cmake")
+
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/CTestScript.template.cmake"
+                   "${SOURCE_DIR}/CTestScript.cmake" @ONLY)
+
+    configure_file("${SLOT_CONFIG_DIR}/SlotConfig.cmake"
+                   "${SOURCE_DIR}/SlotConfig.cmake" COPYONLY)
+  endforeach()
 endmacro()
 
 macro(get_site var)

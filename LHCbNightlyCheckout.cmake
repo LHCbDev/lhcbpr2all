@@ -5,8 +5,9 @@ include(lbnMacros)
 
 load_config()
 
-set(SLOT_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}/build")
-set(SLOT_SOURCES_DIR "${CMAKE_CURRENT_LIST_DIR}/sources")
+set(SLOT_CONFIG_DIR   "${CMAKE_CURRENT_LIST_DIR}")
+set(SLOT_BUILD_DIR    "${CMAKE_CURRENT_LIST_DIR}/build")
+set(SLOT_SOURCES_DIR  "${CMAKE_CURRENT_LIST_DIR}/sources")
 
 macro(checkout project version)
   message(STATUS "Checking out ${project} ${version}...")

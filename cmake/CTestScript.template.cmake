@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 2.8.5)
 
 include("${CTEST_SCRIPT_DIRECTORY}/SlotConfig.cmake")
 
+# STEP can be BUILD (do not run tests), TEST (do not build), ALL (run
+# everything, default).
+if(NOT DEFINED STEP)
+  set(STEP ALL)
+endif()
+
 # CTest-specific configuration
 set(CTEST_SITE "@site@")
 set(CTEST_BUILD_NAME "${config}")
@@ -13,8 +19,10 @@ set(CTEST_PROJECT_NAME "${slot}")
 set(CTEST_SOURCE_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_SCRIPT_DIRECTORY}/build.${config}")
 
-# Clean up the build directory
-execute_process(COMMAND rm -rf "${CTEST_BINARY_DIRECTORY}")
+if(NOT STEP STREQUAL TEST)
+  # Clean up the build directory
+  execute_process(COMMAND rm -rf "${CTEST_BINARY_DIRECTORY}")
+endif()
 
 set(ENV{CMTCONFIG}      "${config}")
 set(ENV{CMTPROJECTPATH} "@SLOT_BUILD_DIR@:$ENV{CMTPROJECTPATH}")
@@ -30,13 +38,17 @@ ctest_start(@Model@)
 
 set_property(GLOBAL PROPERTY SubProject "@project@ @version@")
 
-##ctest_update()
-ctest_configure()
-ctest_submit(FILES "@SLOT_BUILD_DIR@/Project.xml")
-ctest_submit(PARTS Update Notes Configure)
+if(NOT STEP STREQUAL TEST)
+  ##ctest_update()
+  ctest_configure()
+  ctest_submit(FILES "@SLOT_BUILD_DIR@/Project.xml")
+  ctest_submit(PARTS Update Notes Configure)
 
-ctest_build(APPEND)
-ctest_submit(PARTS Build)
+  ctest_build(APPEND)
+  ctest_submit(PARTS Build)
+endif()
 
-ctest_test() # it seems there is no need for APPEND here
-ctest_submit(PARTS Test)
+if(NOT STEP STREQUAL BUILD)
+  ctest_test() # it seems there is no need for APPEND here
+  ctest_submit(PARTS Test)
+endif()
