@@ -79,9 +79,6 @@ def main():
     jobAttributes = []
     handlers_result = []
     
-    #save current directory, in case some handler chdir
-    saved_previous_directory = os.getcwd()
-    
     #for each handler in the handlers list
     for handler in options.handlers.split(','):
         module = ''.join(['handlers','.',handler])
@@ -89,7 +86,7 @@ def main():
         try:
             mod = __import__(module, fromlist=[module])
         except ImportError, e:
-            logger.error(str(e)+', please check your script or your LHCbPRHandlers directory')
+            logger.exception('Please check your script or your LHCbPRHandlers directory')
         else:
             #create an instance of a the current handler
             klass = getattr(mod, handler)
@@ -101,8 +98,7 @@ def main():
             except Exception,e:
                 #if any error occurs and the handler fails, inform the user using the logger
                 #and save that the current handler failed
-                logger.error('A handler failed:')
-                logger.error(e)
+                logger.exception('Handler exception:')
                 handlers_result.append({ 'handler' : handler, 'successful' : False })
             else:
                 #in case everything is fine , save that the current handler worked successfully
@@ -110,11 +106,8 @@ def main():
                 handlers_result.append({ 'handler' : handler, 'successful' : True })
     
     if not jobAttributes:
-        logger.warning('All handlers failed, no results were collected.')
-        
-    #make sure you are in previous directory in case some handler chdir to different directory
-    if not os.getcwd() == saved_previous_directory:    
-        os.chdir(saved_previous_directory)
+        logger.warning('All handlers failed, no results were collected.Aborting...')
+        return
     
     unique_results_id = str(uuid.uuid1())
     zipper = zipfile.ZipFile(unique_results_id+'.zip', mode='w')
@@ -149,7 +142,7 @@ def main():
     #close the zipfile object
     zipper.close()
     
-    logger.info('Zip file containing the results produced. zip filename: '+ unique_results_id+'.zip')
+    logger.info(unique_results_id+'.zip')
     
     if options.send:
         logger.info('Automatically sending the zip results file to the database...')

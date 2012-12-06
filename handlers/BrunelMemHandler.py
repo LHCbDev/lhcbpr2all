@@ -23,5 +23,3 @@ class BrunelMemHandler(BaseHandler):
 
     def findHistoFile(self, dir):
         return [f for f in os.listdir(dir) if re.match("Brunel.*histos.root", f)]
-
-

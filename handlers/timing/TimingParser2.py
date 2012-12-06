@@ -23,13 +23,12 @@ class TimingParser2:
         parent = None
         lastparent = [None]
         id = 0
-        regxp = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO([\s\w]+?)\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
+        regxp = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO ([\s\w]+?)\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
         try:
             logf = open(logfilename, "r")
             for l in logf.readlines():
                 m = re.match(regxp, l)
                 if m != None:
-                    print m.group()
                     level = len(m.group(3)) - len(m.group(3).lstrip())
                     parent = None
                     if level > 0:
@@ -48,8 +47,7 @@ class TimingParser2:
             raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'run.log' in the results directory' ")
             
         # Getting the actual root "EVENT LOOP"
-        root = lastparent[1]
-
+        root = lastparent[0]
         # Sorting all the nodes by CPU usage and setting the "rank" attribute
         root.rankChildren()
         self.root = root
@@ -105,7 +103,7 @@ class Node:
         """ Constructor """
         self.id = id
         self.level = level
-        self.name = name
+        self.name = name.replace(" ", "_")
         self.rank = 0
         self.value = float(value)
         self.entries = entries

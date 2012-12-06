@@ -106,41 +106,31 @@ class gaussGenerator(BaseHandler):
     def __init__(self):
         super(self.__class__, self).__init__()
     
+    def findHistoFile(self, dir):
+        return [f for f in os.listdir(dir) if re.match("Gauss.*histos.root", f)]
+    
     def collectResults(self,directory):
-        saved_previous_directory = os.getcwd()
         try:
-            os.chdir(directory)
-            with open('run.log') as f: pass
+            with open(os.path.join(directory, 'run.log')) as f: pass
         except OSError:
             raise Exception(str(self.__class__)+": No result directory, check the given result directory")
         except IOError:
             raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'run.log' in the results directory' ")
         
-        current_path = os.getcwd()
         rootfiles = glob.glob("*.root")
         
-        if not rootfiles:
-            raise Exception(str(self.__class__)+": No root files were found in the given directory")
+        l = self.findHistoFile(directory)
+        if len(l) == 0:
+            raise Exception("Could not locate histo file in the given directory")
+        elif len(l) != 1:
+            raise Exception("Could not locate just 1 histo file, found:" + str(l))
         
-        for myfile in rootfiles:
-            fileName, fileExtension = os.path.splitext(myfile)
-            self.saveFile(fileName, current_path+os.sep+myfile)
+        fileName, fileExtension = os.path.splitext(l[0])
+        self.saveFile(fileName, os.path.join(directory,l[0]))
             
-        TheLog = GeneratorLogFile( 'run.log' )
+        TheLog = GeneratorLogFile( os.path.join(directory, 'run.log' ))
         TheLog.computeQuantities() 
-        
-        if TheLog.gaussVersion() == None:
-            gauss_version = 'v31r1'
-        else:
-            gauss_version = TheLog.gaussVersion()
-        if TheLog.pythiaVersion() == None:
-            pythia_version = "6.424.2"
-        else:
-            pythia_version = TheLog.pythiaVersion()
       
-        #self.saveFloat('eventType',TheLog.eventType())
-        #self.saveString('gaussVersion',gauss_version)
-        #self.saveString('pythiaVersion',pythia_version)
         self.saveFloat('totalCrossSection',TheLog.totalCrossSection())
         self.saveFloat('bCrossSection',TheLog.bCrossSection())
         self.saveFloat('cCrossSection',TheLog.cCrossSection())
@@ -150,6 +140,4 @@ class gaussGenerator(BaseHandler):
         self.saveFloat('signalProcessFromBCrossSection',TheLog.signalProcessFromBCrossSection())
         self.saveFloat('generatorLevelCutEfficiency',TheLog.generatorLevelCutEfficiency())
         self.saveFloat('timePerEvent',TheLog.timePerEvent())
-        
-        os.chdir(saved_previous_directory)
         
