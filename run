@@ -1,2 +1,0 @@
-#!/bin/bash -x
-cmake -DSTEP=BUILD -P $(dirname $0)/LHCbNightlyBuild.cmake

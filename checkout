@@ -1,2 +1,0 @@
-#!/bin/bash -x
-cmake -P $(dirname $0)/LHCbNightlyCheckout.cmake

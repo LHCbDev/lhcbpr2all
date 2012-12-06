@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Module containing the classes and functions used to checkout a set of projects,
 fixing their dependencies to produce a consistent set.
@@ -108,20 +109,55 @@ class StackDesc(object):
         for p in self.projects:
             p.checkout(rootdir)
 
+def specialGaudiCheckout(desc, rootdir='.'):
+    dest = os.path.join(rootdir, desc.projectDir)
+    call(['git', 'clone', '-b', 'dev/cmake',
+          'http://cern.ch/gaudi/Gaudi.git', dest])
+    f = open(os.path.join(dest, 'Makefile'), 'w')
+    f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
+    f.close()
+
 def parseConfigFile(path):
     import json
     data = json.load(open(path))
     projects = []
     for p in data[u'projects']:
+        if u'checkout' in p:
+            checkout = globals()[p[u'checkout']]
+        else:
+            checkout = defaultCheckout
         projects.append(ProjectDesc(p[u'name'], p[u'version'],
-                                    overrides=p[u'overrides']))
+                                    overrides=p[u'overrides'],
+                                    checkout=checkout))
     return StackDesc(projects)
 
 if __name__ == '__main__':
-    # example of usage
+    from os.path import join
+
     logging.basicConfig(level=logging.INFO)
 
     if len(sys.argv) != 2 or '-h' in sys.argv:
         print "Usage: %s config.json" % sys.argv[0]
+        sys.exit(1)
 
-    parseConfigFile(sys.argv[1]).checkout()
+    slot = parseConfigFile(sys.argv[1])
+
+    build_dir = join(os.getcwd(), 'build')
+    sources_dir = join(os.getcwd(), 'sources')
+
+    log.info('Cleaning directories.')
+    shutil.rmtree(build_dir)
+    shutil.rmtree(sources_dir)
+
+    log.info('Checking out projects.')
+    os.makedirs(build_dir)
+    os.makedirs(sources_dir)
+
+    slot.checkout(build_dir)
+
+    for p in slot.projects:
+        log.info('Packing %s %s...', p.name, p.version)
+        call(['tar', 'cjf', join(sources_dir, p.name + '.src.tar.bz2'),
+              p.projectDir], cwd=build_dir)
+
+    log.info('Sources ready for build.')
