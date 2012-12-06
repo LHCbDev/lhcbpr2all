@@ -5,7 +5,7 @@ if(NOT DEFINED config)
   set(config $ENV{CMTCONFIG})
 endif()
 
-set(projects DaVinci Gaudi Lbcom LHCb Rec Brunel Phys Analysis Stripping)
+set(projects  Gaudi Lbcom LHCb Rec Brunel DaVinci Phys Analysis Stripping)
 
 set(Gaudi_version     v23r5 )
 set(LHCb_version      v35r3 )

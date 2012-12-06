@@ -32,7 +32,7 @@ ctest_start(@Model@)
 # Start the session
 ctest_start(Experimental)
 
-set_property(GLOBAL PROPERTY SubProject @project@)
+set_property(GLOBAL PROPERTY SubProject "@project@ @version@")
 
 ##ctest_update()
 ctest_configure()

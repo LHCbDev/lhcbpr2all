@@ -18,11 +18,13 @@ if(NOT DEFINED Model)
 endif()
 
 foreach(project ${projects})
-  string(TOUPPER "${project}" PR)
+  set(version ${${project}_version})
+  string(TOUPPER "${project}" PROJECT)
+
   if(DEFINED ${project}_dir)
     set(SOURCE_DIR "${SLOT_BUILD_DIR}/${${project}_dir}")
   else()
-    set(SOURCE_DIR "${SLOT_BUILD_DIR}/${PR}/${PR}_${${project}_version}")
+    set(SOURCE_DIR "${SLOT_BUILD_DIR}/${PROJECT}/${PROJECT}_${version}")
   endif()
 
   configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/CTestConfig.template.cmake"
