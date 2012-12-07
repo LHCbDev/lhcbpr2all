@@ -180,7 +180,7 @@ def main():
 
         log.info('packing %s', name2dir[p])
         call(['tar', 'cjf', os.path.basename(name2dir[p]) + '.tar.bz2',
-              os.path.join(name2dir[p], 'InstallArea')], cwd=workdir)
+              os.path.join(name2dir[p], 'InstallArea')], cwd=build_dir)
 
         log.info('testing (in background) %s', name2dir[p])
         jobs.append(Popen(test_cmd, cwd=workdir))
