@@ -56,15 +56,33 @@ def parseConfigFile(path):
 
 
 if __name__ == '__main__':
+    from optparse import OptionParser
+    parser = OptionParser(usage='%prog [options] <config.json>')
+    models = ['Nightly', 'Experimental', 'Continuous']
+    parser.add_option('-m', '--model',
+                      action='store', type='choice', choices=models,
+                      help='build model: {0} (default: {0[0]}).'.format(models))
+    parser.add_option('-d', '--debug',
+                      action='store_const', dest='level',
+                      const=logging.DEBUG,
+                      help='print debug informations.')
+    parser.add_option('-q', '--quiet',
+                      action='store_const', dest='level',
+                      const=logging.WARNING,
+                      help='be less verbose.')
+
+
+    parser.set_defaults(model=models[0],
+                        level=logging.INFO)
+
+    opts, args = parser.parse_args()
+    logging.basicConfig(level=opts.level)
+
+    if len(args) != 1:
+        parser.error('wrong number of arguments')
+
     from os.path import join
-
-    logging.basicConfig(level=logging.INFO)
-
-    if len(sys.argv) != 2 or '-h' in sys.argv:
-        print "Usage: %s config.json" % sys.argv[0]
-        sys.exit(1)
-
-    config = parseConfigFile(sys.argv[1])
+    config = parseConfigFile(args[0])
 
     build_dir = join(os.getcwd(), 'build')
     sources_dir = join(os.getcwd(), 'sources')
@@ -108,8 +126,8 @@ if __name__ == '__main__':
         write(join(projdir, 'CTestConfig.cmake'), ctestConfig)
         write(join(projdir, 'CTestScript.cmake'),
               ctestScript.substitute({'project': n, 'version': v,
-                                      'build_dir': build_dir, 'site': gethostname()}))
-
+                                      'build_dir': build_dir, 'site': gethostname(),
+                                      'Model': opts.model}))
 
     # sort projects by deps
     def getDeps(projs):
