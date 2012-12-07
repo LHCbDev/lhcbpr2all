@@ -62,6 +62,9 @@ if __name__ == '__main__':
     parser.add_option('-m', '--model',
                       action='store', type='choice', choices=models,
                       help='build model: {0} (default: {0[0]}).'.format(models))
+    parser.add_option('--no-clean',
+                      action='store_true',
+                      help='do not purge the build directory before building')
     parser.add_option('-d', '--debug',
                       action='store_const', dest='level',
                       const=logging.DEBUG,
@@ -87,17 +90,19 @@ if __name__ == '__main__':
     build_dir = join(os.getcwd(), 'build')
     sources_dir = join(os.getcwd(), 'sources')
 
-    log.info('Cleaning directories.')
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
-    os.makedirs(build_dir)
+    if not opts.no_clean:
+        log.info('Cleaning directories.')
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
 
-    log.info('Preparing sources...')
-    for f in os.listdir(sources_dir):
-        if f.endswith('.tar.bz2'):
-            f = join(sources_dir, f)
-            log.info('  unpacking %s', f)
-            call(['tar', 'xf', f], cwd=build_dir)
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+        log.info('Preparing sources...')
+        for f in os.listdir(sources_dir):
+            if f.endswith('.tar.bz2'):
+                f = join(sources_dir, f)
+                log.info('  unpacking %s', f)
+                call(['tar', 'xf', f], cwd=build_dir)
 
     log.info("Generating CTest scripts and configurations.")
     open(join(build_dir, 'Project.xml'), 'w').write(genProjectXml(config))
