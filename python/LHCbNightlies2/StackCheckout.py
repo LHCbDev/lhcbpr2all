@@ -10,7 +10,6 @@ import shutil
 import os
 import sys
 import subprocess
-from subprocess import Popen, PIPE
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ def call(*args, **kwargs):
         return subprocess.call(*args, **kwargs)
     else:
         retry = kwargs.pop('retry')
-        for count in range(retry):
+        for _count in range(retry):
             if subprocess.call(*args, **kwargs) == 0:
                 break
         else: # Note: else of the 'for' block
