@@ -8,8 +8,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
-import sys
-from subprocess import Popen, PIPE, call
+from subprocess import Popen, call
 from string import Template
 from socket import gethostname
 
