@@ -32,6 +32,9 @@ set(CTEST_CONFIGURE_COMMAND "$${CTEST_CONFIGURE_COMMAND} -DCMAKE_USE_DISTCC=TRUE
 
 set(CTEST_BUILD_COMMAND "make -j 8 -k")
 
+# use a timeout of 5h as long as we have one CTest test per subdir
+set(CTEST_TESTING_TIMEOUT 18000)
+
 ##########################
 # Start the session
 ctest_start(${Model})
