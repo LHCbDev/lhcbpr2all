@@ -55,7 +55,7 @@ def parseConfigFile(path):
     return json.load(open(path))
 
 
-if __name__ == '__main__':
+def main():
     from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] <config.json>')
     models = ['Nightly', 'Experimental', 'Continuous']
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     if len(args) != 1:
         parser.error('wrong number of arguments')
 
-    from os.path import join
+    from os.path import join, dirname
     config = parseConfigFile(args[0])
 
     build_dir = join(os.getcwd(), 'build')
@@ -113,8 +113,8 @@ if __name__ == '__main__':
         f.close()
 
     configCmake = genSlotConfig(config)
-    ctestConfig = Template(open(join('cmake', 'CTestConfig.template.cmake')).read()).substitute(config)
-    ctestScript = Template(open(join('cmake', 'CTestScript.template.cmake')).read())
+    ctestConfig = Template(open(join(dirname(__file__), 'CTestConfig.template.cmake')).read())
+    ctestScript = Template(open(join(dirname(__file__), 'CTestScript.template.cmake')).read())
 
     name2dir = {}
     deps = {}
@@ -128,7 +128,8 @@ if __name__ == '__main__':
         deps[n] = p[u'dependencies']
 
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
-        write(join(projdir, 'CTestConfig.cmake'), ctestConfig)
+        write(join(projdir, 'CTestConfig.cmake'),
+              ctestConfig.substitute(config))
         write(join(projdir, 'CTestScript.cmake'),
               ctestScript.substitute({'project': n, 'version': v,
                                       'build_dir': build_dir, 'site': gethostname(),

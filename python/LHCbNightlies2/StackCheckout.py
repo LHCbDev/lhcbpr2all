@@ -131,7 +131,7 @@ def parseConfigFile(path):
                                     checkout=checkout))
     return StackDesc(projects)
 
-if __name__ == '__main__':
+def main():
     from os.path import join
 
     logging.basicConfig(level=logging.INFO)
