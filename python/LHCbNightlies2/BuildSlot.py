@@ -164,7 +164,7 @@ def main():
     jobs = []
     for p in sortedByDeps(deps):
         build_cmd = ['ctest', '-DSTEP=BUILD', '-S', 'CTestScript.cmake']
-        test_cmd =  ['ctest', '-DSTEP=TESTD', '-S', 'CTestScript.cmake']
+        test_cmd =  ['ctest', '-DSTEP=TEST', '-S', 'CTestScript.cmake']
         if opts.level <= logging.INFO:
             build_cmd.insert(1, '-VV')
         if opts.level <= logging.DEBUG:
