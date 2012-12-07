@@ -8,7 +8,6 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
-import sys
 import subprocess
 
 log = logging.getLogger(__name__)
@@ -121,48 +120,84 @@ def parseConfigFile(path):
     data = json.load(open(path))
     projects = []
     for p in data[u'projects']:
-        if u'checkout' in p:
-            checkout = globals()[p[u'checkout']]
+        checkout = p.get(u'checkout', 'defaultCheckout')
+        if '.' in checkout:
+            m, f = checkout.rsplit('.', 1)
+            checkout = getattr(__import__(m, fromlist=[f]), f)
         else:
-            checkout = defaultCheckout
+            checkout = globals()[checkout]
         projects.append(ProjectDesc(p[u'name'], p[u'version'],
-                                    overrides=p[u'overrides'],
+                                    overrides=p.get(u'overrides', {}),
                                     checkout=checkout))
     return StackDesc(projects)
 
-def main():
-    from os.path import join
 
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s:' + logging.BASIC_FORMAT)
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Script to checkout a consistent set of projects as described in a
+    configuration file.
 
-    if len(sys.argv) != 2 or '-h' in sys.argv:
-        print "Usage: %s config.json" % sys.argv[0]
-        sys.exit(1)
+    The configuration file must be in JSON format containing an object with the
+    attribute 'projects', a list of objects with defining the projects to be
+    checked out.
 
-    slot = parseConfigFile(sys.argv[1])
+    For example::
+        {"projects": [{"name": "Gaudi",
+                       "version": "v23r5",
+                       "checkout": "specialCheckoutFunction"},
+                      {"name": "LHCb",
+                       "version": "v32r5",
+                       "overrides": {"GaudiObjDesc": "HEAD",
+                                     "GaudiPython": "v12r4",
+                                     "Online/RootCnv": null}}]}
+    '''
+    __usage__ = '%prog [options] <config.json>'
+    __version__ = ''
+    def defineOpts(self):
+        """ User options """
+        self.parser.add_option('-d', '--debug',
+                               action='store_const', dest='level',
+                               const=logging.DEBUG,
+                               help='print debug informations.')
+        self.parser.add_option('-q', '--quiet',
+                               action='store_const', dest='level',
+                               const=logging.WARNING,
+                               help='be less verbose.')
 
-    build_dir = join(os.getcwd(), 'build')
-    sources_dir = join(os.getcwd(), 'sources')
+    def main(self):
+        """ User code place holder """
+        from os.path import join
 
-    from datetime import datetime
-    starttime = datetime.now()
+        logging.basicConfig(level=self.opts.level,
+                            format='%(asctime)s:' + logging.BASIC_FORMAT)
 
-    log.info('Cleaning directories.')
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
-    if os.path.exists(sources_dir):
-        shutil.rmtree(sources_dir)
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
 
-    log.info('Checking out projects.')
-    os.makedirs(build_dir)
-    os.makedirs(sources_dir)
+        slot = parseConfigFile(self.args[0])
 
-    slot.checkout(build_dir)
+        build_dir = join(os.getcwd(), 'build')
+        sources_dir = join(os.getcwd(), 'sources')
 
-    for p in slot.projects:
-        log.info('Packing %s %s...', p.name, p.version)
-        call(['tar', 'cjf', join(sources_dir, p.name + '.src.tar.bz2'),
-              p.projectDir], cwd=build_dir)
+        from datetime import datetime
+        starttime = datetime.now()
 
-    log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
+        log.info('Cleaning directories.')
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
+        if os.path.exists(sources_dir):
+            shutil.rmtree(sources_dir)
+
+        log.info('Checking out projects.')
+        os.makedirs(build_dir)
+        os.makedirs(sources_dir)
+
+        slot.checkout(build_dir)
+
+        for p in slot.projects:
+            log.info('Packing %s %s...', p.name, p.version)
+            call(['tar', 'cjf', join(sources_dir, p.name + '.src.tar.bz2'),
+                  p.projectDir], cwd=build_dir)
+
+        log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
