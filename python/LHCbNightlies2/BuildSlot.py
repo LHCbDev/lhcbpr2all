@@ -146,11 +146,13 @@ def main():
     for p in config[u'projects']:
         n = p[u'name']
         v = p[u'version']
-        projdir = join(build_dir, n.upper(), '{0}_{1}'.format(n.upper(), v))
+        projdir = join(n.upper(), '{0}_{1}'.format(n.upper(), v))
 
         # these are cached for later
         name2dir[n] = projdir
         deps[n] = p[u'dependencies']
+
+        projdir = join(build_dir, projdir)
 
         shutil.copyfile(args[0], join(projdir, 'SlotConfig.json'))
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
@@ -171,11 +173,17 @@ def main():
         if opts.level <= logging.DEBUG:
             test_cmd.insert(1, '-VV')
 
+        workdir = join(build_dir, name2dir[p])
+
         log.info('building %s', name2dir[p])
-        call(build_cmd, cwd=name2dir[p])
+        call(build_cmd, cwd=workdir)
+
+        log.info('packing %s', name2dir[p])
+        call(['tar', 'cjf', os.path.basename(name2dir[p]) + '.tar.bz2',
+              os.path.join(name2dir[p], 'InstallArea')], cwd=workdir)
 
         log.info('testing (in background) %s', name2dir[p])
-        jobs.append(Popen(test_cmd, cwd=name2dir[p]))
+        jobs.append(Popen(test_cmd, cwd=workdir))
 
     log.info('waiting for tests still running...')
     for j in jobs:
