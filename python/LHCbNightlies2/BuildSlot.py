@@ -181,3 +181,4 @@ def main():
         j.wait()
 
     log.info('build completed in %s', datetime.now() - starttime)
+    return 0

@@ -201,3 +201,4 @@ class Script(LbUtils.Script.PlainScript):
                   p.projectDir], cwd=build_dir)
 
         log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
+        return 0
