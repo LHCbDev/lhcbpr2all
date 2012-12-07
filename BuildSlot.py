@@ -133,6 +133,7 @@ if __name__ == '__main__':
     def getDeps(projs):
         for p in projs:
             return getDeps(deps[p]) + [p]
+        return []
     sortedProjs = []
     for p in getDeps(deps):
         if p not in sortedProjs:
