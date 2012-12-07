@@ -54,6 +54,28 @@ def parseConfigFile(path):
     import json
     return json.load(open(path))
 
+def sortedByDeps(deps):
+    '''
+    Take a dictionary of dependencies as {'depender': ['dependee', ...]} and
+    return the list of keys sorted according to their dependencies so that
+    that a key comes after its dependencies.
+
+    >>> sortedByDeps({'4': ['2', '3'], '3': ['1'], '2': ['1'], '1': ['0'], '0': []})
+    ['0', '1', '3', '2', '4']
+    '''
+    def unique(l):
+        u = []
+        for i in l:
+            if i not in u:
+                u.append(i)
+        return u
+    def recurse(keys):
+        result = []
+        for k in keys:
+            result.extend(recurse(deps[k]))
+            result.append(k)
+        return unique(result)
+    return recurse(deps)
 
 def main():
     from optparse import OptionParser
@@ -135,18 +157,9 @@ def main():
                                       'build_dir': build_dir, 'site': gethostname(),
                                       'Model': opts.model}))
 
-    # sort projects by deps
-    def getDeps(projs):
-        for p in projs:
-            return getDeps(deps[p]) + [p]
-        return []
-    sortedProjs = []
-    for p in getDeps(deps):
-        if p not in sortedProjs:
-            sortedProjs.append(p)
 
     jobs = []
-    for p in sortedProjs:
+    for p in sortedByDeps(deps):
         call(['ctest', '-VV', '-DSTEP=BUILD', '-S', 'CTestScript.cmake'],
              cwd=name2dir[p])
         jobs.append(Popen(['ctest', '-DSTEP=TEST', '-S', 'CTestScript.cmake'],
