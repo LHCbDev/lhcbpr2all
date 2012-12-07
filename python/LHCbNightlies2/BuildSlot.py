@@ -100,13 +100,17 @@ def main():
                         level=logging.INFO)
 
     opts, args = parser.parse_args()
-    logging.basicConfig(level=opts.level)
+    logging.basicConfig(level=opts.level,
+                        format='%(asctime)s:' + logging.BASIC_FORMAT)
 
     if len(args) != 1:
         parser.error('wrong number of arguments')
 
     from os.path import join, dirname
     config = parseConfigFile(args[0])
+
+    from datetime import datetime
+    starttime = datetime.now()
 
     build_dir = join(os.getcwd(), 'build')
     sources_dir = join(os.getcwd(), 'sources')
@@ -165,7 +169,15 @@ def main():
             build_cmd.insert(1, '-VV')
         if opts.level <= logging.DEBUG:
             test_cmd.insert(1, '-VV')
+
+        log.info('building %s', name2dir[p])
         call(build_cmd, cwd=name2dir[p])
+
+        log.info('testing (in background) %s', name2dir[p])
         jobs.append(Popen(test_cmd, cwd=name2dir[p]))
+
+    log.info('waiting for tests still running...')
     for j in jobs:
         j.wait()
+
+    log.info('build completed in %s', datetime.now() - starttime)

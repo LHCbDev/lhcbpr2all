@@ -134,7 +134,8 @@ def parseConfigFile(path):
 def main():
     from os.path import join
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s:' + logging.BASIC_FORMAT)
 
     if len(sys.argv) != 2 or '-h' in sys.argv:
         print "Usage: %s config.json" % sys.argv[0]
@@ -144,6 +145,9 @@ def main():
 
     build_dir = join(os.getcwd(), 'build')
     sources_dir = join(os.getcwd(), 'sources')
+
+    from datetime import datetime
+    starttime = datetime.now()
 
     log.info('Cleaning directories.')
     if os.path.exists(build_dir):
@@ -162,4 +166,4 @@ def main():
         call(['tar', 'cjf', join(sources_dir, p.name + '.src.tar.bz2'),
               p.projectDir], cwd=build_dir)
 
-    log.info('Sources ready for build.')
+    log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
