@@ -160,9 +160,13 @@ def main():
 
     jobs = []
     for p in sortedByDeps(deps):
-        call(['ctest', '-VV', '-DSTEP=BUILD', '-S', 'CTestScript.cmake'],
-             cwd=name2dir[p])
-        jobs.append(Popen(['ctest', '-DSTEP=TEST', '-S', 'CTestScript.cmake'],
-                          cwd=name2dir[p]))
+        build_cmd = ['ctest', '-DSTEP=BUILD', '-S', 'CTestScript.cmake']
+        test_cmd =  ['ctest', '-DSTEP=TESTD', '-S', 'CTestScript.cmake']
+        if opts.level <= logging.INFO:
+            build_cmd.insert(1, '-VV')
+        if opts.level <= logging.DEBUG:
+            test_cmd.insert(1, '-VV')
+        call(build_cmd, cwd=name2dir[p])
+        jobs.append(Popen(test_cmd, cwd=name2dir[p]))
     for j in jobs:
         j.wait()
