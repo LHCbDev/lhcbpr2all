@@ -154,23 +154,10 @@ class Script(LbUtils.Script.PlainScript):
     '''
     __usage__ = '%prog [options] <config.json>'
     __version__ = ''
-    def defineOpts(self):
-        """ User options """
-        self.parser.add_option('-d', '--debug',
-                               action='store_const', dest='level',
-                               const=logging.DEBUG,
-                               help='print debug informations.')
-        self.parser.add_option('-q', '--quiet',
-                               action='store_const', dest='level',
-                               const=logging.WARNING,
-                               help='be less verbose.')
 
     def main(self):
         """ User code place holder """
         from os.path import join
-
-        logging.basicConfig(level=self.opts.level,
-                            format='%(asctime)s:' + logging.BASIC_FORMAT)
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -183,22 +170,22 @@ class Script(LbUtils.Script.PlainScript):
         from datetime import datetime
         starttime = datetime.now()
 
-        log.info('Cleaning directories.')
+        self.log.info('Cleaning directories.')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
         if os.path.exists(sources_dir):
             shutil.rmtree(sources_dir)
 
-        log.info('Checking out projects.')
+        self.log.info('Checking out projects.')
         os.makedirs(build_dir)
         os.makedirs(sources_dir)
 
         slot.checkout(build_dir)
 
         for p in slot.projects:
-            log.info('Packing %s %s...', p.name, p.version)
+            self.log.info('Packing %s %s...', p.name, p.version)
             call(['tar', 'cjf', join(sources_dir, p.name + '.src.tar.bz2'),
                   p.projectDir], cwd=build_dir)
 
-        log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
+        self.log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
         return 0
