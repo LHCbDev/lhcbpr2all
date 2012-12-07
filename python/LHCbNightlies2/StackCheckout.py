@@ -159,6 +159,8 @@ class Script(LbUtils.Script.PlainScript):
         """ User code place holder """
         from os.path import join
 
+        self.log = logging.getLogger(self.__class__.__name__)
+
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 

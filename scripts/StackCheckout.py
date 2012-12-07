@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import LbUtils.Log
-import logging
-LbUtils.Log._default_log_format = '%(asctime)s:' + logging.BASIC_FORMAT
+LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
 from LHCbNightlies2.StackCheckout import Script
 import sys
