@@ -152,6 +152,7 @@ def main():
         name2dir[n] = projdir
         deps[n] = p[u'dependencies']
 
+        shutil.copyfile(args[0], join(projdir, 'SlotConfig.json'))
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
         write(join(projdir, 'CTestConfig.cmake'),
               ctestConfig.substitute(config))

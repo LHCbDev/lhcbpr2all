@@ -11,7 +11,8 @@ endif()
 # CTest-specific configuration
 set(CTEST_SITE "${site}")
 set(CTEST_BUILD_NAME "$${config}")
-set(CTEST_NOTES_FILES "$${CTEST_SCRIPT_DIRECTORY}/SlotConfig.cmake")
+set(CTEST_NOTES_FILES "$${CTEST_SCRIPT_DIRECTORY}/SlotConfig.json"
+                      "$${CTEST_SCRIPT_DIRECTORY}/SlotConfig.cmake")
 
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_PROJECT_NAME "$${slot}")
