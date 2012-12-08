@@ -97,7 +97,7 @@ def main():
     parser.add_option('--timeout',
                       metavar='SECONDS',
                       action='store', type='string',
-                      help='Set a global timeout on all tests (default: 600).')
+                      help='set a global timeout on all tests (default: 600)')
 
 
     parser.set_defaults(model=models[0],
