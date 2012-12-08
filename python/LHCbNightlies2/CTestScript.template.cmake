@@ -33,9 +33,6 @@ set(CTEST_CONFIGURE_COMMAND "$${CTEST_CONFIGURE_COMMAND} -DCMAKE_USE_DISTCC=TRUE
 
 set(CTEST_BUILD_COMMAND "make -j 8 -k")
 
-# use a timeout of 5h as long as we have one CTest test per subdir
-set(CTEST_TESTING_TIMEOUT 18000)
-
 ##########################
 # Start the session
 ctest_start(${Model})
@@ -46,11 +43,9 @@ set_property(GLOBAL PROPERTY Label "${project} ${version}")
 if(NOT STEP STREQUAL TEST)
   ##ctest_update()
   ctest_configure()
+  ctest_build()
   ctest_submit(FILES "${build_dir}/Project.xml")
-  ctest_submit(PARTS Update Notes Configure)
-
-  ctest_build(APPEND)
-  ctest_submit(PARTS Build)
+  ctest_submit(PARTS Update Notes Configure Build)
   execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake)
 endif()
 

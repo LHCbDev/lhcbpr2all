@@ -94,10 +94,15 @@ def main():
                       action='store_const', dest='level',
                       const=logging.WARNING,
                       help='be less verbose.')
+    parser.add_option('--timeout',
+                      metavar='SECONDS',
+                      action='store', type='string',
+                      help='Set a global timeout on all tests (default: 600).')
 
 
     parser.set_defaults(model=models[0],
-                        level=logging.INFO)
+                        level=logging.INFO,
+                        timeout='600')
 
     opts, args = parser.parse_args()
     logging.basicConfig(level=opts.level,
@@ -166,8 +171,8 @@ def main():
 
     jobs = []
     for p in sortedByDeps(deps):
-        build_cmd = ['ctest', '-DSTEP=BUILD', '-S', 'CTestScript.cmake']
-        test_cmd =  ['ctest', '-DSTEP=TEST', '-S', 'CTestScript.cmake']
+        build_cmd = ['ctest', '-DSTEP=BUILD', '--timeout', opts.timeout, '-S', 'CTestScript.cmake']
+        test_cmd =  ['ctest', '-DSTEP=TEST', '--timeout', opts.timeout, '-S', 'CTestScript.cmake']
         if opts.level <= logging.INFO:
             build_cmd.insert(1, '-VV')
         if opts.level <= logging.DEBUG:
