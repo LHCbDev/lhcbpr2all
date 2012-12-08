@@ -9,6 +9,7 @@ import logging
 import shutil
 import os
 import subprocess
+from datetime import date
 
 log = logging.getLogger(__name__)
 
@@ -97,7 +98,8 @@ class StackDesc(object):
     '''
     Class describing a software stack.
     '''
-    def __init__(self, projects=None):
+    def __init__(self, projects=None, name=None):
+        self.name = name
         self.projects = projects if projects else []
 
     def checkout(self, rootdir='.'):
@@ -129,7 +131,7 @@ def parseConfigFile(path):
         projects.append(ProjectDesc(p[u'name'], p[u'version'],
                                     overrides=p.get(u'overrides', {}),
                                     checkout=checkout))
-    return StackDesc(projects)
+    return StackDesc(projects=projects, name=data.get(u'slot', None))
 
 
 import LbUtils.Script
@@ -182,9 +184,15 @@ class Script(LbUtils.Script.PlainScript):
 
         slot.checkout(build_dir)
 
+        timestamp = date.today().isoformat()
         for p in slot.projects:
             self.log.info('Packing %s %s...', p.name, p.version)
-            call(['tar', 'cjf', join(sources_dir, p.name + '.src.tar.bz2'),
+            packname = [p.name, p.version]
+            if slot.name:
+                packname.append(slot.name)
+            packname.append(timestamp)
+            packname.append('src.tar.bz2')
+            call(['tar', 'cjf', join(sources_dir, '.'.join(packname)),
                   p.projectDir], cwd=build_dir)
 
         self.log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
