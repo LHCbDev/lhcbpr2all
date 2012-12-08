@@ -172,7 +172,7 @@ def main():
     ctestScript = Template(open(join(dirname(__file__), 'CTestScript.template.cmake')).read())
 
     projects = dict([(p.name, p) for p in map(ProjDesc, config[u'projects'])])
-    deps = dict([(p.name, p.deps) for p in projects])
+    deps = dict([(p.name, p.deps) for p in projects.values()])
     timestamp = date.today().isoformat()
     jobs = []
     for p in sortedByDeps(deps):
