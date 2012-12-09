@@ -49,6 +49,7 @@ if(NOT STEP STREQUAL TEST)
     ctest_submit(PARTS Update Notes Configure Build)
   endif()
   execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake)
+  execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
 endif()
 
 if(NOT STEP STREQUAL BUILD)
@@ -60,6 +61,6 @@ if(NOT STEP STREQUAL BUILD)
   file(MAKE_DIRECTORY ${build_dir}/summaries/${project})
   file(COPY $${CTEST_BINARY_DIRECTORY}/test_results
        DESTINATION ${build_dir}/summaries/${project})
-  execute_process(COMMAND "make QMTestSummary" WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
+  execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
                   OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
 endif()
