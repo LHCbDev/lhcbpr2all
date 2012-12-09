@@ -56,4 +56,10 @@ if(NOT STEP STREQUAL BUILD)
   if(NOT NO_SUBMIT)
     ctest_submit(PARTS Test)
   endif()
+  # Create the QMTest summaries and reports
+  file(MAKE_DIRECTORY ${build_dir}/summaries/${project})
+  file(COPY $${CTEST_BINARY_DIRECTORY}/test_results
+       DESTINATION ${build_dir}/summaries/${project})
+  execute_process(COMMAND "make QMTestSummary" WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
+                  OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
 endif()
