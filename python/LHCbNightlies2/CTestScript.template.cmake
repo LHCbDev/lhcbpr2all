@@ -32,9 +32,9 @@ set(CTEST_CONFIGURE_COMMAND "$${CMAKE_COMMAND} -DCMAKE_TOOLCHAIN_FILE=$${CTEST_S
 set(CTEST_CONFIGURE_COMMAND "$${CTEST_CONFIGURE_COMMAND} -DCMAKE_USE_DISTCC=TRUE $${CTEST_SCRIPT_DIRECTORY}")
 
 if(JOBS)
-  set(JOBS "-j${JOBS}")
+  set(JOBS "-j$${JOBS}")
 endif()
-set(CTEST_BUILD_COMMAND "make ${JOBS} -k")
+set(CTEST_BUILD_COMMAND "make $${JOBS} -k")
 
 ##########################
 # Start the session
