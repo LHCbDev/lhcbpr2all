@@ -121,10 +121,14 @@ def main():
     parser.add_option('--no-submit',
                       action='store_true',
                       help='do not submit the results to CDash server')
+    parser.add_option('-j', '--jobs',
+                      action='store',
+                      help='number of parallel jobs to use during the build (default: sequential build)')
 
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
-                        timeout='600')
+                        timeout='600',
+                        jobs='1')
 
     opts, args = parser.parse_args()
     logging.basicConfig(level=opts.level,
@@ -188,12 +192,14 @@ def main():
                                       'build_dir': build_dir, 'site': gethostname(),
                                       'Model': opts.model}))
 
-        build_cmd = ['ctest', '-DSTEP=BUILD', '--timeout', opts.timeout, '-S', 'CTestScript.cmake']
-        test_cmd =  ['ctest', '-DSTEP=TEST', '--timeout', opts.timeout, '-S', 'CTestScript.cmake']
-
+        cmd = ['ctest', '--timeout', opts.timeout]
+        if opts.jobs != '1':
+            cmd.append('-DJOBS=' + opts.jobs)
         if opts.no_submit:
-            build_cmd.insert(1, '-DNO_SUBMIT=TRUE')
-            test_cmd.insert(1, '-DNO_SUBMIT=TRUE')
+            cmd.append('-DNO_SUBMIT=TRUE')
+
+        build_cmd = cmd + ['-DSTEP=BUILD', '-S', 'CTestScript.cmake']
+        test_cmd = cmd + ['-DSTEP=TEST', '-S', 'CTestScript.cmake']
 
         if opts.level <= logging.INFO:
             build_cmd.insert(1, '-VV')
