@@ -82,6 +82,7 @@ class ProjectDesc(object):
         '''
         Helper function to call the checkout method.
         '''
+        log.info('checking out %s', self)
         self._checkout(self, rootdir=rootdir)
 
     @property
@@ -106,8 +107,10 @@ class StackDesc(object):
         '''
         Call check out all the projects.
         '''
+        log.info('checking out stack...')
         for p in self.projects:
             p.checkout(rootdir)
+        log.info('... done.')
 
 def specialGaudiCheckout(desc, rootdir='.'):
     dest = os.path.join(rootdir, desc.projectDir)
@@ -116,6 +119,12 @@ def specialGaudiCheckout(desc, rootdir='.'):
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
+
+def specialLHCbCheckout(desc, rootdir='.'):
+    getpack = ['getpack', '--batch', '--no-config']
+    log.debug('checking out %s', desc)
+    cmd = getpack + ['-P', desc.name, desc.version]
+    call(cmd, cwd=rootdir, retry=3)
 
 def parseConfigFile(path):
     import json
@@ -133,6 +142,68 @@ def parseConfigFile(path):
                                     checkout=checkout))
     return StackDesc(projects=projects, name=data.get(u'slot', None))
 
+def patchStack(rootdir):
+    '''
+    Take all projects/packages in a directory and fix the dependencies to make
+    a consistent set.
+    '''
+    # FIXME: this is just a test version with hardcoded data
+    # Ideally, we should automatically locate all the projects, then analyze the
+    # dependencies, check that we can find a way to make it consistent and,
+    # finally, modify the configuration files
+    import re
+    from os.path import exists, join
+    from difflib import context_diff
+
+    gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
+
+    patchfile = open(join(rootdir, 'stack.patch'), 'w')
+
+    cmakelists = join('GAUDI', 'GAUDI_HEAD', 'CMakeLists.txt')
+    if exists(join(rootdir, cmakelists)):
+        log.info('patching %s', cmakelists)
+        f = open(join(rootdir, cmakelists))
+        data = f.read()
+        f.close()
+
+        m = gp_exp.search(data)
+        args = m.group(1).split()
+        args[1] = 'HEAD' # project version
+
+        newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
+
+        f = open(join(rootdir, cmakelists), 'w')
+        f.write(newdata)
+        f.close()
+
+        patchfile.writelines(context_diff(data.splitlines(True),
+                                          newdata.splitlines(True),
+                                          fromfile=join('a', cmakelists),
+                                          tofile=join('b', cmakelists)))
+
+    cmakelists = join('LHCB', 'LHCB_v35r3', 'CMakeLists.txt')
+    if exists(join(rootdir, cmakelists)):
+        log.info('patching %s', cmakelists)
+        f = open(join(rootdir, cmakelists))
+        data = f.read()
+        f.close()
+
+        m = gp_exp.search(data)
+        args = m.group(1).split()
+        args[args.index('Gaudi')+1] = 'HEAD' # version of Gaudi
+
+        newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
+
+        f = open(join(rootdir, cmakelists), 'w')
+        f.write(newdata)
+        f.close()
+
+        patchfile.writelines(context_diff(data.splitlines(True),
+                                          newdata.splitlines(True),
+                                          fromfile=join('a', cmakelists),
+                                          tofile=join('b', cmakelists)))
+
+    patchfile.close()
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -172,21 +243,22 @@ class Script(LbUtils.Script.PlainScript):
         from datetime import datetime
         starttime = datetime.now()
 
-        self.log.info('Cleaning directories.')
+        self.log.info('cleaning directories.')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
         if os.path.exists(sources_dir):
             shutil.rmtree(sources_dir)
 
-        self.log.info('Checking out projects.')
         os.makedirs(build_dir)
         os.makedirs(sources_dir)
 
         slot.checkout(build_dir)
 
+        patchStack(build_dir)
+
         timestamp = date.today().isoformat()
         for p in slot.projects:
-            self.log.info('Packing %s %s...', p.name, p.version)
+            self.log.info('packing %s %s...', p.name, p.version)
             packname = [p.name, p.version]
             if slot.name:
                 packname.append(slot.name)
@@ -194,6 +266,8 @@ class Script(LbUtils.Script.PlainScript):
             packname.append('src.tar.bz2')
             call(['tar', 'cjf', join(sources_dir, '.'.join(packname)),
                   p.projectDir], cwd=build_dir)
+        shutil.copy(join(build_dir, 'stack.patch'),
+                    join(sources_dir, '.'.join([slot.name, timestamp, 'patch'])))
 
-        self.log.info('Sources ready for build (time taken: %s).', datetime.now() - starttime)
+        self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)
         return 0

@@ -1,6 +1,6 @@
 {"slot": "lhcb-gaudi-head",
  "projects": [{"name": "Gaudi",
-               "version": "v23r5",
+               "version": "HEAD",
                "overrides": {},
                "dependencies": [],
                "checkout": "specialGaudiCheckout"},
