@@ -14,7 +14,7 @@ class FilePathHandler(BaseHandler):
         filename = 'report.txt'
         report_path = directory + '/' + filename 
         if os.path.exists(report_path) :
-           saveString('intel_report', report_path, 'Path to Vtune generated reports', 'file')
+           self.saveString("intel_report", report_path, "Path to Vtune generated reports", "file")
            print '... reported!' 
         else:
            print 'Report file does not exist (file: ' + report_path + ')'
