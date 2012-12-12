@@ -8,6 +8,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import sys
 import subprocess
 from datetime import date
 
@@ -271,3 +272,7 @@ class Script(LbUtils.Script.PlainScript):
 
         self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)
         return 0
+
+
+if __name__ == '__main__':
+    sys.exit(Script().run())
