@@ -17,7 +17,16 @@ log = logging.getLogger(__name__)
 def call(*args, **kwargs):
     '''
     Replacement for subprocess.call() that can retry if the command fails.
-    To enable the retries, pass the keyword argument
+    To enable the retries, pass the keyword argument 'retry' setting it to the
+    number of timed to try.
+
+    For example:
+
+    >>> call(['false'], retry=3)
+    Traceback (most recent call last):
+    ...
+    RuntimeError: the command ['false'] failed 3 times
+
     '''
     if 'retry' not in kwargs:
         # no retry
@@ -62,7 +71,7 @@ class ProjectDesc(object):
     '''
     Describe a project to be checked out.
     '''
-    def __init__(self, name, version, overrides=None, checkout=defaultCheckout):
+    def __init__(self, name, version, overrides=None, checkout=None):
         '''
         @param name: name of the project
         @param version: version of the project as 'vXrY' or 'HEAD', where 'HEAD'
@@ -76,8 +85,8 @@ class ProjectDesc(object):
         if version.upper() == 'HEAD':
             version = 'HEAD'
         self.version = version
-        self.overrides = overrides if overrides else {}
-        self._checkout = checkout
+        self.overrides = overrides or {}
+        self._checkout = checkout or defaultCheckout
 
     def checkout(self, rootdir='.'):
         '''
@@ -95,14 +104,13 @@ class ProjectDesc(object):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
 
-
 class StackDesc(object):
     '''
     Class describing a software stack.
     '''
     def __init__(self, projects=None, name=None):
         self.name = name
-        self.projects = projects if projects else []
+        self.projects = projects or []
 
     def checkout(self, rootdir='.'):
         '''
