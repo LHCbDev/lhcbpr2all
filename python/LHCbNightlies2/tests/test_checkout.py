@@ -1,14 +1,23 @@
 import json
 import tempfile
 import os
+import re
+import shutil
+import nose
 
 from .. import StackCheckout
 
-def mockCheckout(self, rootdir='.'):
+def which(cmd):
     '''
-    Dummy no-op checkout function.
+    find a command in the path
     '''
-    pass
+    from os.path import join, exists
+    try:
+        return (join(d, cmd)
+                for d in os.environ['PATH'].split(os.pathsep)
+                if exists(join(d, cmd))).next()
+    except StopIteration:
+        return None
 
 class MockFunc(object):
     '''
@@ -36,6 +45,8 @@ def test_call():
 def test_ProjectDesc():
     'StackCheckout.ProjectDesc'
     ProjectDesc = StackCheckout.ProjectDesc
+
+    mockCheckout = MockFunc()
 
     p = ProjectDesc('Gaudi', 'v23r5')
     assert p.name == 'Gaudi'
@@ -155,3 +166,58 @@ def test_parseConfigFile():
         s = doCall({'projects':[{"name": "Gaudi"}]})
     except KeyError:
         pass
+
+def test_checkout():
+    'checkout functions'
+    if not which('getpack') or not which('git'):
+        raise nose.SkipTest
+
+    from os.path import exists, join
+    ProjectDesc = StackCheckout.ProjectDesc
+
+    tmpdir = tempfile.mkdtemp()
+    def check(files):
+        for f in files:
+            assert exists(join(tmpdir, f)), 'Missing %s' % f
+    try:
+        StackCheckout.defaultCheckout(ProjectDesc('Brunel', 'v44r1'), tmpdir)
+        check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+
+        StackCheckout.defaultCheckout(ProjectDesc('Brunel', 'head'), tmpdir)
+        check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+
+        shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
+        StackCheckout.defaultCheckout(ProjectDesc('Brunel', 'head',
+                                                  overrides={'GaudiObjDesc': 'head',
+                                                             'GaudiPolicy': 'v12r0',
+                                                             'Rec/Brunel': None}), tmpdir)
+        check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('BrunelSys', 'cmt', 'requirements'),
+                         ('GaudiObjDesc', 'cmt', 'requirements'),
+                         ('GaudiPolicy', 'cmt', 'requirements')]])
+        GaudiPolicy_requirements = open(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'GaudiPolicy', 'cmt', 'requirements')).read()
+        assert re.search(r'version\s+v12r0', GaudiPolicy_requirements)
+        assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements'))
+
+        StackCheckout.specialGaudiCheckout(ProjectDesc('Gaudi', 'v23r5'), tmpdir)
+        check([join('GAUDI', 'GAUDI_v23r5', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('GaudiRelease', 'cmt', 'requirements')]])
+
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
