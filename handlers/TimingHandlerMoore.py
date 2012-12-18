@@ -13,8 +13,8 @@ class TimingHandlerMoore(BaseHandler):
 
     def collectResults(self,directory):
         
-        from timing.TimingParser2 import TimingParser2
-        tp = TimingParser2(os.path.join(directory, 'run.log'))
+        from timing.TimingParser import TimingParser
+        tp = TimingParser(os.path.join(directory, 'run.log'))
 
         # Now saving all the nodes
         for node in tp.getAllSorted():
