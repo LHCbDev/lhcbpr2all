@@ -4,11 +4,8 @@ from xml.etree.ElementTree import ElementTree
 from xml.parsers.expat import ExpatError
 
 class TimingHandlerMoore(BaseHandler):
-<<<<<<< HEAD
     
-=======
       
->>>>>>> 4ed31e7700221a39b95058a76c7d6a62074817d3
     def __init__(self):
         super(self.__class__, self).__init__()
         self.finished = False
