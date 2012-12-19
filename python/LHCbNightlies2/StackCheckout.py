@@ -134,10 +134,15 @@ class StackDesc(object):
 
         # cache of the project versions
         projVersions = dict([(p.name, p.version) for p in self.projects])
+        PROJVersions = dict([(p.name.upper(), p.version) for p in self.projects])
 
         patchfile = open(join(rootdir, patchfile), 'w')
 
-        for p in self.projects:
+        def fixCMake(p):
+            '''
+            Fix the CMake configuration of a project, if it exists, and write
+            the changes in 'patchfile'.
+            '''
             cmakelists = join(p.projectDir, 'CMakeLists.txt')
 
             if exists(join(rootdir, cmakelists)):
@@ -162,7 +167,7 @@ class StackDesc(object):
                     # for each key, get the version (if available)
                     for i in range(use_idx, data_idx, 2):
                         args[i+1] = projVersions.get(args[i], args[i+1])
-
+                # FIXME: we should take into account the declared dependencies
                 newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
 
                 f = open(join(rootdir, cmakelists), 'w')
@@ -173,6 +178,67 @@ class StackDesc(object):
                                               newdata.splitlines(True),
                                               fromfile=join('a', cmakelists),
                                               tofile=join('b', cmakelists)))
+
+        def fixCMT(p):
+            '''
+            Fix the CMT configuration of a project, if it exists, and write
+            the changes in 'patchfile'.
+            '''
+            project_cmt = join(p.projectDir, 'cmt', 'project.cmt')
+
+            if exists(join(rootdir, project_cmt)):
+                log.info('patching %s', project_cmt)
+                f = open(join(rootdir, project_cmt))
+                data = f.readlines()
+                f.close()
+
+                newdata = []
+                for l in data:
+                    n = l.strip().split()
+                    if len(n) == 3 and n[0] == 'use':
+                        if n[1] in PROJVersions:
+                            n[2] = n[1] + '_' + PROJVersions[n[1]]
+                            l = ' '.join(n) + '\n'
+                    newdata.append(l)
+
+                f = open(join(rootdir, project_cmt), 'w')
+                f.writelines(newdata)
+                f.close()
+
+                patchfile.writelines(context_diff(data, newdata,
+                                                  fromfile=join('a', project_cmt),
+                                                  tofile=join('b', project_cmt)))
+
+            # find the container package
+            requirements = join(p.projectDir, p.name + 'Release', 'cmt', 'requirements')
+            if not exists(join(rootdir, requirements)):
+                requirements = join(p.projectDir, p.name + 'Sys', 'cmt', 'requirements')
+
+            if exists(join(rootdir, requirements)):
+                log.info('patching %s', requirements)
+                f = open(join(rootdir, requirements))
+                data = f.readlines()
+                f.close()
+
+                newdata = []
+                for l in data:
+                    n = l.strip().split()
+                    if len(n) >= 3 and n[0] == 'use':
+                        n[2] = '*'
+                        l = ' '.join(n) + '\n'
+                    newdata.append(l)
+
+                f = open(join(rootdir, requirements), 'w')
+                f.writelines(newdata)
+                f.close()
+
+                patchfile.writelines(context_diff(data, newdata,
+                                                  fromfile=join('a', requirements),
+                                                  tofile=join('b', requirements)))
+
+        for p in self.projects:
+            fixCMake(p)
+            fixCMT(p)
 
         patchfile.close()
 
