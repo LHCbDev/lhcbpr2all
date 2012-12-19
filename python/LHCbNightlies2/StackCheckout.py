@@ -121,6 +121,62 @@ class StackDesc(object):
             p.checkout(rootdir)
         log.info('... done.')
 
+    def patch(self, rootdir='.', patchfile='stack.patch'):
+        '''
+        Take all projects/packages in the stack and fix the dependencies to make
+        a consistent set.
+        '''
+        import re
+        from os.path import exists, join
+        from difflib import context_diff
+
+        gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
+
+        # cache of the project versions
+        projVersions = dict([(p.name, p.version) for p in self.projects])
+
+        patchfile = open(join(rootdir, patchfile), 'w')
+
+        for p in self.projects:
+            cmakelists = join(p.projectDir, 'CMakeLists.txt')
+
+            if exists(join(rootdir, cmakelists)):
+                log.info('patching %s', cmakelists)
+                f = open(join(rootdir, cmakelists))
+                data = f.read()
+                f.close()
+
+                # find the project declaration call
+                m = gp_exp.search(data)
+                args = m.group(1).split()
+                args[1] = p.version # the project version is always the second
+
+                # fix the dependencies
+                if 'USE' in args:
+                    # look for the indexes of the range 'USE' ... 'DATA'
+                    use_idx = args.index('USE') + 1
+                    if 'DATA' in args:
+                        data_idx = args.index('DATA')
+                    else:
+                        data_idx = len(args)
+                    # for each key, get the version (if available)
+                    for i in range(use_idx, data_idx, 2):
+                        args[i+1] = projVersions.get(args[i], args[i+1])
+
+                newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
+
+                f = open(join(rootdir, cmakelists), 'w')
+                f.write(newdata)
+                f.close()
+
+            patchfile.writelines(context_diff(data.splitlines(True),
+                                              newdata.splitlines(True),
+                                              fromfile=join('a', cmakelists),
+                                              tofile=join('b', cmakelists)))
+
+        patchfile.close()
+
+
 def specialGaudiCheckout(desc, rootdir='.'):
     dest = os.path.join(rootdir, desc.projectDir)
     call(['git', 'clone', '-b', 'dev/cmake',
@@ -150,69 +206,6 @@ def parseConfigFile(path):
                                     overrides=p.get(u'overrides', {}),
                                     checkout=checkout))
     return StackDesc(projects=projects, name=data.get(u'slot', None))
-
-def patchStack(rootdir):
-    '''
-    Take all projects/packages in a directory and fix the dependencies to make
-    a consistent set.
-    '''
-    # FIXME: this is just a test version with hardcoded data
-    # Ideally, we should automatically locate all the projects, then analyze the
-    # dependencies, check that we can find a way to make it consistent and,
-    # finally, modify the configuration files
-    import re
-    from os.path import exists, join
-    from difflib import context_diff
-
-    gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
-
-    patchfile = open(join(rootdir, 'stack.patch'), 'w')
-
-    cmakelists = join('GAUDI', 'GAUDI_HEAD', 'CMakeLists.txt')
-    if exists(join(rootdir, cmakelists)):
-        log.info('patching %s', cmakelists)
-        f = open(join(rootdir, cmakelists))
-        data = f.read()
-        f.close()
-
-        m = gp_exp.search(data)
-        args = m.group(1).split()
-        args[1] = 'HEAD' # project version
-
-        newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
-
-        f = open(join(rootdir, cmakelists), 'w')
-        f.write(newdata)
-        f.close()
-
-        patchfile.writelines(context_diff(data.splitlines(True),
-                                          newdata.splitlines(True),
-                                          fromfile=join('a', cmakelists),
-                                          tofile=join('b', cmakelists)))
-
-    cmakelists = join('LHCB', 'LHCB_v35r3', 'CMakeLists.txt')
-    if exists(join(rootdir, cmakelists)):
-        log.info('patching %s', cmakelists)
-        f = open(join(rootdir, cmakelists))
-        data = f.read()
-        f.close()
-
-        m = gp_exp.search(data)
-        args = m.group(1).split()
-        args[args.index('Gaudi')+1] = 'HEAD' # version of Gaudi
-
-        newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
-
-        f = open(join(rootdir, cmakelists), 'w')
-        f.write(newdata)
-        f.close()
-
-        patchfile.writelines(context_diff(data.splitlines(True),
-                                          newdata.splitlines(True),
-                                          fromfile=join('a', cmakelists),
-                                          tofile=join('b', cmakelists)))
-
-    patchfile.close()
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -252,6 +245,8 @@ class Script(LbUtils.Script.PlainScript):
         from datetime import datetime
         starttime = datetime.now()
 
+        timestamp = date.today().isoformat()
+
         self.log.info('cleaning directories.')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
@@ -263,9 +258,9 @@ class Script(LbUtils.Script.PlainScript):
 
         slot.checkout(build_dir)
 
-        patchStack(build_dir)
+        slot.patch(build_dir,
+                   join(sources_dir, '.'.join([slot.name, timestamp, 'patch'])))
 
-        timestamp = date.today().isoformat()
         for p in slot.projects:
             self.log.info('packing %s %s...', p.name, p.version)
             packname = [p.name, p.version]
@@ -275,8 +270,6 @@ class Script(LbUtils.Script.PlainScript):
             packname.append('src.tar.bz2')
             call(['tar', 'cjf', join(sources_dir, '.'.join(packname)),
                   p.projectDir], cwd=build_dir)
-        shutil.copy(join(build_dir, 'stack.patch'),
-                    join(sources_dir, '.'.join([slot.name, timestamp, 'patch'])))
 
         self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)
         return 0
