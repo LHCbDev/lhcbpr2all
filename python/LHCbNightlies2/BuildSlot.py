@@ -124,6 +124,10 @@ def main():
     parser.add_option('-j', '--jobs',
                       action='store',
                       help='number of parallel jobs to use during the build (default: sequential build)')
+    parser.add_option('-C',
+                      dest='initial_cache',
+                      action='store',
+                      help='script to pre-load the CMake cache')
 
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
@@ -136,6 +140,9 @@ def main():
 
     if len(args) != 1:
         parser.error('wrong number of arguments')
+
+    if opts.initial_cache and not os.path.exists(opts.initial_cache):
+        parser.error('cannot find initial cache script %s' % opts.initial_cache)
 
     from os.path import join, dirname
     config = parseConfigFile(args[0])
@@ -185,6 +192,8 @@ def main():
 
         shutil.copyfile(args[0], join(projdir, 'SlotConfig.json'))
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
+        if opts.initial_cache:
+            shutil.copyfile(opts.initial_cache, join(projdir, 'cache_preload.cmake'))
         write(join(projdir, 'CTestConfig.cmake'),
               ctestConfig.substitute(config))
         write(join(projdir, 'CTestScript.cmake'),
