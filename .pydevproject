@@ -8,8 +8,5 @@
 <path>/LHCbCMakeNightly/python</path>
 <path>/LHCbCMakeNightly/scripts</path>
 </pydev_pathproperty>
-<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
-<path>/afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/python</path>
-<path>/afs/cern.ch/sw/lcg/external/pytools/1.7p1_python2.6/x86_64-slc5-gcc46-opt/lib/python2.6/site-packages</path>
-</pydev_pathproperty>
+
 </pydev_project>

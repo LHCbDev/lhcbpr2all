@@ -4,31 +4,13 @@ import os
 import re
 import shutil
 import nose
+from _utils import *
+
+# Uncomment to disable the tests.
+#__test__ = False
 
 from .. import StackCheckout
 
-def which(cmd):
-    '''
-    find a command in the path
-    '''
-    from os.path import join, exists
-    try:
-        return (join(d, cmd)
-                for d in os.environ['PATH'].split(os.pathsep)
-                if exists(join(d, cmd))).next()
-    except StopIteration:
-        return None
-
-class MockFunc(object):
-    '''
-    Helper class to record the arguments a callback is called with.
-    '''
-    def __init__(self):
-        self.args = None
-        self.kwargs = None
-    def __call__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
 
 def test_call():
     'StackCheckout.call()'
@@ -117,16 +99,7 @@ def test_StackDesc():
 def test_parseConfigFile():
     'StackCheckout.parseConfigFile()'
 
-    def doCall(data):
-        'helper function'
-        fd, path = tempfile.mkstemp()
-        f = os.fdopen(fd, 'w')
-        try:
-            json.dump(data, f)
-            f.close()
-            return StackCheckout.parseConfigFile(path)
-        finally:
-            os.remove(path)
+    doCall = lambda data: processFile(json.dumps(data), StackCheckout.parseConfigFile)
 
     StackCheckout.specialCheckoutFunction = MockFunc()
 

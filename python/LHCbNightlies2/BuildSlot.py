@@ -15,19 +15,22 @@ from datetime import date
 
 log = logging.getLogger(__name__)
 
-def genProjectXml(config):
-    projects = dict([(p[u'name'], p) for p in config[u'projects']])
-    vers = lambda n: projects[n][u'version']
+def genProjectXml(name, projects):
+    '''
+    Take a list of ProjDesc instances and return the XML string usable to
+    configure subprojects in CDash.
+    '''
+    versions = dict([(p.name, str(p)) for p in projects])
 
-    xml = ['<Project name="{0}">'.format(config[u'slot'])]
+    xml = [u'<Project name="{0}">'.format(name)]
     for p in projects:
-        xml.append('  <SubProject name="{0} {1}">'.format(p, vers(p)))
-        for d in projects[p][u'dependencies']:
-            xml.append('    <Dependency name="{0} {1}"/>'.format(d, vers(d)))
-        xml.append('  </SubProject>')
-    xml.append('</Project>\n')
+        xml.append(u'  <SubProject name="{0}">'.format(p))
+        for d in p.deps:
+            xml.append(u'    <Dependency name="{0}"/>'.format(versions[d]))
+        xml.append(u'  </SubProject>')
+    xml.append(u'</Project>\n')
 
-    return '\n'.join(xml)
+    return u'\n'.join(xml)
 
 def genSlotConfig(config):
     projects = config[u'projects']
@@ -61,6 +64,8 @@ class ProjDesc():
         self.deps = desc_dict.get(u'dependencies', [])
         self.dir = os.path.join(self.name.upper(),
                                 '{0}_{1}'.format(self.name.upper(), self.version))
+    def __str__(self):
+        return '{0} {1}'.format(self.name, self.version)
 
 def sortedByDeps(deps):
     '''
@@ -164,7 +169,7 @@ def main():
                 call(['tar', 'xf', f], cwd=build_dir)
 
     log.info("Generating CTest scripts and configurations.")
-    open(join(build_dir, 'Project.xml'), 'w').write(genProjectXml(config))
+    timestamp = date.today().isoformat()
 
     def write(path, data):
         f = open(path, 'w')
@@ -183,10 +188,13 @@ def main():
 
     projects = dict([(p.name, p) for p in map(ProjDesc, config[u'projects'])])
     deps = dict([(p.name, p.deps) for p in projects.values()])
-    timestamp = date.today().isoformat()
+    sorted_projects = [projects[p] for p in sortedByDeps(deps)]
+
+    write(join(build_dir, 'Project.xml'),
+          genProjectXml(config[u'slot'], sorted_projects))
+
     jobs = []
-    for p in sortedByDeps(deps):
-        p = projects[p]
+    for p in sorted_projects:
         projdir = join(build_dir, p.dir)
 
         shutil.copyfile(args[0], join(projdir, 'SlotConfig.json'))
