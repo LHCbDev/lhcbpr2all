@@ -174,10 +174,10 @@ class StackDesc(object):
                 f.write(newdata)
                 f.close()
 
-            patchfile.writelines(context_diff(data.splitlines(True),
-                                              newdata.splitlines(True),
-                                              fromfile=join('a', cmakelists),
-                                              tofile=join('b', cmakelists)))
+                patchfile.writelines(context_diff(data.splitlines(True),
+                                                  newdata.splitlines(True),
+                                                  fromfile=join('a', cmakelists),
+                                                  tofile=join('b', cmakelists)))
 
         def fixCMT(p):
             '''
