@@ -197,6 +197,11 @@ def main():
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
 
+        # ignore missing directories (the project may not have been checked out)
+        if not os.path.exists(projdir):
+            log.warning('no sources for %s, skip build', p)
+            continue
+
         shutil.copyfile(args[0], join(projdir, 'SlotConfig.json'))
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
         if cache_preload:

@@ -191,6 +191,10 @@ def test_checkout():
                          ('cmt', 'project.cmt'),
                          ('GaudiRelease', 'cmt', 'requirements')]])
 
+        shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r5'), ignore_errors=True)
+        StackCheckout.noCheckout(ProjectDesc('Gaudi', 'v23r5'), tmpdir)
+        assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r5'))
+
+
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
-

@@ -67,6 +67,14 @@ def defaultCheckout(desc, rootdir='.'):
 
     log.debug('checkout of %s completed in %s', desc, prjroot)
 
+def noCheckout(desc, rootdir='.'):
+    '''
+    Special checkout function used to just declare a project version in the
+    configuration but do not perform the checkout, so that it's picked up from
+    the release area.
+    '''
+    log.info('checkout not requested for %s', desc)
+
 class ProjectDesc(object):
     '''
     Describe a project to be checked out.
@@ -328,6 +336,11 @@ class Script(LbUtils.Script.PlainScript):
                    join(sources_dir, '.'.join([slot.name, timestamp, 'patch'])))
 
         for p in slot.projects:
+            # ignore missing directories (the project may not have been checked out)
+            if not os.path.exists(join(build_dir, p.projectDir)):
+                self.log.warning('no sources for %s, skip packing', p)
+                continue
+
             self.log.info('packing %s %s...', p.name, p.version)
             packname = [p.name, p.version]
             if slot.name:
