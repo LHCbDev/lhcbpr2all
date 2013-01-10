@@ -6,6 +6,7 @@ building a slot.
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
+import logging
 
 from datetime import datetime, timedelta
 from time import sleep
@@ -22,6 +23,8 @@ def waitForFile(path, timeout=timedelta(hours=20), maxAge=None):
     '''
     path = os.path.expanduser(path)
     path = os.path.expandvars(path)
+
+    logging.debug('waiting for file %s', path)
 
     def fileTime(path):
         '''helper to return the datetime of last modification of a file'''
@@ -74,6 +77,9 @@ class Script(LbUtils.Script.PlainScript):
             self.parser.error('wrong number of arguments')
 
         preconds = parseConfigFile(self.args[0])
+
+        from _utils import setDayNamesEnv
+        setDayNamesEnv()
 
         starttime = datetime.now()
         for precond in preconds:

@@ -145,6 +145,9 @@ def main():
     from os.path import join, dirname
     config = parseConfigFile(args[0])
 
+    from _utils import setDayNamesEnv
+    setDayNamesEnv()
+
     # FIXME: we need something better
     platform = os.environ['CMTCONFIG']
 
@@ -192,6 +195,11 @@ def main():
 
     write(join(build_dir, 'Project.xml'),
           genProjectXml(config[u'slot'], sorted_projects))
+
+    # prepare special environment, if needed
+    for e in config.get(u'env', []):
+        n, v = e.split('=', 1)
+        os.environ[n] = os.path.expandvars(v)
 
     jobs = []
     for p in sorted_projects:
