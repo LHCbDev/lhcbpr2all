@@ -206,6 +206,9 @@ class StackDesc(object):
                     if len(n) == 3 and n[0] == 'use':
                         if n[1] in PROJVersions:
                             n[2] = n[1] + '_' + PROJVersions[n[1]]
+                            # special case
+                            if n[2] == 'LCGCMT_preview':
+                                n[2] = 'LCGCMT-preview'
                             l = ' '.join(n) + '\n'
                     newdata.append(l)
 
