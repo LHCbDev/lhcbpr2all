@@ -40,6 +40,20 @@ if(JOBS)
 endif()
 set(CTEST_BUILD_COMMAND "make $${JOBS} -k")
 
+if(USE_CMT)
+  # Builds driven by CMT need special settings
+  set(CTEST_BINARY_DIRECTORY "$${CTEST_SOURCE_DIRECTORY}")
+  set(CTEST_CONFIGURE_COMMAND "no config step in CMT-based build")
+  set(CTEST_BUILD_COMMAND "make $${JOBS} -k Package_failure_policy=ignore logging=enabled")
+  # guess the container: it can be *Release (Gaudi) or *Sys (LHCb projects)
+  if (EXISTS "${project}Release")
+    set(CMT_CONTAINER_PACKAGE "${project}Release")
+  else()
+    set(CMT_CONTAINER_PACKAGE "${project}Sys")
+  endif()
+  set(ENV{GAUDI_QMTEST_HTML_OUTPUT} "$${CTEST_BINARY_DIRECTORY}/test_results")
+endif()
+
 ##########################
 # Start the session
 ctest_start(${Model})
@@ -55,19 +69,36 @@ if(NOT STEP STREQUAL TEST)
     ctest_submit(FILES "${build_dir}/Project.xml")
     ctest_submit(PARTS Update Notes Configure Build)
   endif()
-  execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake)
-  execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
+  if(NOT USE_CMT)
+    execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake)
+    execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
+  endif()
 endif()
 
 if(NOT STEP STREQUAL BUILD)
-  ctest_test() # it seems there is no need for APPEND here
-  if(NOT NO_SUBMIT)
-    ctest_submit(PARTS Test)
-  endif()
-  # Create the QMTest summaries and reports
+  # Create directory for QMTest summaries and reports
   file(MAKE_DIRECTORY ${build_dir}/summaries/${project})
+
+  if(NOT USE_CMT)
+    ctest_test() # it seems there is no need for APPEND here
+    if(NOT NO_SUBMIT)
+      ctest_submit(PARTS Test)
+    endif()
+    # produce plain text summary of QMTest tests
+    execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
+                    OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
+  else()
+    # CMT requires special commands for the tests.
+    set(ENV{PWD} "$${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt")
+    file(MAKE_DIRECTORY $${CTEST_BINARY_DIRECTORY}/test_results)
+    execute_process(COMMAND cmt br - cmt TestPackage
+                    WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt)
+    execute_process(COMMAND cmt qmtest_summarize
+                    WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt
+                    OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
+  endif()
+
+  # copy the QMTest HTML output
   file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
        DESTINATION ${build_dir}/summaries/${project}/html/.)
-  execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
-                  OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
 endif()

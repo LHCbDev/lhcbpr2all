@@ -219,6 +219,9 @@ def main():
         if opts.no_submit:
             cmd.append('-DNO_SUBMIT=TRUE')
 
+        if config.get(u'USE_CMT'):
+            cmd.append('-DUSE_CMT=TRUE')
+
         build_cmd = cmd + ['-DSTEP=BUILD', '-S', 'CTestScript.cmake']
         test_cmd = cmd + ['-DSTEP=TEST', '-S', 'CTestScript.cmake']
 
