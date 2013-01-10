@@ -1,4 +1,4 @@
-{"slot": "lhcb-gaudi-head",
+{"slot": "lhcb-head",
  "projects": [{"name": "Gaudi",
                "version": "v23r5",
                "overrides": {},
@@ -37,6 +37,11 @@
                "overrides": {},
                "dependencies": ["Analysis", "Stripping", "Lbcom"]}
               ],
+
+ "USE_CMT": true,
+
+ "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
+
  "cmake_cache": {"CASTOR_config_version": "2.1.13-6"},
  "warning_exceptions": [".*/boost/.*",
                         "^--->> genreflex: WARNING:.*",
