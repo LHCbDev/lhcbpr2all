@@ -52,6 +52,11 @@ if(USE_CMT)
     set(CMT_CONTAINER_PACKAGE "${project}Sys")
   endif()
   set(ENV{GAUDI_QMTEST_HTML_OUTPUT} "$${CTEST_BINARY_DIRECTORY}/test_results")
+  if(ENV{CMTEXTRATAGS})
+    set(ENV{CMTEXTRATAGS} "$ENV{CMTEXTRATAGS},no-pyzip,use-distcc"
+  else()
+    set(ENV{CMTEXTRATAGS} "no-pyzip,use-distcc"
+  endif()
 endif()
 
 ##########################
