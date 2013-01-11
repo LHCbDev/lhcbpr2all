@@ -11,7 +11,7 @@ def loadFromOldXML(source, slot):
     @param source: XML path, file object, URL
     @param slot: name of the slot to extract
     '''
-    from lxml.etree import parse
+    from xml.etree.ElementTree import parse
     doc = parse(source)
 
     def fixPlaceHolders(s):
