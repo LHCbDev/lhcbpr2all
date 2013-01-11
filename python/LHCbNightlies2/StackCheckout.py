@@ -359,9 +359,10 @@ class Script(LbUtils.Script.PlainScript):
 
             self.log.info('packing %s %s...', p.name, p.version)
             packname = [p.name, p.version]
-            if self.opts.build_id:
-                packname.append(self.opts.build_id.format(slot=slot.name,
-                                                          timestamp=timestamp))
+            build_id = self.options.build_id
+            if build_id:
+                packname.append(build_id.format(slot=slot.name,
+                                                timestamp=timestamp))
             packname.append('src')
             packname.append('tar.bz2')
             packname = '.'.join(packname)
