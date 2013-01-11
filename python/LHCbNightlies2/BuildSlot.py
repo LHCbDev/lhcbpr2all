@@ -129,11 +129,19 @@ def main():
     parser.add_option('-j', '--jobs',
                       action='store',
                       help='number of parallel jobs to use during the build (default: sequential build)')
+    parser.add_option('--build-id',
+                      action='store',
+                      help='string to add to the tarballs of the build to '
+                           'distinguish them from others, the string can be a '
+                           'format string using the parameters "timestamp" '
+                           'and "slot" (a separation "." will '
+                           'be added automatically) [default: %default]')
 
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
                         timeout='600',
-                        jobs='1')
+                        jobs='1',
+                        build_id='{slot}.{timestamp}')
 
     opts, args = parser.parse_args()
     logging.basicConfig(level=opts.level,
@@ -242,10 +250,15 @@ def main():
         call(build_cmd, cwd=projdir)
 
         log.info('packing %s', p.dir)
-        packname = [p.name, p.version,
-                    config[u'slot'], timestamp,
-                    platform, 'tar.bz2']
-        call(['tar', 'cjf', '.'.join(packname),
+        packname = [p.name, p.version]
+        if opts.build_id:
+            packname.append(opts.build_id.format(slot=config[u'slot'],
+                                                 timestamp=timestamp))
+        packname.append(platform)
+        packname.append('tar.bz2')
+        packname = '.'.join(packname)
+
+        call(['tar', 'chjf', packname,
               os.path.join(p.dir, 'InstallArea')], cwd=build_dir)
 
         if not opts.build_only:

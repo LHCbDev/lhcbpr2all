@@ -307,6 +307,19 @@ class Script(LbUtils.Script.PlainScript):
     __usage__ = '%prog [options] <config.json>'
     __version__ = ''
 
+    def defineOpts(self):
+        """ User options -- has to be overridden """
+        parser = self.parser
+        parser.add_option('--build-id',
+                          action='store',
+                          help='string to add to the tarballs of the build to '
+                               'distinguish them from others, the string can be a '
+                               'format string using the parameters "timestamp" '
+                               'and "slot" (a separation "." will '
+                               'be added automatically) [default: %default]')
+
+        parser.set_defaults(build_id='{slot}.{timestamp}')
+
     def main(self):
         """ User code place holder """
         from os.path import join
@@ -346,11 +359,14 @@ class Script(LbUtils.Script.PlainScript):
 
             self.log.info('packing %s %s...', p.name, p.version)
             packname = [p.name, p.version]
-            if slot.name:
-                packname.append(slot.name)
-            packname.append(timestamp)
-            packname.append('src.tar.bz2')
-            call(['tar', 'cjf', join(sources_dir, '.'.join(packname)),
+            if self.opts.build_id:
+                packname.append(self.opts.build_id.format(slot=slot.name,
+                                                          timestamp=timestamp))
+            packname.append('src')
+            packname.append('tar.bz2')
+            packname = '.'.join(packname)
+
+            call(['tar', 'chjf', join(sources_dir, packname),
                   p.projectDir], cwd=build_dir)
 
         self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)
