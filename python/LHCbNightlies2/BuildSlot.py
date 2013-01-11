@@ -54,8 +54,8 @@ def genSlotConfig(config):
     return '\n'.join(cmake)
 
 def parseConfigFile(path):
-    import json
-    return json.load(open(path))
+    from Configuration import load
+    return load(path)
 
 class ProjDesc():
     def __init__(self, desc_dict):

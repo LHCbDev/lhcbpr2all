@@ -48,8 +48,8 @@ def waitForFile(path, timeout=timedelta(hours=20), maxAge=None):
 
 
 def parseConfigFile(path):
-    import json
-    data = json.load(open(path))
+    from Configuration import load
+    data = load(path)
     return data.get(u'preconditions', [])
 
 

@@ -1,0 +1,98 @@
+'''
+Common functions to deal with the configuration files.
+'''
+__author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
+
+def loadFromOldXML(source, slot):
+    '''
+    Read an old-style XML configuration and generate the corresponding
+    dictionary in the new-style configuration.
+
+    @param source: XML path, file object, URL
+    @param slot: name of the slot to extract
+    '''
+    from lxml.etree import parse
+    doc = parse(source)
+
+    def fixPlaceHolders(s):
+        s = s.replace('%DAY%', '${TODAY}')
+        s = s.replace('%YESTERDAY%', '${YESTERDAY}')
+        s = s.replace('%PLATFORM%', '${CMTCONFIG}')
+        return s
+
+    data = {'slot': slot,
+            'env': []}
+    try:
+        slotEl = (el for el in doc.iterfind('slot')
+                  if el.attrib.get('name') == slot).next()
+
+        cmtProjPath = ':'.join([fixPlaceHolders(el.attrib['value'])
+                                for el in slotEl.findall('cmtprojectpath/path')])
+        if cmtProjPath:
+            data['env'].append('CMTPROJECTPATH=' + cmtProjPath)
+
+        el = slotEl.find('cmtextratags')
+        if el is not None:
+            data['env'].append('CMTEXTRATAGS=' + el.attrib['value'])
+
+        el = slotEl.find('waitfor')
+        if el is not None:
+            path = fixPlaceHolders(el.attrib['flag'])
+            data['preconditions'] = [{"name": "waitForFile",
+                                      "args": {"path": path}}]
+
+        allProjs = []
+        for proj in slotEl.findall('projects/project'):
+            name = proj.attrib['name']
+            version = proj.attrib['tag'].split('_', 1)[1]
+            overrides = {}
+            for el in proj.findall('addon') + proj.findall('change'):
+                overrides[el.attrib['package']] = el.attrib['value']
+            # since dependencies are declared only to override versions, but the
+            # new config needs them for the ordering, we fake dependencies on
+            # all the projects encountered so far
+            dependencies = [p['name'] for p in allProjs]
+            # check if we have dep overrides
+            for el in proj.findall('dependence'):
+                depName = el.attrib['project']
+                if depName not in dependencies:
+                    dependencies.append(depName)
+                    depVer = el.attrib['tag']
+                    if depVer == 'LCGCMT-preview':
+                        depVer = 'preview'
+                    else:
+                        depVer = depVer.split('_', 1)[1]
+                    allProjs.append({'name': depName,
+                                     'version': depVer,
+                                     'overrides': {},
+                                     'dependencies': [],
+                                     'checkout': 'noCheckout'})
+
+            allProjs.append({'name': name,
+                             'version': version,
+                             'overrides': overrides,
+                             'dependencies': dependencies})
+
+        data['projects'] = allProjs
+
+        # we assume that all slots from old config use CMT
+        data['USE_CMT'] = True
+
+        return data
+    except StopIteration:
+        raise RuntimeError('cannot find slot {0}'.format(slot))
+
+
+def load(path):
+    '''
+    Load the configuration from a file.
+
+    By default, the file is assumed to be a JSON file, unless it ends with
+    '#<slot-name>', in which case the XML parsing is used.
+    '''
+    try:
+        source, slot = path.rsplit('#', 1)
+        return loadFromOldXML(source, slot)
+    except ValueError:
+        import json
+        return json.load(open(path))

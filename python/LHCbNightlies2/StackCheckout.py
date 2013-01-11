@@ -269,8 +269,8 @@ def specialLHCbCheckout(desc, rootdir='.'):
     call(cmd, cwd=rootdir, retry=3)
 
 def parseConfigFile(path):
-    import json
-    data = json.load(open(path))
+    from Configuration import load
+    data = load(path)
     projects = []
     for p in data[u'projects']:
         checkout = p.get(u'checkout', 'defaultCheckout')
