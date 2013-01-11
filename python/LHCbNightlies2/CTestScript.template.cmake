@@ -55,7 +55,7 @@ if(USE_CMT)
   if(ENV{CMTEXTRATAGS})
     set(ENV{CMTEXTRATAGS} "$$ENV{CMTEXTRATAGS},no-pyzip,use-distcc"
   else()
-    set(ENV{CMTEXTRATAGS} "no-pyzip,use-distcc"
+    set(ENV{CMTEXTRATAGS} "no-pyzip,use-distcc")
   endif()
 endif()
 
