@@ -43,7 +43,7 @@ set(CTEST_BUILD_COMMAND "make $${JOBS} -k")
 if(USE_CMT)
   # Builds driven by CMT need special settings
   set(CTEST_BINARY_DIRECTORY "$${CTEST_SOURCE_DIRECTORY}")
-  set(CTEST_CONFIGURE_COMMAND "no config step in CMT-based build")
+  set(CTEST_CONFIGURE_COMMAND "echo no config step in CMT-based build")
   set(CTEST_BUILD_COMMAND "make $${JOBS} -k Package_failure_policy=ignore logging=enabled")
   # guess the container: it can be *Release (Gaudi) or *Sys (LHCb projects)
   if (EXISTS "${project}Release")
