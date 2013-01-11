@@ -346,10 +346,14 @@ class Script(LbUtils.Script.PlainScript):
         os.makedirs(build_dir)
         os.makedirs(sources_dir)
 
+        build_id = self.options.build_id
+        if build_id:
+            build_id = build_id.format(slot=slot.name, timestamp=timestamp)
+
         slot.checkout(build_dir)
 
         slot.patch(build_dir,
-                   join(sources_dir, '.'.join([slot.name, timestamp, 'patch'])))
+                   join(sources_dir, '.'.join([build_id or 'slot', 'patch'])))
 
         for p in slot.projects:
             # ignore missing directories (the project may not have been checked out)
@@ -359,10 +363,8 @@ class Script(LbUtils.Script.PlainScript):
 
             self.log.info('packing %s %s...', p.name, p.version)
             packname = [p.name, p.version]
-            build_id = self.options.build_id
             if build_id:
-                packname.append(build_id.format(slot=slot.name,
-                                                timestamp=timestamp))
+                packname.append(build_id)
             packname.append('src')
             packname.append('tar.bz2')
             packname = '.'.join(packname)
