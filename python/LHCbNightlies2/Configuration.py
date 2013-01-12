@@ -23,7 +23,7 @@ def loadFromOldXML(source, slot):
     data = {'slot': slot,
             'env': []}
     try:
-        slotEl = (el for el in doc.iterfind('slot')
+        slotEl = (el for el in doc.findall('slot')
                   if el.attrib.get('name') == slot).next()
 
         cmtProjPath = ':'.join([fixPlaceHolders(el.attrib['value'])
