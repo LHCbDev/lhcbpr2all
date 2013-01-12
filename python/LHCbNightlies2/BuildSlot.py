@@ -8,6 +8,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import Configuration
 from subprocess import Popen, call
 from string import Template
 from socket import gethostname
@@ -53,10 +54,6 @@ def genSlotConfig(config):
         cmake.append('    )\n')
 
     return '\n'.join(cmake)
-
-def parseConfigFile(path):
-    from Configuration import load
-    return load(path)
 
 class ProjDesc():
     def __init__(self, desc_dict):
@@ -152,7 +149,7 @@ def main():
         parser.error('wrong number of arguments')
 
     from os.path import join, dirname
-    config = parseConfigFile(args[0])
+    config = Configuration.load(args[0])
 
     from _utils import setDayNamesEnv
     setDayNamesEnv()
@@ -219,7 +216,7 @@ def main():
             log.warning('no sources for %s, skip build', p)
             continue
 
-        shutil.copyfile(args[0], join(projdir, 'SlotConfig.json'))
+        Configuration.save(join(projdir, 'SlotConfig.json'), config)
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
         if cache_preload:
             write(join(projdir, 'cache_preload.cmake'), cache_preload)

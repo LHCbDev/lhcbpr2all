@@ -99,4 +99,13 @@ def load(path):
         return loadFromOldXML(source, slot)
     except ValueError:
         import json
-        return json.load(open(path))
+        return json.load(open(path, 'rb'))
+
+def save(dest, config):
+    '''
+    Helper function to dump the current configuration to a file.
+    '''
+    import json
+    f = open(dest, 'wb')
+    json.dump(config, f)
+    f.close()
