@@ -46,10 +46,11 @@ def genSlotConfig(config):
     for p in projects:
         cmake.append('set(%s_version %s)' % (p[u'name'], ' '.join(p[u'dependencies'])))
 
-    cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}')
-    for x in config[u'warning_exceptions']:
-        cmake.append('    "%s"' % x.replace('"', r'\"'))
-    cmake.append('    )\n')
+    if u'warning_exceptions' in config:
+        cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}')
+        for x in config[u'warning_exceptions']:
+            cmake.append('    "%s"' % x.replace('"', r'\"'))
+        cmake.append('    )\n')
 
     return '\n'.join(cmake)
 
