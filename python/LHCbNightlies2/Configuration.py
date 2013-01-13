@@ -3,6 +3,8 @@ Common functions to deal with the configuration files.
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
+import re
+
 def loadFromOldXML(source, slot):
     '''
     Read an old-style XML configuration and generate the corresponding
@@ -81,6 +83,16 @@ def loadFromOldXML(source, slot):
 
         # we assume that all slots from old config use CMT
         data['USE_CMT'] = True
+
+        def el2re(el):
+            '''Regex string for ignored warning or error.'''
+            v = el.attrib['value']
+            if el.attrib.get('type', 'string') == 'regex':
+                return v
+            else:
+                return re.escape(v)
+        data['error_exclude'] = map(el2re, doc.findall('general/ignore/error'))
+        data['warning_exclude'] = map(el2re, doc.findall('general/ignore/warning'))
 
         return data
     except StopIteration:
