@@ -107,5 +107,5 @@ def save(dest, config):
     '''
     import json
     f = open(dest, 'wb')
-    json.dump(config, f)
+    json.dump(config, f, sort_keys=True, indent=2, separators=(',', ': '))
     f.close()
