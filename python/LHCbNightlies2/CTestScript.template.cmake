@@ -66,6 +66,10 @@ ctest_start(${Model})
 set_property(GLOBAL PROPERTY SubProject "${project} ${version}")
 set_property(GLOBAL PROPERTY Label "${project} ${version}")
 
+# Create directory for QMTest summaries and reports
+set(summary_dir ${build_dir}/summaries/${project})
+file(MAKE_DIRECTORY $${summary_dir})
+
 if(NOT STEP STREQUAL TEST)
   ##ctest_update()
   ctest_configure()
@@ -78,11 +82,13 @@ if(NOT STEP STREQUAL TEST)
     execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake)
     execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
   endif()
+
+  # Copy the build log to the summaries
+  file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Temporary/LastBuild_*.log)
+  file(COPY $${build_log} DESTINATION $${summary_dir}/build.log)
 endif()
 
 if(NOT STEP STREQUAL BUILD)
-  # Create directory for QMTest summaries and reports
-  file(MAKE_DIRECTORY ${build_dir}/summaries/${project})
 
   if(NOT USE_CMT)
     ctest_test() # it seems there is no need for APPEND here
@@ -91,19 +97,20 @@ if(NOT STEP STREQUAL BUILD)
     endif()
     # produce plain text summary of QMTest tests
     execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
-                    OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
+                    OUTPUT_FILE $${summary_dir}/QMTestSummary.txt)
   else()
     # CMT requires special commands for the tests.
     set(ENV{PWD} "$${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt")
     file(MAKE_DIRECTORY $${CTEST_BINARY_DIRECTORY}/test_results)
     execute_process(COMMAND cmt br - cmt TestPackage
-                    WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt)
+                    WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt
+                    OUTPUT_FILE $${summary_dir}/QMTestSummary.run.txt)
     execute_process(COMMAND cmt qmtest_summarize
                     WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt
-                    OUTPUT_FILE ${build_dir}/summaries/${project}/QMTestSummary.txt)
+                    OUTPUT_FILE $${summary_dir}/QMTestSummary.txt)
   endif()
 
   # copy the QMTest HTML output
   file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
-       DESTINATION ${build_dir}/summaries/${project}/html/.)
+       DESTINATION $${summary_dir}/html/.)
 endif()
