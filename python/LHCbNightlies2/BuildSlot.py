@@ -8,6 +8,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import time
 import Configuration
 from subprocess import Popen, call
 from string import Template
@@ -53,6 +54,12 @@ def genSlotConfig(config):
             cmake.append('    "%s"' % x.replace('"', r'\"'))
         cmake.append('    )\n')
 
+    if u'error_exceptions' in config:
+        cmake.append('set(CTEST_CUSTOM_ERROR_EXCEPTION ${CTEST_CUSTOM_ERROR_EXCEPTION}')
+        for x in config[u'error_exceptions']:
+            cmake.append('    "%s"' % x.replace('"', r'\"'))
+        cmake.append('    )\n')
+
     return '\n'.join(cmake)
 
 class ProjDesc():
@@ -95,6 +102,8 @@ def sortedByDeps(deps):
             result.append(k)
         return unique(result)
     return recurse(deps)
+
+SUMMARY_NAME_FMT = '{slot}.{today}_{project}_{version}-{platform}-log.summary'
 
 def main():
     from optparse import OptionParser
@@ -247,6 +256,8 @@ def main():
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
 
+        genBuildLogReport(build_dir, p, platform, config)
+
         log.info('packing %s', p.dir)
         packname = [p.name, p.version]
         if opts.build_id:
@@ -270,3 +281,64 @@ def main():
 
     log.info('build completed in %s', datetime.now() - starttime)
     return 0
+
+def parseBuildLog(logfile, config=None):
+    '''
+    Scan a build log file looking for warnings and errors.
+
+    @param logfile: file object (iterable) to process
+    @param config: configuration dictionary, with the list of exclusions
+    @return: generator of warnings or errors as tuples (line_number, type, message)
+    '''
+    if config is None:
+        config = {}
+
+    import re
+    wExp = re.compile(r'\bwarning\b', re.IGNORECASE)
+    eExp = re.compile(r'\berror\b', re.IGNORECASE)
+
+    wExc = map(re.compile, config.get('warning_exclude', []))
+    eExc = map(re.compile, config.get('error_exclude', []))
+
+    def excluded(l, excl):
+        for e in excl:
+            if e.search(l):
+                return True
+        return False
+
+    for i, l in enumerate(logfile):
+        if eExp.search(l) and not excluded(l, eExc):
+            yield (i, 'error', l)
+        elif wExp.search(l) and not excluded(l, wExc):
+            yield (i, 'warning', l)
+
+def genBuildLogReport(build_dir, project, platform, config):
+    '''
+    Produce the build log reports for a project built.
+    '''
+    from os.path import exists, join
+    build_log = join(build_dir, 'summaries', project.name, 'build.log')
+
+    if exists(build_log):
+        l = list(parseBuildLog(open(build_log), config))
+        wCount = len([x for x in l if x[1] == 'warning'])
+        eCount = len([x for x in l if x[1] == 'error'])
+
+        log_summary = SUMMARY_NAME_FMT.format(slot=config[u'slot'],
+                                              today=os.environ['TODAY'],
+                                              project=project.name.upper(),
+                                              version=project.version,
+                                              platform=platform)
+        log_summary = join(build_dir, 'summaries', project.name, log_summary)
+        f = open(log_summary, 'w')
+        t = time.time()
+        f.write('{t} ({at}) {slot} {project}_{version} {platform}\n'
+                .format(t=t,
+                        at=time.ctime(t),
+                        slot=config[u'slot'],
+                        project=project.name.upper(),
+                        version=project.version,
+                        platform=platform))
+        f.write(', '.join([wCount, eCount, 0, 0]))
+        f.write('\n')
+        f.close()
