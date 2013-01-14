@@ -9,6 +9,7 @@ import logging
 import shutil
 import os
 import time
+import socket
 import Configuration
 from subprocess import Popen, call
 from string import Template
@@ -103,7 +104,7 @@ def sortedByDeps(deps):
         return unique(result)
     return recurse(deps)
 
-SUMMARY_NAME_FMT = '{slot}.{today}_{project}_{version}-{platform}-log.summary'
+OLD_BUILD_ID = '{slot}.{today}_{project}_{version}-{platform}'
 
 def main():
     from optparse import OptionParser
@@ -225,6 +226,12 @@ def main():
             log.warning('no sources for %s, skip build', p)
             continue
 
+        old_build_id = OLD_BUILD_ID.format(slot=config[u'slot'],
+                                           today=os.environ['TODAY'],
+                                           project=p.name.upper(),
+                                           version=p.version,
+                                           platform=platform)
+
         Configuration.save(join(projdir, 'SlotConfig.json'), config)
         write(join(projdir, 'SlotConfig.cmake'), configCmake)
         if cache_preload:
@@ -234,7 +241,8 @@ def main():
         write(join(projdir, 'CTestScript.cmake'),
               ctestScript.substitute({'project': p.name, 'version': p.version,
                                       'build_dir': build_dir, 'site': gethostname(),
-                                      'Model': opts.model}))
+                                      'Model': opts.model,
+                                      'old_build_id': old_build_id}))
 
         cmd = ['ctest', '--timeout', opts.timeout]
         if opts.jobs != '1':
@@ -256,7 +264,7 @@ def main():
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
 
-        genBuildLogReport(build_dir, p, platform, config)
+        genBuildLogReport(build_dir, p, platform, config, old_build_id)
 
         log.info('packing %s', p.dir)
         packname = [p.name, p.version]
@@ -290,15 +298,31 @@ def parseBuildLog(logfile, config=None):
     @param config: configuration dictionary, with the list of exclusions
     @return: generator of warnings or errors as tuples (line_number, type, message)
     '''
+    import re
+    from collections import deque
+
     if config is None:
         config = {}
 
-    import re
     wExp = re.compile(r'\bwarning\b', re.IGNORECASE)
     eExp = re.compile(r'\berror\b', re.IGNORECASE)
 
-    wExc = map(re.compile, config.get('warning_exclude', []))
-    eExc = map(re.compile, config.get('error_exclude', []))
+    class ExclusionCounter(object):
+        '''
+        Simple wrapper around re.search to count the number of matches.
+        '''
+        def __init__(self, exp):
+            self.exp = exp
+            self._exp = re.compile(exp)
+            self.count = 0
+        def search(self, l):
+            r = self._exp.search(l)
+            if r:
+                self.count += 1
+            return r
+
+    wExc = map(ExclusionCounter, config.get('warning_exclude', []))
+    eExc = map(ExclusionCounter, config.get('error_exclude', []))
 
     def excluded(l, excl):
         for e in excl:
@@ -306,39 +330,145 @@ def parseBuildLog(logfile, config=None):
                 return True
         return False
 
-    for i, l in enumerate(logfile):
-        if eExp.search(l) and not excluded(l, eExc):
-            yield (i, 'error', l)
-        elif wExp.search(l) and not excluded(l, wExc):
-            yield (i, 'warning', l)
+    class ListDict(dict):
+        def append(self, k, v):
+            if k not in self:
+                self[k] = [v]
+            else:
+                self[k].append(v)
 
-def genBuildLogReport(build_dir, project, platform, config):
+    def getLineType(l):
+        '''tell the type of line'''
+        if eExp.search(l) and not excluded(l, eExc):
+            return 'error'
+        elif wExp.search(l) and not excluded(l, wExc):
+            return 'warning'
+        return None
+
+    summary = dict([(k, ListDict()) for k in ['error', 'warning']])
+    context = deque()
+    for i, l in enumerate(logfile):
+        context.append(l)
+        if len(context) > 5:
+            context.popleft()
+        t = getLineType(l)
+        if t:
+            summary[t].append(l, (i, list(context)))
+    summary['ignored_warning'] = [w for w in wExc if w.count]
+    summary['ignored_error'] = [e for e in eExc if e.count]
+    return summary
+
+
+def genBuildLogReport(build_dir, project, platform, config, old_build_id):
     '''
     Produce the build log reports for a project built.
     '''
     from os.path import exists, join
+    import codecs
+    import cgi
+
     build_log = join(build_dir, 'summaries', project.name, 'build.log')
 
-    if exists(build_log):
-        l = list(parseBuildLog(open(build_log), config))
-        wCount = len([x for x in l if x[1] == 'warning'])
-        eCount = len([x for x in l if x[1] == 'error'])
+    if not exists(build_log):
+        logging.warning('cannot generate build log report: missing file %s', build_log)
+        return
 
-        log_summary = SUMMARY_NAME_FMT.format(slot=config[u'slot'],
-                                              today=os.environ['TODAY'],
-                                              project=project.name.upper(),
-                                              version=project.version,
-                                              platform=platform)
-        log_summary = join(build_dir, 'summaries', project.name, log_summary)
-        f = open(log_summary, 'w')
-        t = time.time()
-        f.write('{t} ({at}) {slot} {project}_{version} {platform}\n'
-                .format(t=t,
-                        at=time.ctime(t),
-                        slot=config[u'slot'],
-                        project=project.name.upper(),
-                        version=project.version,
-                        platform=platform))
-        f.write(', '.join([wCount, eCount, 0, 0]))
-        f.write('\n')
-        f.close()
+    summary = parseBuildLog(open(build_log), config)
+    wCount = sum(map(len, summary['warning'].values()))
+    eCount = sum(map(len, summary['error'].values()))
+
+
+    log_summary = old_build_id + '-log.summary'
+    log_summary = join(build_dir, 'summaries', project.name, log_summary)
+
+    html_summary = log_summary.replace('.summary', '.html')
+
+    shutil.copy(build_log, log_summary.replace('-log.summary', '.log'))
+
+    # HTML generation
+    htmlData = []
+    htmlData.append('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>LogCheck for project %s</title>' % project.name)
+    htmlData.append('''<style type="text/css">
+pre { margin-top: 0px; }
+a.error { color: red; }
+a.warning { color: blue; }
+a.errorlink { text-decoration: none; color: blue; cursor:pointer; cursor:hand; }
+a.warninglink { text-decoration: none; color: blue; cursor:pointer; cursor:hand; }
+/*
+li.errorli { display: none; }
+li.warningli { display: none; }
+*/
+a.morebtn { color: red; cursor:pointer; cursor:hand }
+a.packageLink { text-decoration: none; cursor:pointer; cursor:hand; color:blue; }
+.odd { background-color: #FFFFFF; font-family: monospace; }
+.even { background-color: #F0F0F0; font-family: monospace; }
+</style>
+''')
+    htmlData.append('<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>\n')
+    htmlData.append('<!-- <script type="text/javascript" src="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/js/summaryJQ.js"></script> -->\n')
+    htmlData.append('</head><body>\n')
+    htmlData.append('<h3>LogCheck for package %s on %s</h3>' % (project.name, socket.gethostname()))
+    htmlData.append('<p>Warnings : %d<br/> Errors   : %d<br/></p>' % (wCount, eCount))
+
+    if summary['ignored_error']:
+        htmlData.append('<h3>Ignored errors:</h3>\n')
+        htmlData.extend(['<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
+                         for w in summary['ignored_error']])
+
+    if summary['ignored_warning']:
+        htmlData.append('<h3>Ignored warnings:</h3>\n')
+        htmlData.extend(['<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
+                         for w in summary['ignored_warning']])
+
+    htmlData.append('''<h3>Shortcuts:</h3>
+<ul>
+<li><a href="#summary_errors">Summary of errors</a></li>
+<li><a href="#summary_warnings">Summary of warnings</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#checkout">Checkout (getpack) log</a></li>
+<li><a href="#packages_list">List of packages (logs)</a></li>
+</ul>
+''')
+
+    # Note: error and warning are dictionaries where the keys are the reported
+    #       lines and the values are lists of pairs with line number and context
+    #       in the log
+    if eCount:
+        htmlData.append('<h3 id="summary_errors">Summary of errors:</h3><hr/>')
+        # take all the lines sorted by first occurrence (line number of first value)
+        for l in sorted(summary['error'], key=lambda l: summary['error'][l][0][0]):
+            htmlData.append('<ul class="errorul">')
+            for i, ctx in summary['error'][l]:
+                htmlData.append('<li class="errorli"><a class="errorlink" href="#l%d"><pre>%s</pre></a></li>'
+                                % (i, cgi.escape(''.join(ctx))))
+            htmlData.append('</ul><hr/>')
+    if wCount:
+        htmlData.append('<h3 id="summary_warnings">Summary of warnings:</h3><hr/>')
+        # take all the lines sorted by first occurrence (line number of first value)
+        for l in sorted(summary['warning'], key=lambda l: summary['warning'][l][0][0]):
+            htmlData.append('<ul class="warningul">')
+            for i, ctx in summary['warning'][l]:
+                htmlData.append('<li class="warningli"><a class="warninglink" href="#l%d"><pre>%s</pre></a></li>'
+                                % (i, cgi.escape(''.join(ctx))))
+            htmlData.append('</ul><hr/>')
+
+    htmlData.append('<p>Here will be the full log.</p>\n')
+
+    htmlData.append('</body></html>\n')
+
+    f = codecs.open(html_summary, 'w', 'utf-8')
+    f.writelines(htmlData)
+
+    f = open(log_summary, 'w')
+    t = time.time()
+    f.write('{t} ({at}) {slot} {project}_{version} {platform}\n'
+            .format(t=t,
+                    at=time.ctime(t),
+                    slot=config[u'slot'],
+                    project=project.name.upper(),
+                    version=project.version,
+                    platform=platform))
+    f.write(', '.join(map(str, [wCount, eCount, 0, 0])))
+    f.write('\n')
+    f.close()
+

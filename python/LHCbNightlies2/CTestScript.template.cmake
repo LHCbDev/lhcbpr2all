@@ -84,8 +84,10 @@ if(NOT STEP STREQUAL TEST)
   endif()
 
   # Copy the build log to the summaries
-  file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Temporary/LastBuild_*.log)
-  file(COPY $${build_log} DESTINATION $${summary_dir}/build.log)
+  file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild_*.log)
+  file(COPY $${build_log} DESTINATION $${summary_dir})
+  get_filename_component(build_log_name $${build_log} NAME)
+  file(RENAME $${summary_dir}/$${build_log_name} $${summary_dir}/build.log)
 endif()
 
 if(NOT STEP STREQUAL BUILD)
@@ -113,4 +115,12 @@ if(NOT STEP STREQUAL BUILD)
   # copy the QMTest HTML output
   file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
        DESTINATION $${summary_dir}/html/.)
+
+  # this is the old-style build log names
+  set(OLD_BUILD_ID ${old_build_id})
+  if(OLD_BUILD_ID)
+    file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
+         DESTINATION $${summary_dir}/$${OLD_BUILD_ID}-qmtest/.)
+    execute_process(COMMAND $${CMAKE_COMMAND} -E copy $${summary_dir}/QMTestSummary.txt $${summary_dir}/$${OLD_BUILD_ID}-qmtest.log)
+  endif()
 endif()
