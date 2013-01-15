@@ -373,7 +373,7 @@ def genBuildLogReport(build_dir, project, platform, config, old_build_id):
         logging.warning('cannot generate build log report: missing file %s', build_log)
         return
 
-    summary = parseBuildLog(open(build_log), config)
+    summary = parseBuildLog(codecs.open(build_log, 'r', 'utf-8'), config)
     wCount = sum(map(len, summary['warning'].values()))
     eCount = sum(map(len, summary['error'].values()))
 
@@ -387,8 +387,8 @@ def genBuildLogReport(build_dir, project, platform, config, old_build_id):
 
     # HTML generation
     htmlData = []
-    htmlData.append('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>LogCheck for project %s</title>' % project.name)
-    htmlData.append('''<style type="text/css">
+    htmlData.append(u'<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>LogCheck for project %s</title>' % project.name)
+    htmlData.append(u'''<style type="text/css">
 pre { margin-top: 0px; }
 a.error { color: red; }
 a.warning { color: blue; }
@@ -404,23 +404,23 @@ a.packageLink { text-decoration: none; cursor:pointer; cursor:hand; color:blue; 
 .even { background-color: #F0F0F0; font-family: monospace; }
 </style>
 ''')
-    htmlData.append('<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>\n')
-    htmlData.append('<!-- <script type="text/javascript" src="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/js/summaryJQ.js"></script> -->\n')
-    htmlData.append('</head><body>\n')
-    htmlData.append('<h3>LogCheck for package %s on %s</h3>' % (project.name, socket.gethostname()))
-    htmlData.append('<p>Warnings : %d<br/> Errors   : %d<br/></p>' % (wCount, eCount))
+    htmlData.append(u'<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>\n')
+    htmlData.append(u'<!-- <script type="text/javascript" src="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/js/summaryJQ.js"></script> -->\n')
+    htmlData.append(u'</head><body>\n')
+    htmlData.append(u'<h3>LogCheck for package %s on %s</h3>' % (project.name, socket.gethostname()))
+    htmlData.append(u'<p>Warnings : %d<br/> Errors   : %d<br/></p>' % (wCount, eCount))
 
     if summary['ignored_error']:
-        htmlData.append('<h3>Ignored errors:</h3>\n')
-        htmlData.extend(['<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
+        htmlData.append(u'<h3>Ignored errors:</h3>\n')
+        htmlData.extend([u'<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
                          for w in summary['ignored_error']])
 
     if summary['ignored_warning']:
-        htmlData.append('<h3>Ignored warnings:</h3>\n')
-        htmlData.extend(['<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
+        htmlData.append(u'<h3>Ignored warnings:</h3>\n')
+        htmlData.extend([u'<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
                          for w in summary['ignored_warning']])
 
-    htmlData.append('''<h3>Shortcuts:</h3>
+    htmlData.append(u'''<h3>Shortcuts:</h3>
 <ul>
 <li><a href="#summary_errors">Summary of errors</a></li>
 <li><a href="#summary_warnings">Summary of warnings</a></li>
@@ -434,27 +434,27 @@ a.packageLink { text-decoration: none; cursor:pointer; cursor:hand; color:blue; 
     #       lines and the values are lists of pairs with line number and context
     #       in the log
     if eCount:
-        htmlData.append('<h3 id="summary_errors">Summary of errors:</h3><hr/>')
+        htmlData.append(u'<h3 id="summary_errors">Summary of errors:</h3><hr/>')
         # take all the lines sorted by first occurrence (line number of first value)
         for l in sorted(summary['error'], key=lambda l: summary['error'][l][0][0]):
-            htmlData.append('<ul class="errorul">')
+            htmlData.append(u'<ul class="errorul">')
             for i, ctx in summary['error'][l]:
-                htmlData.append('<li class="errorli"><a class="errorlink" href="#l%d"><pre>%s</pre></a></li>'
+                htmlData.append(u'<li class="errorli"><a class="errorlink" href="#l%d"><pre>%s</pre></a></li>'
                                 % (i, cgi.escape(''.join(ctx))))
-            htmlData.append('</ul><hr/>')
+            htmlData.append(u'</ul><hr/>')
     if wCount:
-        htmlData.append('<h3 id="summary_warnings">Summary of warnings:</h3><hr/>')
+        htmlData.append(u'<h3 id="summary_warnings">Summary of warnings:</h3><hr/>')
         # take all the lines sorted by first occurrence (line number of first value)
         for l in sorted(summary['warning'], key=lambda l: summary['warning'][l][0][0]):
-            htmlData.append('<ul class="warningul">')
+            htmlData.append(u'<ul class="warningul">')
             for i, ctx in summary['warning'][l]:
-                htmlData.append('<li class="warningli"><a class="warninglink" href="#l%d"><pre>%s</pre></a></li>'
+                htmlData.append(u'<li class="warningli"><a class="warninglink" href="#l%d"><pre>%s</pre></a></li>'
                                 % (i, cgi.escape(''.join(ctx))))
-            htmlData.append('</ul><hr/>')
+            htmlData.append(u'</ul><hr/>')
 
-    htmlData.append('<p>Here will be the full log.</p>\n')
+    htmlData.append(u'<p>Here will be the full log.</p>\n')
 
-    htmlData.append('</body></html>\n')
+    htmlData.append(u'</body></html>\n')
 
     f = codecs.open(html_summary, 'w', 'utf-8')
     f.writelines(htmlData)
@@ -468,7 +468,7 @@ a.packageLink { text-decoration: none; cursor:pointer; cursor:hand; color:blue; 
                     project=project.name.upper(),
                     version=project.version,
                     platform=platform))
-    f.write(', '.join(map(str, [wCount, eCount, 0, 0])))
+    f.write(','.join(map(str, [wCount, eCount, 0, 0])))
     f.write('\n')
     f.close()
 
