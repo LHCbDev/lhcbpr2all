@@ -91,8 +91,8 @@ def loadFromOldXML(source, slot):
                 return v
             else:
                 return re.escape(v)
-        data['error_exclude'] = map(el2re, doc.findall('general/ignore/error'))
-        data['warning_exclude'] = map(el2re, doc.findall('general/ignore/warning'))
+        data['error_exceptions'] = map(el2re, doc.findall('general/ignore/error'))
+        data['warning_exceptions'] = map(el2re, doc.findall('general/ignore/warning'))
 
         return data
     except StopIteration:

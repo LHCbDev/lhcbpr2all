@@ -321,8 +321,8 @@ def parseBuildLog(logfile, config=None):
                 self.count += 1
             return r
 
-    wExc = map(ExclusionCounter, config.get('warning_exclude', []))
-    eExc = map(ExclusionCounter, config.get('error_exclude', []))
+    wExc = map(ExclusionCounter, config.get('warning_exceptions', []))
+    eExc = map(ExclusionCounter, config.get('error_exceptions', []))
 
     def excluded(l, excl):
         for e in excl:
