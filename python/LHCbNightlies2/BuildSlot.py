@@ -52,13 +52,13 @@ def genSlotConfig(config):
     if u'warning_exceptions' in config:
         cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}')
         for x in config[u'warning_exceptions']:
-            cmake.append('    "%s"' % x.replace('"', r'\"'))
+            cmake.append('    "%s"' % x.replace('\\', '\\\\').replace('"', r'\"'))
         cmake.append('    )\n')
 
     if u'error_exceptions' in config:
         cmake.append('set(CTEST_CUSTOM_ERROR_EXCEPTION ${CTEST_CUSTOM_ERROR_EXCEPTION}')
         for x in config[u'error_exceptions']:
-            cmake.append('    "%s"' % x.replace('"', r'\"'))
+            cmake.append('    "%s"' % x.replace('\\', '\\\\').replace('"', r'\"'))
         cmake.append('    )\n')
 
     return '\n'.join(cmake)
