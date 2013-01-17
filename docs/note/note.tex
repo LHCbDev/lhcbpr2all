@@ -6,6 +6,9 @@
 \usepackage{tikz}
 \usepackage{hyperref}
 
+\newcommand{\link}[2]{\href{#1}{#2}}
+\newcommand{\urlLink}[1]{\link{#1}{\texttt{#1}}}
+
 \title{A New Nightly Build System for LHCb}
 \author{Marco Clemencic\address[MCl]{CERN, Switzerland}}
 %\ead[eMCl]{marco.clemencic@cern.ch}
@@ -37,7 +40,7 @@ nightly build system.
 \end{abstract}
 
 \begin{status}
-\entry{Draft}{1}{January 17, 2013}{First version: introduction and requirements}
+\entry{Draft}{1}{January 17, 2013}{First version.}
 %\entry{Draft}{2}{December 16, 2003}{Added conclusion.}
 %\entry{Final}{1}{April 26, 2004}{Checked english}
 \end{status}
@@ -89,11 +92,242 @@ one slot
   \item manageable procedure for the development of the system itself
 \end{itemize}
 
+\section{Design}
+The build system is divided in two main concerns: the configuration of Jenkins
+jobs (for the coordination and distribution of the tasks) and the core tools
+(for the actual checkout and build tasks).
+
+Although Jenkins allows arbitrary complex scripts in the build steps, it is
+suggested in the documentation to keep the build steps simple, wrapping the
+complexity of the build in scripts that are distributed and developed together
+with the project.  The main reasons are that the web interface provides only a
+minimal text field (not suitable for large scripts) and that it is not possible
+to keep track of the evolution of the code of a configuration with a version
+control system.
+
+In our case, the scripts used for the heavy-lifting part of the builds are
+hosted on a dedicated GIT\cite{GIT} repository instead of living withing the
+software projects, because they are generic and apply to sets of projects.
+
+An important difference in the design of the new system with respect to the old
+one is that the various actions required by the system (checkout, build, test,
+etc.) are performed by dedicated independent scripts instead of being phases of
+a monolithic script.  In this way it is possible to develop and test a single
+action without having to restart the whole process from scratch.  Moreover, the
+core tools are meant to work and produce file in any directory, instead of using
+fixed locations as in the old system, simplifying furthermore the development.
+Of course, whenever feasible, common code is factored out and shared between all
+the scripts.
+
+The configuration of Jenkins required the installation of several plug-ins on
+top of a vanilla installation of the application.  The jobs, in Jenkins terms,
+configured are of two main categories: jobs representing the nightly build slots
+and generic jobs for the individual steps.
+
+\section{Implementation}
+\subsection{Core Tools}
+The core tools are hosted on the GIT repository\footnote{%
+  LHCb set up a minimal GIT hosting service described here:
+  \begin{quote}
+    \urlLink{https://twiki.cern.ch/twiki/bin/view/LHCb/GitRepositories}
+  \end{quote}
+  It must be noted that these repositories will be migrated to the CERN-IT GIT
+  hosting service as soon as available.}
+\begin{quote}
+  \texttt{http://cern.ch/lhcbproject/GIT/LHCbNightlies2.git}
+\end{quote}
+
+In the following sections I describe in some details the main components of the
+Core Tools and their implementations.
+
+\subsubsection{Configuration}
+The old nightly build system uses an XML-based configuration describing in one
+file the slots to be build, their content, the platforms the should be built for
+etc.  While prototyping the new system it seems reasonable to review the layout
+and the details of the old configuration file to see what could be simplified or
+removed.
+
+Because the new system is more modular than the old one and the management part
+is separated from the build part, I started from a minimal configuration file
+describing a single slot.  To simplify the prototyping, I have chosen the JSON
+format (semi-structured) instead of XML (structured), and, because of the JSON
+objects are converted in Python, inside the code I used simple nested Python
+dictionaries.
+
+The configuration of a slot consists of a JSON object with the following format:
+\begin{description}
+  \item[slot] name of the slot (mandatory)
+  \item[projects] list of objects describing the projects in the slot, with each
+  object containing the fields:
+  \begin{description}
+    \item[name] name of the project (mandatory)
+    \item[version] baseline version of the project (mandatory)
+    \item[dependencies] list of project names within the slot the project
+    depends on (mandatory)
+    \item[overrides] object containing a simple mapping between package name and
+    required version as a string or \emph{null} if the package should be removed
+    (optional)
+    \item[checkout] name of the checkout function (optional)
+  \end{description}
+  \item[warning\_exceptions] list of regular expressions matching warnings that
+  should be ignored (optional)
+  \item[error\_exceptions] list of regular expressions matching errors that
+  should be ignored (optional)
+  \item[env] list of definitions of environment variables as strings in the
+  format ``\texttt{<name>=<value>}'' (optional)
+  \item[preconditions] list of objects describing a function call as the
+  function name and the arguments of the call (optional)
+  \item[USE\_CMT] boolean telling of the slot should be build with CMT rather
+  than the default CMake (optional)
+  \item[cmake\_cache] mapping key--value defining variables to preload in the
+  CMake cache to tune the build (optional)
+\end{description}\nocite{CMT,CMake}
+Fields declared as \emph{mandatory} in the above list are required in at least
+one step of the nightly build system and cannot have a default value, but some
+of them are not used in all the steps, so can be considered optional when
+testing only one step of the system.  The various sections of the configuration
+file are described in the following sections, including which field are actually
+used by the step.
+
+For people used to the old configuration, it might seem that the new
+configuration is more limited than the old one, but it is mainly an impression
+due to the simplifications introduced.  For example, the old option file used
+different XML tags to add a package to a project or to change the required
+version, but in this simplified configuration it is enough to declare the
+version of a package to add it or to change it.
+
+It should be noted that the list of platforms, the declaration of special
+directories or URLs is not included in this option format.  The reason is that
+those informations are not needed to checkout and build a slot, but are part of
+the management of the nightly build system, which is responsibility of the
+Jenkins part of the new system.
+
+To allow for a smooth transition from the old system to the new one and for
+testing the new system in parallel with the old one, I introduced a simple layer
+that extracts the configuration of a slot from the XML configuration and
+produces a dictionary with the same format than the one obtained from the new
+JSON format.
+
+In order to simplify the development and testing in the new system, the
+configuration file must be passed as command line argument to each script.  The
+translation layer than converts from XML is automatically triggered when the
+file name passed on the command line contains the suffix \texttt{\#slotname}
+which specifies the name of the slot that should be extracted from the
+XML\footnote{%
+  Remember that the new configuration requires one file per slot.}.
+
+\subsubsection{Checkout}
+In the new system there is a dedicated script (\texttt{StackCheckout.py}) for
+the checkout of all the projects in a slot.  It uses only the fields \emph{slot}
+and \emph{projects}, and for each project only \emph{name}, \emph{version},
+\emph{overrides} and \emph{checkout}.
+
+This script checks out all the projects to be built in the slot fine tuning them
+according to the required overrides and fixing the interdependency declarations.
+
+For each project is possible to choose a checkout function passing it's
+name\footnote{It is enough to use the function name for functions in the module
+implementing the checkout script, while functions accessible from other modules
+require the fully qualified name (i.e. \texttt{module.function}).} as the value
+of the field \emph{checkout}.  Few basic checkout functions are already
+provided:
+\begin{description}
+  \item[defaultCheckout] default if not specified, using the \texttt{getpack}
+  command
+  \item[noCheckout] do not checkout the project
+  \item[specialGaudiCheckout] test checkout function used to test the build of
+  Gaudi from the GIT repository
+\end{description}
+
+The default checkout function (\emph{defaultCheckout}) is equivalent to the code
+used in the old system, but simpler.  If an explicit version is specified for a
+projects, that is the version that is checked out, while the special version
+\emph{HEAD} triggers the checkout of the head version of the project, meaning
+the head version of each package in the project.  The old system required also
+the special flag \emph{headofeverything} to achieve the same result.  It is not
+possible, in the new system, to perform a checkout of the head meant as a
+checkout of the head version of the container package of a project and the
+versions there declared of the other packages, but this feature was never really
+used.  After the simple checkout of the project, the \emph{overrides} field is
+used to fine tune the checkout: for each package declared in the list of
+overrides \texttt{getpack} is called to change the already checked out version,
+or to add it if not present, while the directory of the package is removes when
+the requested version is \emph{null}.
+
+The \emph{noCheckout} function is useful to just declared the version of a
+project to be used in the build of the other projects, but not to build it.  The
+same functionality was achieved in the old system by either declaring an
+alternative dependency for a project or by declaring the project as
+\emph{disabled}.  In the new system, then, it is only possible to implicitly
+``disable'' the build of a project by not checking it out.
+
+The \emph{specialGaudiCheckout} has been used for testing the checkout of the
+Gaudi project from its GIT repository instead of using \texttt{getpack}.
+Because of its nature, this function does not support the overrides of the
+packages.  The old system did not provide a way to change the checkout of a
+project without deep changes in the code of the system, so this simple test
+demonstrates the flexibility of the new system.
+
+When invoked, the script checks out all the projects in the directory
+\texttt{builds} under the current working directory, then it modifies the
+configuration files of the projects to synchronize the interdependencies with
+what is declared in the configuration.  In particular, for the CMake
+configuration it modifies the file \texttt{CMakeLists.txt} changing the version
+of the project and of the dependencies, while for the CMT configuration it
+modifies the file \texttt{project.cmt} for the dependencies and the file
+\texttt{requirements} of the container package to remove the explicit versions
+of the packages, which, anyway, are not needed after the checkout.  Every
+modification applied to a file is recorded in patch file in the directory
+\texttt{sources} under the current working directory.
+
+After having patched the configuration, the sources of each project are packaged
+in individually in the \texttt{sources} directory.
+
+The patch file and the archives of the sources have in the name a \emph{build
+id} that can be specified on the command line (by default
+\texttt{<slot>.<YYYY-MM-DD>}).
+
+Together with the improvements and simplifications, there a few known
+limitations with the new checkout procedure.
+
+When a package is added or removed from a project, the requirements file of the
+container package is not correctly modified, but the common use cases are such
+that this correction is very rarely needed.  In case of the addition, the build
+procedure visits the extra packages even if they are not declared in the
+container, causing problems only if the runtime requires some special
+environment variable defined in the requirements files of the new package (of
+course it is not a problem if the extra package is used by another package in
+the project).  The only valid use case for the removal of a package is when the
+the package was overridden from a used project and we need to build using the
+original version of the package, because a ``real'' removal of a package will
+probably need non trivial corrections in other packages.
+
+Another limitation of the new system is that it is not possible to build in the
+same slot two different versions of a project, but, even if theoretically
+possible in the old system, this feature was never used or needed.
+
+\subsubsection{Preconditions Check}
+
+\subsubsection{Build and Test}
+
+
+\subsubsection{Project Layout}
+
+
+\subsection{Jenkins Configuration}
+
+\section{Future Developments}
+
+
+%\section{Instructions for Managers}
 
 %\section{Conclusion}
 
 \bibliography{bibliography}
 %\bibliographystyle{plainurl}
 \bibliographystyle{unsrturl}
+
+\appendix
+\section{List of Required Jenkins Plug-Ins}
 
 \end{document}
