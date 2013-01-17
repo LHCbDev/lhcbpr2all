@@ -1,0 +1,99 @@
+\documentclass{lhcbnote}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+\title{A New Nightly Build System for LHCb}
+\author{Marco Clemencic\address[MCl]{CERN, Switzerland}}
+%\ead[eMCl]{marco.clemencic@cern.ch}
+
+\doctyp{Internal Note}
+\dociss{0}
+\docrev{1}
+%\docref{}
+\doccre{January 17, 2013}
+\docmod{\today}
+%\doccnf{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The nightly build system used so far by LHCb has been implemented as an
+extension on the LCG Application Area one\cite{Kruzelecki:2010zz}.  Although
+this version basically works, it has several limitations in terms of
+extensibility, management, ease of use, so that the SFT group decided to develop
+a new version based on a commercial continuous integration system.
+
+Since, because of technical reasons, we cannot adopt the new planned SFT nightly
+build system, we decided to investigate the possibility of a custom version
+based on the open source continuous integration system Jenkins\cite{Jenkins}.
+
+In this note I describe the implementation of a working prototype of the new
+nightly build system.
+\end{abstract}
+
+\begin{status}
+\entry{Draft}{1}{January 17, 2013}{First version: introduction and requirements}
+%\entry{Draft}{2}{December 16, 2003}{Added conclusion.}
+%\entry{Final}{1}{April 26, 2004}{Checked english}
+\end{status}
+
+\tableofcontents
+
+\listoffigures
+\listoftables
+
+\section{Introduction}
+We have been using the Nightly Build System based the the LCG Aplication Area
+one for several years\cite{Kruzelecki:2010zz}.  The system works, but it has
+limitations that make it very difficult to extend and to manage.  The SFT group
+planned a rewrite of their code base, to overcome the limitations sill allowing
+for extensions like he ones we needed, so we decided to wait their new
+implementation before reviewing our code.  Now that the SFT group opted for an
+implementation based on a commercial continuous integration solution that we
+cannot easily extend for our use case without a complete rewrite of our code, we
+decided to investigate the possibility of a new implementation of the nightly
+build system based on the the open source continuous integration system
+Jenkins\cite{Jenkins}.
+
+The outcome of the investigation is the working prototype described in this
+note.
+
+\section{Requirements}
+The new nightly build system must have the main functionalities of the old one,
+such as
+\begin{itemize}
+  \item build and test several slots (consistent set LHCb software projects) on
+several platforms
+  \item easy configuration of the content of the slots
+  \item separate the builds of different platforms
+  \item allow customized checkouts (i.e. non default versions of the packages)
+  \item run the tests of a project while building the following one on the stack
+  \item produce incremental reports of the results of the builds in a dashboard
+  \item configurable parsing of the build logs (ignore some warnings and errors)
+  \item distribute efficiently the load on a pool of build machines
+\end{itemize}
+but, wherever possible, improve and simplify the old implementation.
+
+In additions we want to have some long awaited new features:
+\begin{itemize}
+  \item monitoring of the status of the builds
+  \item easy restart at different levels: everything, one slot, one platform of
+one slot
+  \item produce archives of the checkout and of the builds
+  \item easy creation of new slots (both production and testing)
+  \item manageable procedure for the development of the system itself
+\end{itemize}
+
+
+%\section{Conclusion}
+
+\bibliography{bibliography}
+%\bibliographystyle{plainurl}
+\bibliographystyle{unsrturl}
+
+\end{document}
