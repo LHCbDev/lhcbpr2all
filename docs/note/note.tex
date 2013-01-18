@@ -187,7 +187,7 @@ The configuration of a slot consists of a JSON object with the following format:
   than the default CMake (optional)
   \item[cmake\_cache] mapping key--value defining variables to preload in the
   CMake cache to tune the build (optional)
-\end{description}\nocite{CMT,CMake}
+\end{description}
 Fields declared as \emph{mandatory} in the above list are required in at least
 one step of the nightly build system and cannot have a default value, but some
 of them are not used in all the steps, so can be considered optional when
@@ -295,7 +295,7 @@ of the packages, which, anyway, are not needed after the checkout.  Every
 modification applied to a file is recorded in patch file in the directory
 \texttt{sources} under the current working directory.
 
-After having patched the configuration, the sources of each project are packaged
+After having patched the configuration, the sources of each project are packed
 in individually in the \texttt{sources} directory.
 
 The patch file and the archives of the sources have in the name a \emph{build
@@ -328,8 +328,9 @@ builds, so that we can have a slot that is built on the products of a slot in
 the LCG AA nightly builds.
 
 To achieve the same result in the new system, a more generic and flexible
-mechanism has been devised: we can use the field \emph{preconditions} to declare
-functions to be called before building the slot.
+mechanism has been devised: we can use the field \emph{preconditions} (the only
+one used in this step) to declare functions to be called before building the
+slot.
 
 At the time of writing, there is only one function that can be used as a
 precondition, \emph{waitForFile}, which accepts as arguments:
@@ -363,32 +364,97 @@ either returning immediately (e.g. if there is not enough disk space) or
 waiting.
 
 \subsubsection{Build and Test}
+Building and testing actions are bundled in one main script because they are
+tightly connected: the tests of a project in the slot are run while other
+projects are built.  The behavior of the main build script can be tuned with
+documented command line options to allow easy and effective testing of the build
+system.
 
+The configuration fields used in this steps are \emph{slot}, \emph{projects}
+(only \emph{name}, \emph{version} and \emph{dependencies}),
+\emph{warning\_exceptions}, \emph{error\_exceptions}, \emph{USE\_CMT} and
+\emph{cmake\_cache}.
+
+To ensure a clean build, we first remove the content of the directory
+\texttt{builds} under the current working directory, then we unpack all the
+archives present in the \texttt{sources} directory (those produced during the
+checkout step).  For each project found in the configuration and for which the
+sources are found (i.e. we ignore the projects that were not checked out) we
+create, from templates, a few configuration files and a script to be run via the
+CTest\cite{CMake} (\texttt{ctest}) command (the build and test tool distributed
+with CMake), and, for the whole slot, we create a special file used to describe
+the structure of the slot to CDash\cite{CDashSubprojects}.
+
+The generated CTest script is the core of the build procedure.  It is written
+such that it can build either CMake-based projects or CMT-based\cite{CMT} ones
+(actually via the special Makefile that \texttt{getpack} adds to the project).
+With this script we can build and test a projects and submit the result to a
+CDash instance (currently \urlLink{https://lbtestbuild.cern.ch/CDash}). The
+submission is optional, and we can also just build or just test.
+
+Once the configuration is ready, the build wrapper script triggers CTest to
+build each project, one after the other in order of dependencies (as declared in
+the configuration\footnote{The dependencies are not declared in the old
+configuration, but the order of appearance is used instead, so the automatic
+translation of the configuration introduces fake dependencies between the
+projects to preserve the expected order of build.}).  Once a project is built,
+we first scan the build log recorded by CTest to produce summary files
+equivalent to those produced by the old nightly build system, then we pack the
+content of its \texttt{InstallArea} directory in an archive (dereferencing
+symbolic links) in the \texttt{builds} directory named after the project name,
+its version, a build id (like the one used in the checkout) and the platform
+(\texttt{\$CMTCONFIG}).  At this point we start a new subprocess in background
+to run the tests of the project while the next project in the chain is being
+built.
+
+The the way the tests of a project are started depends on the type of the build
+(CMake or CMT), but in both cases we produce the same kind of summaries that
+were used by the old system.  For CMake builds, the results of the tests are
+submitted to the CDash instance, but the details about all the QMTest tests are
+not visible there.  In the near future we will implement an extension to QMTest
+so that it can report the results in the XML format understood by CDash, so that
+we will have more meaningful details accessible through the CDash instance.
+
+After all the builds are completed, the main script waits until all the spawned
+subprocesses complete before exiting.
+
+It is important to note that the archive of the build does not contain any
+artifact that has not been installed (copied or linked) to the
+\texttt{InstallArea} directory.  This behavior is different from what is done
+when creating the distribution packages, and these new archives may be faulty.
+Of course, we can change the packaging to create archives strictly identical to
+those prepared in the release procedure, but the long term plan is to fix the
+rare cases where the artifacts are not installed\footnote{The test to spot these
+cases is not available yet.}.
 
 \subsubsection{Project Layout}
+As already mentioned, the core tools are hosted in a GIT repository which
+contains the following directories:
+\begin{description}
+  \item[python] contains the main Python module \texttt{LHCbNightlies2} with
+submodules for the shared code, the task specific functions, templates and for
+the tests
+  \item[scripts] contains the executable scripts, which are simply forwarding
+the calls to the main functions in the Python modules
+  \item[docs] documentation
+\end{description}
+I the top level directory there are two setup shell scripts (\emph{sh} and
+\emph{csh} variants) than can be sources to add two main directories to the
+\texttt{PYTHONPATH} and to the \texttt{PATH}.
 
+The tests are based on the \texttt{nose} testing framework\cite{nose} and can be
+run with:
+\begin{quote}
+\begin{verbatim}
+cd python
+nosetests -v --with-doctest
+\end{verbatim}
+\end{quote}
+or with the simple wrapper \texttt{test.sh}.
 
 \subsection{Jenkins Configuration}
 
 \section{Dashboard}
-
-\section{To-Do List}
-\begin{itemize}
-  \item Configuration
-  \begin{itemize}
-    \item allow inclusion of shared configuration files (e.g. for the
-environment)
-    \item use the environment settings in all the steps
-    \item review the \emph{plug-in} mechanism
-  \end{itemize}
-  \item Build
-  \item Tests
-  \begin{itemize}
-    \item integration between QMTest and CTest
-  \end{itemize}
-  \item Dashboard
-\end{itemize}
-
 
 %\section{Instructions for Managers}
 
@@ -400,5 +466,25 @@ environment)
 
 \appendix
 \section{List of Required Jenkins Plug-Ins}
+
+\section{To-Do List}
+\begin{itemize}
+  \item Configuration
+  \begin{itemize}
+    \item allow inclusion of shared configuration files (e.g. for the
+environment)
+    \item use the environment settings in all the steps
+    \item review the \emph{plug-in} mechanism
+  \end{itemize}
+  \item Build
+  \begin{itemize}
+    \item check if the build produced files in the source directories
+  \end{itemize}
+  \item Tests
+  \begin{itemize}
+    \item integration between QMTest and CTest
+  \end{itemize}
+  \item Dashboard
+\end{itemize}
 
 \end{document}
