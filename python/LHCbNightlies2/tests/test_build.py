@@ -1,10 +1,7 @@
-import json
 import os
 
 from xml.etree import ElementTree as ET
 from StringIO import StringIO
-
-from _utils import processFile
 
 # Uncomment to disable the tests.
 #__test__ = False
@@ -53,16 +50,3 @@ def test_genProjectXml():
         assert len(deps) == len(p.deps)
         for a, b in zip(sorted(map(getName, deps)), sorted(map(versions.get, p.deps))):
             assert a == b, 'Dependencies of %s not matching (%s != %s)' % (p, a, b)
-
-def test_parseConfigFile():
-    'BuildSlot.parseConfigFile()'
-    expected = {'slot': 'slot-name',
-                'projects':[{"name": "Gaudi",
-                             "version": "v23r5",
-                             "checkout": "specialCheckoutFunction"},
-                            {"name": "LHCb",
-                             "version": "v32r5",
-                             "dependencies": ["Gaudi"]}]}
-
-    found = processFile(json.dumps(expected), BuildSlot.parseConfigFile)
-    assert found == expected
