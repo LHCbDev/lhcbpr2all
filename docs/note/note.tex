@@ -93,9 +93,10 @@ one slot
 \end{itemize}
 
 \section{Design}
-The build system is divided in two main concerns: the configuration of Jenkins
-jobs (for the coordination and distribution of the tasks) and the core tools
-(for the actual checkout and build tasks).
+The build system is divided in three main concerns: the configuration of Jenkins
+jobs (for the coordination and distribution of the tasks), the core tools
+(for the actual checkout and build tasks), the dashboard (summarized
+presentation of the results of the builds).
 
 Although Jenkins allows arbitrary complex scripts in the build steps, it is
 suggested in the documentation to keep the build steps simple, wrapping the
@@ -123,6 +124,11 @@ The configuration of Jenkins required the installation of several plug-ins on
 top of a vanilla installation of the application.  The jobs, in Jenkins terms,
 configured are of two main categories: jobs representing the nightly build slots
 and generic jobs for the individual steps.
+
+The dashboard is still under investigation.  The two main options are
+CDash\cite{CDash} or just use the old dashboard.  It is also possible to use
+something integrated with Jenkins.  The details will be discussed in a dedicated
+section.
 
 \section{Implementation}
 \subsection{Core Tools}
@@ -364,7 +370,7 @@ waiting.
 
 \subsection{Jenkins Configuration}
 
-\subsection{Dashboard}
+\section{Dashboard}
 
 \section{To-Do List}
 \begin{itemize}
