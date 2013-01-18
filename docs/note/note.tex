@@ -202,6 +202,15 @@ those informations are not needed to checkout and build a slot, but are part of
 the management of the nightly build system, which is responsibility of the
 Jenkins part of the new system.
 
+The field \emph{env} is used by some of the steps to set environment variables
+before performing the actual tasks.  It is meant to replace the XML tags
+\emph{cmtprojectpath} and \emph{cmtextratags} of the old configuration with a
+simpler an more generic option.  It must be noted that the placeholders
+\texttt{\%DAY\%}, \texttt{\%YESTERDAY\%} and \texttt{\%PLATFORM\%} in the old
+configuration are replaced in the new configuration by the environment
+variables, respectively, \texttt{\%TODAY\%}, \texttt{\%YESTERDAY\%} (set
+internally) and \texttt{\%CMTCONFIG\%} (taken from the inherited environment).
+
 To allow for a smooth transition from the old system to the new one and for
 testing the new system in parallel with the old one, I introduced a simple layer
 that extracts the configuration of a slot from the XML configuration and
@@ -307,6 +316,45 @@ same slot two different versions of a project, but, even if theoretically
 possible in the old system, this feature was never used or needed.
 
 \subsubsection{Preconditions Check}
+In the old system it was possible to wait for the appearance of a special file
+before starting the build.  This feature was meant to allow chaining of nightly
+builds, so that we can have a slot that is built on the products of a slot in
+the LCG AA nightly builds.
+
+To achieve the same result in the new system, a more generic and flexible
+mechanism has been devised: we can use the field \emph{preconditions} to declare
+functions to be called before building the slot.
+
+At the time of writing, there is only one function that can be used as a
+precondition, \emph{waitForFile}, which accepts as arguments:
+\begin{description}
+  \item[path] the path to the file we have to wait for
+  \item[timeout] time before giving up waiting (\texttt{datetime.timedelta},
+  optional)
+  \item[maxAge] a file older than this are ignored(\texttt{datetime.timedelta},
+  optional)
+\end{description}
+For example:
+\begin{quote}
+\begin{verbatim}
+...
+"preconditions": [
+   {"name": "waitForFile",
+    "args": {
+      "path": "${LCGNIGHTLIES}/dev3/${TODAY}/isDone-${CMTCONFIG}"
+    }}
+],
+...
+\end{verbatim}
+\end{quote}
+What this function does is to wait until the requested file appears before
+returning successfully (\emph{True}), but if the file does not appear within the
+timeout (by default 20 hours), the function returns a failure (\emph{False}) and
+the build is not started.
+
+In the future we can have other precondition functions with more complex logics,
+either returning immediately (e.g. if there is not enough disk space) or
+waiting.
 
 \subsubsection{Build and Test}
 
@@ -316,7 +364,24 @@ possible in the old system, this feature was never used or needed.
 
 \subsection{Jenkins Configuration}
 
-\section{Future Developments}
+\subsection{Dashboard}
+
+\section{To-Do List}
+\begin{itemize}
+  \item Configuration
+  \begin{itemize}
+    \item allow inclusion of shared configuration files (e.g. for the
+environment)
+    \item use the environment settings in all the steps
+    \item review the \emph{plug-in} mechanism
+  \end{itemize}
+  \item Build
+  \item Tests
+  \begin{itemize}
+    \item integration between QMTest and CTest
+  \end{itemize}
+  \item Dashboard
+\end{itemize}
 
 
 %\section{Instructions for Managers}
