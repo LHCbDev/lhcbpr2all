@@ -2,3 +2,14 @@
 *.pyc
 /build
 /sources
+*.backup
+*~
+*.aux
+*.bbl
+*.blg
+*.lof
+*.log
+*.lot
+*.out
+*.pdf
+*.toc
