@@ -1,0 +1,467 @@
+<recipe plugin="recipe@1.0">
+  <id>ch.cern.lhcb.jenkins.nightlybuilds</id>
+  <version>1.0</version>
+  <displayName>LHCb Nightly Builds</displayName>
+  <description></description>
+  <ingredients>
+    <job>
+      <name>nightly-slot-checkout</name>
+      <description></description>
+      <definition>
+        <project>
+          <actions/>
+          <description>generic job to check out the sources of all the projects in a nightly build slot</description>
+          <logRotator>
+            <daysToKeep>15</daysToKeep>
+            <numToKeep>-1</numToKeep>
+            <artifactDaysToKeep>2</artifactDaysToKeep>
+            <artifactNumToKeep>-1</artifactNumToKeep>
+          </logRotator>
+          <keepDependencies>false</keepDependencies>
+          <properties>
+            <hudson.model.ParametersDefinitionProperty>
+              <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                  <name>slot</name>
+                  <description>name of the slot to check out</description>
+                  <defaultValue>lhcb-gaudi-head</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>slot_build_id</name>
+                  <description>id of the specific build of the slot</description>
+                  <defaultValue></defaultValue>
+                </hudson.model.StringParameterDefinition>
+              </parameterDefinitions>
+            </hudson.model.ParametersDefinitionProperty>
+          </properties>
+          <scm class="hudson.plugins.git.GitSCM" plugin="git@1.1.26">
+            <configVersion>2</configVersion>
+            <userRemoteConfigs>
+              <hudson.plugins.git.UserRemoteConfig>
+                <name></name>
+                <refspec></refspec>
+                <url>http://cern.ch/lhcbproject/GIT/LHCbNightlies2.git</url>
+              </hudson.plugins.git.UserRemoteConfig>
+            </userRemoteConfigs>
+            <branches>
+              <hudson.plugins.git.BranchSpec>
+                <name>**</name>
+              </hudson.plugins.git.BranchSpec>
+            </branches>
+            <disableSubmodules>false</disableSubmodules>
+            <recursiveSubmodules>false</recursiveSubmodules>
+            <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+            <authorOrCommitter>false</authorOrCommitter>
+            <clean>true</clean>
+            <wipeOutWorkspace>false</wipeOutWorkspace>
+            <pruneBranches>false</pruneBranches>
+            <remotePoll>false</remotePoll>
+            <ignoreNotifyCommit>false</ignoreNotifyCommit>
+            <useShallowClone>false</useShallowClone>
+            <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+            <gitTool>Default</gitTool>
+            <submoduleCfg class="list"/>
+            <relativeTargetDir></relativeTargetDir>
+            <reference></reference>
+            <excludedRegions></excludedRegions>
+            <excludedUsers></excludedUsers>
+            <gitConfigName></gitConfigName>
+            <gitConfigEmail></gitConfigEmail>
+            <skipTag>false</skipTag>
+            <includedRegions></includedRegions>
+            <scmName></scmName>
+          </scm>
+          <assignedNode>(!master) &amp;&amp; (!perf)</assignedNode>
+          <canRoam>false</canRoam>
+          <disabled>false</disabled>
+          <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+          <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+          <triggers class="vector"/>
+          <concurrentBuild>true</concurrentBuild>
+          <builders>
+            <hudson.tasks.Shell>
+              <command>#!/bin/bash
+echo ===================================================================
+echo Worker Node: $NODE_NAME
+echo Workspace: $WORKSPACE
+echo ===================================================================
+
+. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh
+
+set -xe
+. setup.sh
+
+svn cat -r &quot;{&quot;`date -I`&quot;}&quot; svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml &gt; configuration.xml
+
+if [ -e ${slot}.json ] ; then
+  StackCheckout.py --verbose --build-id &quot;{slot}.${slot_build_id}.{timestamp}&quot; ${slot}.json
+else
+  StackCheckout.py --verbose --build-id &quot;{slot}.${slot_build_id}.{timestamp}&quot; configuration.xml#${slot}
+  mkdir -p sources
+  cp configuration.xml sources/configuration.xml
+fi
+</command>
+            </hudson.tasks.Shell>
+          </builders>
+          <publishers>
+            <hudson.tasks.ArtifactArchiver>
+              <artifacts>sources/**</artifacts>
+              <latestOnly>false</latestOnly>
+            </hudson.tasks.ArtifactArchiver>
+            <hudson.plugins.ws____cleanup.WsCleanup plugin="ws-cleanup@0.10">
+              <deleteDirs>false</deleteDirs>
+              <skipWhenFailed>true</skipWhenFailed>
+            </hudson.plugins.ws____cleanup.WsCleanup>
+          </publishers>
+          <buildWrappers>
+            <org.jenkinsci.plugins.buildnamesetter.BuildNameSetter plugin="build-name-setter@1.3">
+              <template>${ENV,var=&quot;slot&quot;}.${ENV,var=&quot;slot_build_id&quot;}</template>
+            </org.jenkinsci.plugins.buildnamesetter.BuildNameSetter>
+          </buildWrappers>
+        </project>
+      </definition>
+    </job>
+    <job>
+      <name>nightly-slot-build-trigger</name>
+      <description></description>
+      <definition>
+        <matrix-project>
+          <actions/>
+          <description></description>
+          <logRotator>
+            <daysToKeep>15</daysToKeep>
+            <numToKeep>-1</numToKeep>
+            <artifactDaysToKeep>4</artifactDaysToKeep>
+            <artifactNumToKeep>-1</artifactNumToKeep>
+          </logRotator>
+          <keepDependencies>false</keepDependencies>
+          <properties>
+            <hudson.model.ParametersDefinitionProperty>
+              <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                  <name>slot</name>
+                  <description>name of the slot to build</description>
+                  <defaultValue>lhcb-gaudi-head</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>slot_build_id</name>
+                  <description>id of the specific build of the slot</description>
+                  <defaultValue></defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>platforms</name>
+                  <description>id of the specific build of the slot</description>
+                  <defaultValue></defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <org.jvnet.jenkins.plugins.nodelabelparameter.NodeParameterDefinition plugin="nodelabelparameter@1.3">
+                  <name>node</name>
+                  <description></description>
+                  <allowedSlaves>
+                    <string>master</string>
+                  </allowedSlaves>
+                  <defaultValue>master</defaultValue>
+                  <triggerIfResult>multiSelectionDisallowed</triggerIfResult>
+                  <allowMultiNodeSelection>false</allowMultiNodeSelection>
+                  <triggerConcurrentBuilds>false</triggerConcurrentBuilds>
+                </org.jvnet.jenkins.plugins.nodelabelparameter.NodeParameterDefinition>
+              </parameterDefinitions>
+            </hudson.model.ParametersDefinitionProperty>
+          </properties>
+          <scm class="hudson.plugins.git.GitSCM" plugin="git@1.1.26">
+            <configVersion>2</configVersion>
+            <userRemoteConfigs>
+              <hudson.plugins.git.UserRemoteConfig>
+                <name></name>
+                <refspec></refspec>
+                <url>http://cern.ch/lhcbproject/GIT/LHCbNightlies2.git</url>
+              </hudson.plugins.git.UserRemoteConfig>
+            </userRemoteConfigs>
+            <branches>
+              <hudson.plugins.git.BranchSpec>
+                <name>**</name>
+              </hudson.plugins.git.BranchSpec>
+            </branches>
+            <disableSubmodules>false</disableSubmodules>
+            <recursiveSubmodules>false</recursiveSubmodules>
+            <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+            <authorOrCommitter>false</authorOrCommitter>
+            <clean>true</clean>
+            <wipeOutWorkspace>false</wipeOutWorkspace>
+            <pruneBranches>false</pruneBranches>
+            <remotePoll>false</remotePoll>
+            <ignoreNotifyCommit>false</ignoreNotifyCommit>
+            <useShallowClone>false</useShallowClone>
+            <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+            <gitTool>Default</gitTool>
+            <submoduleCfg class="list"/>
+            <relativeTargetDir></relativeTargetDir>
+            <reference></reference>
+            <excludedRegions></excludedRegions>
+            <excludedUsers></excludedUsers>
+            <gitConfigName></gitConfigName>
+            <gitConfigEmail></gitConfigEmail>
+            <skipTag>false</skipTag>
+            <includedRegions></includedRegions>
+            <scmName></scmName>
+          </scm>
+          <canRoam>true</canRoam>
+          <disabled>false</disabled>
+          <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+          <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+          <triggers class="vector"/>
+          <concurrentBuild>true</concurrentBuild>
+          <axes>
+            <ca.silvermaplesolutions.jenkins.plugins.daxis.DynamicAxis plugin="dynamic-axis@1.0.1">
+              <name>platform</name>
+              <values>
+                <string>platforms</string>
+              </values>
+              <varName>platforms</varName>
+              <axisValues>
+                <string>default</string>
+              </axisValues>
+            </ca.silvermaplesolutions.jenkins.plugins.daxis.DynamicAxis>
+          </axes>
+          <builders>
+            <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.25">
+              <projectName>nightly-slot-checkout/slot=$slot,slot_build_id=$slot_build_id</projectName>
+              <filter>sources/configuration.xml</filter>
+              <target></target>
+              <selector class="hudson.plugins.copyartifact.StatusBuildSelector"/>
+              <optional>true</optional>
+            </hudson.plugins.copyartifact.CopyArtifact>
+            <hudson.tasks.Shell>
+              <command>#!/bin/bash
+
+# hack because of a bug with non-writable home
+export HOME=$PWD
+. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh
+
+set -ex
+. setup.sh
+
+export CMTCONFIG=$platform
+
+if [ -e ${slot}.json ] ; then
+  SlotPreconditions.py --verbose ${slot}.json
+else
+  SlotPreconditions.py --verbose sources/configuration.xml#${slot}
+fi
+</command>
+            </hudson.tasks.Shell>
+            <hudson.plugins.parameterizedtrigger.TriggerBuilder plugin="parameterized-trigger@2.16">
+              <configs>
+                <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+                  <configs>
+                    <org.jvnet.jenkins.plugins.nodelabelparameter.parameterizedtrigger.NodeLabelBuildParameter plugin="nodelabelparameter@1.3">
+                      <name>platform</name>
+                      <nodeLabel>${platform}</nodeLabel>
+                    </org.jvnet.jenkins.plugins.nodelabelparameter.parameterizedtrigger.NodeLabelBuildParameter>
+                    <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+                      <properties>slot=${slot}
+slot_build_id=${slot_build_id}</properties>
+                    </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+                  </configs>
+                  <projects>nightly-slot-build</projects>
+                  <condition>ALWAYS</condition>
+                  <triggerWithNoParameters>false</triggerWithNoParameters>
+                  <block>
+                    <buildStepFailureThreshold>
+                      <name>FAILURE</name>
+                      <ordinal>2</ordinal>
+                      <color>RED</color>
+                    </buildStepFailureThreshold>
+                    <unstableThreshold>
+                      <name>UNSTABLE</name>
+                      <ordinal>1</ordinal>
+                      <color>YELLOW</color>
+                    </unstableThreshold>
+                    <failureThreshold>
+                      <name>FAILURE</name>
+                      <ordinal>2</ordinal>
+                      <color>RED</color>
+                    </failureThreshold>
+                  </block>
+                  <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
+                </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+              </configs>
+            </hudson.plugins.parameterizedtrigger.TriggerBuilder>
+          </builders>
+          <publishers/>
+          <buildWrappers>
+            <org.jenkinsci.plugins.buildnamesetter.BuildNameSetter plugin="build-name-setter@1.3">
+              <template>${ENV,var=&quot;slot&quot;}.${ENV,var=&quot;slot_build_id&quot;}</template>
+            </org.jenkinsci.plugins.buildnamesetter.BuildNameSetter>
+            <matrixtieparent.BuildWrapperMtp plugin="matrixtieparent@1.1">
+              <labelName>master</labelName>
+            </matrixtieparent.BuildWrapperMtp>
+          </buildWrappers>
+          <executionStrategy class="hudson.matrix.DefaultMatrixExecutionStrategyImpl">
+            <runSequentially>false</runSequentially>
+          </executionStrategy>
+        </matrix-project>
+      </definition>
+    </job>
+    <job>
+      <name>nightly-slot-build</name>
+      <description></description>
+      <definition>
+        <project>
+          <actions/>
+          <description>generic job to build all the projects in a nightly build slot for a given platform</description>
+          <logRotator>
+            <daysToKeep>15</daysToKeep>
+            <numToKeep>-1</numToKeep>
+            <artifactDaysToKeep>2</artifactDaysToKeep>
+            <artifactNumToKeep>-1</artifactNumToKeep>
+          </logRotator>
+          <keepDependencies>false</keepDependencies>
+          <properties>
+            <hudson.model.ParametersDefinitionProperty>
+              <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                  <name>slot</name>
+                  <description>name of the slot to build</description>
+                  <defaultValue>lhcb-gaudi-head</defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                  <name>slot_build_id</name>
+                  <description>id of the specific build of the slot</description>
+                  <defaultValue></defaultValue>
+                </hudson.model.StringParameterDefinition>
+                <org.jvnet.jenkins.plugins.nodelabelparameter.LabelParameterDefinition plugin="nodelabelparameter@1.3">
+                  <name>platform</name>
+                  <description>platform to build for</description>
+                  <defaultValue>x86_64-slc6-gcc46-opt</defaultValue>
+                </org.jvnet.jenkins.plugins.nodelabelparameter.LabelParameterDefinition>
+              </parameterDefinitions>
+            </hudson.model.ParametersDefinitionProperty>
+          </properties>
+          <scm class="hudson.plugins.git.GitSCM" plugin="git@1.1.26">
+            <configVersion>2</configVersion>
+            <userRemoteConfigs>
+              <hudson.plugins.git.UserRemoteConfig>
+                <name></name>
+                <refspec></refspec>
+                <url>http://cern.ch/lhcbproject/GIT/LHCbNightlies2.git</url>
+              </hudson.plugins.git.UserRemoteConfig>
+            </userRemoteConfigs>
+            <branches>
+              <hudson.plugins.git.BranchSpec>
+                <name>**</name>
+              </hudson.plugins.git.BranchSpec>
+            </branches>
+            <disableSubmodules>false</disableSubmodules>
+            <recursiveSubmodules>false</recursiveSubmodules>
+            <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+            <authorOrCommitter>false</authorOrCommitter>
+            <clean>true</clean>
+            <wipeOutWorkspace>false</wipeOutWorkspace>
+            <pruneBranches>false</pruneBranches>
+            <remotePoll>false</remotePoll>
+            <ignoreNotifyCommit>false</ignoreNotifyCommit>
+            <useShallowClone>false</useShallowClone>
+            <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+            <gitTool>Default</gitTool>
+            <submoduleCfg class="list"/>
+            <relativeTargetDir></relativeTargetDir>
+            <reference></reference>
+            <excludedRegions></excludedRegions>
+            <excludedUsers></excludedUsers>
+            <gitConfigName></gitConfigName>
+            <gitConfigEmail></gitConfigEmail>
+            <skipTag>false</skipTag>
+            <includedRegions></includedRegions>
+            <scmName></scmName>
+          </scm>
+          <canRoam>true</canRoam>
+          <disabled>false</disabled>
+          <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+          <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+          <triggers class="vector"/>
+          <concurrentBuild>true</concurrentBuild>
+          <builders>
+            <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.25">
+              <projectName>nightly-slot-checkout/slot=$slot,slot_build_id=$slot_build_id</projectName>
+              <filter>sources/**</filter>
+              <target></target>
+              <selector class="hudson.plugins.copyartifact.StatusBuildSelector"/>
+            </hudson.plugins.copyartifact.CopyArtifact>
+            <hudson.tasks.Shell>
+              <command>#!/bin/bash
+
+echo ===================================================================
+echo Worker Node: $NODE_NAME
+echo Workspace: $WORKSPACE
+echo ===================================================================
+
+. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c $platform
+
+set -x
+. setup.sh
+
+# remove old summaries
+rm -rf /afs/cern.ch/lhcb/software/nightlies/www/test/logs/${slot}.$(date +%a)*
+
+if [ -e ${slot}.json ] ; then
+  time BuildSlot.py --jobs 8 --timeout 18000 --build-id &quot;{slot}.${slot_build_id}.{timestamp}&quot; ${slot}.json
+else
+  time BuildSlot.py --jobs 8 --timeout 18000 --build-id &quot;{slot}.${slot_build_id}.{timestamp}&quot; sources/configuration.xml#${slot}
+fi
+
+# publish summaries to AFS
+mkdir -p /afs/cern.ch/lhcb/software/nightlies/www/test/logs/${slot}
+cp -fa build/summaries/*/${slot}.* /afs/cern.ch/lhcb/software/nightlies/www/test/logs/${slot}
+# ignore failure of copy
+true
+</command>
+            </hudson.tasks.Shell>
+          </builders>
+          <publishers>
+            <hudson.tasks.ArtifactArchiver>
+              <artifacts>build/*.tar.bz2, build/summaries/**</artifacts>
+              <latestOnly>false</latestOnly>
+            </hudson.tasks.ArtifactArchiver>
+            <hudson.plugins.warnings.WarningsPublisher plugin="warnings@4.19">
+              <healthy></healthy>
+              <unHealthy></unHealthy>
+              <thresholdLimit>low</thresholdLimit>
+              <pluginName>[WARNINGS] </pluginName>
+              <defaultEncoding></defaultEncoding>
+              <canRunOnFailed>false</canRunOnFailed>
+              <useStableBuildAsReference>false</useStableBuildAsReference>
+              <useDeltaValues>false</useDeltaValues>
+              <thresholds plugin="analysis-core@1.48">
+                <unstableTotalAll></unstableTotalAll>
+                <unstableTotalHigh></unstableTotalHigh>
+                <unstableTotalNormal></unstableTotalNormal>
+                <unstableTotalLow></unstableTotalLow>
+                <failedTotalAll></failedTotalAll>
+                <failedTotalHigh></failedTotalHigh>
+                <failedTotalNormal></failedTotalNormal>
+                <failedTotalLow></failedTotalLow>
+              </thresholds>
+              <shouldDetectModules>false</shouldDetectModules>
+              <dontComputeNew>true</dontComputeNew>
+              <doNotResolveRelativePaths>true</doNotResolveRelativePaths>
+              <parserConfigurations/>
+              <consoleParsers>
+                <hudson.plugins.warnings.ConsoleParser>
+                  <parserName>GNU Compiler 4 (gcc)</parserName>
+                </hudson.plugins.warnings.ConsoleParser>
+              </consoleParsers>
+            </hudson.plugins.warnings.WarningsPublisher>
+          </publishers>
+          <buildWrappers>
+            <org.jenkinsci.plugins.buildnamesetter.BuildNameSetter plugin="build-name-setter@1.3">
+              <template>${ENV,var=&quot;slot&quot;}.${ENV,var=&quot;slot_build_id&quot;}.${ENV,var=&quot;platform&quot;}</template>
+            </org.jenkinsci.plugins.buildnamesetter.BuildNameSetter>
+          </buildWrappers>
+        </project>
+      </definition>
+    </job>
+    <plugin>
+      <names>ssh-slaves shelve-project-plugin rebuild bulk-builder disk-usage</names>
+    </plugin>
+  </ingredients>
+</recipe>
