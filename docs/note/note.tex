@@ -10,8 +10,8 @@
 \newcommand{\urlLink}[1]{\link{#1}{\texttt{#1}}}
 
 \title{A New Nightly Build System for LHCb}
-\author{Marco Clemencic\address[MCl]{CERN, Switzerland}}
-%\ead[eMCl]{marco.clemencic@cern.ch}
+\author{Marco Clemencic\address[CERN]{CERN, Switzerland},
+        Ben Couturier\addressmark[CERN]}
 
 \doctyp{Internal Note}
 \dociss{0}
@@ -132,6 +132,7 @@ section.
 
 \section{Implementation}
 \subsection{Core Tools}
+\label{CoreTools}
 The core tools are hosted on the GIT repository\footnote{%
   LHCb set up a minimal GIT hosting service described here:
   \begin{quote}
@@ -232,6 +233,7 @@ XML\footnote{%
   Remember that the new configuration requires one file per slot.}.
 
 \subsubsection{Checkout}
+\label{CoreTools:CheckOut}
 In the new system there is a dedicated script (\texttt{StackCheckout.py}) for
 the checkout of all the projects in a slot.  It uses only the fields \emph{slot}
 and \emph{projects}, and for each project only \emph{name}, \emph{version},
@@ -322,6 +324,7 @@ same slot two different versions of a project, but, even if theoretically
 possible in the old system, this feature was never used or needed.
 
 \subsubsection{Preconditions Check}
+\label{CoreTools:Preconditions}
 In the old system it was possible to wait for the appearance of a special file
 before starting the build.  This feature was meant to allow chaining of nightly
 builds, so that we can have a slot that is built on the products of a slot in
@@ -364,6 +367,7 @@ either returning immediately (e.g. if there is not enough disk space) or
 waiting.
 
 \subsubsection{Build and Test}
+\label{CoreTools:Build}
 Building and testing actions are bundled in one main script because they are
 tightly connected: the tests of a project in the slot are run while other
 projects are built.  The behavior of the main build script can be tuned with
@@ -393,8 +397,9 @@ CDash instance (currently \urlLink{https://lbtestbuild.cern.ch/CDash}). The
 submission is optional, and we can also just build or just test.
 
 Once the configuration is ready, the build wrapper script triggers CTest to
-build each project, one after the other in order of dependencies (as declared in
-the configuration\footnote{The dependencies are not declared in the old
+build each project (optionally with a number of parallel processes, fixed with a
+command line option), one after the other in order of dependencies (as declared
+in the configuration\footnote{The dependencies are not declared in the old
 configuration, but the order of appearance is used instead, so the automatic
 translation of the configuration introduces fake dependencies between the
 projects to preserve the expected order of build.}).  Once a project is built,
@@ -428,8 +433,8 @@ rare cases where the artifacts are not installed\footnote{The test to spot these
 cases is not available yet.}.
 
 \subsubsection{Project Layout}
-As already mentioned, the core tools are hosted in a GIT repository which
-contains the following directories:
+As already mentioned, the core tools are hosted in a GIT repository with the
+following directories:
 \begin{description}
   \item[python] contains the main Python module \texttt{LHCbNightlies2} with
 submodules for the shared code, the task specific functions, templates and for
@@ -452,7 +457,171 @@ nosetests -v --with-doctest
 \end{quote}
 or with the simple wrapper \texttt{test.sh}.
 
+The repository features two main branches: \emph{master} and \emph{dev}.  The
+first one is the one used in production (automatically checked out by the
+Jenkins jobs), while the second is used for testing new features without
+interfering with the production jobs.
+
 \subsection{Jenkins Configuration}
+\label{Jenkins}
+Jenkins is a very flexible and extensible application used to manage automated
+build and test jobs.  It's features span from regular, on demand or commit
+triggered builds to complex build work-flows or just monitoring of tasks.  Its
+plug-in system allows to add functionalities like integration with different
+tools (e.g. Coverity or JIRA) and more reports from the builds.
+
+Unfortunately our use case is so special that there is no plug-in already
+available to support it, but, even if it could be implemented, we could achieve
+a good approximation with the right combination of some of the already existing
+plug-ins (the full list is reported in appendix \ref{JenkinsPlugIns}).
+
+I shall not describe the installation and set up of the Jenkins server or the
+configuration of access and privileged because it's not relevant to the
+operation of the nightly builds.  What is relevant, though, is the way we
+configure the cluster of build machines at our disposal.  In the old system the
+build machines were configured to start routinely (via cron jobs) the builds; in
+the new system it is the Jenkins instance that is aware of each build node
+(slave) and connects to them via \texttt{ssh} (using the \texttt{ssh}
+\emph{Launch method} provided by the \emph{Jenkins SSH Slaves Plugin}) with the
+credentials of the service account \texttt{lhcbsoft}.  Each slave is configured
+with the labels set to all the possible platforms it can build (i.e. the allowed
+values of the environment variable \texttt{CMTCONFIG} valid on that machine).
+To avoid problems with the AFS token, we change the default \emph{Availability}
+to take the node off line if idle (\emph{Idle delay}: 20 minutes) and to connect
+if needed (\emph{In demand delay}: 1 minute).  Because of the particular
+configuration of the build machines, we have to set the \emph{Remote FS root}
+pointing to a directory on the dedicated disk (\texttt{/build/jenkins}).  We do
+not have Java installed on the slave (or the version is too old), so, because to
+download it from the Oracle web site requires authentication, we install the
+JRE\footnote{Java Runtime Environment\cite{JRE}.} by hand on each node in the
+\texttt{jre} directory under the configured \emph{Remote FS root} and declare it
+in the configuration (field \emph{JavaPath} in the advanced section of the
+\emph{Launch method}).  The number of executors (\emph{\# of executors}) is
+usually set to the number of CPUs of the slave, but our builds and tests use on
+average two CPUs per job\footnote{The average number of CPUs per job is not
+  really predictable because we launch parallel builds using
+  \texttt{distcc}\cite{distcc,distccCERN} and we run the tests in background, so
+  we used the Unix command \texttt{time} to monitor the \emph{real time} (world
+  clock time) spent for a build versus the \emph{user time} (CPU time).},
+so we set it to half number of CPUs, except for the \emph{master} node, that we
+use only for jobs that almost do not use CPU, where we use $\sim200$ executors.
+
+The job we configured for the nightly builds are divided in two categories: the
+workers and the slots.  For a simpler monitoring the jobs of the two categories
+are grouped in two views, described later.
+
+\subsubsection{The Nightly Build Workers}
+\label{Jenkins:Workers}
+The workers are generic jobs that take care of the actual checkouts and builds
+of the slots.
+
+Part of the configuration is common to all worker jobs.  All of them, via the
+configuration \emph{Discard Old Builds}, keep the details of the build for 15
+days and the artifacts for one week, which could be changed increasing the
+available disk space; of course the retention periods must be identical for all
+the jobs for consistency.  Two parameters are common to all the workers:
+\begin{description}
+  \item[slot] string parameter defining the name of the slot
+  \item[slot\_build\_id] a numeric id (in a string parameter) common to all the
+jobs connected to the same build of a slot
+\end{description}
+In all cases we allow concurrent builds via the flag \emph{Execute concurrent
+builds if necessary}.  Using the \emph{Jenkins GIT Plugin} we check out the
+Nightly Builds Core Tools from the URL mentioned in \ref{CoreTools}, to use the
+latest production version for their tasks, and we tick the \emph{Clean after
+checkout} checkbox in the advanced section.  Since each worker job will be used
+several times concurrently to work on different slots and platforms, to more
+easily identify the builds referring to a specific slot we use the \emph{Build
+Name Setter Plugin} to change the name of the build from the default (a number)
+to the more useful \verb|<slot>.<slot_build_id>|\footnote{Since the parameters
+cannot be use directly in the \emph{Build Name} field, we use the fact that they
+are used to set environment variables, so the \emph{Build Name} used is
+\texttt{\$$\{$ENV,var="slot"$\}$.\$$\{$ENV,var="slot\_build\_id"$\}$}.}.
+
+In order to reduce the load on the software repositories, the checkout of the
+code to be compiled is performed only once per slot by the job called
+\emph{nightly-slot-checkout}.  To ensure that the checkout is run on a slave
+that has the correct environment, we use the \emph{Label Expression} field,
+under the section \emph{Restrict where this project can be run}, with a value
+like \verb|!master|.  The builder section of the checkout job consists of a
+single shell script that, essentially, calls the checkout script from the Core
+Tools (see \ref{CoreTools:CheckOut}) after having prepared the standard LHCb
+environment and, for testing, downloaded the old XML configuration into the
+directory \texttt{sources}.  For the post-build actions we use \emph{Archive the
+artifacts} to keep a copy of the content of the directory \texttt{sources} and
+we trigger a delete of the workspace after the build (\emph{Jenkins Workspace
+Cleanup Plugin}) to save disk space.
+
+Since each slot needs to be build on several platforms, but, possibly, only when
+some preconditions are met, we use a simple \emph{multi-configuration} (or
+\emph{matrix}) job called \emph{nightly-slot-build-trigger} with two extra
+parameters:
+\begin{description}
+  \item[platform] a string parameter to contain a space-separated list of
+platform the slot must be built on
+  \item[node] a node parameter (provided by the \emph{Node and Label Parameter
+Plugin}) used just to force the execution of the matrix sub-jobs on a specific
+node, the \emph{master}
+\end{description}
+In the \emph{Configuration Matrix} section we declare only one \emph{Dynamic
+Axis} (from the \emph{Dynamic Axis Plugin}) named \emph{platform} with the value
+takes from the environment variable \emph{platforms} (automatically defined from
+parameter with the same name).  In the \emph{Build Environment} section, we use
+the \emph{Matrix Tie Parent Plugin} to ensure that not only the sub-jobs are run
+on the master, but the parent job is run there too.  The build steps section is
+more complex then the one used for the checkout.  First we copy the old XML
+configuration file from the artifacts of the checkout job that was started with
+the same slot name and slot build id, using the \emph{Copy Artifact Plugin} and
+choosing the latest successful build of the project identified by the string
+\verb|nightly-slot-checkout/slot=$slot,slot_build_id=$slot_build_id|.  The
+second build step is a shell script that prepares the environment and calls the
+precondition check script from the Core Tools (see
+\ref{CoreTools:Preconditions}).  The last step is to trigger the actual build
+jobs via the \emph{Jenkins Parameterized Trigger Plugin}, so that the jobs
+\emph{nightly-slot-build} (described later) are started with a \emph{NodeLabel
+parameter} called \emph{platform} set to \verb|${platform}| and with
+\emph{Predefined paramters} used to propagate the values of the parameters
+\emph{slot} and \emph{slot\_build\_id}\footnote{The \emph{platform} parameter is
+  not passed in the same way as the others because the only way to trigger a job
+  so that it is executed on a node different from the originating job is to use
+  the special \emph{NodeLabel parameter} type.},
+then we \emph{Block until the triggered projects finish their builds} and we,
+essentially, inherit the status of the triggered jobs.  We do not need any
+special post-build action in this job.
+
+The job triggered by \emph{nightly-slot-build-trigger} is
+\emph{nightly-slot-build} and it runs the heaviest part: the actual build and
+the tests.  In addition to the common parameters it accepts the \emph{Label}
+parameter called \emph{platform}\footnote{A \emph{Label} parameter is used by
+Jenkins to choose on which slave the job has to be run.}.  Since this job will
+build the same slot on several different platforms, we appended
+\verb|.${ENV,var="platform"}| to the \emph{Build Name} used the other jobs.  In
+the build steps we copy all the artifacts from the latest successful build of
+the corresponding build of \emph{nightly-slot-checkout} (selected as in the
+build trigger job), then we use a shell script to prepare the build environment
+and call the build script from Core Tools (see
+\ref{CoreTools:Build})\footnote{To test the possible integration of the new
+nightly build system with the old summary page, we also copy to AFS summary
+files equivalent to the old ones that we generate during the build.}.  In the
+post-build actions we archive the artifacts, in particular the archive files and
+the summaries in the \texttt{build} directory.
+
+The workers jobs are grouped and displayed in the view \emph{Nightly Builds (workers)}, so that they can be easily monitored and not be confused with the slot jobs.
+
+\subsubsection{The Nightly Build Slots}
+\label{Jenkins:Slots}
+
+
+\subsubsection{Management}
+\label{Jenkins:Management}
+Not strictly needed to run the nightly builds, some plugins have been found very useful for the simplification of management tasks.
+\begin{description}
+  \item[Bulk Builder] allows to start several jobs in one go, for example selecting all the jobs in a view, so that, in case of need, we can re-start all the slots with a few clicks
+  \item[Jenkins Disk Usage Plugin] shows statistics on the disk space used by the various builds
+  \item[Rebuilder] allows to restart a parameterized build reusing the same parameters, so that in case of failure we can restart the build of a single slot or platform without a new checkout
+  \item[Recipe Plugin] is used to store in a file the configuration of a complex Jenkins setup (jobs, views, plugins) as a \emph{recipe} and import it in another Jenkins instance, for example we can store the complete configuration of the nightly build system described in this note
+  \item[Shelve Project Plugin] archives projects for possible later use, instead of deleting them, which is useful, for example, to keep a back up copy of some old or temporary slots
+\end{description}
 
 \section{Dashboard}
 
@@ -466,6 +635,31 @@ or with the simple wrapper \texttt{test.sh}.
 
 \appendix
 \section{List of Required Jenkins Plug-Ins}
+\label{JenkinsPlugIns}
+Here is summarized the list of plug-ins that are required to configure Jenkins
+to run the nightly builds
+\newcommand{\JPI}[2]{\item \link{#2}{#1}}
+\begin{itemize}
+  \JPI{Build Name Setter Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Build+Name+Setter+Plugin}
+  \JPI{Copy Artifact Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Copy+Artifact+Plugin}
+  \JPI{Dynamic Axis Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/DynamicAxis+Plugin}
+  \JPI{Jenkins GIT Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin}
+  \JPI{Jenkins Parameterized Trigger Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin}
+  \JPI{Jenkins SSH Slaves Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/SSH+Slaves+plugin}
+  \JPI{Jenkins Workspace Cleanup Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Workspace+Cleanup+Plugin}
+  \JPI{Matrix Tie Parent Plugin}{http://wiki.hudson-ci.org/display/HUDSON/Matrix+Tie+Parent+Plugin}
+  \JPI{Node and Label Parameter Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/NodeLabel+Parameter+Plugin}
+\end{itemize}
+
+The following list contains the plug-ins not needed for the jobs configuration,
+but useful for management tasks
+\begin{itemize}
+  \JPI{Bulk Builder}{http://wiki.jenkins-ci.org/display/JENKINS/Bulk+Builder+Plugin}
+  \JPI{Jenkins Disk Usage Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Disk+Usage+Plugin}
+  \JPI{Rebuilder}{http://wiki.jenkins-ci.org/display/JENKINS/Rebuild+Plugin}
+  \JPI{Recipe Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/Recipe+Plugin}
+  \JPI{Shelve Project Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Shelve+Project+Plugin}
+\end{itemize}
 
 \section{To-Do List}
 \begin{itemize}
@@ -475,6 +669,7 @@ or with the simple wrapper \texttt{test.sh}.
 environment)
     \item use the environment settings in all the steps
     \item review the \emph{plug-in} mechanism
+    \item define where to store the configuration of the slots
   \end{itemize}
   \item Build
   \begin{itemize}
@@ -485,6 +680,12 @@ environment)
     \item integration between QMTest and CTest
   \end{itemize}
   \item Dashboard
+  \item Jenkins
+  \begin{itemize}
+    \item simplified node labels and matching (e.g. x86\_64-slc5-gcc46-dbg
+$\rightarrow$ slc5)
+  \end{itemize}
+
 \end{itemize}
 
 \end{document}
