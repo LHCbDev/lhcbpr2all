@@ -610,7 +610,20 @@ The workers jobs are grouped and displayed in the view \emph{Nightly Builds (wor
 
 \subsubsection{The Nightly Build Slots}
 \label{Jenkins:Slots}
+To define and build the various slots we use dummy parameterized jobs, one per slot, named after the slot itself and where the only difference between them is the name and the default value of the single string parameter \emph{platforms}, defining the list of platforms the slot is to be built on.
 
+The configuration of these jobs is relatively simple\footnote{It could be further simplified by adding one more level of indirection (i.e. another parameterized worker job), but for the time being it doesn't seem necessary.}.  The build details and artifacts retention policies are the same as the one used in the configuration of the workers (see \ref{Jenkins:Workers}), for consistency.  The single string parameter \emph{platforms} has already been mentioned\footnote{There are plans to improve the usability by leveraging on the \link{https://wiki.jenkins-ci.org/display/JENKINS/Extensible+Choice+Parameter+plugin}{Extensible Choice Parameter plugin}.} and can be used to define the list of platforms to build when manually triggering the build, but its default value is what is used for the regular builds, so, while in the old system the list of platforms to be built was stored in the configuration file, in the new system is part of the configuration of the slot job.  Since these are dummy jobs not using CPU, we restrict their execution to the master node (\emph{Restrict where this project can be run}).  For these jobs we do not need any source code management.
+
+The build of a slot is triggered via the \emph{Build periodically} configuration box, which is set to start the builds between 00:00 and 01:00, using the special schedule \verb|H 0 * * *|.  The scheduling can be tuned to build only on some days as it was possible in some special (and less flexible) settings in the old configuration.
+
+The build steps for the slots are two simple build triggers, the first one on \emph{nightly-slot-checkout} and the second one on \emph{nightly-slot-build-trigger}.  In both cases we pass the following predefined parameters:
+\begin{quote}
+\begin{verbatim}
+slot=${JOB_NAME}
+slot_build_id=${BUILD_NUMBER}
+\end{verbatim}
+\end{quote}
+and we wait for the completion of the triggered job, inheriting the status of the build.
 
 \subsubsection{Management}
 \label{Jenkins:Management}
