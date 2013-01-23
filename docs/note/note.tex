@@ -606,34 +606,74 @@ files equivalent to the old ones that we generate during the build.}.  In the
 post-build actions we archive the artifacts, in particular the archive files and
 the summaries in the \texttt{build} directory.
 
-The workers jobs are grouped and displayed in the view \emph{Nightly Builds (workers)}, so that they can be easily monitored and not be confused with the slot jobs.
+The workers jobs are grouped and displayed in the view \emph{Nightly Builds
+(workers)}, so that they can be easily monitored and not be confused with the
+slot jobs.
 
 \subsubsection{The Nightly Build Slots}
 \label{Jenkins:Slots}
-To define and build the various slots we use dummy parameterized jobs, one per slot, named after the slot itself and where the only difference between them is the name and the default value of the single string parameter \emph{platforms}, defining the list of platforms the slot is to be built on.
+To define and build the various slots we use dummy parameterized jobs, one per
+slot, named after the slot itself and where the only difference between them is
+the name and the default value of the single string parameter \emph{platforms},
+defining the list of platforms the slot is to be built on.
 
-The configuration of these jobs is relatively simple\footnote{It could be further simplified by adding one more level of indirection (i.e. another parameterized worker job), but for the time being it doesn't seem necessary.}.  The build details and artifacts retention policies are the same as the one used in the configuration of the workers (see \ref{Jenkins:Workers}), for consistency.  The single string parameter \emph{platforms} has already been mentioned\footnote{There are plans to improve the usability by leveraging on the \link{https://wiki.jenkins-ci.org/display/JENKINS/Extensible+Choice+Parameter+plugin}{Extensible Choice Parameter plugin}.} and can be used to define the list of platforms to build when manually triggering the build, but its default value is what is used for the regular builds, so, while in the old system the list of platforms to be built was stored in the configuration file, in the new system is part of the configuration of the slot job.  Since these are dummy jobs not using CPU, we restrict their execution to the master node (\emph{Restrict where this project can be run}).  For these jobs we do not need any source code management.
+The configuration of these jobs is relatively simple\footnote{It could be
+further simplified by adding one more level of indirection (i.e. another
+parameterized worker job), but for the time being it doesn't seem necessary.}.
+The build details and artifacts retention policies are the same as the one used
+in the configuration of the workers (see \ref{Jenkins:Workers}), for
+consistency.  The single string parameter \emph{platforms} has already been
+mentioned\footnote{There are plans to improve the usability by leveraging on the
+\link{
+https://wiki.jenkins-ci.org/display/JENKINS/Extensible+Choice+Parameter+plugin}{
+Extensible Choice Parameter plugin}.} and can be used to define the list of
+platforms to build when manually triggering the build, but its default value is
+what is used for the regular builds, so, while in the old system the list of
+platforms to be built was stored in the configuration file, in the new system is
+part of the configuration of the slot job.  Since these are dummy jobs not using
+CPU, we
+restrict their execution to the master node (\emph{Restrict where this project
+can be run}).  For these jobs we do not need any source code management.
 
-The build of a slot is triggered via the \emph{Build periodically} configuration box, which is set to start the builds between 00:00 and 01:00, using the special schedule \verb|H 0 * * *|.  The scheduling can be tuned to build only on some days as it was possible in some special (and less flexible) settings in the old configuration.
+The build of a slot is triggered via the \emph{Build periodically} configuration
+box, which is set to start the builds between 00:00 and 01:00, using the special
+schedule \verb|H 0 * * *|.  The scheduling can be tuned to build only on some
+days as it was possible in some special (and less flexible) settings in the old
+configuration.
 
-The build steps for the slots are two simple build triggers, the first one on \emph{nightly-slot-checkout} and the second one on \emph{nightly-slot-build-trigger}.  In both cases we pass the following predefined parameters:
+The build steps for the slots are two simple build triggers, the first one on
+\emph{nightly-slot-checkout} and the second one on
+\emph{nightly-slot-build-trigger}.  In both cases we pass the following
+predefined parameters:
 \begin{quote}
 \begin{verbatim}
 slot=${JOB_NAME}
 slot_build_id=${BUILD_NUMBER}
 \end{verbatim}
 \end{quote}
-and we wait for the completion of the triggered job, inheriting the status of the build.
+and we wait for the completion of the triggered job, inheriting the status of
+the build.
 
 \subsubsection{Management}
 \label{Jenkins:Management}
-Not strictly needed to run the nightly builds, some plugins have been found very useful for the simplification of management tasks.
+Not strictly needed to run the nightly builds, some plugins have been found very
+useful for the simplification of management tasks.
 \begin{description}
-  \item[Bulk Builder] allows to start several jobs in one go, for example selecting all the jobs in a view, so that, in case of need, we can re-start all the slots with a few clicks
-  \item[Jenkins Disk Usage Plugin] shows statistics on the disk space used by the various builds
-  \item[Rebuilder] allows to restart a parameterized build reusing the same parameters, so that in case of failure we can restart the build of a single slot or platform without a new checkout
-  \item[Recipe Plugin] is used to store in a file the configuration of a complex Jenkins setup (jobs, views, plugins) as a \emph{recipe} and import it in another Jenkins instance, for example we can store the complete configuration of the nightly build system described in this note
-  \item[Shelve Project Plugin] archives projects for possible later use, instead of deleting them, which is useful, for example, to keep a back up copy of some old or temporary slots
+  \item[Bulk Builder] allows to start several jobs in one go, for example
+selecting all the jobs in a view, so that, in case of need, we can re-start all
+the slots with a few clicks
+  \item[Jenkins Disk Usage Plugin] shows statistics on the disk space used by
+the various builds
+  \item[Rebuilder] allows to restart a parameterized build reusing the same
+parameters, so that in case of failure we can restart the build of a single slot
+or platform without a new checkout
+  \item[Recipe Plugin] is used to store in a file the configuration of a complex
+Jenkins setup (jobs, views, plugins) as a \emph{recipe} and import it in another
+Jenkins instance, for example we can store the complete configuration of the
+nightly build system described in this note
+  \item[Shelve Project Plugin] archives projects for possible later use, instead
+of deleting them, which is useful, for example, to keep a back up copy of some
+old or temporary slots
 \end{description}
 
 \section{Dashboard}
@@ -653,25 +693,37 @@ Here is summarized the list of plug-ins that are required to configure Jenkins
 to run the nightly builds
 \newcommand{\JPI}[2]{\item \link{#2}{#1}}
 \begin{itemize}
-  \JPI{Build Name Setter Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Build+Name+Setter+Plugin}
-  \JPI{Copy Artifact Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Copy+Artifact+Plugin}
-  \JPI{Dynamic Axis Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/DynamicAxis+Plugin}
-  \JPI{Jenkins GIT Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin}
-  \JPI{Jenkins Parameterized Trigger Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin}
-  \JPI{Jenkins SSH Slaves Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/SSH+Slaves+plugin}
-  \JPI{Jenkins Workspace Cleanup Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Workspace+Cleanup+Plugin}
-  \JPI{Matrix Tie Parent Plugin}{http://wiki.hudson-ci.org/display/HUDSON/Matrix+Tie+Parent+Plugin}
-  \JPI{Node and Label Parameter Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/NodeLabel+Parameter+Plugin}
+  \JPI{Build Name Setter
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Build+Name+Setter+Plugin}
+  \JPI{Copy Artifact
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Copy+Artifact+Plugin}
+  \JPI{Dynamic Axis
+Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/DynamicAxis+Plugin}
+  \JPI{Jenkins GIT
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin}
+  \JPI{Jenkins Parameterized Trigger
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin}
+  \JPI{Jenkins SSH Slaves
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/SSH+Slaves+plugin}
+  \JPI{Jenkins Workspace Cleanup
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Workspace+Cleanup+Plugin}
+  \JPI{Matrix Tie Parent
+Plugin}{http://wiki.hudson-ci.org/display/HUDSON/Matrix+Tie+Parent+Plugin}
+  \JPI{Node and Label Parameter
+Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/NodeLabel+Parameter+Plugin}
 \end{itemize}
 
 The following list contains the plug-ins not needed for the jobs configuration,
 but useful for management tasks
 \begin{itemize}
-  \JPI{Bulk Builder}{http://wiki.jenkins-ci.org/display/JENKINS/Bulk+Builder+Plugin}
-  \JPI{Jenkins Disk Usage Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Disk+Usage+Plugin}
+  \JPI{Bulk
+Builder}{http://wiki.jenkins-ci.org/display/JENKINS/Bulk+Builder+Plugin}
+  \JPI{Jenkins Disk Usage
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Disk+Usage+Plugin}
   \JPI{Rebuilder}{http://wiki.jenkins-ci.org/display/JENKINS/Rebuild+Plugin}
   \JPI{Recipe Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/Recipe+Plugin}
-  \JPI{Shelve Project Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Shelve+Project+Plugin}
+  \JPI{Shelve Project
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Shelve+Project+Plugin}
 \end{itemize}
 
 \section{To-Do List}
