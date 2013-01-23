@@ -35,7 +35,7 @@ Since, because of technical reasons, we cannot adopt the new planned SFT nightly
 build system, we decided to investigate the possibility of a custom version
 based on the open source continuous integration system Jenkins\cite{Jenkins}.
 
-In this note I describe the implementation of a working prototype of the new
+In this note we describe the implementation of a working prototype of the new
 nightly build system.
 \end{abstract}
 
@@ -48,7 +48,7 @@ nightly build system.
 \tableofcontents
 
 \listoffigures
-\listoftables
+%\listoftables
 
 \section{Introduction}
 We have been using the Nightly Build System based the the LCG Aplication Area
@@ -94,9 +94,9 @@ one slot
 
 \section{Design}
 The build system is divided in three main concerns: the configuration of Jenkins
-jobs (for the coordination and distribution of the tasks), the core tools
-(for the actual checkout and build tasks), the dashboard (summarized
-presentation of the results of the builds).
+jobs (for the coordination and distribution of the tasks), the core tools (for
+the actual checkout and build tasks), the dashboard (summarized presentation of
+the results of the builds).
 
 Although Jenkins allows arbitrary complex scripts in the build steps, it is
 suggested in the documentation to keep the build steps simple, wrapping the
@@ -144,7 +144,7 @@ The core tools are hosted on the GIT repository\footnote{%
   \texttt{http://cern.ch/lhcbproject/GIT/LHCbNightlies2.git}
 \end{quote}
 
-In the following sections I describe in some details the main components of the
+In the following sections we describe in some details the main components of the
 Core Tools and their implementations.
 
 \subsubsection{Configuration}
@@ -155,10 +155,10 @@ and the details of the old configuration file to see what could be simplified or
 removed.
 
 Because the new system is more modular than the old one and the management part
-is separated from the build part, I started from a minimal configuration file
-describing a single slot.  To simplify the prototyping, I have chosen the JSON
+is separated from the build part, we started from a minimal configuration file
+describing a single slot.  To simplify the prototyping, we have chosen the JSON
 format (semi-structured) instead of XML (structured), and, because of the JSON
-objects are converted in Python, inside the code I used simple nested Python
+objects are converted in Python, inside the code we used simple nested Python
 dictionaries.
 
 The configuration of a slot consists of a JSON object with the following format:
@@ -219,8 +219,8 @@ variables, respectively, \texttt{\%TODAY\%}, \texttt{\%YESTERDAY\%} (set
 internally) and \texttt{\%CMTCONFIG\%} (taken from the inherited environment).
 
 To allow for a smooth transition from the old system to the new one and for
-testing the new system in parallel with the old one, I introduced a simple layer
-that extracts the configuration of a slot from the XML configuration and
+testing the new system in parallel with the old one, we introduced a simple
+layer that extracts the configuration of a slot from the XML configuration and
 produces a dictionary with the same format than the one obtained from the new
 JSON format.
 
@@ -242,7 +242,7 @@ and \emph{projects}, and for each project only \emph{name}, \emph{version},
 This script checks out all the projects to be built in the slot fine tuning them
 according to the required overrides and fixing the interdependency declarations.
 
-For each project is possible to choose a checkout function passing it's
+For each project is possible to choose a checkout function passing its
 name\footnote{It is enough to use the function name for functions in the module
 implementing the checkout script, while functions accessible from other modules
 require the fully qualified name (i.e. \texttt{module.function}).} as the value
@@ -387,7 +387,7 @@ sources are found (i.e. we ignore the projects that were not checked out) we
 create, from templates, a few configuration files and a script to be run via the
 CTest\cite{CMake} (\texttt{ctest}) command (the build and test tool distributed
 with CMake), and, for the whole slot, we create a special file used to describe
-the structure of the slot to CDash\cite{CDashSubprojects}.
+the structure of the slot to CDash.
 
 The generated CTest script is the core of the build procedure.  It is written
 such that it can build either CMake-based projects or CMT-based\cite{CMT} ones
@@ -443,7 +443,7 @@ the tests
 the calls to the main functions in the Python modules
   \item[docs] documentation
 \end{description}
-I the top level directory there are two setup shell scripts (\emph{sh} and
+In the top level directory there are two setup shell scripts (\emph{sh} and
 \emph{csh} variants) than can be sources to add two main directories to the
 \texttt{PYTHONPATH} and to the \texttt{PATH}.
 
@@ -465,7 +465,7 @@ interfering with the production jobs.
 \subsection{Jenkins Configuration}
 \label{Jenkins}
 Jenkins is a very flexible and extensible application used to manage automated
-build and test jobs.  It's features span from regular, on demand or commit
+build and test jobs.  Its features span from regular, on demand or commit
 triggered builds to complex build work-flows or just monitoring of tasks.  Its
 plug-in system allows to add functionalities like integration with different
 tools (e.g. Coverity or JIRA) and more reports from the builds.
@@ -475,8 +475,8 @@ available to support it, but, even if it could be implemented, we could achieve
 a good approximation with the right combination of some of the already existing
 plug-ins (the full list is reported in appendix \ref{JenkinsPlugIns}).
 
-I shall not describe the installation and set up of the Jenkins server or the
-configuration of access and privileged because it's not relevant to the
+We shall not describe the installation and set up of the Jenkins server or the
+configuration of access and privileged because it is not relevant to the
 operation of the nightly builds.  What is relevant, though, is the way we
 configure the cluster of build machines at our disposal.  In the old system the
 build machines were configured to start routinely (via cron jobs) the builds; in
@@ -595,20 +595,38 @@ the tests.  In addition to the common parameters it accepts the \emph{Label}
 parameter called \emph{platform}\footnote{A \emph{Label} parameter is used by
 Jenkins to choose on which slave the job has to be run.}.  Since this job will
 build the same slot on several different platforms, we appended
-\verb|.${ENV,var="platform"}| to the \emph{Build Name} used the other jobs.  In
-the build steps we copy all the artifacts from the latest successful build of
-the corresponding build of \emph{nightly-slot-checkout} (selected as in the
-build trigger job), then we use a shell script to prepare the build environment
-and call the build script from Core Tools (see
-\ref{CoreTools:Build})\footnote{To test the possible integration of the new
-nightly build system with the old summary page, we also copy to AFS summary
-files equivalent to the old ones that we generate during the build.}.  In the
-post-build actions we archive the artifacts, in particular the archive files and
-the summaries in the \texttt{build} directory.
+\verb|.${ENV,var="platform"}| to the \emph{Build Name} used the other jobs
+(Figure~\ref{fig:jenkins-builds}).  In the build steps we copy all the artifacts
+from the latest successful build of the corresponding build of
+\emph{nightly-slot-checkout} (selected as in the build trigger job), then we use
+a shell script to prepare the build environment and call the build script from
+Core Tools (see \ref{CoreTools:Build})\footnote{To test the possible integration
+of the new nightly build system with the old summary page, we also copy to AFS
+summary files equivalent to the old ones that we generate during the build.}.
+In the post-build actions we archive the artifacts, in particular the archive
+files and the summaries in the \texttt{build} directory.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=7cm]{images/jenkins-3}
+  \end{center}
+  \caption{Jenkins: List of running and recently completed
+  \emph{nightly-slot-build} jobs.}
+  \label{fig:jenkins-builds}
+\end{figure}
 
 The workers jobs are grouped and displayed in the view \emph{Nightly Builds
-(workers)}, so that they can be easily monitored and not be confused with the
-slot jobs.
+(workers)} (Figure~\ref{fig:jenkins-workers}), so that they can be easily
+monitored and not be confused with the slot jobs.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/jenkins-2}
+  \end{center}
+  \caption{Jenkins: View of the worker jobs.}
+  \label{fig:jenkins-workers}
+\end{figure}
+
 
 \subsubsection{The Nightly Build Slots}
 \label{Jenkins:Slots}
@@ -654,6 +672,18 @@ slot_build_id=${BUILD_NUMBER}
 and we wait for the completion of the triggered job, inheriting the status of
 the build.
 
+As for the workers, for easier monitoring, the slot jobs are grouped in a view
+called \emph{Nightly Builds} (Figure~\ref{fig:jenkins-slots}).
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/jenkins-1}
+  \end{center}
+  \caption{Jenkins: View of the jobs representing the slots.}
+  \label{fig:jenkins-slots}
+\end{figure}
+
+
 \subsubsection{Management}
 \label{Jenkins:Management}
 Not strictly needed to run the nightly builds, some plugins have been found very
@@ -677,6 +707,102 @@ old or temporary slots
 \end{description}
 
 \section{Dashboard}
+It is extremely important for our developers and project managers to have a
+quick overview on the status of the nightly builds, and this view should be
+tunable so that each user can see only the informations relevant to her.
+
+For the prototype of the new nightly builds system we considered two
+possibilities: CDash and the summary web page of the old system.
+
+\subsection{CDash}
+CDash is the dashboard solution developed for integration with the CTest tool
+bundled with CMake.
+
+CTest can be used to build and test projects based on CMake as well as on custom
+tools.  Of course, CMake projects are easier to handle than the others, but it
+has not been too difficult to develop a working script for CMT-based projects,
+as described in \ref{CoreTools:Build}.
+
+To try to reproduce a structure similar to the one we need, we declared each
+slot as a project in CDash and all the software projects in the slot as
+sub-projects\cite{CMakeBook,CDashSubprojects} (using the combination of name and
+version as CDash sub-project name).  The platform id string translates to the
+\emph{build name} and we use the build slave hostname as \emph{site}.  In order
+to display enough informations, the CDash projects representing the slots must
+be configured to be public and display \emph{labels} (special meta-data fields
+used to identify the builds of the sub-projects).
+
+With this configuration, the first page (Figure~\ref{fig:cdash-home}) we get
+when connecting to our CDash instance\footnote{Currently
+\urlLink{https://lbtestbuild.cern.ch/CDash}, but it will change in the future if
+we choose this option for the final dashboard.} contains the list of the
+declared slots (if a slot is not declared to CDash, it will not appear even if
+it has been built and the result pushed to the server) with a description, but
+without any information on the status of the build.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/cdash-1}
+  \end{center}
+  \caption{CDash: Initial page with the list of slots.}
+  \label{fig:cdash-home}
+\end{figure}
+
+Clicking on of the slots, we can access to the overview page for that slot
+(Figure~\ref{fig:cdash-slot}), where the number of succesful or problematic
+builds is reported.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/cdash-2}
+  \end{center}
+  \caption{CDash: Overview of one slot.}
+  \label{fig:cdash-slot}
+\end{figure}
+
+We can go deeper and see the details of the builds of project in the slot
+(Figure~\ref{fig:cdash-project}) or a summary for a platform
+(Figure~\ref{fig:cdash-platform}).
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/cdash-3}
+  \end{center}
+  \caption{CDash: Detailed view of a project in one slot.}
+  \label{fig:cdash-project}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/cdash-4}
+  \end{center}
+  \caption{CDash: Overview of a platform in one slot.}
+  \label{fig:cdash-platform}
+\end{figure}
+
+It must be noted that the tests we run in our nightly builds use
+QMTest\cite{QMTestPaper} (as mentioned in \ref{CoreTools:Build}).  When using
+CTest, we call start a collection of QMTest tests as a single CTest test, so the
+numbers in the CDash views are not correct (Figure~\ref{fig:cdash-project}),
+while, when we use CMT, we cannot even publish the results of the tests to
+CDash, so those fields are empty.  The plan is to extend the output format of
+QMTest to produce the results files needed for CDash, so that we can publish the
+correct informations.  In the long term we will also replace QMTest with CTest,
+but the extension of the output format is the only possibility in the short
+term.
+
+The informations stored in the CDash database are enough for out purposes (apart
+from the results of the tests), but the layout is not optimal for our purposes.
+Since we build the same version of a project in several conditions, it is useful
+to see all its the builds across the slots, but it is impossible with CDash.
+Moreover, the view in Figure~\ref{fig:cdash-platform} puts the accent on the
+wrong information (the site), while we give more importance to the project
+(label).  We also observed some annoying bugs which might be fixed in a future
+version (the latest release is one year old).  Anyway, since CDash is open
+source, we could extend it more or less easily to extract from the database the
+details we need and display them the way we want.
+
+\subsection{Old Summary Web Page}
 
 %\section{Instructions for Managers}
 
