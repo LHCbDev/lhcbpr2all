@@ -799,14 +799,54 @@ Moreover, the view in Figure~\ref{fig:cdash-platform} puts the accent on the
 wrong information (the site), while we give more importance to the project
 (label).  We also observed some annoying bugs which might be fixed in a future
 version (the latest release is one year old).  Anyway, since CDash is open
-source, we could extend it more or less easily to extract from the database the
-details we need and display them the way we want.
+source, we could extend it, more or less easily, to extract from the database
+the details we need and display them the way we want.
 
 \subsection{Old Summary Web Page}
+The summary web page of the old system was designed to vehiculate all the needed
+informations in a single view (Figure~\ref{fig:old-summary}), we could reuse its
+layout and infrastructure.  To evaluate the feasibility of this approach, we
+produce, with the new system, partial build and test summary files that are
+compatible with the expectations of the old system.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=15cm]{images/old-summary}
+  \end{center}
+  \caption{Old Summary Web Page: Part of the summary tables.}
+  \label{fig:old-summary}
+\end{figure}
+
+Although possible, there are several downsides in this approach.
+
+The parsing of the build and test log files is partially integrated in the build
+step of the old system and partially in the regular job that generates the full
+version of the summary page.  To produce the data required by the regular job we
+need to rewrite from scratch the parsing code to extract it from the old build
+step.
+
+The technology used for the summary page is obsolete: a static HTML file
+produced by a job run every 15 minutes, which is then filtered by a CGI script.
+A more modern approach would involve dynamic content (currently achieved by
+forcing a reload of the full page) and an independent exchange format, such as
+XML, with the possibility of a layout usable on small screens (smartphones).
+
+The amount of work required to reproduce completely the old summary files will
+be probably spent better in the extension of CDash or Jenkins, or even in a
+completely new dashboard.
 
 %\section{Instructions for Managers}
 
-%\section{Conclusion}
+\section{Conclusions}
+We produced a working prototype of a new Nightly Build System based on already
+available tools reducing the customization to the minimum.  The new build system
+demonstrated to be quite stable and reliable.
+
+What is missing in the current prototype are a dashboard and the integration of
+QMTest with CTest (which is anyway needed as part of the migration our build
+system to CMake).  We evaluated two possibilities for the implementation of the
+dashboard, but further studies and developments are needed to have a final
+version.
 
 \bibliography{bibliography}
 %\bibliographystyle{plainurl}
@@ -852,31 +892,31 @@ Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Disk+Usage+Plugin}
 Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Shelve+Project+Plugin}
 \end{itemize}
 
-\section{To-Do List}
-\begin{itemize}
-  \item Configuration
-  \begin{itemize}
-    \item allow inclusion of shared configuration files (e.g. for the
-environment)
-    \item use the environment settings in all the steps
-    \item review the \emph{plug-in} mechanism
-    \item define where to store the configuration of the slots
-  \end{itemize}
-  \item Build
-  \begin{itemize}
-    \item check if the build produced files in the source directories
-  \end{itemize}
-  \item Tests
-  \begin{itemize}
-    \item integration between QMTest and CTest
-  \end{itemize}
-  \item Dashboard
-  \item Jenkins
-  \begin{itemize}
-    \item simplified node labels and matching (e.g. x86\_64-slc5-gcc46-dbg
-$\rightarrow$ slc5)
-  \end{itemize}
-
-\end{itemize}
+% \section{To-Do List}
+% \begin{itemize}
+%   \item Configuration
+%   \begin{itemize}
+%     \item allow inclusion of shared configuration files (e.g. for the
+% environment)
+%     \item use the environment settings in all the steps
+%     \item review the \emph{plug-in} mechanism
+%     \item define where to store the configuration of the slots
+%   \end{itemize}
+%   \item Build
+%   \begin{itemize}
+%     \item check if the build produced files in the source directories
+%   \end{itemize}
+%   \item Tests
+%   \begin{itemize}
+%     \item integration between QMTest and CTest
+%   \end{itemize}
+%   \item Dashboard
+%   \item Jenkins
+%   \begin{itemize}
+%     \item simplified node labels and matching (e.g. x86\_64-slc5-gcc46-dbg
+% $\rightarrow$ slc5)
+%   \end{itemize}
+%
+% \end{itemize}
 
 \end{document}
