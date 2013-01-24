@@ -28,8 +28,8 @@
 The nightly build system used so far by LHCb has been implemented as an
 extension on the LCG Application Area one\cite{Kruzelecki:2010zz}.  Although
 this version basically works, it has several limitations in terms of
-extensibility, management, ease of use, so that the SFT group decided to develop
-a new version based on a commercial continuous integration system.
+extensibility, management and ease of use, so that the SFT group decided to
+develop a new version based on a commercial continuous integration system.
 
 Since, because of technical reasons, we cannot adopt the new planned SFT nightly
 build system, we decided to investigate the possibility of a custom version
@@ -42,7 +42,7 @@ nightly build system.
 \begin{status}
 \entry{Draft}{1}{January 17, 2013}{First version.}
 %\entry{Draft}{2}{December 16, 2003}{Added conclusion.}
-%\entry{Final}{1}{April 26, 2004}{Checked english}
+%\entry{Final}{1}{April 26, 2004}{Checked English}
 \end{status}
 
 \tableofcontents
@@ -51,24 +51,27 @@ nightly build system.
 %\listoftables
 
 \section{Introduction}
-We have been using the Nightly Build System based the the LCG Aplication Area
-one for several years\cite{Kruzelecki:2010zz}.  The system works, but it has
-limitations that make it very difficult to extend and to manage.  The SFT group
-planned a rewrite of their code base, to overcome the limitations sill allowing
-for extensions like he ones we needed, so we decided to wait their new
-implementation before reviewing our code.  Now that the SFT group opted for an
-implementation based on a commercial continuous integration solution that we
-cannot easily extend for our use case without a complete rewrite of our code, we
-decided to investigate the possibility of a new implementation of the nightly
-build system based on the the open source continuous integration system
-Jenkins\cite{Jenkins}.
+We have been using the Nightly Build System based the the LCG Application Area
+one for several years\cite{Kruzelecki:2010zz}.  The system works, but it has got
+limitations that make it very difficult to extend and manage.  A couple of years
+ago, the SFT group had planned a rewrite of their code base, to overcome the
+limitations, still allowing extensions like the ones we needed, so we decided to
+wait their new implementation before reviewing our code.  Only recently the SFT
+group opted for an completely different implementation based on a commercial
+continuous integration solution.  We will not be able to extend their new system
+for our use case without a complete rewrite of our code (and expensive license
+costs), so we decided to investigate the possibility of a new implementation of
+the Nightly Build System based on the the open source continuous integration
+system Jenkins\cite{Jenkins}.
 
 The outcome of the investigation is the working prototype described in this
 note.
 
 \section{Requirements}
-The new nightly build system must have the main functionalities of the old one,
-such as
+For the paste experience we collected a minimal set of functionalities that a
+Nightly Build System must provide.
+
+The new system must provide the same functionalities of the old one, such as
 \begin{itemize}
   \item build and test several slots (consistent set LHCb software projects) on
 several platforms
@@ -76,11 +79,13 @@ several platforms
   \item separate the builds of different platforms
   \item allow customized checkouts (i.e. non default versions of the packages)
   \item run the tests of a project while building the following one on the stack
-  \item produce incremental reports of the results of the builds in a dashboard
   \item configurable parsing of the build logs (ignore some warnings and errors)
   \item distribute efficiently the load on a pool of build machines
+  \item a dashboard updated incrementally with accessible links to problems and
+an overview on all the slots
 \end{itemize}
-but, wherever possible, improve and simplify the old implementation.
+but, wherever possible, improved and with a simpler and more maintainable
+implementation.
 
 In additions we want to have some long awaited new features:
 \begin{itemize}
@@ -93,48 +98,50 @@ one slot
 \end{itemize}
 
 \section{Design}
-The build system is divided in three main concerns: the configuration of Jenkins
-jobs (for the coordination and distribution of the tasks), the core tools (for
-the actual checkout and build tasks), the dashboard (summarized presentation of
-the results of the builds).
+The new Nightly Build System is divided in three main concerns: the
+configuration of Jenkins jobs (for the coordination and distribution of the
+tasks), the core tools (for the actual checkout and build tasks), the dashboard
+(summarized presentation of the results of the builds).
 
 Although Jenkins allows arbitrary complex scripts in the build steps, it is
 suggested in the documentation to keep the build steps simple, wrapping the
-complexity of the build in scripts that are distributed and developed together
+complexity of the build in tools that are distributed and developed together
 with the project.  The main reasons are that the web interface provides only a
-minimal text field (not suitable for large scripts) and that it is not possible
-to keep track of the evolution of the code of a configuration with a version
+minimal text field (not suitable for development) and that it is not possible to
+keep track of the evolution of the code of a configuration with a version
 control system.
 
 In our case, the scripts used for the heavy-lifting part of the builds are
-hosted on a dedicated GIT\cite{GIT} repository instead of living withing the
-software projects, because they are generic and apply to sets of projects.
+hosted on a dedicated GIT\cite{GIT} repository, instead of living withing the
+software projects, because they are generic and apply to whole software stacks,
+i.e. interdependent sets of projects.
 
 An important difference in the design of the new system with respect to the old
-one is that the various actions required by the system (checkout, build, test,
-etc.) are performed by dedicated independent scripts instead of being phases of
-a monolithic script.  In this way it is possible to develop and test a single
-action without having to restart the whole process from scratch.  Moreover, the
-core tools are meant to work and produce file in any directory, instead of using
-fixed locations as in the old system, simplifying furthermore the development.
-Of course, whenever feasible, common code is factored out and shared between all
-the scripts.
+one is that the various actions required in the nightly builds (checkout, build,
+test, etc.) are performed by dedicated independent scripts instead of being
+phases of a monolithic script.  In this way it is possible to develop and test a
+single action without having to restart the whole process from scratch.
+Moreover, the core tools are meant to work and produce files in any directory,
+instead of using fixed locations as in the old system, simplifying furthermore
+the development. Of course, whenever feasible, common code is factored out and
+shared between all the scripts.
 
 The configuration of Jenkins required the installation of several plug-ins on
 top of a vanilla installation of the application.  The jobs, in Jenkins terms,
 configured are of two main categories: jobs representing the nightly build slots
 and generic jobs for the individual steps.
 
-The dashboard is still under investigation.  The two main options are
-CDash\cite{CDash} or just use the old dashboard.  It is also possible to use
-something integrated with Jenkins.  The details will be discussed in a dedicated
-section.
+The dashboard is still under investigation.  The two main options investigated
+are CDash\cite{CDash} and the dashboard of the old system.  It is also possible
+to use something integrated with Jenkins or a completely new custom dashboard.
+The details will be discussed in a dedicated section.
 
 \section{Implementation}
 \subsection{Core Tools}
 \label{CoreTools}
 The core tools are hosted on the GIT repository\footnote{%
-  LHCb set up a minimal GIT hosting service described here:
+  LHCb Core Software Team set up a minimal GIT hosting service described in a
+TWiki page:
   \begin{quote}
     \urlLink{https://twiki.cern.ch/twiki/bin/view/LHCb/GitRepositories}
   \end{quote}
@@ -149,17 +156,17 @@ Core Tools and their implementations.
 
 \subsubsection{Configuration}
 The old nightly build system uses an XML-based configuration describing in one
-file the slots to be build, their content, the platforms the should be built for
-etc.  While prototyping the new system it seems reasonable to review the layout
-and the details of the old configuration file to see what could be simplified or
-removed.
+file the slots to be built, their content, the platforms they should be built
+for etc.  While prototyping the new system it seems reasonable to review the
+layout and the details of the old configuration file to see what could be
+simplified or removed.
 
 Because the new system is more modular than the old one and the management part
 is separated from the build part, we started from a minimal configuration file
-describing a single slot.  To simplify the prototyping, we have chosen the JSON
-format (semi-structured) instead of XML (structured), and, because of the JSON
-objects are converted in Python, inside the code we used simple nested Python
-dictionaries.
+describing a single slot.  To simplify the prototyping phase, we have chosen the
+JSON format (semi-structured) instead of XML (structured), and, because of the
+way JSON objects are converted in Python, inside the code we used simple nested
+Python dictionaries.
 
 The configuration of a slot consists of a JSON object with the following format:
 \begin{description}
@@ -169,11 +176,11 @@ The configuration of a slot consists of a JSON object with the following format:
   \begin{description}
     \item[name] name of the project (mandatory)
     \item[version] baseline version of the project (mandatory)
-    \item[dependencies] list of project names within the slot the project
-    depends on (mandatory)
+    \item[dependencies] list of project names within the slot that the project
+depends on (mandatory)
     \item[overrides] object containing a simple mapping between package name and
-    required version as a string or \emph{null} if the package should be removed
-    (optional)
+required version as a string or \emph{null} if the package should be removed
+(optional)
     \item[checkout] name of the checkout function (optional)
   \end{description}
   \item[warning\_exceptions] list of regular expressions matching warnings that
@@ -186,7 +193,7 @@ The configuration of a slot consists of a JSON object with the following format:
   function name and the arguments of the call (optional)
   \item[USE\_CMT] boolean telling of the slot should be build with CMT rather
   than the default CMake (optional)
-  \item[cmake\_cache] mapping key--value defining variables to preload in the
+  \item[cmake\_cache] mapping key--value defining variables to pre-load in the
   CMake cache to tune the build (optional)
 \end{description}
 Fields declared as \emph{mandatory} in the above list are required in at least
@@ -215,8 +222,8 @@ before performing the actual tasks.  It is meant to replace the XML tags
 simpler an more generic option.  It must be noted that the placeholders
 \texttt{\%DAY\%}, \texttt{\%YESTERDAY\%} and \texttt{\%PLATFORM\%} in the old
 configuration are replaced in the new configuration by the environment
-variables, respectively, \texttt{\%TODAY\%}, \texttt{\%YESTERDAY\%} (set
-internally) and \texttt{\%CMTCONFIG\%} (taken from the inherited environment).
+variables, respectively, \verb|${TODAY}|, \verb|${YESTERDAY}| (set internally)
+and \verb|${CMTCONFIG}| (taken from the inherited environment).
 
 To allow for a smooth transition from the old system to the new one and for
 testing the new system in parallel with the old one, we introduced a simple
@@ -234,23 +241,24 @@ XML\footnote{%
 
 \subsubsection{Checkout}
 \label{CoreTools:CheckOut}
-In the new system there is a dedicated script (\texttt{StackCheckout.py}) for
-the checkout of all the projects in a slot.  It uses only the fields \emph{slot}
-and \emph{projects}, and for each project only \emph{name}, \emph{version},
-\emph{overrides} and \emph{checkout}.
+The new system features a dedicated script (\texttt{StackCheckout.py}) for the
+checkout of all the projects in a slot.  It uses only the fields \emph{slot} and
+\emph{projects} from the configuration file, and for each project only
+\emph{name}, \emph{version}, \emph{overrides} and \emph{checkout}.
 
-This script checks out all the projects to be built in the slot fine tuning them
-according to the required overrides and fixing the interdependency declarations.
+The aim of the script is to check out all the projects to be built in the slot,
+applying the required \emph{overrides} and fixing the interdependency
+declarations.
 
-For each project is possible to choose a checkout function passing its
+For each project it is possible to choose a checkout function passing its
 name\footnote{It is enough to use the function name for functions in the module
 implementing the checkout script, while functions accessible from other modules
 require the fully qualified name (i.e. \texttt{module.function}).} as the value
 of the field \emph{checkout}.  Few basic checkout functions are already
 provided:
 \begin{description}
-  \item[defaultCheckout] default if not specified, using the \texttt{getpack}
-  command
+  \item[defaultCheckout] (default choice, if not specified) use the
+\texttt{getpack} command
   \item[noCheckout] do not checkout the project
   \item[specialGaudiCheckout] test checkout function used to test the build of
   Gaudi from the GIT repository
@@ -258,40 +266,41 @@ provided:
 
 The default checkout function (\emph{defaultCheckout}) is equivalent to the code
 used in the old system, but simpler.  If an explicit version is specified for a
-projects, that is the version that is checked out, while the special version
+project, it is the version that is checked out, while the special version
 \emph{HEAD} triggers the checkout of the head version of the project, meaning
 the head version of each package in the project.  The old system required also
 the special flag \emph{headofeverything} to achieve the same result.  It is not
 possible, in the new system, to perform a checkout of the head meant as a
 checkout of the head version of the container package of a project and the
 versions there declared of the other packages, but this feature was never really
-used.  After the simple checkout of the project, the \emph{overrides} field is
-used to fine tune the checkout: for each package declared in the list of
-overrides \texttt{getpack} is called to change the already checked out version,
-or to add it if not present, while the directory of the package is removes when
-the requested version is \emph{null}.
+used.  After the straight forward checkout of the project, the \emph{overrides}
+field is used to fine tune the sources: for each package declared in the list of
+overrides, \texttt{getpack} is called to change the already checked out version
+of the package or to add it if not present, while when the requested version is
+\emph{null} the directory of the package is removed (if present).
 
 The \emph{noCheckout} function is useful to just declared the version of a
 project to be used in the build of the other projects, but not to build it.  The
 same functionality was achieved in the old system by either declaring an
 alternative dependency for a project or by declaring the project as
 \emph{disabled}.  In the new system, then, it is only possible to implicitly
-``disable'' the build of a project by not checking it out.
+disable the build of a project by not checking it out.
 
-The \emph{specialGaudiCheckout} has been used for testing the checkout of the
-Gaudi project from its GIT repository instead of using \texttt{getpack}.
-Because of its nature, this function does not support the overrides of the
-packages.  The old system did not provide a way to change the checkout of a
-project without deep changes in the code of the system, so this simple test
-demonstrates the flexibility of the new system.
+The \emph{specialGaudiCheckout} function has been used for testing the checkout
+of the Gaudi project from its GIT repository instead of using \texttt{getpack}.
+Because of its test nature, this function does not support the overrides of the
+packages.  It must be noted that the old system did not provide a way to change
+the checkout procedure of a project without deep changes in the implementation
+the system, so the use of this simple test function demonstrates the flexibility
+of the new system.
 
 When invoked, the script checks out all the projects in the directory
 \texttt{builds} under the current working directory, then it modifies the
 configuration files of the projects to synchronize the interdependencies with
 what is declared in the configuration.  In particular, for the CMake
-configuration it modifies the file \texttt{CMakeLists.txt} changing the version
-of the project and of the dependencies, while for the CMT configuration it
-modifies the file \texttt{project.cmt} for the dependencies and the file
+configuration it modifies the top \texttt{CMakeLists.txt} file changing the
+version of the project and of the dependencies, while for the CMT configuration
+it modifies the file \texttt{project.cmt} for the dependencies and the file
 \texttt{requirements} of the container package to remove the explicit versions
 of the packages, which, anyway, are not needed after the checkout.  Every
 modification applied to a file is recorded in patch file in the directory
@@ -313,7 +322,7 @@ that this correction is very rarely needed.  In case of the addition, the build
 procedure visits the extra packages even if they are not declared in the
 container, causing problems only if the runtime requires some special
 environment variable defined in the requirements files of the new package (of
-course it is not a problem if the extra package is used by another package in
+course, it is not a problem if the extra package is used by another package in
 the project).  The only valid use case for the removal of a package is when the
 the package was overridden from a used project and we need to build using the
 original version of the package, because a ``real'' removal of a package will
@@ -325,15 +334,15 @@ possible in the old system, this feature was never used or needed.
 
 \subsubsection{Preconditions Check}
 \label{CoreTools:Preconditions}
-In the old system it was possible to wait for the appearance of a special file
-before starting the build.  This feature was meant to allow chaining of nightly
-builds, so that we can have a slot that is built on the products of a slot in
-the LCG AA nightly builds.
+In the old system it was possible to wait for a special file to appear before
+starting the build.  This feature was meant to allow chaining of nightly builds,
+so that we can have a slot that is built on the products of a slot in the LCG AA
+nightly builds.
 
 To achieve the same result in the new system, a more generic and flexible
-mechanism has been devised: we can use the field \emph{preconditions} (the only
-one used in this step) to declare functions to be called before building the
-slot.
+mechanism has been devised: we can use the configuration field
+\emph{preconditions} (the only one used in this step) to declare functions to be
+called before building the slot.
 
 At the time of writing, there is only one function that can be used as a
 precondition, \emph{waitForFile}, which accepts as arguments:
@@ -341,7 +350,7 @@ precondition, \emph{waitForFile}, which accepts as arguments:
   \item[path] the path to the file we have to wait for
   \item[timeout] time before giving up waiting (\texttt{datetime.timedelta},
   optional)
-  \item[maxAge] a file older than this are ignored(\texttt{datetime.timedelta},
+  \item[maxAge] a file older than this are ignored (\texttt{datetime.timedelta},
   optional)
 \end{description}
 For example:
@@ -357,24 +366,23 @@ For example:
 ...
 \end{verbatim}
 \end{quote}
-What this function does is to wait until the requested file appears before
-returning successfully (\emph{True}), but if the file does not appear within the
-timeout (by default 20 hours), the function returns a failure (\emph{False}) and
-the build is not started.
+This function waits until the requested file appears before returning
+successfully (\emph{True}), but if the file does not appear within the timeout
+(by default 20 hours), the function returns a failure (\emph{False}) and the
+build is not started.
 
-In the future we can have other precondition functions with more complex logics,
+In the future we can have other precondition functions with more complex logic,
 either returning immediately (e.g. if there is not enough disk space) or
 waiting.
 
 \subsubsection{Build and Test}
 \label{CoreTools:Build}
-Building and testing actions are bundled in one main script because they are
-tightly connected: the tests of a project in the slot are run while other
-projects are built.  The behavior of the main build script can be tuned with
-documented command line options to allow easy and effective testing of the build
-system.
+Building and testing actions are bundled in one script because they are tightly
+connected: the tests of a project in the slot are run while other projects are
+built.  The behavior of the build script can be tuned with documented command
+line options to allow easy and effective testing of the build system.
 
-The configuration fields used in this steps are \emph{slot}, \emph{projects}
+The configuration fields used in this step are \emph{slot}, \emph{projects}
 (only \emph{name}, \emph{version} and \emph{dependencies}),
 \emph{warning\_exceptions}, \emph{error\_exceptions}, \emph{USE\_CMT} and
 \emph{cmake\_cache}.
@@ -393,8 +401,8 @@ The generated CTest script is the core of the build procedure.  It is written
 such that it can build either CMake-based projects or CMT-based\cite{CMT} ones
 (actually via the special Makefile that \texttt{getpack} adds to the project).
 With this script we can build and test a projects and submit the result to a
-CDash instance (currently \urlLink{https://lbtestbuild.cern.ch/CDash}). The
-submission is optional, and we can also just build or just test.
+CDash instance. The submission is optional, and we can also just build or just
+test.
 
 Once the configuration is ready, the build wrapper script triggers CTest to
 build each project (optionally with a number of parallel processes, fixed with a
@@ -404,48 +412,48 @@ configuration, but the order of appearance is used instead, so the automatic
 translation of the configuration introduces fake dependencies between the
 projects to preserve the expected order of build.}).  Once a project is built,
 we first scan the build log recorded by CTest to produce summary files
-equivalent to those produced by the old nightly build system, then we pack the
-content of its \texttt{InstallArea} directory in an archive (dereferencing
-symbolic links) in the \texttt{builds} directory named after the project name,
-its version, a build id (like the one used in the checkout) and the platform
-(\texttt{\$CMTCONFIG}).  At this point we start a new subprocess in background
-to run the tests of the project while the next project in the chain is being
-built.
+equivalent to those produced by the old Nightly Build System (see
+\ref{Dashboard:Old}), then we pack the content of its \texttt{InstallArea}
+directory in an archive (dereferencing symbolic links) in the \texttt{builds}
+directory named after the project name, its version, a build id (like the one
+used in the checkout) and the platform (\texttt{\$CMTCONFIG}).  At this point we
+start a new subprocess in background to run the tests of the project while the
+next project in the slot is being built.
 
 The the way the tests of a project are started depends on the type of the build
 (CMake or CMT), but in both cases we produce the same kind of summaries that
 were used by the old system.  For CMake builds, the results of the tests are
 submitted to the CDash instance, but the details about all the QMTest tests are
-not visible there.  In the near future we will implement an extension to QMTest
-so that it can report the results in the XML format understood by CDash, so that
-we will have more meaningful details accessible through the CDash instance.
+not visible there.  In the near future we will implement an extension for QMTest
+to report the results in the XML format understood by CDash, so that we will
+have more meaningful details accessible through the CDash instance.
 
-After all the builds are completed, the main script waits until all the spawned
+After all the builds are completed, the main script waits until the spawned
 subprocesses complete before exiting.
 
 It is important to note that the archive of the build does not contain any
 artifact that has not been installed (copied or linked) to the
 \texttt{InstallArea} directory.  This behavior is different from what is done
-when creating the distribution packages, and these new archives may be faulty.
-Of course, we can change the packaging to create archives strictly identical to
-those prepared in the release procedure, but the long term plan is to fix the
-rare cases where the artifacts are not installed\footnote{The test to spot these
-cases is not available yet.}.
+when creating the standard LHCb distribution packages, and these new archives
+may be faulty. Of course, we can change the packaging to create archives
+strictly identical to those prepared in the release procedure, but the long term
+plan is to fix the rare cases where the artifacts are not installed\footnote{A
+test to spot these cases is not available yet.}.
 
 \subsubsection{Project Layout}
-As already mentioned, the core tools are hosted in a GIT repository with the
-following directories:
+As already mentioned, the Core Tools are hosted in a GIT repository.  The
+projects features the following directories:
 \begin{description}
   \item[python] contains the main Python module \texttt{LHCbNightlies2} with
-submodules for the shared code, the task specific functions, templates and for
-the tests
+submodules for the shared code, the task specific functions and the tests, plus
+some templates
   \item[scripts] contains the executable scripts, which are simply forwarding
 the calls to the main functions in the Python modules
   \item[docs] documentation
 \end{description}
 In the top level directory there are two setup shell scripts (\emph{sh} and
-\emph{csh} variants) than can be sources to add two main directories to the
-\texttt{PYTHONPATH} and to the \texttt{PATH}.
+\emph{csh} variants) than can be sources to add the two main directories to
+\texttt{PYTHONPATH} and to \texttt{PATH}.
 
 The tests are based on the \texttt{nose} testing framework\cite{nose} and can be
 run with:
@@ -467,56 +475,62 @@ interfering with the production jobs.
 Jenkins is a very flexible and extensible application used to manage automated
 build and test jobs.  Its features span from regular, on demand or commit
 triggered builds to complex build work-flows or just monitoring of tasks.  Its
-plug-in system allows to add functionalities like integration with different
+plugin system allows to add functionalities like integration with different
 tools (e.g. Coverity or JIRA) and more reports from the builds.
 
-Unfortunately our use case is so special that there is no plug-in already
+Unfortunately our use case is so special that there is no plugin already
 available to support it, but, even if it could be implemented, we could achieve
 a good approximation with the right combination of some of the already existing
 plug-ins (the full list is reported in appendix \ref{JenkinsPlugIns}).
 
 We shall not describe the installation and set up of the Jenkins server or the
-configuration of access and privileged because it is not relevant to the
+configuration of access and privileges because it is not relevant to the
 operation of the nightly builds.  What is relevant, though, is the way we
 configure the cluster of build machines at our disposal.  In the old system the
-build machines were configured to start routinely (via cron jobs) the builds; in
+build machines were configured to start routinely the builds (via cron jobs); in
 the new system it is the Jenkins instance that is aware of each build node
 (slave) and connects to them via \texttt{ssh} (using the \texttt{ssh}
 \emph{Launch method} provided by the \emph{Jenkins SSH Slaves Plugin}) with the
 credentials of the service account \texttt{lhcbsoft}.  Each slave is configured
-with the labels set to all the possible platforms it can build (i.e. the allowed
-values of the environment variable \texttt{CMTCONFIG} valid on that machine).
-To avoid problems with the AFS token, we change the default \emph{Availability}
-to take the node off line if idle (\emph{Idle delay}: 20 minutes) and to connect
-if needed (\emph{In demand delay}: 1 minute).  Because of the particular
-configuration of the build machines, we have to set the \emph{Remote FS root}
-pointing to a directory on the dedicated disk (\texttt{/build/jenkins}).  We do
-not have Java installed on the slave (or the version is too old), so, because to
-download it from the Oracle web site requires authentication, we install the
-JRE\footnote{Java Runtime Environment\cite{JRE}.} by hand on each node in the
-\texttt{jre} directory under the configured \emph{Remote FS root} and declare it
-in the configuration (field \emph{JavaPath} in the advanced section of the
-\emph{Launch method}).  The number of executors (\emph{\# of executors}) is
-usually set to the number of CPUs of the slave, but our builds and tests use on
-average two CPUs per job\footnote{The average number of CPUs per job is not
+with \emph{Labels} set to the list of all the possible platforms it can build
+(i.e. the values of the environment variable \texttt{CMTCONFIG} valid on that
+machine). To avoid problems with the AFS token, we change the default
+\emph{Availability} to take the node off line if idle (\emph{Idle delay}: 20
+minutes) and to connect if needed (\emph{In demand delay}: 1 minute).  Because
+of the particular configuration of the build machines, we have to set the
+\emph{Remote FS root} to point to a directory on the dedicated disk
+(\texttt{/build/jenkins}).  We do not have Java installed on the slave (or the
+version is too old), so, because to download it from the Oracle web site
+requires authentication, we install the JRE\footnote{Java Runtime
+Environment\cite{JRE}.} by hand on each node in the \texttt{jre} directory under
+the configured \emph{Remote FS root} and declare it in the configuration (field
+\emph{JavaPath} in the advanced section of \emph{Launch method}).  The number of
+executors (\emph{\# of executors}) is usually set to the number of CPUs of the
+slave, but our builds and tests use on average two CPUs per job\footnote{The
+average number of CPUs per job is not
   really predictable because we launch parallel builds using
   \texttt{distcc}\cite{distcc,distccCERN} and we run the tests in background, so
   we used the Unix command \texttt{time} to monitor the \emph{real time} (world
   clock time) spent for a build versus the \emph{user time} (CPU time).},
-so we set it to half number of CPUs, except for the \emph{master} node, that we
-use only for jobs that almost do not use CPU, where we use $\sim200$ executors.
+so we set it to half the number of CPUs, except for the \emph{master} node, that
+we use only for jobs that almost do not use CPU, where we use $\sim200$
+executors\footnote{Some special Jenkins jobs do not occupy executors, like the
+parent job of a multi-configuration job, but it is not (jet) possible to
+configure a regular job as ``flyweight'' (the term used for the special jobs).
+When we will have a plugin to configure flyweight jobs, we can change that weird
+number of executors to a more reasonable value.}.
 
-The job we configured for the nightly builds are divided in two categories: the
+The jobs we configured for the nightly builds are divided in two categories: the
 workers and the slots.  For a simpler monitoring the jobs of the two categories
-are grouped in two views, described later.
+are grouped in two views.
 
-\subsubsection{The Nightly Build Workers}
+\subsubsection{The Workers}
 \label{Jenkins:Workers}
 The workers are generic jobs that take care of the actual checkouts and builds
 of the slots.
 
-Part of the configuration is common to all worker jobs.  All of them, via the
-configuration \emph{Discard Old Builds}, keep the details of the build for 15
+Part of the configuration is common to all worker jobs.  They, via the
+configuration \emph{Discard Old Builds}, keep the details of the builds for 15
 days and the artifacts for one week, which could be changed increasing the
 available disk space; of course the retention periods must be identical for all
 the jobs for consistency.  Two parameters are common to all the workers:
@@ -557,15 +571,15 @@ some preconditions are met, we use a simple \emph{multi-configuration} (or
 \emph{matrix}) job called \emph{nightly-slot-build-trigger} with two extra
 parameters:
 \begin{description}
-  \item[platform] a string parameter to contain a space-separated list of
-platform the slot must be built on
+  \item[platform] a string parameter for a space-separated list of platform the
+slot must be built on
   \item[node] a node parameter (provided by the \emph{Node and Label Parameter
 Plugin}) used just to force the execution of the matrix sub-jobs on a specific
 node, the \emph{master}
 \end{description}
-In the \emph{Configuration Matrix} section we declare only one \emph{Dynamic
-Axis} (from the \emph{Dynamic Axis Plugin}) named \emph{platform} with the value
-takes from the environment variable \emph{platforms} (automatically defined from
+In the \emph{Configuration Matrix} section we declare one \emph{Dynamic Axis}
+(from the \emph{Dynamic Axis Plugin}) named \emph{platform} with the value takes
+from the environment variable \emph{platforms} (automatically defined from the
 parameter with the same name).  In the \emph{Build Environment} section, we use
 the \emph{Matrix Tie Parent Plugin} to ensure that not only the sub-jobs are run
 on the master, but the parent job is run there too.  The build steps section is
@@ -580,7 +594,7 @@ precondition check script from the Core Tools (see
 jobs via the \emph{Jenkins Parameterized Trigger Plugin}, so that the jobs
 \emph{nightly-slot-build} (described later) are started with a \emph{NodeLabel
 parameter} called \emph{platform} set to \verb|${platform}| and with
-\emph{Predefined paramters} used to propagate the values of the parameters
+\emph{Predefined parameters} used to propagate the values of the parameters
 \emph{slot} and \emph{slot\_build\_id}\footnote{The \emph{platform} parameter is
   not passed in the same way as the others because the only way to trigger a job
   so that it is executed on a node different from the originating job is to use
@@ -595,18 +609,19 @@ the tests.  In addition to the common parameters it accepts the \emph{Label}
 parameter called \emph{platform}\footnote{A \emph{Label} parameter is used by
 Jenkins to choose on which slave the job has to be run.}.  Since this job will
 build the same slot on several different platforms, we appended
-\verb|.${ENV,var="platform"}| to the \emph{Build Name} used the other jobs
+\verb|.${ENV,var="platform"}| to the \emph{Build Name} used in the other jobs
 (Figure~\ref{fig:jenkins-builds}).  In the build steps we copy all the artifacts
 from the latest successful build of the corresponding build of
 \emph{nightly-slot-checkout} (selected as in the build trigger job), then we use
 a shell script to prepare the build environment and call the build script from
-Core Tools (see \ref{CoreTools:Build})\footnote{To test the possible integration
-of the new nightly build system with the old summary page, we also copy to AFS
-summary files equivalent to the old ones that we generate during the build.}.
-In the post-build actions we archive the artifacts, in particular the archive
-files and the summaries in the \texttt{build} directory.
+Core Tools)\footnote{To test the possible integration of the new nightly build
+  system with the old summary page, we also copy to AFS summary files equivalent
+  to the old ones that we generate during the build (see \ref{Dashboard:Old}).}
+(see \ref{CoreTools:Build}. In the post-build actions we archive the artifacts,
+in particular the archive files and the summaries found in the \texttt{build}
+directory.
 
-\begin{figure}
+\begin{figure}[t]
   \begin{center}
     \includegraphics[width=7cm]{images/jenkins-3}
   \end{center}
@@ -615,11 +630,11 @@ files and the summaries in the \texttt{build} directory.
   \label{fig:jenkins-builds}
 \end{figure}
 
-The workers jobs are grouped and displayed in the view \emph{Nightly Builds
+The worker jobs are grouped and displayed in the view \emph{Nightly Builds
 (workers)} (Figure~\ref{fig:jenkins-workers}), so that they can be easily
 monitored and not be confused with the slot jobs.
 
-\begin{figure}
+\begin{figure}[t]
   \begin{center}
     \includegraphics[width=15cm]{images/jenkins-2}
   \end{center}
@@ -628,12 +643,18 @@ monitored and not be confused with the slot jobs.
 \end{figure}
 
 
-\subsubsection{The Nightly Build Slots}
+\subsubsection{The Slots}
 \label{Jenkins:Slots}
 To define and build the various slots we use dummy parameterized jobs, one per
 slot, named after the slot itself and where the only difference between them is
-the name and the default value of the single string parameter \emph{platforms},
-defining the list of platforms the slot is to be built on.
+the name and the default value of the single string parameter
+\emph{platforms}\footnote{A string parameter is not very handy to specify the
+list of platforms and the
+\link{
+http://wiki.jenkins-ci.org/display/JENKINS/Extended+Choice+Parameter+plugin}{
+Extended Choice Parameter Plugin} could be used to improve usability, but it has
+not been tested yet.}, defining the list of platforms the slot is to be built
+on.
 
 The configuration of these jobs is relatively simple\footnote{It could be
 further simplified by adding one more level of indirection (i.e. another
@@ -641,23 +662,21 @@ parameterized worker job), but for the time being it doesn't seem necessary.}.
 The build details and artifacts retention policies are the same as the one used
 in the configuration of the workers (see \ref{Jenkins:Workers}), for
 consistency.  The single string parameter \emph{platforms} has already been
-mentioned\footnote{There are plans to improve the usability by leveraging on the
-\link{
-https://wiki.jenkins-ci.org/display/JENKINS/Extensible+Choice+Parameter+plugin}{
-Extensible Choice Parameter plugin}.} and can be used to define the list of
-platforms to build when manually triggering the build, but its default value is
-what is used for the regular builds, so, while in the old system the list of
-platforms to be built was stored in the configuration file, in the new system is
-part of the configuration of the slot job.  Since these are dummy jobs not using
-CPU, we
-restrict their execution to the master node (\emph{Restrict where this project
-can be run}).  For these jobs we do not need any source code management.
+mentioned and is used to define the list of platforms to build when manually
+triggering the build, but its default value is what is used for the regular
+builds, so, while in the old system the list of platforms to be built was stored
+in the configuration file, in the new system is part of the configuration of the
+slot job.  Since these are dummy jobs not using CPU, we restrict their execution
+to the master node (\emph{Restrict where this project can be run}).  For these
+jobs we do not need any source code management.
 
 The build of a slot is triggered via the \emph{Build periodically} configuration
 box, which is set to start the builds between 00:00 and 01:00, using the special
-schedule \verb|H 0 * * *|.  The scheduling can be tuned to build only on some
-days as it was possible in some special (and less flexible) settings in the old
-configuration.
+schedule \verb|H 0 * * *|, similar to the specification of the Unix
+\texttt{cron} command with the special extension \texttt{H} that tells Jenkins
+to distribute the builds.  The scheduling can be tuned to build only on some
+days as it was possible with some special (and less flexible) settings in the
+old configuration.
 
 The build steps for the slots are two simple build triggers, the first one on
 \emph{nightly-slot-checkout} and the second one on
@@ -684,29 +703,29 @@ called \emph{Nightly Builds} (Figure~\ref{fig:jenkins-slots}).
 \end{figure}
 
 
-\subsubsection{Management}
+\subsubsection{Management Plugins}
 \label{Jenkins:Management}
 Not strictly needed to run the nightly builds, some plugins have been found very
 useful for the simplification of management tasks.
 \begin{description}
-  \item[Bulk Builder] allows to start several jobs in one go, for example
-selecting all the jobs in a view, so that, in case of need, we can re-start all
-the slots with a few clicks
-  \item[Jenkins Disk Usage Plugin] shows statistics on the disk space used by
-the various builds
-  \item[Rebuilder] allows to restart a parameterized build reusing the same
-parameters, so that in case of failure we can restart the build of a single slot
-or platform without a new checkout
-  \item[Recipe Plugin] is used to store in a file the configuration of a complex
+  \item[Bulk Builder] start several jobs in one go, for example selecting all
+the jobs in a view, so that we can re-start all the slots with a few clicks
+  \item[Jenkins Disk Usage Plugin] show statistics on the disk space used by the
+various builds
+  \item[Rebuilder] restart a parameterized build reusing the same parameters,
+allowing us to restart the build of a single slot or platform without a new
+checkout
+  \item[Recipe Plugin] used to store in a file the configuration of a complex
 Jenkins setup (jobs, views, plugins) as a \emph{recipe} and import it in another
-Jenkins instance, for example we can store the complete configuration of the
-nightly build system described in this note
-  \item[Shelve Project Plugin] archives projects for possible later use, instead
-of deleting them, which is useful, for example, to keep a back up copy of some
-old or temporary slots
+Jenkins instance, with it we can store the complete configuration of the nightly
+build system described in this note
+  \item[Shelve Project Plugin] archive projects for possible later use, instead
+of deleting them, which is useful to keep a back up copy of some old or
+temporary slots
 \end{description}
 
 \section{Dashboard}
+\label{Dashboard}
 It is extremely important for our developers and project managers to have a
 quick overview on the status of the nightly builds, and this view should be
 tunable so that each user can see only the informations relevant to her.
@@ -715,6 +734,7 @@ For the prototype of the new nightly builds system we considered two
 possibilities: CDash and the summary web page of the old system.
 
 \subsection{CDash}
+\label{Dashboard:CDash}
 CDash is the dashboard solution developed for integration with the CTest tool
 bundled with CMake.
 
@@ -726,21 +746,21 @@ as described in \ref{CoreTools:Build}.
 To try to reproduce a structure similar to the one we need, we declared each
 slot as a project in CDash and all the software projects in the slot as
 sub-projects\cite{CMakeBook,CDashSubprojects} (using the combination of name and
-version as CDash sub-project name).  The platform id string translates to the
+version as CDash sub-project names).  The platform id string translates to the
 \emph{build name} and we use the build slave hostname as \emph{site}.  In order
 to display enough informations, the CDash projects representing the slots must
 be configured to be public and display \emph{labels} (special meta-data fields
 used to identify the builds of the sub-projects).
 
-With this configuration, the first page (Figure~\ref{fig:cdash-home}) we get
-when connecting to our CDash instance\footnote{Currently
-\urlLink{https://lbtestbuild.cern.ch/CDash}, but it will change in the future if
-we choose this option for the final dashboard.} contains the list of the
-declared slots (if a slot is not declared to CDash, it will not appear even if
-it has been built and the result pushed to the server) with a description, but
-without any information on the status of the build.
+With this configuration, the first page we get when connecting to our CDash
+instance\footnote{Currently \urlLink{https://lbtestbuild.cern.ch/CDash}, but it
+will change in the future if we choose this option for the final dashboard.}
+contains the list of the declared slots (if a slot is not declared to CDash, it
+will not appear even if it has been built and the result pushed to the server)
+with a description, but without any information on the status of the build
+(Figure~\ref{fig:cdash-home}).
 
-\begin{figure}
+\begin{figure}[b]
   \begin{center}
     \includegraphics[width=15cm]{images/cdash-1}
   \end{center}
@@ -748,9 +768,9 @@ without any information on the status of the build.
   \label{fig:cdash-home}
 \end{figure}
 
-Clicking on of the slots, we can access to the overview page for that slot
-(Figure~\ref{fig:cdash-slot}), where the number of succesful or problematic
-builds is reported.
+Clicking on one of the slots, we can access the overview page for that slot,
+where the number of successful or problematic builds is reported
+(Figure~\ref{fig:cdash-slot}).
 
 \begin{figure}
   \begin{center}
@@ -782,32 +802,33 @@ We can go deeper and see the details of the builds of project in the slot
 
 It must be noted that the tests we run in our nightly builds use
 QMTest\cite{QMTestPaper} (as mentioned in \ref{CoreTools:Build}).  When using
-CTest, we call start a collection of QMTest tests as a single CTest test, so the
-numbers in the CDash views are not correct (Figure~\ref{fig:cdash-project}),
+CTest, we start a collection of QMTest tests as a single CTest test, so the
+numbers in the CDash views (Figure~\ref{fig:cdash-project}) are not correct,
 while, when we use CMT, we cannot even publish the results of the tests to
 CDash, so those fields are empty.  The plan is to extend the output format of
-QMTest to produce the results files needed for CDash, so that we can publish the
-correct informations.  In the long term we will also replace QMTest with CTest,
-but the extension of the output format is the only possibility in the short
-term.
+QMTest to produce result files in a format understood by CDash, so that we can
+publish the correct informations.  In the long term we will also replace QMTest
+with CTest, but the extension of the output format is the only possibility in
+the short term.
 
 The informations stored in the CDash database are enough for out purposes (apart
 from the results of the tests), but the layout is not optimal for our purposes.
-Since we build the same version of a project in several conditions, it is useful
-to see all its the builds across the slots, but it is impossible with CDash.
+Since we build the same version of a project in several contexts, it is useful
+to see all its builds across the slots, but this is impossible with CDash.
 Moreover, the view in Figure~\ref{fig:cdash-platform} puts the accent on the
 wrong information (the site), while we give more importance to the project
 (label).  We also observed some annoying bugs which might be fixed in a future
 version (the latest release is one year old).  Anyway, since CDash is open
 source, we could extend it, more or less easily, to extract from the database
-the details we need and display them the way we want.
+the details we need and display them the way we like.
 
 \subsection{Old Summary Web Page}
-The summary web page of the old system was designed to vehiculate all the needed
-informations in a single view (Figure~\ref{fig:old-summary}), we could reuse its
-layout and infrastructure.  To evaluate the feasibility of this approach, we
-produce, with the new system, partial build and test summary files that are
-compatible with the expectations of the old system.
+\label{Dashboard:Old}
+The summary web page of the old system was designed to convey all the needed
+informations in a single view (Figure~\ref{fig:old-summary}), so its layout and
+infrastructure could be reuses.  To evaluate the feasibility of this approach,
+we produce with the new system partial summary files for the build and tests
+that are compatible with the expectations of the old system.
 
 \begin{figure}
   \begin{center}
@@ -829,11 +850,11 @@ The technology used for the summary page is obsolete: a static HTML file
 produced by a job run every 15 minutes, which is then filtered by a CGI script.
 A more modern approach would involve dynamic content (currently achieved by
 forcing a reload of the full page) and an independent exchange format, such as
-XML, with the possibility of a layout usable on small screens (smartphones).
+XML, with the possibility of a layout usable on small screens (smart phones).
 
 The amount of work required to reproduce completely the old summary files will
-be probably spent better in the extension of CDash or Jenkins, or even in a
-completely new dashboard.
+be probably spent better in the extension of CDash or Jenkins, or in the
+development of a completely new dashboard.
 
 %\section{Instructions for Managers}
 
