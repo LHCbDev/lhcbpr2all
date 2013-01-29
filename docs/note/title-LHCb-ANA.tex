@@ -1,7 +1,7 @@
 % $Id: title-LHCb-ANA.tex 14593 2012-01-27 14:43:32Z uegede $
 % ===============================================================================
 % Purpose: LHCb-ANA Note title page template
-% Author: 
+% Author:
 % Created on: 2010-10-05
 % ===============================================================================
 
@@ -19,7 +19,7 @@
 {\vspace*{-2.7cm}\mbox{\!\!\!\includegraphics[width=.14\textwidth]{figs/lhcb-logo.pdf}} & &}%
 {\vspace*{-1.2cm}\mbox{\!\!\!\includegraphics[width=.12\textwidth]{figs/lhcb-logo.eps}} & &}
  \\
- & & LHCb-ANA-20XX-YYY \\  % ID 
+ & & LHCb-INT-2013-006 \\  % ID
  & & \today \\ % Date - Can also hardwire e.g.: 23 March 2010
  & & \\
 \hline
@@ -30,7 +30,7 @@
 % Title --------------------------------------------------
 {\bf\boldmath\huge
 \begin{center}
-  A template for writing LHCb documents
+  A New Nightly Build System for LHCb
 \end{center}
 }
 
@@ -38,10 +38,10 @@
 
 % Authors -------------------------------------------------
 \begin{center}
-U.~Egede$^1$.
+M.~Clemencic$^1$ and B.~Couturier$^1$.
 \bigskip\\
 {\it\footnotesize
-$ ^1$Imperial College London, London, United Kingdom\\
+$ ^1$CERN, Geneva, Switzerland\\
 }
 \end{center}
 
@@ -50,12 +50,18 @@ $ ^1$Imperial College London, London, United Kingdom\\
 % Abstract -----------------------------------------------
 \begin{abstract}
   \noindent
-  Guidelines for the preparation of LHCb documents are given. This is
-  a ``living'' document, that should reflect our current practice. It
-  is expected that these guidelines are implemented for papers already
-  before they go into the first collaboration wide review. Please
-  contact the Editorial Board chair if you have suggestions for
-  modifications.
+  The nightly build system used so far by LHCb has been implemented as an
+  extension on the LCG Application Area one\cite{Kruzelecki:2010zz}.  Although
+  this version basically works, it has several limitations in terms of
+  extensibility, management and ease of use, so that the SFT group decided to
+  develop a new version based on a commercial continuous integration system.
+
+  Since, because of technical reasons, we cannot adopt the new planned SFT nightly
+  build system, we decided to investigate the possibility of a custom version
+  based on the open source continuous integration system Jenkins\cite{Jenkins}.
+
+  In this note we describe the implementation of a working prototype of the new
+  nightly build system.
 \end{abstract}
 
 \vspace*{2.0cm}
@@ -64,7 +70,7 @@ $ ^1$Imperial College London, London, United Kingdom\\
 \end{titlepage}
 
 
-\pagestyle{empty}  % no page number for the title 
+\pagestyle{empty}  % no page number for the title
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%  EOD OF TITLE PAGE  %%%%%%

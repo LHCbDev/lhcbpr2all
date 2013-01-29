@@ -33,7 +33,7 @@
 
 %% %%%%%%%%%%%%%%%%%%%%%%%
 %% Packages to be used
-%% %%%%%%%%%%%%%%%%%%%%%%% 
+%% %%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{microtype}
 \usepackage{lineno}  % for line numbering during review
 \usepackage{xspace} % To avoid problems with missing or double spaces after
@@ -83,6 +83,12 @@ end#1\endcsname
 \usepackage[all]{hypcap} % Internal hyperlinks to floats.
 
 \input{lhcb-symbols-def} % Add in the predefined LHCb symbols
+
+% Custom commands
+\newcommand{\link}[2]{\href{#1}{#2}}
+\newcommand{\urlLink}[1]{\link{#1}{\texttt{#1}}}
+
+
 
 % Make this the last packages you include before the \begin{document}
 \usepackage{cite} % Allows for ranges in citations

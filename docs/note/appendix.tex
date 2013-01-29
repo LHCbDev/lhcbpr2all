@@ -11,205 +11,68 @@
 
 \appendix
 
-\section{Standard References}
-\label{sec:StandardReferences}
-Below is a list of standard references that should be used in \lhcb as
-well as a list of all \lhcb publications. As they are already in the
-\texttt{main.bib} file, they can be used as simply as
-\texttt{\textbackslash cite\{Alves:2008zz\}} to get the \lhcb detector
-paper. If you believe there is a problem with the formatting or
-content of one of the entries, then get in contact with the Editorial
-Board rather than just editing it in your local file.
+\section{List of Required Jenkins Plug-Ins}
+\label{sec:JenkinsPlugIns}
+Here is summarized the list of plug-ins that are required to configure Jenkins
+to run the nightly builds
+\newcommand{\JPI}[2]{\item \link{#2}{#1}}
+\begin{itemize}
+  \JPI{Build Name Setter
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Build+Name+Setter+Plugin}
+  \JPI{Copy Artifact
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Copy+Artifact+Plugin}
+  \JPI{Dynamic Axis
+Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/DynamicAxis+Plugin}
+  \JPI{Jenkins GIT
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin}
+  \JPI{Jenkins Parameterized Trigger
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin}
+  \JPI{Jenkins SSH Slaves
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/SSH+Slaves+plugin}
+  \JPI{Jenkins Workspace Cleanup
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Workspace+Cleanup+Plugin}
+  \JPI{Matrix Tie Parent
+Plugin}{http://wiki.hudson-ci.org/display/HUDSON/Matrix+Tie+Parent+Plugin}
+  \JPI{Node and Label Parameter
+Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/NodeLabel+Parameter+Plugin}
+\end{itemize}
 
-\begin{center}
-  \begin{tabular}{l|l|c}
-Description & \texttt{cite} code & Reference \\
-\hline
-\lhcb detector & \texttt{Alves:2008zz} & \cite{Alves:2008zz} \\
-Trigger & \texttt{Aaij:2012me} & \cite{Aaij:2012me} \\
-RICH & \texttt{arXiv:1211-6759} & \cite{arXiv:1211-6759} \\
-PID performance & \texttt{LHCb-PROC-2011-008} & \cite{LHCb-PROC-2011-008} \\
-\lhcb simulation & \texttt{LHCb-PROC-2011-006} & \cite{LHCb-PROC-2011-006} \\
-PDG 2012 & \texttt{PDG2012} & \cite{PDG2012} \\
-\pythia6 & \texttt{Sjostrand:2006za} & \cite{Sjostrand:2006za} \\
-\lhcb \pythia tuning & \texttt{LHCb-PROC-2010-056} & \cite{LHCb-PROC-2010-056} \\
-\geant & \texttt{Allison:2006ve, *Agostinelli:2002hh} & \cite{Allison:2006ve, *Agostinelli:2002hh} \\
-\evtgen & \texttt{Lange:2001uf}  & \cite{Lange:2001uf} \\
-\photos & \texttt{Golonka:2005pn}  & \cite{Golonka:2005pn} \\
-Crystal Ball function & \texttt{Skwarnicki:1986xj} & \cite{Skwarnicki:1986xj} \\
-BDT & \texttt{Breiman} & \cite{Breiman} \\
-BDT training & \texttt{AdaBoost} & \cite{AdaBoost} \\
-DecayTreeFitter & \texttt{Hulsbergen:2005pu} & \cite{Hulsbergen:2005pu} \\
-\hline
-  \end{tabular}
-\end{center}
+The following list contains the plug-ins not needed for the jobs configuration,
+but useful for management tasks
+\begin{itemize}
+  \JPI{Bulk
+Builder}{http://wiki.jenkins-ci.org/display/JENKINS/Bulk+Builder+Plugin}
+  \JPI{Jenkins Disk Usage
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Disk+Usage+Plugin}
+  \JPI{Rebuilder}{http://wiki.jenkins-ci.org/display/JENKINS/Rebuild+Plugin}
+  \JPI{Recipe Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/Recipe+Plugin}
+  \JPI{Shelve Project
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Shelve+Project+Plugin}
+\end{itemize}
 
-
-\begin{center}
-%  \begin{tabular}{l|l}
-\begin{longtable}{l|l}
-\caption{\small
-  LHCb-PAPERs.  Note that LHCb-PAPER-2011-039 does not exist.
-}
-\label{tab:LHCb-PAPERs}
-\endfirsthead
-\multicolumn{2}{c}{ -- continued from previous page.}
-\endhead
-\endfoot
-\endlastfoot
-\hline
-\texttt{LHCb-PAPER-2013-001} &
-\texttt{LHCb-PAPER-2013-002} \\
-\hline
-\texttt{LHCb-PAPER-2012-057}~\cite{LHCb-PAPER-2012-057} \\
-\texttt{LHCb-PAPER-2012-056}~\cite{LHCb-PAPER-2012-056} & 
-\texttt{LHCb-PAPER-2012-055}~\cite{LHCb-PAPER-2012-055} \\
-\texttt{LHCb-PAPER-2012-054}~\cite{LHCb-PAPER-2012-054} & 
-\texttt{LHCb-PAPER-2012-053}~\cite{LHCb-PAPER-2012-053} \\
-\texttt{LHCb-PAPER-2012-052}~\cite{LHCb-PAPER-2012-052} & 
-\texttt{LHCb-PAPER-2012-051}~\cite{LHCb-PAPER-2012-051} \\
-\texttt{LHCb-PAPER-2012-050}~\cite{LHCb-PAPER-2012-050} & 
-\texttt{LHCb-PAPER-2012-049}~\cite{LHCb-PAPER-2012-049} \\
-\texttt{LHCb-PAPER-2012-048}~\cite{LHCb-PAPER-2012-048} & 
-\texttt{LHCb-PAPER-2012-047}~\cite{LHCb-PAPER-2012-047} \\
-\texttt{LHCb-PAPER-2012-046}~\cite{LHCb-PAPER-2012-046} & 
-\texttt{LHCb-PAPER-2012-045}~\cite{LHCb-PAPER-2012-045} \\
-\texttt{LHCb-PAPER-2012-044}~\cite{LHCb-PAPER-2012-044} & 
-\texttt{LHCb-PAPER-2012-043}~\cite{LHCb-PAPER-2012-043} \\
-\texttt{LHCb-PAPER-2012-042}~\cite{LHCb-PAPER-2012-042} & 
-\texttt{LHCb-PAPER-2012-041}~\cite{LHCb-PAPER-2012-041} \\
-\texttt{LHCb-PAPER-2012-040}~\cite{LHCb-PAPER-2012-040} & 
-\texttt{LHCb-PAPER-2012-039}~\cite{LHCb-PAPER-2012-039} \\
-\texttt{LHCb-PAPER-2012-038}~\cite{LHCb-PAPER-2012-038} & 
-\texttt{LHCb-PAPER-2012-037}~\cite{LHCb-PAPER-2012-037} \\
-\texttt{LHCb-PAPER-2012-036}~\cite{LHCb-PAPER-2012-036} & 
-\texttt{LHCb-PAPER-2012-035}~\cite{LHCb-PAPER-2012-035} \\
-\texttt{LHCb-PAPER-2012-034}~\cite{LHCb-PAPER-2012-034} & 
-\texttt{LHCb-PAPER-2012-033}~\cite{LHCb-PAPER-2012-033} \\
-\texttt{LHCb-PAPER-2012-032}~\cite{LHCb-PAPER-2012-032} & 
-\texttt{LHCb-PAPER-2012-031}~\cite{LHCb-PAPER-2012-031} \\
-\texttt{LHCb-PAPER-2012-030}~\cite{LHCb-PAPER-2012-030} & 
-\texttt{LHCb-PAPER-2012-029}~\cite{LHCb-PAPER-2012-029} \\
-\texttt{LHCb-PAPER-2012-028}~\cite{LHCb-PAPER-2012-028} & 
-\texttt{LHCb-PAPER-2012-027}~\cite{LHCb-PAPER-2012-027} \\
-\texttt{LHCb-PAPER-2012-026}~\cite{LHCb-PAPER-2012-026} & 
-\texttt{LHCb-PAPER-2012-025}~\cite{LHCb-PAPER-2012-025} \\
-\texttt{LHCb-PAPER-2012-024}~\cite{LHCb-PAPER-2012-024} & 
-\texttt{LHCb-PAPER-2012-023}~\cite{LHCb-PAPER-2012-023} \\
-\texttt{LHCb-PAPER-2012-022}~\cite{LHCb-PAPER-2012-022} & 
-\texttt{LHCb-PAPER-2012-021}~\cite{LHCb-PAPER-2012-021} \\
-\texttt{LHCb-PAPER-2012-020}~\cite{LHCb-PAPER-2012-020} & 
-\texttt{LHCb-PAPER-2012-019}~\cite{LHCb-PAPER-2012-019} \\
-\texttt{LHCb-PAPER-2012-018}~\cite{LHCb-PAPER-2012-018} & 
-\texttt{LHCb-PAPER-2012-017}~\cite{LHCb-PAPER-2012-017} \\
-\texttt{LHCb-PAPER-2012-016}~\cite{LHCb-PAPER-2012-016} & 
-\texttt{LHCb-PAPER-2012-015}~\cite{LHCb-PAPER-2012-015} \\
-\texttt{LHCb-PAPER-2012-014}~\cite{LHCb-PAPER-2012-014} & 
-\texttt{LHCb-PAPER-2012-013}~\cite{LHCb-PAPER-2012-013} \\
-\texttt{LHCb-PAPER-2012-012}~\cite{LHCb-PAPER-2012-012} & 
-\texttt{LHCb-PAPER-2012-011}~\cite{LHCb-PAPER-2012-011} \\
-\texttt{LHCb-PAPER-2012-010}~\cite{LHCb-PAPER-2012-010} & 
-\texttt{LHCb-PAPER-2012-009}~\cite{LHCb-PAPER-2012-009} \\
-\texttt{LHCb-PAPER-2012-008}~\cite{LHCb-PAPER-2012-008} & 
-\texttt{LHCb-PAPER-2012-007}~\cite{LHCb-PAPER-2012-007} \\
-\texttt{LHCb-PAPER-2012-006}~\cite{LHCb-PAPER-2012-006} & 
-\texttt{LHCb-PAPER-2012-005}~\cite{LHCb-PAPER-2012-005} \\
-\texttt{LHCb-PAPER-2012-004}~\cite{LHCb-PAPER-2012-004} & 
-\texttt{LHCb-PAPER-2012-003}~\cite{LHCb-PAPER-2012-003} \\
-\texttt{LHCb-PAPER-2012-002}~\cite{LHCb-PAPER-2012-002} & 
-\texttt{LHCb-PAPER-2012-001}~\cite{LHCb-PAPER-2012-001} \\
-\hline
-\texttt{LHCb-PAPER-2011-045}~\cite{LHCb-PAPER-2011-045} & 
-\texttt{LHCb-PAPER-2011-044}~\cite{LHCb-PAPER-2011-044} \\
-\texttt{LHCb-PAPER-2011-043}~\cite{LHCb-PAPER-2011-043} & 
-\texttt{LHCb-PAPER-2011-042}~\cite{LHCb-PAPER-2011-042} \\
-\texttt{LHCb-PAPER-2011-041}~\cite{LHCb-PAPER-2011-041} & 
-\texttt{LHCb-PAPER-2011-040}~\cite{LHCb-PAPER-2011-040} \\
-% \texttt{LHCb-PAPER-2011-039}~\cite{LHCb-PAPER-2011-039} &
-\texttt{LHCb-PAPER-2011-038}~\cite{LHCb-PAPER-2011-038} &
-\texttt{LHCb-PAPER-2011-037}~\cite{LHCb-PAPER-2011-037} \\
-\texttt{LHCb-PAPER-2011-036}~\cite{LHCb-PAPER-2011-036} &
-\texttt{LHCb-PAPER-2011-035}~\cite{LHCb-PAPER-2011-035} \\
-\texttt{LHCb-PAPER-2011-034}~\cite{LHCb-PAPER-2011-034} &
-\texttt{LHCb-PAPER-2011-033}~\cite{LHCb-PAPER-2011-033} \\
-\texttt{LHCb-PAPER-2011-032}~\cite{LHCb-PAPER-2011-032} & 
-\texttt{LHCb-PAPER-2011-031}~\cite{LHCb-PAPER-2011-031} \\
-\texttt{LHCb-PAPER-2011-031}~\cite{LHCb-PAPER-2011-030} &
-\texttt{LHCb-PAPER-2011-029}~\cite{LHCb-PAPER-2011-029} \\
-\texttt{LHCb-PAPER-2011-028}~\cite{LHCb-PAPER-2011-028} &
-\texttt{LHCb-PAPER-2011-027}~\cite{LHCb-PAPER-2011-027} \\
-\texttt{LHCb-PAPER-2011-026}~\cite{LHCb-PAPER-2011-026} &
-\texttt{LHCb-PAPER-2011-025}~\cite{LHCb-PAPER-2011-025} \\
-\texttt{LHCb-PAPER-2011-024}~\cite{LHCb-PAPER-2011-024} &
-\texttt{LHCb-PAPER-2011-023}~\cite{LHCb-PAPER-2011-023} \\
-\texttt{LHCb-PAPER-2011-023}~\cite{LHCb-PAPER-2011-022} &
-\texttt{LHCb-PAPER-2011-021}~\cite{LHCb-PAPER-2011-021} \\
-\texttt{LHCb-PAPER-2011-020}~\cite{LHCb-PAPER-2011-020} &
-\texttt{LHCb-PAPER-2011-019}~\cite{LHCb-PAPER-2011-019} \\
-\texttt{LHCb-PAPER-2011-018}~\cite{LHCb-PAPER-2011-018} &
-\texttt{LHCb-PAPER-2011-017}~\cite{LHCb-PAPER-2011-017} \\
-\texttt{LHCb-PAPER-2011-016}~\cite{LHCb-PAPER-2011-016} &
-\texttt{LHCb-PAPER-2011-015}~\cite{LHCb-PAPER-2011-015} \\
-\texttt{LHCb-PAPER-2011-014}~\cite{LHCb-PAPER-2011-014} &
-\texttt{LHCb-PAPER-2011-013}~\cite{LHCb-PAPER-2011-013} \\
-\texttt{LHCb-PAPER-2011-012}~\cite{LHCb-PAPER-2011-012} &
-\texttt{LHCb-PAPER-2011-011}~\cite{LHCb-PAPER-2011-011} \\
-\texttt{LHCb-PAPER-2011-010}~\cite{LHCb-PAPER-2011-010} &
-\texttt{LHCb-PAPER-2011-009}~\cite{LHCb-PAPER-2011-009} \\
-\texttt{LHCb-PAPER-2011-008}~\cite{LHCb-PAPER-2011-008} &
-\texttt{LHCb-PAPER-2011-007}~\cite{LHCb-PAPER-2011-007} \\
-\texttt{LHCb-PAPER-2011-006}~\cite{LHCb-PAPER-2011-006} &
-\texttt{LHCb-PAPER-2011-005}~\cite{LHCb-PAPER-2011-005} \\
-\texttt{LHCb-PAPER-2011-004}~\cite{LHCb-PAPER-2011-004} &
-\texttt{LHCb-PAPER-2011-003}~\cite{LHCb-PAPER-2011-003} \\
-\texttt{LHCb-PAPER-2011-002}~\cite{LHCb-PAPER-2011-002} &
-\texttt{LHCb-PAPER-2011-001}~\cite{LHCb-PAPER-2011-001} \\
-\hline
-\texttt{LHCb-PAPER-2010-002}~\cite{LHCb-PAPER-2010-002} &
-\texttt{LHCb-PAPER-2010-001}~\cite{LHCb-PAPER-2010-001} \\
-\hline
-%  \end{tabular}
-\end{longtable}
-\end{center}
-
-Some \lhcb papers quoted together will look
-like~\cite{LHCb-PAPER-2011-007,LHCb-PAPER-2011-006,
-  LHCb-PAPER-2011-005,LHCb-PAPER-2011-004,LHCb-PAPER-2011-003}.
-
-\section{Standard symbols}
-
-As explained in Sect.~\ref{sec:typography} this appendix contains standard
-typesetting of symbols, particle names, units etc.\ in \lhcb
-documents. 
-
-In the file \texttt{lhcb-symbols-def.tex}, which is included, a very
-large number of symbols are defined. While they can lead to quicker
-typing, the main reason is to ensure a uniform notation within a
-document and indeed between different \lhcb documents. If a symbol
-like \texttt{\textbackslash CP} to typeset \CP violation is available
-for a unit, particle name, process or whatever, it should be used.  If
-you do not agree with the notation you should lobby to get the
-definition in \texttt{lhcb-symbols-def.tex} changed rather than just
-ignoring it.
-
-All the main particles have been given symbols. The \B mesons are thus
-named \Bp, \Bd, \Bs, and \Bc. There is no need to go into math mode to
-use particle names, thus saving the typing of many \$ signs. By
-default particle names are typeset in slanted type to agree with the
-PDG preference. To get roman particle
-names you can just change 
-\texttt{\textbackslash setboolean\{uprightparticles\}\{false\}}
-to \texttt{true} at the top of this template.
-
-There is a large number of units typeset that ensures the correct use
-of fonts, capitals and spacing. As an example we have
-$\mBs=5366.3\pm0.6\mevcc$. Note that \mum is typeset with an upright
-$\upmu$, even if the particle names have slanted greek letters.
-
-A set of useful symbols are defined for working groups. More of these
-symbols can be included later. As an example in the Rare Decay group
-we have several different analyses looking for a measurement of
-\Cpeff7 and \Opep7.
-
-\input{lhcb-symbols-list}
-
+% \section{To-Do List}
+% \begin{itemize}
+%   \item Configuration
+%   \begin{itemize}
+%     \item allow inclusion of shared configuration files (e.g. for the
+% environment)
+%     \item use the environment settings in all the steps
+%     \item review the \emph{plug-in} mechanism
+%     \item define where to store the configuration of the slots
+%   \end{itemize}
+%   \item Build
+%   \begin{itemize}
+%     \item check if the build produced files in the source directories
+%   \end{itemize}
+%   \item Tests
+%   \begin{itemize}
+%     \item integration between QMTest and CTest
+%   \end{itemize}
+%   \item Dashboard
+%   \item Jenkins
+%   \begin{itemize}
+%     \item simplified node labels and matching (e.g. x86\_64-slc5-gcc46-dbg
+% $\rightarrow$ slc5)
+%   \end{itemize}
+%
+% \end{itemize}

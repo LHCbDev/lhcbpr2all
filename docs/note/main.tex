@@ -15,7 +15,7 @@
 % Variables that controls behaviour
 \usepackage{ifthen} % for conditional statements
 \newboolean{pdflatex}
-\setboolean{pdflatex}{true} % False for eps figures 
+\setboolean{pdflatex}{true} % False for eps figures
 
 \newboolean{articletitles}
 \setboolean{articletitles}{true} % False removes titles in references
@@ -36,9 +36,9 @@
 
 % %%%%%%% CHOOSE TITLE PAGE--------
 %\onecolumn
-% \input{title-LHCb-ANA}
+\input{title-LHCb-ANA}
 %\input{title-LHCb-CONF}
-\input{title-LHCb-PAPER}
+%\input{title-LHCb-PAPER}
 %\twocolumn
 % %%%%%%%%%%%%% ---------
 
@@ -61,45 +61,29 @@
 \setcounter{page}{1}
 \pagenumbering{arabic}
 
-%% Uncomment during review phase. 
+%% Uncomment during review phase.
 %% Comment before a final submission.
 \linenumbers
 
-% You can include short sections directly in the main tex file.
-% However, for larger papers it is desirable to split the text into
-% several semiautonomous files, which can be revised independently.
-% This is especially useful when developing a document in
-% collaboration with several people, since then different parts can be
-% edited independently.  This type of file organization is shown here.
-% 
-
 \input{introduction}
 
-\input{principles}
+\input{requirements}
 
-\input{layout}
+\input{design}
 
-\input{typography}
+\input{implementation}
 
-\input{detector}
+\input{dashboard}
 
-\input{figures}
+\input{conclusions}
 
-\input{reference}
-
-\input{supplementary}
-
-% Do not include this in analysis note and conference reports
-\input{acknowledgements}
+%\input{instructions}
 
 \input{appendix}
 
-% This should be taken out in the final paper
-\input{supplementary-app}
-
-
 \addcontentsline{toc}{section}{References}
-\bibliographystyle{LHCb}
-\bibliography{main,LHCb-PAPER,LHCb-CONF}
+%\bibliographystyle{LHCbUrl}
+\bibliographystyle{unsrturl}
+\bibliography{main,LHCb-PAPER,LHCb-CONF,bibliography}
 
 \end{document}
