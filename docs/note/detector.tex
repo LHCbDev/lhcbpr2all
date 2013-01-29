@@ -1,0 +1,78 @@
+\section{Detector and software description}
+\label{sec:Detector}
+The following paragraph should be used for the detector
+description. Modifications may be required in spedific papers to fit
+within page limits, to enhance particular detector elements or to
+introduce acronyms used later in the text.
+
+The \lhcb detector~\cite{Alves:2008zz} is a single-arm forward
+spectrometer covering the \mbox{pseudorapidity} range $2<\eta <5$,
+designed for the study of particles containing \bquark or \cquark
+quarks. The detector includes a high precision tracking system
+consisting of a silicon-strip vertex detector surrounding the $pp$
+interaction region, a large-area silicon-strip detector located
+upstream of a dipole magnet with a bending power of about
+$4{\rm\,Tm}$, and three stations of silicon-strip detectors and straw
+drift tubes placed downstream. The combined tracking system has a
+momentum resolution $\Delta p/p$ that varies from 0.4\% at 5\gevc to
+0.6\% at 100\gevc, and an impact parameter resolution of 20\mum for
+tracks with high transverse momentum. Charged hadrons are identified
+using two ring-imaging Cherenkov detectors. Photon, electron and
+hadron candidates are identified by a calorimeter system consisting of
+scintillating-pad and preshower detectors, an electromagnetic
+calorimeter and a hadronic calorimeter. Muons are identified by a
+system composed of alternating layers of iron and multiwire
+proportional chambers. The trigger~\cite{Aaij:2012me} consists of a
+hardware stage, based on information from the calorimeter and muon
+systems, followed by a software stage which applies a full event
+reconstruction.
+
+The trigger description has to be specific for the analysis in
+question. In general, you should not attempt to describe the full
+trigger system. Below are a few variations that inspiration can be
+taken from. First from a hadronic analysis, and second from an
+analysis with muons in the final state.
+\begin{itemize}
+\item The software trigger requires a two-, three- or four-track
+  secondary vertex with a high sum of the transverse momentum, \pt, of
+  the tracks and a significant displacement from the primary $pp$
+  interaction vertices~(PVs). At least one track should have $\pt >
+  1.7\gevc$ and impact parameter~(IP) \chisq with respect to the
+  primary interaction greater than 16. The IP \chisq is defined as the
+  difference between the \chisq of the PV reconstructed with and
+  without the considered track. A multivariate algorithm is used for
+  the identification of secondary vertices consistent with the decay
+  of a \bquark-hadron.
+\item Candidate events are first required to pass a hardware trigger
+  which selects muons with a transverse momentum, $\pt>1.48\gevc$. In
+  the subsequent software trigger, at least
+  one of the final state particles is required to have both
+  $\pt>0.8\gevc$ and impact parameter $>100\mum$ with respect to all
+  of the primary $pp$ interaction vertices~(PVs) in the
+  event. Finally, the tracks of two or more of the final state
+  particles are required to form a vertex which is significantly
+  displaced from the PVs.
+\end{itemize}
+
+The description of our software stack for simulation is often
+causing trouble. The folowing paragraph can act as inspiration but
+with variations according to the level of detail required and if
+mentioning of \eg \photos is required.
+
+In the simulation, $pp$ collisions are generated using
+\pythia~6.4~\cite{Sjostrand:2006za} with a specific \lhcb
+configuration~\cite{LHCb-PROC-2010-056}.  Decays of hadronic particles
+are described by \evtgen~\cite{Lange:2001uf} in which final state
+radiation is generated using \photos~\cite{Golonka:2005pn}. The
+interaction of the generated particles with the detector and its
+response are implemented using the \geant
+toolkit~\cite{Allison:2006ve, *Agostinelli:2002hh} as described in
+Ref.~\cite{LHCb-PROC-2011-006}.
+
+Many analyses depend on boosted decision trees. It is inappropriate to
+use TMVA as the reference as that is merely an implementation of the
+BDT algorithm. Rather it is suggested to write
+
+In this paper we use a boosted decision tree~(BDT)~\cite{Breiman} with
+the AdaBoost algorithm\cite{AdaBoost} to separate signal from
+background.

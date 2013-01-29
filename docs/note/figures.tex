@@ -1,0 +1,65 @@
+% $Id: figures.tex 18565 2012-04-26 22:51:51Z uegede $
+% ===============================================================================
+% Purpose: including figures in the standard template
+% Author: Tomasz Skwarnicki, Ulrik Egede
+% Created on: 2010-09-24
+% ===============================================================================
+
+\section{Figures}
+\label{sec:Figures}
+
+A standard \lhcb style file for use in production of figures in \root
+is in the \erasmus package \texttt{RootTools/LHCbStyle} or directly in
+\svn at
+\texttt{svn+ssh://svn.cern.ch/reps/lhcb/Erasmus/trunk/RootTools/LHCbStyle}. It
+is not mandatory to use this style, but it makes it easier to follow
+the recommendations below.
+
+In Fig.~\ref{fig:example} is shown an example of how to include an eps
+or pdf figure with the \texttt{\textbackslash includegraphics} command
+(eps figures will not work with \texttt{pdflatex}). Note that if the
+graphics sits in \texttt{figs/myfig.pdf}, you can just write
+\texttt{\textbackslash includegraphics\{myfig\}} as the \texttt{figs}
+subdirectory is searched automatically and the extension \texttt{.pdf}
+(\texttt{.eps}) is automatically added for \texttt{pdflatex}
+(\texttt{latex}).
+\begin{figure}[tb]
+  \begin{center}
+    \includegraphics[width=0.7\linewidth]{Example1DPlot-python-1}
+    \vspace*{-1.0cm}
+  \end{center}
+  \caption{
+    \small %captions should be a little bit smaller than main text
+    An example plot using the \lhcb style from the \erasmus package
+    \texttt{RootTools/LHCbStyle}. The signal data is shown as points
+    with the signal component as yellow (light), background 1 as green
+    (medium) and background 2 as blue (dark).}
+  \label{fig:example}
+\end{figure}
+
+\begin{enumerate}
+
+\item Figures should be legible at the size they will appear in the
+  publication, with suitable line width.  Their axes should be
+  labelled, and have suitable units (e.g. avoid a mass plot with
+  labels in MeV$/c^2$ if the region of interest covers a few GeV$/c^2$
+  and all the numbers then run together).  Spurious background shading
+  and boxes around text should be avoided.
+
+\item Colour may be used in figures, but the distinction between
+  differently coloured areas or lines should be clear also when the
+  document is printed in black and white, for example through
+  differently dashed lines. The \lhcb style mentioned above implements
+  a colour scheme that works well but individual adjustments might be
+  required.
+
+\item Figures with more than one part should have the parts labelled
+  (a), (b) etc., with a corresponding description in the caption;
+  alternatively they should be clearly referred to by their position,
+  e.g. Fig.~1\,(left).
+
+\item All figures containing \lhcb data should have \lhcb written on
+  them, preferably in the upper right corner.  For preliminary
+  results, that should be replaced by ``LHCb preliminary''.
+
+\end{enumerate}
