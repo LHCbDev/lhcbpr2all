@@ -1,16 +1,4 @@
-%\pdfoutput=1
-% Uncomment line above if submitting to arXiv and using pdflatex
-
-% $Id: main.tex 28385 2012-11-23 17:37:51Z uegede $
-% ============================================================================
-% Purpose: Template for LHCb documents
-% Authors: Tomasz Skwarnicki, Roger Forty, Ulrik Egede
-% Created on: 2010-09-24
-% ============================================================================
 \documentclass[12pt,a4paper]{article}
-% For two column text, add "twocolumn" as an option to the document
-% class. Also uncomment the two "onecolumn" and "twocolumn" lines
-% around the title page below.
 
 % Variables that controls behaviour
 \usepackage{ifthen} % for conditional statements
@@ -24,7 +12,6 @@
 \setboolean{uprightparticles}{false} %True for upright particle symbols
 
 \input{preamble}
-\usepackage{longtable} % only for template; not usually to be used in PAPERs
 
 \begin{document}
 
@@ -37,8 +24,6 @@
 % %%%%%%% CHOOSE TITLE PAGE--------
 %\onecolumn
 \input{title-LHCb-ANA}
-%\input{title-LHCb-CONF}
-%\input{title-LHCb-PAPER}
 %\twocolumn
 % %%%%%%%%%%%%% ---------
 
@@ -82,8 +67,8 @@
 \input{appendix}
 
 \addcontentsline{toc}{section}{References}
-%\bibliographystyle{LHCbUrl}
-\bibliographystyle{unsrturl}
-\bibliography{main,LHCb-PAPER,LHCb-CONF,bibliography}
+%\bibliographystyle{LHCb}
+\bibliographystyle{unsrturl} % I need support for web pages (LHCb style does not have it)
+\bibliography{bibliography}
 
 \end{document}
