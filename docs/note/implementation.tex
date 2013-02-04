@@ -355,22 +355,22 @@ the new system it is the Jenkins instance that is aware of each build node
 (slave) and connects to them via \texttt{ssh} (using the \texttt{ssh}
 \emph{Launch method} provided by the \emph{Jenkins SSH Slaves Plugin}) with the
 credentials of the service account \texttt{lhcbsoft}.  Each slave is configured
-with \emph{Labels} set to the list of all the possible platforms it can build
-(i.e. the values of the environment variable \texttt{CMTCONFIG} valid on that
-machine). To avoid problems with the AFS token, we change the default
-\emph{Availability} to take the node off line if idle (\emph{Idle delay}: 20
-minutes) and to connect if needed (\emph{In demand delay}: 1 minute).  Because
-of the particular configuration of the build machines, we have to set the
-\emph{Remote FS root} to point to a directory on the dedicated disk
-(\texttt{/build/jenkins}).  We do not have Java installed on the slave (or the
-version is too old), so, because to download it from the Oracle web site
-requires authentication, we install the JRE\footnote{Java Runtime
-Environment\cite{JRE}.} by hand on each node in the \texttt{jre} directory under
-the configured \emph{Remote FS root} and declare it in the configuration (field
-\emph{JavaPath} in the advanced section of \emph{Launch method}).  The number of
-executors (\emph{\# of executors}) is usually set to the number of CPUs of the
-slave, but our builds and tests use on average two CPUs per job\footnote{The
-average number of CPUs per job is not
+with \emph{Labels} set to the short OS id (for example \emph{slc6} for
+\emph{Scientific Linux CERN 6.x}). To avoid problems with the AFS token, we
+change the default \emph{Availability} to take the node off line if idle
+(\emph{Idle delay}: 20 minutes) and to connect if needed (\emph{In demand
+delay}: 1 minute).  Because of the particular configuration of the build
+machines, we have to set the \emph{Remote FS root} to point to a directory on
+the dedicated disk (\texttt{/build/jenkins}).  We do not have Java installed on
+the slave (or the version is too old), so, because to download it from the
+Oracle web site requires authentication, we install the JRE\footnote{Java
+Runtime Environment\cite{JRE}.} by hand on each node in the \texttt{jre}
+directory under the configured \emph{Remote FS root} and declare it in the
+configuration (field \emph{JavaPath} in the advanced section of \emph{Launch
+method}).  The number of executors (\emph{\# of executors}) is usually set to
+the number of CPUs of the slave, but our builds and tests use on average two
+CPUs
+per job\footnote{The average number of CPUs per job is not
   really predictable because we launch parallel builds using
   \texttt{distcc}\cite{distcc,distccCERN} and we run the tests in background, so
   we used the Unix command \texttt{time} to monitor the \emph{real time} (world
@@ -381,7 +381,9 @@ executors\footnote{Some special Jenkins jobs do not occupy executors, like the
 parent job of a multi-configuration job, but it is not (jet) possible to
 configure a regular job as ``flyweight'' (the term used for the special jobs).
 When we will have a plugin to configure flyweight jobs, we can change that weird
-number of executors to a more reasonable value.}.
+number of executors to a more reasonable value.}.  In the global configuration
+page (\emph{Configure System}) the checkbox \emph{Allow token macro processing},
+under \emph{Groovy}, must be ticked.
 
 The jobs we configured for the nightly builds are divided in two categories: the
 workers and the slots.  For a simpler monitoring the jobs of the two categories
@@ -404,7 +406,8 @@ jobs connected to the same build of a slot
 \end{description}
 In all cases we allow concurrent builds via the flag \emph{Execute concurrent
 builds if necessary}.  Using the \emph{Jenkins GIT Plugin} we check out the
-Nightly Builds Core Tools from the URL mentioned in \ref{sec:CoreTools}, to use the
+Nightly Builds Core Tools from the URL mentioned in \ref{sec:CoreTools}, to use
+the
 latest production version for their tasks, and we tick the \emph{Clean after
 checkout} checkbox in the advanced section.  Since each worker job will be used
 several times concurrently to work on different slots and platforms, to more
@@ -453,23 +456,34 @@ choosing the latest successful build of the project identified by the string
 \verb|nightly-slot-checkout/slot=$slot,slot_build_id=$slot_build_id|.  The
 second build step is a shell script that prepares the environment and calls the
 precondition check script from the Core Tools (see
-\ref{sec:CoreTools:Preconditions}).  The last step is to trigger the actual build
+\ref{sec:CoreTools:Preconditions}).  The last step is to trigger the actual
+build
 jobs via the \emph{Jenkins Parameterized Trigger Plugin}, so that the jobs
 \emph{nightly-slot-build} (described later) are started with a \emph{NodeLabel
-parameter} called \emph{platform} set to \verb|${platform}| and with
-\emph{Predefined parameters} used to propagate the values of the parameters
-\emph{slot} and \emph{slot\_build\_id}\footnote{The \emph{platform} parameter is
-  not passed in the same way as the others because the only way to trigger a job
-  so that it is executed on a node different from the originating job is to use
-  the special \emph{NodeLabel parameter} type.},
+parameter} called \emph{os\_label} set to (as a single line)
+\begin{quote}
+\begin{verbatim}
+${GROOVY,script="import hudson.model.* ;
+   def thr = Thread.currentThread() ;
+   def build = thr.executable ;
+   return build.getEnvironment().get('platform').split('-')[1]"}
+\end{verbatim}
+\end{quote} (which is a special piece of code that extracts the OS id from the
+platform id)
+and with \emph{Predefined parameters} used to propagate the values of the
+parameters \emph{slot}, \emph{slot\_build\_id} and \emph{platform}\footnote{The
+  \emph{os\_label} parameter is not passed in the same way as the others because
+  the only way to trigger a job so that it is executed on a node different from
+  the originating job is to use the special \emph{NodeLabel parameter} type.},
 then we \emph{Block until the triggered projects finish their builds} and we,
 essentially, inherit the status of the triggered jobs.  We do not need any
 special post-build action in this job.
 
 The job triggered by \emph{nightly-slot-build-trigger} is
 \emph{nightly-slot-build} and it runs the heaviest part: the actual build and
-the tests.  In addition to the common parameters it accepts the \emph{Label}
-parameter called \emph{platform}\footnote{A \emph{Label} parameter is used by
+the tests.  In addition to the common parameters it accepts the string parameter
+\emph{platform} declaring the platform id and a \emph{Label}
+parameter called \emph{os\_label}\footnote{A \emph{Label} parameter is used by
 Jenkins to choose on which slave the job has to be run.}.  Since this job will
 build the same slot on several different platforms, we appended
 \verb|.${ENV,var="platform"}| to the \emph{Build Name} used in the other jobs
@@ -479,8 +493,10 @@ from the latest successful build of the corresponding build of
 a shell script to prepare the build environment and call the build script from
 Core Tools)\footnote{To test the possible integration of the new nightly build
   system with the old summary page, we also copy to AFS summary files equivalent
-  to the old ones that we generate during the build (see \ref{sec:Dashboard:Old}).}
-(see \ref{sec:CoreTools:Build}. In the post-build actions we archive the artifacts,
+  to the old ones that we generate during the build (see
+\ref{sec:Dashboard:Old}).}
+(see \ref{sec:CoreTools:Build}. In the post-build actions we archive the
+artifacts,
 in particular the archive files and the summaries found in the \texttt{build}
 directory.
 
