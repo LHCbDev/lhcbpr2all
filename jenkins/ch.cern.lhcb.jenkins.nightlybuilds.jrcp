@@ -586,7 +586,7 @@ slot_build_id=${BUILD_NUMBER}</properties>
       </definition>
     </job>
     <plugin>
-      <names>ssh-slaves shelve-project-plugin rebuild bulk-builder disk-usage groovy</names>
+      <names>ssh-slaves shelve-project-plugin rebuild bulk-builder disk-usage envinject groovy</names>
     </plugin>
   </ingredients>
 </recipe>

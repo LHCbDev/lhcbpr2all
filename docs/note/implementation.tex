@@ -460,7 +460,10 @@ precondition check script from the Core Tools (see
 build
 jobs via the \emph{Jenkins Parameterized Trigger Plugin}, so that the jobs
 \emph{nightly-slot-build} (described later) are started with a \emph{NodeLabel
-parameter} called \emph{os\_label} set to (as a single line)
+parameter} called \emph{os\_label} set to (as a single line\footnote{The
+\emph{Groovy Plugin} allows execution of Groovy scripts\cite{Groovy} like in
+this case, and the \emph{EnvInject Plugin} ensures that the environment variable
+\emph{platform} is set from the axis.})
 \begin{quote}
 \begin{verbatim}
 ${GROOVY,script="import hudson.model.* ;
@@ -468,8 +471,7 @@ ${GROOVY,script="import hudson.model.* ;
    def build = thr.executable ;
    return build.getEnvironment().get('platform').split('-')[1]"}
 \end{verbatim}
-\end{quote} (which is a special piece of code that extracts the OS id from the
-platform id)
+\end{quote}
 and with \emph{Predefined parameters} used to propagate the values of the
 parameters \emph{slot}, \emph{slot\_build\_id} and \emph{platform}\footnote{The
   \emph{os\_label} parameter is not passed in the same way as the others because
