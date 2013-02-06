@@ -74,7 +74,7 @@ def loadFromOldXML(source, slot):
                         'version': version,
                         'overrides': overrides,
                         'dependencies': dependencies}
-            if proj.attrib.get('disabled', False):
+            if proj.attrib.get('disabled', 'false').lower() != 'false':
                 projData['checkout'] = 'noCheckout'
 
             allProjs.append(projData)
