@@ -107,7 +107,7 @@ def main():
     
     if not jobAttributes:
         logger.warning('All handlers failed, no results were collected.Aborting...')
-        return
+        exit(1)
     
     unique_results_id = str(uuid.uuid1())
     zipper = zipfile.ZipFile(unique_results_id+'.zip', mode='w')
