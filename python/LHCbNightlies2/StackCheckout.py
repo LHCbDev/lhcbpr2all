@@ -75,11 +75,31 @@ def noCheckout(desc, rootdir='.'):
     '''
     log.info('checkout not requested for %s', desc)
 
+def gitCheckout(desc, rootdir='.'):
+    if 'url' not in desc.checkout_opts:
+        raise RuntimeError('mandatory checkout_opts "url" is missing')
+    url = desc.checkout_opts['url']
+    commit = desc.checkout_opts.get('commit', 'master')
+    log.debug('checking out %s from %s (%s)', desc, url, commit)
+    dest = os.path.join(rootdir, desc.projectDir)
+    call(['git', 'clone', url, dest])
+    call(['git', 'checkout', commit], cwd=dest)
+    f = open(os.path.join(dest, 'Makefile'), 'w')
+    f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
+    f.close()
+    log.debug('checkout of %s completed in %s', desc, dest)
+
+def specialLHCbCheckout(desc, rootdir='.'):
+    getpack = ['getpack', '--batch', '--no-config']
+    log.debug('checking out %s', desc)
+    cmd = getpack + ['-P', desc.name, desc.version]
+    call(cmd, cwd=rootdir, retry=3)
+
 class ProjectDesc(object):
     '''
     Describe a project to be checked out.
     '''
-    def __init__(self, name, version, overrides=None, checkout=None):
+    def __init__(self, name, version, overrides=None, checkout=None, checkout_opts=None):
         '''
         @param name: name of the project
         @param version: version of the project as 'vXrY' or 'HEAD', where 'HEAD'
@@ -95,6 +115,7 @@ class ProjectDesc(object):
         self.version = version
         self.overrides = overrides or {}
         self._checkout = checkout or defaultCheckout
+        self.checkout_opts = checkout_opts or {}
 
     def checkout(self, rootdir='.'):
         '''
@@ -253,21 +274,6 @@ class StackDesc(object):
 
         patchfile.close()
 
-
-def specialGaudiCheckout(desc, rootdir='.'):
-    dest = os.path.join(rootdir, desc.projectDir)
-    call(['git', 'clone', '-b', 'dev/cmake',
-          'http://cern.ch/gaudi/Gaudi.git', dest])
-    f = open(os.path.join(dest, 'Makefile'), 'w')
-    f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
-    f.close()
-
-def specialLHCbCheckout(desc, rootdir='.'):
-    getpack = ['getpack', '--batch', '--no-config']
-    log.debug('checking out %s', desc)
-    cmd = getpack + ['-P', desc.name, desc.version]
-    call(cmd, cwd=rootdir, retry=3)
-
 def parseConfigFile(path):
     from Configuration import load
     data = load(path)
@@ -281,7 +287,8 @@ def parseConfigFile(path):
             checkout = globals()[checkout]
         projects.append(ProjectDesc(p[u'name'], p[u'version'],
                                     overrides=p.get(u'overrides', {}),
-                                    checkout=checkout))
+                                    checkout=checkout,
+                                    checkout_opts=p.get(u'checkout_opts', {})))
     return StackDesc(projects=projects, name=data.get(u'slot', None))
 
 import LbUtils.Script

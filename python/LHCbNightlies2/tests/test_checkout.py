@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import nose
+from subprocess import Popen, PIPE
 from _utils import *
 
 # Uncomment to disable the tests.
@@ -184,17 +185,44 @@ def test_checkout():
         assert re.search(r'version\s+v12r0', GaudiPolicy_requirements)
         assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements'))
 
-        StackCheckout.specialGaudiCheckout(ProjectDesc('Gaudi', 'v23r5'), tmpdir)
-        check([join('GAUDI', 'GAUDI_v23r5', join(*x))
+        StackCheckout.gitCheckout(ProjectDesc('Gaudi', 'v23r6',
+                                              checkout_opts={'url': 'http://cern.ch/gaudi/Gaudi.git',
+                                                             'commit': 'GAUDI/GAUDI_v23r6'}),
+                                  tmpdir)
+        check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
                          ('cmt', 'project.cmt'),
                          ('GaudiRelease', 'cmt', 'requirements')]])
+        #assert 'v23r6' in open(join(tmpdir, 'GAUDI', 'GAUDI_v23r6', 'CMakeLists.txt')).read()
+        p = Popen(['git', 'branch'],
+                  stdout=PIPE,
+                  cwd=join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
+        branches = p.communicate()[0].splitlines()
+        assert '* (no branch)' in branches
 
-        shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r5'), ignore_errors=True)
-        StackCheckout.noCheckout(ProjectDesc('Gaudi', 'v23r5'), tmpdir)
-        assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r5'))
+
+        StackCheckout.gitCheckout(ProjectDesc('Gaudi', 'HEAD',
+                                              checkout_opts={'url': 'http://cern.ch/gaudi/Gaudi.git'}),
+                                  tmpdir)
+        check([join('GAUDI', 'GAUDI_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('GaudiRelease', 'cmt', 'requirements')]])
+        p = Popen(['git', 'branch'],
+                  stdout=PIPE,
+                  cwd=join(tmpdir, 'GAUDI', 'GAUDI_HEAD'))
+        branches = p.communicate()[0].splitlines()
+        assert '* master' in branches
+
+
+        shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'), ignore_errors=True)
+        shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_HEAD'), ignore_errors=True)
+        StackCheckout.noCheckout(ProjectDesc('Gaudi', 'v23r6'), tmpdir)
+        assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
 
 
     finally:
+        #print tmpdir
         shutil.rmtree(tmpdir, ignore_errors=True)
