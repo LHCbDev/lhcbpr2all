@@ -185,7 +185,10 @@ def main():
             if f.endswith('.tar.bz2'):
                 f = join(sources_dir, f)
                 log.info('  unpacking %s', f)
-                call(['tar', 'xf', f], cwd=build_dir)
+                # do not overwrite existing sources when unpacking
+                # (either we just cleaned the directory or we were asked not to do it)
+                call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
+                      '-f', f], cwd=build_dir)
 
     log.info("Generating CTest scripts and configurations.")
     timestamp = date.today().isoformat()
