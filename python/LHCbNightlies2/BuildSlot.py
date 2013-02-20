@@ -267,7 +267,8 @@ def main():
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
 
-        genBuildLogReport(build_dir, p, platform, config, old_build_id)
+        reporter = BuildReporter(build_dir, p, platform, config, old_build_id)
+        reporter.genOldSummaries()
 
         log.info('packing %s', p.dir)
         packname = [p.name, p.version]
@@ -293,185 +294,312 @@ def main():
     log.info('build completed in %s', datetime.now() - starttime)
     return 0
 
-def parseBuildLog(logfile, config=None):
+class BuildReporter(object):
     '''
-    Scan a build log file looking for warnings and errors.
-
-    @param logfile: file object (iterable) to process
-    @param config: configuration dictionary, with the list of exclusions
-    @return: generator of warnings or errors as tuples (line_number, type, message)
+    Class to analyze the build log of project and produce reports.
     '''
-    import re
-    from collections import deque
-
-    if config is None:
-        config = {}
-
-    wExp = re.compile(r'\bwarning\b', re.IGNORECASE)
-    eExp = re.compile(r'\berror\b', re.IGNORECASE)
-
-    class ExclusionCounter(object):
+    def __init__(self, build_dir, project, platform, config, old_build_id):
         '''
-        Simple wrapper around re.search to count the number of matches.
+        Initialize the instance.
+
+        @param build_dir: root directory of the build
+        @param project: ProjDesc instance of the project
+        @param config: configuration dictionary
+        @param old_build_id: build id used in the old nightly builds
         '''
-        def __init__(self, exp):
-            self.exp = exp
-            self._exp = re.compile(exp)
-            self.count = 0
-        def search(self, l):
-            r = self._exp.search(l)
-            if r:
-                self.count += 1
-            return r
+        from os.path import join
+        self.build_dir = build_dir
+        self.project = project
+        self.platform = platform
+        self.config = config or {'slot': 'no-name'}
+        self.old_build_id = old_build_id
 
-    wExc = map(ExclusionCounter, config.get('warning_exceptions', []))
-    eExc = map(ExclusionCounter, config.get('error_exceptions', []))
+        self.summary_dir = join(self.build_dir, 'summaries', project.name)
+        self.build_log = join(self.summary_dir, 'build.log')
 
-    def excluded(l, excl):
-        for e in excl:
-            if e.search(l):
-                return True
-        return False
+        self._summary = None
 
-    class ListDict(dict):
-        def append(self, k, v):
-            if k not in self:
-                self[k] = [v]
+    @property
+    def summary(self):
+        '''
+        Summary of the errors and warnings in the log file.
+        '''
+        if self._summary is None:
+            self._summary = self._parseLog()
+        return self._summary
+
+
+    def genOldSummaries(self):
+        '''
+        Produce summary files compatible with the old dashboard.
+        '''
+        from os.path import join, dirname
+        from itertools import islice
+        import cgi
+        import re
+        import codecs
+
+        def formatTxt(iterable, lineOffset=0):
+            '''
+            Helper function to generate HTML version of a log file.
+            '''
+            lineclass = ["even", "odd"]
+            yield '<html>\n'
+            for i, line in enumerate(iterable):
+                i += lineOffset
+                line = cgi.escape(line.rstrip())
+                found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
+                if found:
+                    line = '<a id="line_%s" class="%s">%s</a>' % (i, found.group(1).lower(), line)
+                yield '<div class="%s">%s</div>\n' % (lineclass[i % 2], line.encode('UTF-8'))
+            yield '</html>\n'
+
+        log_summary = join(self.summary_dir, self.old_build_id + '-log.summary')
+
+        shutil.copy(self.build_log, log_summary.replace('-log.summary', '.log'))
+
+        # generate the small summary file with the counts of warnings
+        f = open(log_summary, 'w')
+        f.write(self._oldSummary())
+        f.close()
+
+        # copy the build log, prepending environment and checkout
+        env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
+        checkout_lines = ['no checkout log\n']
+        f = codecs.open(log_summary.replace('-log.summary', '.log'), 'w', 'utf-8')
+        f.writelines(env_lines)
+        env_block_size = len(env_lines)
+        f.writelines(checkout_lines)
+        checkout_block_size = 1
+        f.writelines(codecs.open(self.build_log, 'r', 'utf-8'))
+        f.close()
+
+        # generate HTML summary main page
+        html_summary = log_summary.replace('.summary', '.html')
+        f = codecs.open(html_summary, 'w', 'utf-8')
+        f.write(self._oldHtml(env_block_size, checkout_block_size))
+        f.close()
+
+
+        # generate HTML log chunks
+        # - convert the sections from (name, start) -> (name, start, end+1)
+        sections = []
+        for n, i in self.summary['sections']:
+            if sections:
+                sections[-1][-1] = i
+            sections.append([n, i, 0])
+        sections[-1][-1] = self.summary['size']
+        logfile = codecs.open(self.build_log, 'r', 'utf-8')
+        offset = 0
+        for n, lines in zip(['env', 'checkout'], [env_lines, checkout_lines]):
+            chunkfile = codecs.open(log_summary.replace('-log.summary', '.log.' + n), 'w', 'utf-8')
+            chunkfile.writelines(formatTxt(lines, offset))
+            chunkfile.close()
+            offset += len(lines)
+        for n, b, e in sections:
+            chunkfile = codecs.open(log_summary.replace('-log.summary', '.log.section%d' % (b+offset)), 'w', 'utf-8')
+            chunkfile.writelines(formatTxt(islice(logfile, e-b), b))
+            chunkfile.close()
+
+        # copy the JavascriptCode
+        shutil.copy(join(dirname(__file__), 'logFileJQ.js'),
+                    join(self.summary_dir, 'logFileJQ.js'))
+
+
+    def _parseLog(self):
+        '''
+        Scan the build log file looking for warnings and errors.
+
+        @return: a dictionary with the list of errors, warnings and ignored ones
+        '''
+        import re
+        import codecs
+        from collections import deque
+
+        wExp = re.compile(r'\bwarning\b', re.IGNORECASE)
+        eExp = re.compile(r'\berror\b', re.IGNORECASE)
+        #cExp = re.compile(r'cov-|(Coverity (warning|error|message))', re.IGNORECASE)
+
+        class ExclusionCounter(object):
+            '''
+            Simple wrapper around re.search to count the number of matches.
+            '''
+            def __init__(self, exp):
+                self.exp = exp
+                self._exp = re.compile(exp)
+                self.count = 0
+            def search(self, l):
+                r = self._exp.search(l)
+                if r:
+                    self.count += 1
+                return r
+
+        wExc = map(ExclusionCounter, self.config.get('warning_exceptions', []))
+        eExc = map(ExclusionCounter, self.config.get('error_exceptions', []))
+        #cExc = []
+
+        def excluded(l, excl):
+            for e in excl:
+                if e.search(l):
+                    return True
+            return False
+
+        class ListDict(dict):
+            def append(self, k, v):
+                if k not in self:
+                    self[k] = [v]
+                else:
+                    self[k].append(v)
+
+        def getLineType(l):
+            '''tell the type of line'''
+            if eExp.search(l) and not excluded(l, eExc):
+                return 'error'
+            elif wExp.search(l) and not excluded(l, wExc):
+                return 'warning'
+            #elif cExp.search(l) and not excluded(l, cExc):
+            #    return 'coverity'
+            return None
+
+        summary = dict([(k, ListDict()) for k in ['error', 'warning', 'coverity']])
+        context = deque()
+        sections = [] # List of section descriptions: ('name', start)
+        i = -1
+        logfile = codecs.open(self.build_log, 'r', 'utf-8')
+        for i, l in enumerate(logfile):
+            context.append(l)
+            if len(context) > 5:
+                context.popleft()
+            t = getLineType(l)
+            if t:
+                summary[t].append(l, (i, list(context)))
+            if self.config.get('USE_CMT'):
+                if l.startswith('# Building package'):
+                    sections.append((l.split()[4], i))
             else:
-                self[k].append(v)
+                if (i % 500) == 0:
+                    if sections:
+                        s = sections[-1]
+                        sections[-1] = (s[0] + str(i-1), s[1])
+                    sections.append(('lines %d-' % i, i))
+        summary['ignored_warning'] = [w for w in wExc if w.count]
+        summary['ignored_error'] = [e for e in eExc if e.count]
+        summary['size'] = i + 1
+        summary['sections'] = sections
+        return summary
 
-    def getLineType(l):
-        '''tell the type of line'''
-        if eExp.search(l) and not excluded(l, eExc):
-            return 'error'
-        elif wExp.search(l) and not excluded(l, wExc):
-            return 'warning'
-        return None
+    def _oldSummary(self):
+        '''
+        @return: content of the summary file used by the old dashboard.
+        '''
+        wCount = sum(map(len, self.summary['warning'].values()))
+        eCount = sum(map(len, self.summary['error'].values()))
+        t = time.time()
+        data = ('{t} ({at}) {slot} {project}_{version} {platform}\n'
+                .format(t=t,
+                        at=time.ctime(t),
+                        slot=self.config[u'slot'],
+                        project=self.project.name.upper(),
+                        version=self.project.version,
+                        platform=self.platform))
+        data += ','.join(map(str, [wCount, eCount, 0, 0])) + '\n'
+        return data
 
-    summary = dict([(k, ListDict()) for k in ['error', 'warning']])
-    context = deque()
-    for i, l in enumerate(logfile):
-        context.append(l)
-        if len(context) > 5:
-            context.popleft()
-        t = getLineType(l)
-        if t:
-            summary[t].append(l, (i, list(context)))
-    summary['ignored_warning'] = [w for w in wExc if w.count]
-    summary['ignored_error'] = [e for e in eExc if e.count]
-    return summary
+    def _oldHtml(self, env_size=0, checkout_size=0):
+        '''
+        @param env_size: number of lines of the log file used for the environment dump
+        @param checkout_size: number of lines of the log file used for the checkout dump
+
+        @return: HTML report page of the build of a project.
+        '''
+        from os.path import join, dirname
+        from json import dumps
+        from itertools import cycle
+        import cgi
+
+        html = Template(open(join(dirname(__file__), 'report.template.html')).read())
+
+        logfile_links = []
+        logfile_links.append({'id': 'env',
+                              'f': 0, 'l': max(0, env_size-1),
+                              'desc': 'Show details of environment'})
+        logfile_links.append({'id': 'checkout',
+                              'f': env_size, 'l': env_size + max(0, checkout_size-1),
+                              'desc': 'Show getpack log'})
+        offset = env_size + checkout_size
+        for n, i in self.summary['sections']:
+            i += offset
+            logfile_links[-1]['l'] = i - 1
+            logfile_links.append({'id': 'section%d' % i,
+                                  'f': i,
+                                  'desc': n})
+        logfile_links[-1]['l'] = self.summary['size'] - 1
 
 
-def genBuildLogReport(build_dir, project, platform, config, old_build_id):
-    '''
-    Produce the build log reports for a project built.
-    '''
-    from os.path import exists, join
-    import codecs
-    import cgi
+        ignored_counts = []
+        for k in ['error', 'warning']:
+            ignored = self.summary['ignored_' + k]
+            if ignored:
+                ignored_counts.append({'name': k + 's',
+                                       'entries': [{'count': w.count,
+                                                    'text': w.exp}
+                                                   for w in ignored]})
 
-    build_log = join(build_dir, 'summaries', project.name, 'build.log')
+        wCount = sum(map(len, self.summary['warning'].values()))
+        eCount = sum(map(len, self.summary['error'].values()))
+        cCount = sum(map(len, self.summary['coverity'].values()))
 
-    if not exists(build_log):
-        logging.warning('cannot generate build log report: missing file %s', build_log)
-        return
+        def find_block(l):
+            l += offset
+            for d in logfile_links:
+                if d['f'] <= l <= d['l']:
+                    return d['id']
 
-    summary = parseBuildLog(codecs.open(build_log, 'r', 'utf-8'), config)
-    wCount = sum(map(len, summary['warning'].values()))
-    eCount = sum(map(len, summary['error'].values()))
+        code_links = []
+        def formatList(cls):
+            '''
+            Format the summary entries as a sequence of HTML <li> elements.
 
+            The argument has to be a dictionary of the format:
+            {'key': [(<line>, [<context>,...]), ...], ...}
+            '''
 
-    log_summary = old_build_id + '-log.summary'
-    log_summary = join(build_dir, 'summaries', project.name, log_summary)
+            # sort the values according to their first occurrence
+            values = sorted(self.summary[cls].values(), key=lambda x: x[0][0])
+            li = '<li><a class="codeLink" id="%s%s">%s</a></li>'
+            lines = []
+            for v in values:
+                lines.append('<ul class="%s">' % cls)
+                for l, c in v:
+                    # convert a list of lines in something like
+                    # ['<div class="even">line one</div>',
+                    #  '<div class="odd">line two &amp;</div>']
+                    c = ['<div class="%s">%s</div>' % x
+                         for x in zip(cycle(['even', 'odd']),
+                                      map(cgi.escape, c))]
+                    c[-1] = '<strong>%s</strong>' % c[-1].rstrip()
+                    c = ''.join(c)
+                    lines.append(li % (cls, l, c))
+                    code_links.append({'id': '%s%s' % (cls, l),
+                                       'block': find_block(l),
+                                       'line': l})
+                lines.append('</ul>')
+            return '\n'.join(lines)
 
-    html_summary = log_summary.replace('.summary', '.html')
+        eSumm = formatList('error')
+        wSumm = formatList('warning')
+        cSumm = formatList('coverity')
 
-    shutil.copy(build_log, log_summary.replace('-log.summary', '.log'))
-
-    # HTML generation
-    htmlData = []
-    htmlData.append(u'<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>LogCheck for project %s</title>' % project.name)
-    htmlData.append(u'''<style type="text/css">
-pre { margin-top: 0px; }
-a.error { color: red; }
-a.warning { color: blue; }
-a.errorlink { text-decoration: none; color: blue; cursor:pointer; cursor:hand; }
-a.warninglink { text-decoration: none; color: blue; cursor:pointer; cursor:hand; }
-/*
-li.errorli { display: none; }
-li.warningli { display: none; }
-*/
-a.morebtn { color: red; cursor:pointer; cursor:hand }
-a.packageLink { text-decoration: none; cursor:pointer; cursor:hand; color:blue; }
-.odd { background-color: #FFFFFF; font-family: monospace; }
-.even { background-color: #F0F0F0; font-family: monospace; }
-</style>
-''')
-    htmlData.append(u'<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>\n')
-    htmlData.append(u'<!-- <script type="text/javascript" src="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/js/summaryJQ.js"></script> -->\n')
-    htmlData.append(u'</head><body>\n')
-    htmlData.append(u'<h3>LogCheck for package %s on %s</h3>' % (project.name, socket.gethostname()))
-    htmlData.append(u'<p>Warnings : %d<br/> Errors   : %d<br/></p>' % (wCount, eCount))
-
-    if summary['ignored_error']:
-        htmlData.append(u'<h3>Ignored errors:</h3>\n')
-        htmlData.extend([u'<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
-                         for w in summary['ignored_error']])
-
-    if summary['ignored_warning']:
-        htmlData.append(u'<h3>Ignored warnings:</h3>\n')
-        htmlData.extend([u'<strong>%d</strong>&nbsp;&rArr;&nbsp;%s<br/>\n' % (w.count, w.exp)
-                         for w in summary['ignored_warning']])
-
-    htmlData.append(u'''<h3>Shortcuts:</h3>
-<ul>
-<li><a href="#summary_errors">Summary of errors</a></li>
-<li><a href="#summary_warnings">Summary of warnings</a></li>
-<li><a href="#environment">Environment</a></li>
-<li><a href="#checkout">Checkout (getpack) log</a></li>
-<li><a href="#packages_list">List of packages (logs)</a></li>
-</ul>
-''')
-
-    # Note: error and warning are dictionaries where the keys are the reported
-    #       lines and the values are lists of pairs with line number and context
-    #       in the log
-    if eCount:
-        htmlData.append(u'<h3 id="summary_errors">Summary of errors:</h3><hr/>')
-        # take all the lines sorted by first occurrence (line number of first value)
-        for l in sorted(summary['error'], key=lambda l: summary['error'][l][0][0]):
-            htmlData.append(u'<ul class="errorul">')
-            for i, ctx in summary['error'][l]:
-                htmlData.append(u'<li class="errorli"><a class="errorlink" href="#l%d"><pre>%s</pre></a></li>'
-                                % (i, cgi.escape(''.join(ctx))))
-            htmlData.append(u'</ul><hr/>')
-    if wCount:
-        htmlData.append(u'<h3 id="summary_warnings">Summary of warnings:</h3><hr/>')
-        # take all the lines sorted by first occurrence (line number of first value)
-        for l in sorted(summary['warning'], key=lambda l: summary['warning'][l][0][0]):
-            htmlData.append(u'<ul class="warningul">')
-            for i, ctx in summary['warning'][l]:
-                htmlData.append(u'<li class="warningli"><a class="warninglink" href="#l%d"><pre>%s</pre></a></li>'
-                                % (i, cgi.escape(''.join(ctx))))
-            htmlData.append(u'</ul><hr/>')
-
-    htmlData.append(u'<p>Here will be the full log.</p>\n')
-
-    htmlData.append(u'</body></html>\n')
-
-    f = codecs.open(html_summary, 'w', 'utf-8')
-    f.writelines(htmlData)
-
-    f = open(log_summary, 'w')
-    t = time.time()
-    f.write('{t} ({at}) {slot} {project}_{version} {platform}\n'
-            .format(t=t,
-                    at=time.ctime(t),
-                    slot=config[u'slot'],
-                    project=project.name.upper(),
-                    version=project.version,
-                    platform=platform))
-    f.write(','.join(map(str, [wCount, eCount, 0, 0])))
-    f.write('\n')
-    f.close()
-
+        return html.substitute(project=self.project,
+                               slot=self.config['slot'],
+                               host=socket.gethostname(),
+                               old_build_id=self.old_build_id,
+                               logfile_links=dumps(logfile_links, indent=2),
+                               code_links=dumps(code_links, indent=2),
+                               ignored_counts=dumps(ignored_counts, indent=2),
+                               eCount=eCount,
+                               wCount=wCount,
+                               covCount=cCount,
+                               errors_summary=eSumm,
+                               warnings_summary=wSumm,
+                               coverity_summary=cSumm)

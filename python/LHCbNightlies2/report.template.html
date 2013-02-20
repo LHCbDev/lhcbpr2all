@@ -1,0 +1,80 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>LogCheck for project ${project} (${slot})</title>
+<style type="text/css">
+pre { margin-top: 0px; }
+.codeLink { text-decoration: none; color: blue; cursor:pointer; cursor:hand; white-space: pre-wrap; }
+ul.error { border: 1px solid red; }
+ul.warning { border: 1px solid blue; }
+.logfile .error { color: red; }
+.logfile .warning { color: blue; }
+a.error.highlight { background-color: #FFCCCC; }
+a.warning.highlight { background-color: #CCDDFF; }
+a.morebtn { color: red; cursor:pointer; cursor:hand; }
+.packageLink { text-decoration: none; cursor:pointer; cursor:hand; color:blue; }
+.odd { background-color: #FFFFFF; font-family: monospace; white-space: pre-wrap; }
+.even { background-color: #F0F0F0; font-family: monospace; white-space: pre-wrap; }
+</style>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script type="text/javascript">
+var logfile = "${old_build_id}";
+var logfileLinks = ${logfile_links};
+var codeLinks = ${code_links};
+
+$$(function(){
+	var counters = $$("#ignored_counters");
+	$$.each(${ignored_counts}, function(index, value){
+		var counter = $$('<div/>');
+		counter.append('<h3>Ignored ' + value.name + ':</h3>');
+		$$.each(value.entries, function(index, value){
+			counter.append('<strong>' + value.count + 'x</strong>&nbsp;&rArr;&nbsp;' + value.text + '<br/>');
+		});
+		counters.append(counter);
+	});
+	if (${eCount} == 0) $$(".esumm").remove();
+	if (${wCount} == 0) $$(".wsumm").remove();
+	if (${covCount} == 0) $$(".csumm").remove();
+});
+
+</script>
+<script type="text/javascript" src="logFileJQ.js"></script>
+</head><body>
+<h3>LogCheck for package ${project} on ${host}</h3>
+<p>
+Warnings: ${wCount}<br/>
+Errors: ${eCount}<br/>
+Coverity messages: ${covCount}<br/>
+</p>
+<div id="ignored_counters"></div>
+<h3>Shortcuts:</h3>
+<ul>
+<li class="esumm"><a href="#summary_errors">Summary of errors</a></li>
+<li class="wsumm"><a href="#summary_warnings">Summary of warnings</a></li>
+<li class="csumm"><a href="#summary_coverity">Summary of Coverity messages</a></li>
+<li><a href="#environment">Environment</a></li>
+<li><a href="#checkout">Checkout (getpack) log</a></li>
+<li><a href="#build_log">Build log</a></li>
+<li><a href="#environment" onclick="javascript:$$('.packageLink').click();">Show all (may take long time)</a></li>
+</ul>
+
+<div class="summary">
+<div class="esumm">
+<h3 id="summary_errors">Summary of errors:</h3>
+${errors_summary}
+</div>
+
+<div class="wsumm">
+<h3 id="summary_warnings">Summary of warnings:</h3>
+${warnings_summary}
+</div>
+
+<div class="csumm">
+<h3 id="summary_warnings">Summary of Coverity messages:</h3>
+${coverity_summary}
+</div>
+</div>
+
+<div id="logfile" class="logfile"></div>
+</body>
+</html>
