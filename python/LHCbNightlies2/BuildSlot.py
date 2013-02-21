@@ -8,6 +8,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import re
 import time
 import socket
 import Configuration
@@ -105,6 +106,19 @@ def sortedByDeps(deps):
     return recurse(deps)
 
 OLD_BUILD_ID = '{slot}.{today}_{project}_{version}-{platform}'
+
+def listAllFiles(path, excl=None):
+    '''
+    Return the list of all files in a directory and in its subdirectories.
+    '''
+    if excl is None:
+        excl = lambda f: False
+    from os.path import join
+    for r, ds, fs in os.walk(path):
+        for f in fs:
+            if not excl(f):
+                yield join(r, f)
+        ds[:] = [d for d in ds if not excl(d)]
 
 def main():
     from optparse import OptionParser
@@ -220,6 +234,11 @@ def main():
         n, v = e.split('=', 1)
         os.environ[n] = os.path.expandvars(v)
 
+    fileListExcl = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
+                               r'(\.git)|(\.svn)|'
+                               r'(\.{0}\.d)|(Testing)$'
+                               ).format(platform)).match
+
     jobs = []
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
@@ -264,8 +283,19 @@ def main():
         if opts.level <= logging.DEBUG:
             test_cmd.insert(1, '-VV')
 
+        def dumpFileListSummary(name):
+            d = os.path.join(build_dir, 'summaries', p.name)
+            if not os.path.isdir(d):
+                os.makedirs(d)
+            filelist = open(os.path.join(d, name), 'w')
+            filelist.write('\n'.join(sorted(listAllFiles(projdir, fileListExcl))))
+            filelist.write('\n')
+            filelist.close()
+
+        dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
+        dumpFileListSummary('sources_built.list')
 
         reporter = BuildReporter(build_dir, p, platform, config, old_build_id)
         reporter.genOldSummaries()
@@ -336,7 +366,6 @@ class BuildReporter(object):
         from os.path import join, dirname
         from itertools import islice
         import cgi
-        import re
         import codecs
 
         def formatTxt(iterable, lineOffset=0):
@@ -362,6 +391,12 @@ class BuildReporter(object):
             yield '</html>\n'
 
         log_summary = join(self.summary_dir, self.old_build_id + '-log.summary')
+
+        if not os.path.exists(self.build_log):
+            # very bad: the build log was not produced, let's create a dummy one
+            f = open(self.build_log, 'w')
+            f.write('error: the build log file was not generated (ctest failure?)\n')
+            f.close()
 
         shutil.copy(self.build_log, log_summary.replace('-log.summary', '.log'))
 
@@ -419,7 +454,6 @@ class BuildReporter(object):
 
         @return: a dictionary with the list of errors, warnings and ignored ones
         '''
-        import re
         import codecs
         from collections import deque
 
