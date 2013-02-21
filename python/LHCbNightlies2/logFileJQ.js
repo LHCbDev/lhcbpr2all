@@ -52,7 +52,7 @@ jQuery.fn.logfileLink = function(){
 				var line = $(this).data("line");
 				$(this)//.removeClass('packageLink')
 				.append(' <img src="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/images/ajax-loader.gif"/>').unbind("click")
-				.parent().load(logfile + ".log." + packdata.id,
+				.parent().load(logfile + ".log.chunks/" + packdata.id,
 						line ? function() {
 					window.scrollTo(0, $('#line_' + line).highlight().position().top);
 				} : undefined

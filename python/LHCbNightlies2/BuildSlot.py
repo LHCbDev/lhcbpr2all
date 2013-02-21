@@ -425,6 +425,9 @@ class BuildReporter(object):
 
         # generate HTML log chunks
         # - convert the sections from (name, start) -> (name, start, end+1)
+        chunksdir = join(self.summary_dir, self.old_build_id + '.log.chunks')
+        if not os.path.isdir(chunksdir):
+            os.makedirs(chunksdir)
         sections = []
         for n, i in self.summary['sections']:
             if sections:
@@ -434,12 +437,14 @@ class BuildReporter(object):
         logfile = codecs.open(self.build_log, 'r', 'utf-8')
         offset = 0
         for n, lines in zip(['env', 'checkout'], [env_lines, checkout_lines]):
-            chunkfile = codecs.open(log_summary.replace('-log.summary', '.log.' + n), 'w', 'utf-8')
+            chunkname = join(chunksdir, n)
+            chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.writelines(formatTxt(lines, offset))
             chunkfile.close()
             offset += len(lines)
         for n, b, e in sections:
-            chunkfile = codecs.open(log_summary.replace('-log.summary', '.log.section%d' % (b+offset)), 'w', 'utf-8')
+            chunkname = join(chunksdir, 'section%d' % (b+offset))
+            chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.writelines(formatTxt(islice(logfile, e-b), b))
             chunkfile.close()
 
