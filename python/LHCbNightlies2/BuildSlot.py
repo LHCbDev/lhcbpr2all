@@ -346,11 +346,18 @@ class BuildReporter(object):
             lineclass = ["even", "odd"]
             yield '<html>\n'
             for i, line in enumerate(iterable):
-                i += lineOffset
-                line = cgi.escape(line.rstrip())
+                styleCls = None
                 found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
                 if found:
-                    line = '<a id="line_%s" class="%s">%s</a>' % (i, found.group(1).lower(), line)
+                    styleCls = found.group(1).lower()
+                if line.startswith("Scanning dependencies") or line.startswith("Linking "):
+                    styleCls = "cmake_message"
+                elif re.match(r'\[[ 0-9]{3}%\]', line):
+                    styleCls = 'cmake_progress'
+                i += lineOffset
+                line = cgi.escape(line.rstrip())
+                if styleCls:
+                    line = '<a id="line_%s" class="%s">%s</a>' % (i, styleCls, line)
                 yield '<div class="%s">%s</div>\n' % (lineclass[i % 2], line.encode('UTF-8'))
             yield '</html>\n'
 
@@ -466,6 +473,8 @@ class BuildReporter(object):
         sections = [] # List of section descriptions: ('name', start)
         i = -1
         logfile = codecs.open(self.build_log, 'r', 'utf-8')
+        current_section = 'build'
+        build_section_offset = -1
         for i, l in enumerate(logfile):
             context.append(l)
             if len(context) > 5:
@@ -477,11 +486,23 @@ class BuildReporter(object):
                 if l.startswith('# Building package'):
                     sections.append((l.split()[3], i-1))
             else:
-                if (i % 500) == 0:
-                    if sections:
-                        s = sections[-1]
-                        sections[-1] = (s[0] + str(i-1), s[1])
-                    sections.append(('lines %d-' % i, i))
+                if l.startswith('#### CMake'):
+                    current_section = l.split()[2]
+                    if current_section != 'build':
+                        if sections and sections[-1][0].startswith('lines'):
+                            i2 = i - build_section_offset
+                            s = sections[-1]
+                            sections[-1] = (s[0] + str(i2-1), s[1])
+                        sections.append((current_section, i))
+                if current_section == 'build':
+                    if build_section_offset < 0:
+                        build_section_offset = i
+                    i2 = i - build_section_offset
+                    if (i2 % 500) == 0:
+                        if sections and sections[-1][0].startswith('lines'):
+                            s = sections[-1]
+                            sections[-1] = (s[0] + str(i2-1), s[1])
+                        sections.append(('lines %d-' % i2, i))
         summary['ignored_warning'] = [w for w in wExc if w.count]
         summary['ignored_error'] = [e for e in eExc if e.count]
         summary['size'] = i + 1

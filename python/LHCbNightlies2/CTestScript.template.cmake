@@ -83,16 +83,24 @@ if(NOT STEP STREQUAL TEST)
     ctest_submit(PARTS Update Notes Configure Build)
   endif()
   if(NOT USE_CMT)
-    execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake)
-    execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
+    execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake
+                    OUTPUT_VARIABLE install_log ERROR_VARIABLE install_log)
+    message("$${install_log}")
+    execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
+                    OUTPUT_VARIABLE python_zip_log ERROR_VARIABLE python_zip_log)
+    message("$${python_zip_log}")
   endif()
 
   # Copy the build log to the summaries
   if(NOT USE_CMT)
+    file(GLOB config_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastConfigure_*.log)
+    file(READ $${config_log} f)
+    file(WRITE $${summary_dir}/build.log "#### CMake configure ####\n$${f}")
     file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild_*.log)
-    file(COPY $${build_log} DESTINATION $${summary_dir})
-    get_filename_component(build_log_name $${build_log} NAME)
-    file(RENAME $${summary_dir}/$${build_log_name} $${summary_dir}/build.log)
+    file(READ $${build_log} f)
+    file(APPEND $${summary_dir}/build.log "#### CMake build ####\n$${f}")
+    file(APPEND $${summary_dir}/build.log "#### CMake install ####\n$${install_log}")
+    file(APPEND $${summary_dir}/build.log "#### CMake python.zip ####\n$${python_zip_log}")
   else()
     # for CMT we need a different way
     # - find the package build logs
