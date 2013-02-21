@@ -152,8 +152,8 @@ $(function(){
   $('.packageLink').logfileLink();
   $('.codeLink').codeLink();
   // add an "expand all" button
-  $('.package:first').before($("<p/>").append($("<a class=\"codeLink\">Expand all</a>").click(function(){
-    $('.package > .packageLink').click();
+  $('.section:first').before($("<p/>").append($("<a class=\"codeLink\">Expand all</a>").click(function(){
+    $('.section .packageLink').click();
     $(this).hide();
   })));
   foldLinks();
