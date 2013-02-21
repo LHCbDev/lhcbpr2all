@@ -475,7 +475,7 @@ class BuildReporter(object):
                 summary[t].append(l, (i, list(context)))
             if self.config.get('USE_CMT'):
                 if l.startswith('# Building package'):
-                    sections.append((l.split()[4], i))
+                    sections.append((l.split()[3], i-1))
             else:
                 if (i % 500) == 0:
                     if sections:
@@ -527,12 +527,17 @@ class BuildReporter(object):
                               'f': env_size, 'l': env_size + max(0, checkout_size-1),
                               'desc': 'Show getpack log'})
         offset = env_size + checkout_size
+        # When using CMT, the logfile_links must have 'name' and not 'desc'
+        if self.config.get('USE_CMT'):
+            descKey = 'name'
+        else:
+            descKey = 'desc'
         for n, i in self.summary['sections']:
             i += offset
             logfile_links[-1]['l'] = i - 1
             logfile_links.append({'id': 'section%d' % i,
                                   'f': i,
-                                  'desc': n})
+                                  descKey: n})
         logfile_links[-1]['l'] = self.summary['size'] - 1
 
 
