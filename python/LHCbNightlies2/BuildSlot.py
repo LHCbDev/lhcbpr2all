@@ -12,10 +12,13 @@ import re
 import time
 import socket
 import Configuration
-from subprocess import Popen, call
+import threading
+from subprocess import call
 from string import Template
 from socket import gethostname
 from datetime import date
+# no-op 'call' function for testing
+#call = lambda *a,**k: None
 
 log = logging.getLogger(__name__)
 
@@ -159,6 +162,12 @@ def main():
                            'and "slot" (a separation "." will '
                            'be added automatically) [default: %default]')
 
+    parser.add_option('--deploy-reports-to',
+                      action='store', metavar='DEST_DIR', dest='deploy_dir',
+                      help='if the destination directory is specified, the '
+                           'old-style summaries are deployed to that directory '
+                           'as soon as they are produced')
+
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
                         timeout='600',
@@ -239,6 +248,57 @@ def main():
                                r'(\.{0}\.d)|(Testing)$'
                                ).format(platform)).match
 
+    if opts.deploy_dir:
+        # ensure that the deployment dir ends with the slot name...
+        if os.path.basename(opts.deploy_dir) != config[u'slot']:
+            opts.deploy_dir = join(opts.deploy_dir, config[u'slot'])
+        # ... and that the directory exists
+        if not os.path.exists(opts.deploy_dir):
+            os.makedirs(opts.deploy_dir)
+        def deployReports(files):
+            for f in files:
+                try:
+                    d = join(opts.deploy_dir, os.path.basename(f))
+                    if os.path.isdir(d):
+                        shutil.rmtree(d)
+                    elif os.path.isfile(d) or os.path.islink(d):
+                        os.remove(d)
+                    log.info('Copying %s to deployment directory', f)
+                    if os.path.isdir(f):
+                        shutil.copytree(f, d)
+                    elif os.path.isfile(f):
+                        shutil.copy2(f, d)
+                    else:
+                        log.warning('Cannot deploy %s (does it exist?)', f)
+                except os.error, err:
+                    log.warning('Problems deploying %s: %s', f, err)
+    else:
+        def deployReports(_):
+            pass
+
+    class TestTask(threading.Thread):
+        '''
+        Simple wrapper around subprocess.call to deploy the test reports, if needed.
+
+        The special parameter reports is passed to deployReports.
+        '''
+        def __init__(self, *args, **kwargs):
+            super(TestTask, self).__init__()
+            self.args = args
+            self.kwargs = kwargs
+            self.reports = kwargs.get('reports', [])
+            if 'reports' in self.kwargs:
+                del self.kwargs['reports']
+            self.retcode = -1
+            self.start()
+        def run(self):
+            self.retcode = call(*self.args, **self.kwargs)
+            deployReports(self.reports)
+        def wait(self):
+            self.join()
+            return self.retcode
+
+
     jobs = []
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
@@ -298,7 +358,7 @@ def main():
         dumpFileListSummary('sources_built.list')
 
         reporter = BuildReporter(build_dir, p, platform, config, old_build_id)
-        reporter.genOldSummaries()
+        deployReports(reporter.genOldSummaries())
 
         log.info('packing %s', p.dir)
         packname = [p.name, p.version]
@@ -314,7 +374,9 @@ def main():
 
         if not opts.build_only:
             log.info('testing (in background) %s', p.dir)
-            jobs.append(Popen(test_cmd, cwd=projdir))
+            jobs.append(TestTask(test_cmd, cwd=projdir,
+                                 reports = [join(build_dir, 'summaries', p.name, old_build_id + suff)
+                                            for suff in ['-qmtest', '-qmtest.log']]))
 
     if jobs:
         log.info('waiting for tests still running...')
@@ -362,6 +424,8 @@ class BuildReporter(object):
     def genOldSummaries(self):
         '''
         Produce summary files compatible with the old dashboard.
+
+        @return: list of generated files and directories
         '''
         from os.path import join, dirname
         from itertools import islice
@@ -390,7 +454,13 @@ class BuildReporter(object):
                 yield '<div class="%s">%s</div>\n' % (lineclass[i % 2], line.encode('UTF-8'))
             yield '</html>\n'
 
-        log_summary = join(self.summary_dir, self.old_build_id + '-log.summary')
+        report_files = []
+        def reportFileName(suff):
+            f = join(self.summary_dir, self.old_build_id + suff)
+            report_files.append(f)
+            return f
+
+        log_summary = reportFileName('-log.summary')
 
         if not os.path.exists(self.build_log):
             # very bad: the build log was not produced, let's create a dummy one
@@ -398,7 +468,8 @@ class BuildReporter(object):
             f.write('error: the build log file was not generated (ctest failure?)\n')
             f.close()
 
-        shutil.copy(self.build_log, log_summary.replace('-log.summary', '.log'))
+        full_log = reportFileName('.log')
+        shutil.copy(self.build_log, full_log)
 
         # generate the small summary file with the counts of warnings
         f = open(log_summary, 'w')
@@ -408,7 +479,7 @@ class BuildReporter(object):
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
         checkout_lines = ['no checkout log\n']
-        f = codecs.open(log_summary.replace('-log.summary', '.log'), 'w', 'utf-8')
+        f = codecs.open(full_log, 'w', 'utf-8')
         f.writelines(env_lines)
         env_block_size = len(env_lines)
         f.writelines(checkout_lines)
@@ -417,7 +488,7 @@ class BuildReporter(object):
         f.close()
 
         # generate HTML summary main page
-        html_summary = log_summary.replace('.summary', '.html')
+        html_summary = reportFileName('-log.html')
         f = codecs.open(html_summary, 'w', 'utf-8')
         f.write(self._oldHtml(env_block_size, checkout_block_size))
         f.close()
@@ -425,7 +496,7 @@ class BuildReporter(object):
 
         # generate HTML log chunks
         # - convert the sections from (name, start) -> (name, start, end+1)
-        chunksdir = join(self.summary_dir, self.old_build_id + '.log.chunks')
+        chunksdir = reportFileName('.log.chunks')
         if not os.path.isdir(chunksdir):
             os.makedirs(chunksdir)
         sections = []
@@ -452,6 +523,7 @@ class BuildReporter(object):
         shutil.copy(join(dirname(__file__), 'logFileJQ.js'),
                     join(self.summary_dir, 'logFileJQ.js'))
 
+        return report_files + [join(self.summary_dir, 'logFileJQ.js')]
 
     def _parseLog(self):
         '''
