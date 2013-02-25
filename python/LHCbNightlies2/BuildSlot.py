@@ -436,23 +436,23 @@ class BuildReporter(object):
             '''
             Helper function to generate HTML version of a log file.
             '''
-            lineclass = ["even", "odd"]
-            yield '<html>\n'
+            lineclass = ['even', 'odd']
+            yield u'<html>\n'
             for i, line in enumerate(iterable):
                 styleCls = None
                 found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
                 if found:
                     styleCls = found.group(1).lower()
-                if line.startswith("Scanning dependencies") or line.startswith("Linking "):
-                    styleCls = "cmake_message"
+                if line.startswith('Scanning dependencies') or line.startswith('Linking '):
+                    styleCls = 'cmake_message'
                 elif re.match(r'\[[ 0-9]{3}%\]', line):
                     styleCls = 'cmake_progress'
                 i += lineOffset
                 line = cgi.escape(line.rstrip())
                 if styleCls:
                     line = '<a id="line_%s" class="%s">%s</a>' % (i, styleCls, line)
-                yield '<div class="%s">%s</div>\n' % (lineclass[i % 2], line.encode('UTF-8'))
-            yield '</html>\n'
+                yield u'<div class="%s">%s</div>\n' % (lineclass[i % 2], line)
+            yield u'</html>\n'
 
         report_files = []
         def reportFileName(suff):
