@@ -13,7 +13,7 @@ class SimpleTimingHandler(BaseHandler):
     def collectResults(self,directory):
 
         from timing.SimpleTimingParser import SimpleTimingParser
-        tp = SimpleTimingParser('report.log');
+        tp = SimpleTimingParser(os.path.join(directory,'report.log'));
 
         # Now saving all the nodes
         for node in tp.getTimingList():
