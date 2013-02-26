@@ -34,7 +34,7 @@ mkdir -p artifacts/${slot}
 ln -s ${slot_build_id} artifacts/${slot}/$(date +%a)
 ln -s ${slot_build_id} artifacts/${slot}/$(date -I)
 
-time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" --rsync-dest lhcbbuild.cern.ch:/build --deploy-reports-to $LHCBNIGHTLIES/www/logs ${config_file}
+time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" --rsync-dest buildlhcb.cern.ch:/build --deploy-reports-to $LHCBNIGHTLIES/www/logs ${config_file}
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform

@@ -337,7 +337,7 @@ def main():
                 return
             cmd = ['rsync', '--archive',
                    '--partial-dir=.rsync-partial.'+ gethostname(),
-                   '--delay-updates', '--relative',
+                   '--delay-updates', '--relative', '--rsh=ssh',
                    './' + opts.artifacts_dir, opts.rsync_dest]
             super(DeployArtifactsTask, self).__init__(cmd)
         def wait(self):
