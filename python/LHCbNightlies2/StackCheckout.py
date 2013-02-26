@@ -325,7 +325,12 @@ class Script(LbUtils.Script.PlainScript):
                                'and "slot" (a separation "." will '
                                'be added automatically) [default: %default]')
 
-        parser.set_defaults(build_id='{slot}.{timestamp}')
+        parser.add_option('--artifacts-dir',
+                          action='store', metavar='DIR',
+                          help='directory where to store the artifacts')
+
+        parser.set_defaults(build_id='{slot}.{timestamp}',
+                            artifacts_dir='artifacts')
 
     def main(self):
         """ User code place holder """
@@ -336,31 +341,36 @@ class Script(LbUtils.Script.PlainScript):
 
         slot = parseConfigFile(self.args[0])
 
-        build_dir = join(os.getcwd(), 'build')
-        sources_dir = join(os.getcwd(), 'sources')
-
         from datetime import datetime
         starttime = datetime.now()
 
         timestamp = date.today().isoformat()
 
+        build_dir = join(os.getcwd(), 'build')
+
+        # replace tokens in the options
+        expanded_tokens = {'slot': slot.name, 'timestamp': timestamp}
+        for opt_name in ['build_id', 'artifacts_dir']:
+            v = getattr(self.options, opt_name)
+            if v:
+                setattr(self.options, opt_name, v.format(**expanded_tokens))
+
+        artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
+        build_id = self.options.build_id
+
         self.log.info('cleaning directories.')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
-        if os.path.exists(sources_dir):
-            shutil.rmtree(sources_dir)
+        if os.path.exists(artifacts_dir):
+            shutil.rmtree(artifacts_dir)
 
         os.makedirs(build_dir)
-        os.makedirs(sources_dir)
-
-        build_id = self.options.build_id
-        if build_id:
-            build_id = build_id.format(slot=slot.name, timestamp=timestamp)
+        os.makedirs(artifacts_dir)
 
         slot.checkout(build_dir)
 
         slot.patch(build_dir,
-                   join(sources_dir, '.'.join([build_id or 'slot', 'patch'])))
+                   join(artifacts_dir, '.'.join([build_id or 'slot', 'patch'])))
 
         for p in slot.projects:
             # ignore missing directories (the project may not have been checked out)
@@ -376,7 +386,7 @@ class Script(LbUtils.Script.PlainScript):
             packname.append('tar.bz2')
             packname = '.'.join(packname)
 
-            call(['tar', 'chjf', join(sources_dir, packname),
+            call(['tar', 'chjf', join(artifacts_dir, packname),
                   p.projectDir], cwd=build_dir)
 
         self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)

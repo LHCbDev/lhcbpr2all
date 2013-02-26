@@ -71,8 +71,7 @@ set_property(GLOBAL PROPERTY SubProject "${project} ${version}")
 set_property(GLOBAL PROPERTY Label "${project} ${version}")
 
 # Create directory for QMTest summaries and reports
-set(summary_dir ${build_dir}/summaries/${project})
-file(MAKE_DIRECTORY $${summary_dir})
+file(MAKE_DIRECTORY ${summary_dir})
 
 if(NOT STEP STREQUAL TEST)
   ##ctest_update()
@@ -99,14 +98,14 @@ if(NOT STEP STREQUAL TEST)
   if(NOT USE_CMT)
     file(GLOB config_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastConfigure_*.log)
     file(READ $${config_log} f)
-    file(WRITE $${summary_dir}/build.log
+    file(WRITE ${summary_dir}/build.log
          "#### CMake configure ####\n# Start: $${configure_start}\n$${f}# End: $${configure_end}\n")
     file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild_*.log)
     file(READ $${build_log} f)
-    file(APPEND $${summary_dir}/build.log
+    file(APPEND ${summary_dir}/build.log
          "#### CMake build ####\n# Start: $${build_start}\n$${f}# End: $${build_end}\n")
-    file(APPEND $${summary_dir}/build.log "#### CMake install ####\n$${install_log}")
-    file(APPEND $${summary_dir}/build.log "#### CMake python.zip ####\n$${python_zip_log}")
+    file(APPEND ${summary_dir}/build.log "#### CMake install ####\n$${install_log}")
+    file(APPEND ${summary_dir}/build.log "#### CMake python.zip ####\n$${python_zip_log}")
   else()
     # for CMT we need a different way
     # - find the package build logs
@@ -132,11 +131,11 @@ if(NOT STEP STREQUAL TEST)
       list(APPEND build_logs $${bl})
     endforeach()
     # - concatenate all the logs in the right order
-    file(REMOVE $${summary_dir}/build.log)
+    file(REMOVE ${summary_dir}/build.log)
     foreach(bl $${build_logs})
       message(STATUS "adding $${bl}")
       file(READ $${bl} l)
-      file(APPEND $${summary_dir}/build.log "$${l}")
+      file(APPEND ${summary_dir}/build.log "$${l}")
     endforeach()
   endif()
 endif()
@@ -150,28 +149,28 @@ if(NOT STEP STREQUAL BUILD)
     endif()
     # produce plain text summary of QMTest tests
     execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
-                    OUTPUT_FILE $${summary_dir}/QMTestSummary.txt)
+                    OUTPUT_FILE ${summary_dir}/QMTestSummary.txt)
   else()
     # CMT requires special commands for the tests.
     set(ENV{PWD} "$${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt")
     file(MAKE_DIRECTORY $${CTEST_BINARY_DIRECTORY}/test_results)
     execute_process(COMMAND cmt br - cmt TestPackage
                     WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt
-                    OUTPUT_FILE $${summary_dir}/QMTestSummary.run.txt)
+                    OUTPUT_FILE ${summary_dir}/QMTestSummary.run.txt)
     execute_process(COMMAND cmt qmtest_summarize
                     WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt
-                    OUTPUT_FILE $${summary_dir}/QMTestSummary.txt)
+                    OUTPUT_FILE ${summary_dir}/QMTestSummary.txt)
   endif()
 
   # copy the QMTest HTML output
   file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
-       DESTINATION $${summary_dir}/html/.)
+       DESTINATION ${summary_dir}/html/.)
 
   # this is the old-style build log names
   set(OLD_BUILD_ID ${old_build_id})
   if(OLD_BUILD_ID)
     file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
-         DESTINATION $${summary_dir}/$${OLD_BUILD_ID}-qmtest/.)
-    execute_process(COMMAND $${CMAKE_COMMAND} -E copy $${summary_dir}/QMTestSummary.txt $${summary_dir}/$${OLD_BUILD_ID}-qmtest.log)
+         DESTINATION ${summary_dir}/$${OLD_BUILD_ID}-qmtest/.)
+    execute_process(COMMAND $${CMAKE_COMMAND} -E copy ${summary_dir}/QMTestSummary.txt ${summary_dir}/$${OLD_BUILD_ID}-qmtest.log)
   endif()
 endif()

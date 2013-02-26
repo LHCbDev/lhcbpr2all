@@ -16,7 +16,7 @@ import threading
 from subprocess import call
 from string import Template
 from socket import gethostname
-from datetime import date
+from datetime import datetime, date
 # no-op 'call' function for testing
 #call = lambda *a,**k: None
 
@@ -168,11 +168,24 @@ def main():
                            'old-style summaries are deployed to that directory '
                            'as soon as they are produced')
 
+    parser.add_option('--artifacts-dir',
+                      action='store', metavar='DIR',
+                      help='directory where to store the artifacts (accepts '
+                           'the same format specification as --build-id) '
+                           '[default: %default]')
+
+    parser.add_option('--rsync-dest',
+                      action='store', metavar='DEST',
+                      help='deploy artifacts to this location (using rsync), '
+                           'adding the subdirectories specified with '
+                           '--artifacts-dir')
+
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
                         timeout='600',
                         jobs='1',
-                        build_id='{slot}.{timestamp}')
+                        build_id='{slot}.{timestamp}',
+                        artifacts_dir='artifacts')
 
     opts, args = parser.parse_args()
     logging.basicConfig(level=opts.level,
@@ -190,11 +203,18 @@ def main():
     # FIXME: we need something better
     platform = os.environ['CMTCONFIG']
 
-    from datetime import datetime
     starttime = datetime.now()
+    timestamp = date.today().isoformat()
+
+    # replace tokens in the options
+    expanded_tokens = {'slot': config[u'slot'], 'timestamp': timestamp}
+    for opt_name in ['build_id', 'artifacts_dir']:
+        v = getattr(opts, opt_name)
+        if v:
+            setattr(opts, opt_name, v.format(**expanded_tokens))
 
     build_dir = join(os.getcwd(), 'build')
-    sources_dir = join(os.getcwd(), 'sources')
+    artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
 
     if not opts.no_clean:
         log.info('Cleaning directories.')
@@ -204,9 +224,9 @@ def main():
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
         log.info('Preparing sources...')
-        for f in os.listdir(sources_dir):
+        for f in os.listdir(artifacts_dir):
             if f.endswith('.tar.bz2'):
-                f = join(sources_dir, f)
+                f = join(artifacts_dir, f)
                 log.info('  unpacking %s', f)
                 # do not overwrite existing sources when unpacking
                 # (either we just cleaned the directory or we were asked not to do it)
@@ -214,7 +234,6 @@ def main():
                       '-f', f], cwd=build_dir)
 
     log.info("Generating CTest scripts and configurations.")
-    timestamp = date.today().isoformat()
 
     def write(path, data):
         f = open(path, 'w')
@@ -235,8 +254,10 @@ def main():
     deps = dict([(p.name, p.deps) for p in projects.values()])
     sorted_projects = [projects[p] for p in sortedByDeps(deps)]
 
-    write(join(build_dir, 'Project.xml'),
-          genProjectXml(config[u'slot'], sorted_projects))
+    project_xml = genProjectXml(config[u'slot'], sorted_projects)
+    write(join(build_dir, 'Project.xml'), project_xml)
+    write(join(artifacts_dir, 'Project.xml'), project_xml)
+    del project_xml # no need to keep this temp variable
 
     # prepare special environment, if needed
     for e in config.get(u'env', []):
@@ -276,32 +297,58 @@ def main():
         def deployReports(_):
             pass
 
-    class TestTask(threading.Thread):
+    class AsyncTask(threading.Thread):
         '''
-        Simple wrapper around subprocess.call to deploy the test reports, if needed.
-
-        The special parameter reports is passed to deployReports.
+        Simple wrapper around subprocess.call to execute it in a separate thread.
         '''
         def __init__(self, *args, **kwargs):
-            super(TestTask, self).__init__()
+            super(AsyncTask, self).__init__()
             self.args = args
             self.kwargs = kwargs
-            self.reports = kwargs.get('reports', [])
-            if 'reports' in self.kwargs:
-                del self.kwargs['reports']
             self.retcode = -1
             self.start()
         def run(self):
             self.retcode = call(*self.args, **self.kwargs)
-            deployReports(self.reports)
         def wait(self):
             self.join()
             return self.retcode
 
+    class TestTask(AsyncTask):
+        '''
+        Asynchronously run the tests and deploy the test reports, if needed.
+
+        The special parameter reports is passed to deployReports.
+        '''
+        def __init__(self, *args, **kwargs):
+            self.reports = kwargs.get('reports', [])
+            if 'reports' in kwargs:
+                del kwargs['reports']
+            super(TestTask, self).__init__(*args, **kwargs)
+        def run(self):
+            super(TestTask, self).run()
+            deployReports(self.reports)
+
+    class DeployArtifactsTask(AsyncTask):
+        '''
+        Call asynchronously 'rsync' to deploy the build artifacts.
+        '''
+        def __init__(self):
+            if not opts.rsync_dest:
+                return
+            cmd = ['rsync', '--archive',
+                   '--partial-dir=.rsync-partial.'+ gethostname(),
+                   '--delay-updates', '--relative',
+                   './' + opts.artifacts_dir, opts.rsync_dest]
+            super(DeployArtifactsTask, self).__init__(cmd)
+        def wait(self):
+            if not opts.rsync_dest:
+                return 0
+            return super(DeployArtifactsTask, self).wait()
 
     jobs = []
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
+        summary_dir = join(artifacts_dir, 'summaries', p.name)
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
@@ -323,6 +370,7 @@ def main():
         write(join(projdir, 'CTestScript.cmake'),
               ctestScript.substitute({'project': p.name, 'version': p.version,
                                       'build_dir': build_dir, 'site': gethostname(),
+                                      'summary_dir': summary_dir,
                                       'Model': opts.model,
                                       'old_build_id': old_build_id}))
 
@@ -344,10 +392,9 @@ def main():
             test_cmd.insert(1, '-VV')
 
         def dumpFileListSummary(name):
-            d = os.path.join(build_dir, 'summaries', p.name)
-            if not os.path.isdir(d):
-                os.makedirs(d)
-            filelist = open(os.path.join(d, name), 'w')
+            if not os.path.isdir(summary_dir):
+                os.makedirs(summary_dir)
+            filelist = open(os.path.join(summary_dir, name), 'w')
             filelist.write('\n'.join(sorted(listAllFiles(projdir, fileListExcl))))
             filelist.write('\n')
             filelist.close()
@@ -356,41 +403,50 @@ def main():
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
         dumpFileListSummary('sources_built.list')
+        if opts.rsync_dest:
+            jobs.append(DeployArtifactsTask())
 
-        reporter = BuildReporter(build_dir, p, platform, config, old_build_id)
+        reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
         deployReports(reporter.genOldSummaries())
 
         log.info('packing %s', p.dir)
         packname = [p.name, p.version]
         if opts.build_id:
-            packname.append(opts.build_id.format(slot=config[u'slot'],
-                                                 timestamp=timestamp))
+            packname.append(opts.build_id)
         packname.append(platform)
         packname.append('tar.bz2')
         packname = '.'.join(packname)
 
-        call(['tar', 'chjf', packname,
+        call(['tar', 'chjf', os.path.join(artifacts_dir, packname),
               os.path.join(p.dir, 'InstallArea')], cwd=build_dir)
 
         if not opts.build_only:
             log.info('testing (in background) %s', p.dir)
             jobs.append(TestTask(test_cmd, cwd=projdir,
-                                 reports = [join(build_dir, 'summaries', p.name, old_build_id + suff)
+                                 reports = [join(summary_dir, old_build_id + suff)
                                             for suff in ['-qmtest', '-qmtest.log']]))
 
     if jobs:
-        log.info('waiting for tests still running...')
+        log.info('waiting for pending tasks (tests, etc.)...')
         for j in jobs:
             j.wait()
 
     log.info('build completed in %s', datetime.now() - starttime)
+    if opts.rsync_dest:
+        log.info('deploying artifacts...')
+        retcode = DeployArtifactsTask().wait()
+        if retcode == 0:
+            log.info('... artifacts deployed')
+        else:
+            log.error('artifacts deployment failed')
+            return retcode
     return 0
 
 class BuildReporter(object):
     '''
     Class to analyze the build log of project and produce reports.
     '''
-    def __init__(self, build_dir, project, platform, config, old_build_id):
+    def __init__(self, summary_dir, project, platform, config, old_build_id):
         '''
         Initialize the instance.
 
@@ -400,13 +456,12 @@ class BuildReporter(object):
         @param old_build_id: build id used in the old nightly builds
         '''
         from os.path import join
-        self.build_dir = build_dir
+        self.summary_dir = summary_dir
         self.project = project
         self.platform = platform
         self.config = config or {'slot': 'no-name'}
         self.old_build_id = old_build_id
 
-        self.summary_dir = join(self.build_dir, 'summaries', project.name)
         self.build_log = join(self.summary_dir, 'build.log')
 
         self._summary = None

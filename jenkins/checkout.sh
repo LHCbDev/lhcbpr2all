@@ -11,12 +11,13 @@ set -xe
 
 svn cat -r "{"`date -I`"}" svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > configuration.xml
 
+mkdir -p sources
 if [ -e ${slot}.json ] ; then
-  StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" ${slot}.json
-  mkdir -p sources
   cp ${slot}.json sources/${slot}.json
+  config_file=${slot}.json
 else
-  StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" configuration.xml#${slot}
-  mkdir -p sources
   cp configuration.xml sources/configuration.xml
+  config_file=configuration.xml#${slot}
 fi
+
+StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" ${config_file}
