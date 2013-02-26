@@ -217,21 +217,26 @@ def main():
     artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
 
     if not opts.no_clean:
-        log.info('Cleaning directories.')
+        log.info('Cleaning build directory.')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
 
+    # ensure that we have the artifacs directory for the sources
+    if not os.path.exists(artifacts_dir):
+        os.makedirs(artifacts_dir)
+
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
-        log.info('Preparing sources...')
-        for f in os.listdir(artifacts_dir):
-            if f.endswith('.tar.bz2'):
-                f = join(artifacts_dir, f)
-                log.info('  unpacking %s', f)
-                # do not overwrite existing sources when unpacking
-                # (either we just cleaned the directory or we were asked not to do it)
-                call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
-                      '-f', f], cwd=build_dir)
+
+    log.info('Preparing build directory...')
+    for f in os.listdir(artifacts_dir):
+        if f.endswith('.tar.bz2'):
+            f = join(artifacts_dir, f)
+            log.info('  unpacking %s', f)
+            # do not overwrite existing sources when unpacking
+            # (either we just cleaned the directory or we were asked not to do it)
+            call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
+                  '-f', f], cwd=build_dir)
 
     log.info("Generating CTest scripts and configurations.")
 
@@ -355,6 +360,17 @@ def main():
             log.warning('no sources for %s, skip build', p)
             continue
 
+        packname = [p.name, p.version]
+        if opts.build_id:
+            packname.append(opts.build_id)
+        packname.append(platform)
+        packname.append('tar.bz2')
+        packname = '.'.join(packname)
+        packname = os.path.join(artifacts_dir, packname)
+        if os.path.exists(packname):
+            log.info('binary tarball for %s already present, skip build', p)
+            continue
+
         old_build_id = OLD_BUILD_ID.format(slot=config[u'slot'],
                                            today=os.environ['TODAY'],
                                            project=p.name.upper(),
@@ -410,14 +426,8 @@ def main():
         deployReports(reporter.genOldSummaries())
 
         log.info('packing %s', p.dir)
-        packname = [p.name, p.version]
-        if opts.build_id:
-            packname.append(opts.build_id)
-        packname.append(platform)
-        packname.append('tar.bz2')
-        packname = '.'.join(packname)
 
-        call(['tar', 'chjf', os.path.join(artifacts_dir, packname),
+        call(['tar', 'chjf', packname,
               os.path.join(p.dir, 'InstallArea')], cwd=build_dir)
 
         if not opts.build_only:
