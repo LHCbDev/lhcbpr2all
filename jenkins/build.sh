@@ -11,6 +11,7 @@ export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtil
 set -xe
 . setup.sh
 day=$(date +%a)
+timestamp=$(date -I)
 
 # hard-coded because it may point to CVMFS
 export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
@@ -30,11 +31,12 @@ else
   config_file=sources/configuration.xml#${slot}
 fi
 
-mkdir -p artifacts/${slot}
-ln -s ${slot_build_id} artifacts/${slot}/$(date +%a)
-ln -s ${slot_build_id} artifacts/${slot}/$(date -I)
+deploybase=/build/artifacts/${slot}
 
-time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" --rsync-dest buildlhcb.cern.ch:/build --deploy-reports-to $LHCBNIGHTLIES/www/logs ${config_file}
+time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --deploy-reports-to $LHCBNIGHTLIES/www/logs ${config_file}
+
+# create moving symlinks in the artifacts deployment directory
+ssh buildlhcb.cern.ch "rm -fv ${deploybase}/${day} ${deploybase}/${timestamp} ; ln -sv ${slot_build_id} ${deploybase}/${day} ; ln -sv ${slot_build_id} ${deploybase}/${timestamp}"
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform

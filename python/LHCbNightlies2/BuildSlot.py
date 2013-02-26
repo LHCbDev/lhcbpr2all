@@ -176,9 +176,8 @@ def main():
 
     parser.add_option('--rsync-dest',
                       action='store', metavar='DEST',
-                      help='deploy artifacts to this location (using rsync), '
-                           'adding the subdirectories specified with '
-                           '--artifacts-dir')
+                      help='deploy artifacts to this location using rsync '
+                           '(accepts the same format specification as --build-id)')
 
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
@@ -208,7 +207,7 @@ def main():
 
     # replace tokens in the options
     expanded_tokens = {'slot': config[u'slot'], 'timestamp': timestamp}
-    for opt_name in ['build_id', 'artifacts_dir']:
+    for opt_name in ['build_id', 'artifacts_dir', 'rsync_dest']:
         v = getattr(opts, opt_name)
         if v:
             setattr(opts, opt_name, v.format(**expanded_tokens))
@@ -333,22 +332,34 @@ def main():
             super(TestTask, self).run()
             deployReports(self.reports)
 
-    class DeployArtifactsTask(AsyncTask):
+    class DeployArtifactsTask(threading.Thread):
         '''
         Call asynchronously 'rsync' to deploy the build artifacts.
         '''
         def __init__(self):
-            if not opts.rsync_dest:
-                return
+            if opts.rsync_dest:
+                self.retcode = -1
+                super(DeployArtifactsTask, self).__init__()
+                self.start()
+            else:
+                self.retcode = 0
+        def run(self):
+            # create destination directory, if missing
+            if ':' in opts.rsync_dest:
+                host, path = opts.rsync_dest.split(':', 1)
+                call(['ssh', host, 'mkdir -pv "%s"' % path])
+            elif not os.path.exists(opts.rsync_dest):
+                os.makedirs(opts.rsync_dest)
+
             cmd = ['rsync', '--archive',
                    '--partial-dir=.rsync-partial.'+ gethostname(),
-                   '--delay-updates', '--relative', '--rsh=ssh',
-                   './' + opts.artifacts_dir, opts.rsync_dest]
-            super(DeployArtifactsTask, self).__init__(cmd)
+                   '--delay-updates', '--rsh=ssh',
+                   artifacts_dir + '/', opts.rsync_dest]
+            self.retcode = call(cmd)
         def wait(self):
-            if not opts.rsync_dest:
-                return 0
-            return super(DeployArtifactsTask, self).wait()
+            if opts.rsync_dest:
+                self.join()
+            return self.retcode
 
     jobs = []
     for p in sorted_projects:
