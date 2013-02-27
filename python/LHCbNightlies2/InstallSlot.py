@@ -112,27 +112,6 @@ def unpack(url, dest):
             'ssh': _unpack_ssh,
             'file': _unpack_file}[protocol](url, dest)
 
-def getPackages(files):
-    '''
-    From the list of files in a directory extracts the available projects with
-    the list of binary tarballs.
-
-    @return: dictionary with {'project': {'platform': 'filename', ...}, ...}
-    '''
-    # Tarballs in the artifacts directory of the nightlies builds have names
-    # respecting the convention:
-    #   <project>.<version>.<tag.id>.<platform>.tar.bz2
-    # where all the groups except <tag.id> cannot have '.' in the name.
-    def getProjPlat(f):
-        d = f.split('.')
-        return d[0], d[-3], f
-    tarfiles = [getProjPlat(f) for f in files if f.endswith('.tar.bz2')]
-    tarfiles.sort()
-    head = lambda k: k[0]
-    tail = lambda k: k[1:]
-    pkgs = dict([(h, dict(map(tail, l))) for h, l in groupby(tarfiles, head)])
-    return pkgs
-
 def requiredPackages(files, projects=None, platforms=None, skip=None):
     '''
     Extract from the list of taballs those that need to be installed considering
