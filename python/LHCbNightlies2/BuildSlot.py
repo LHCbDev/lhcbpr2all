@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 '''
-Module containing the classes and functions used to checkout a set of projects,
-fixing their dependencies to produce a consistent set.
+Module containing the classes and functions used to build a "Nightly Build Slot".
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
@@ -527,7 +526,7 @@ class BuildReporter(object):
                 line = cgi.escape(line.rstrip())
                 if styleCls:
                     line = '<a id="line_%s" class="%s">%s</a>' % (i, styleCls, line)
-                yield u'<div class="%s">%s</div>\n' % (lineclass[i % 2], line)
+                yield u'<div class="%s">%s</div>\n' % (lineclass[i % 2], line or '&nbsp;')
             yield u'</html>\n'
 
         report_files = []
