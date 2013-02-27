@@ -32,11 +32,10 @@ else
 fi
 
 deploybase=/build/artifacts/${slot}
+# create moving symlinks in the artifacts deployment directory (ASAP)
+ssh buildlhcb.cern.ch "rm -fv ${deploybase}/${day} ${deploybase}/${timestamp} ; ln -sv ${slot_build_id} ${deploybase}/${day} ; ln -sv ${slot_build_id} ${deploybase}/${timestamp}"
 
 time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --deploy-reports-to $LHCBNIGHTLIES/www/logs ${config_file}
-
-# create moving symlinks in the artifacts deployment directory
-ssh buildlhcb.cern.ch "rm -fv ${deploybase}/${day} ${deploybase}/${timestamp} ; ln -sv ${slot_build_id} ${deploybase}/${day} ; ln -sv ${slot_build_id} ${deploybase}/${timestamp}"
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
