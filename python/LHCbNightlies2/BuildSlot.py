@@ -365,7 +365,7 @@ def main():
     jobs = []
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
-        summary_dir = join(artifacts_dir, 'summaries', p.name)
+        summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
