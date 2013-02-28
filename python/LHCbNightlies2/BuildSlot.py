@@ -10,8 +10,10 @@ import os
 import re
 import time
 import socket
-import Configuration
 import threading
+import codecs
+import Configuration
+
 from subprocess import call
 from string import Template
 from socket import gethostname
@@ -417,14 +419,32 @@ def main():
         if opts.level <= logging.DEBUG:
             test_cmd.insert(1, '-VV')
 
-        def dumpFileListSummary(name):
+        def writeExtraSummary(name, data):
             if not os.path.isdir(summary_dir):
                 os.makedirs(summary_dir)
-            filelist = open(os.path.join(summary_dir, name), 'w')
-            filelist.write('\n'.join(sorted(listAllFiles(projdir, fileListExcl))))
-            filelist.write('\n')
-            filelist.close()
+            f = codecs.open(os.path.join(summary_dir, name), 'w', 'utf-8')
+            f.write(data)
+            f.close()
 
+        def dumpFileListSummary(name):
+            data = '\n'.join(sorted(listAllFiles(projdir, fileListExcl)))
+            data += '\n'
+            writeExtraSummary(name, data)
+
+        def dumpConfSummary():
+            '''Create special summary file used by SetupProject.'''
+            data = ''
+            # find the declaration of CMTPROJECTPATH in the configuration
+            for e in config.get(u'env', []):
+                if e.startswith('CMTPROJECTPATH='):
+                    # dump it as a list in the summary file
+                    data += 'cmtProjectPathList = %r\n' % e.split('=', 1)[1].split(':')
+            if data:
+                f = codecs.open(os.path.join(artifacts_dir, 'confSummary.py'), 'w', 'utf-8')
+                f.write(data)
+                f.close()
+
+        dumpConfSummary()
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
@@ -506,7 +526,6 @@ class BuildReporter(object):
         from os.path import join, dirname
         from itertools import islice
         import cgi
-        import codecs
 
         def formatTxt(iterable, lineOffset=0):
             '''
@@ -607,7 +626,6 @@ class BuildReporter(object):
 
         @return: a dictionary with the list of errors, warnings and ignored ones
         '''
-        import codecs
         from collections import deque
 
         wExp = re.compile(r'\bwarning\b', re.IGNORECASE)
