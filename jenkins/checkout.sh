@@ -9,15 +9,14 @@ echo ===================================================================
 set -xe
 . setup.sh
 
-svn cat -r "{"`date -I`"}" svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > configuration.xml
+mkdir -p artifacts/${slot}/${slot_build_id}
+svn cat -r "{"`date -I`"}" svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > artifacts/${slot}/${slot_build_id}/configuration.xml
 
-mkdir -p sources
 if [ -e ${slot}.json ] ; then
-  cp ${slot}.json sources/${slot}.json
-  config_file=${slot}.json
+  cp ${slot}.json artifacts/${slot}/${slot_build_id}/${slot}.json
+  config_file=artifacts/${slot}/${slot_build_id}/${slot}.json
 else
-  cp configuration.xml sources/configuration.xml
-  config_file=configuration.xml#${slot}
+  config_file=artifacts/${slot}/${slot_build_id}/configuration.xml#${slot}
 fi
 
 StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" ${config_file}

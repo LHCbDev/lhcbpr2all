@@ -25,10 +25,10 @@ if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   echo ${slot}.${slot_build_id} >> $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
 fi
 
-if [ -e ${slot}.json ] ; then
-  config_file=${slot}.json
+if [ -e artifacts/${slot}/${slot_build_id}/${slot}.json ] ; then
+  config_file=artifacts/${slot}/${slot_build_id}/${slot}.json
 else
-  config_file=sources/configuration.xml#${slot}
+  config_file=artifacts/${slot}/${slot_build_id}/configuration.xml#${slot}
 fi
 
 deploybase=/build/artifacts/${slot}
