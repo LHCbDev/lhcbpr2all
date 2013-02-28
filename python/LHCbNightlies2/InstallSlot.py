@@ -13,6 +13,7 @@ import urllib2
 import re
 import logging
 import time
+import shutil
 
 from subprocess import Popen, PIPE, call
 from tempfile import mkstemp
@@ -73,44 +74,63 @@ def listdir(url):
     return l
 
 
-def _unpack_with_retrieve(url, dest, retrieve):
+def getURL(url, dst):
+    protocol = _url_protocol(url)
+    def getHTTP(url, dst):
+        # code copied from shutil.copyfile
+        fsrc = None
+        fdst = None
+        try:
+            fsrc = urllib2.urlopen(url)
+            fdst = open(dst, 'wb')
+            shutil.copyfileobj(fsrc, fdst)
+        finally:
+            if fdst:
+                fdst.close()
+            if fsrc:
+                fsrc.close()
+    def getSSH(url, dst):
+        call(['scp', '-q', url, dst])
+    return {'http': getHTTP,
+            'ssh': getSSH,
+            'file': shutil.copy2}[protocol](url, dst)
+
+def unpack(url, dest):
     # download on a local file
     log = logging.getLogger('unpack')
-    tmpfd, tmpname = mkstemp()
-    os.close(tmpfd)
+    protocol = _url_protocol(url)
+    tmpfd = None
     try:
-        log.info('retrieving %s', url)
-        log.debug('using tempfile %s', tmpname)
-        retrieve(url, tmpname)
+        if protocol != 'file':
+            tmpfd, tmpname = mkstemp()
+            os.close(tmpfd)
+            log.info('retrieving %s', url)
+            log.debug('using tempfile %s', tmpname)
+            getURL(url, tmpname)
+        else:
+            tmpname = os.path.abspath(url)
         log.info('unpacking %s', url)
         retcode = call(['tar', '-x', '-f', tmpname], cwd=dest)
     finally:
-        os.remove(tmpname)
+        if tmpfd is not None:
+            os.remove(tmpname)
     return retcode
 
-def _unpack_http(url, dest):
-    return _unpack_with_retrieve(url, dest, urllib.urlretrieve)
+def install(url, dest):
+    '''
+    Install the file at 'url' in the directory dest.
 
-def _unpack_ssh(url, dest):
-    def scp(src, dst):
-        call(['scp', '-q', src, dst])
-    return _unpack_with_retrieve(url, dest, scp)
-
-def _unpack_file(url, dest):
-    # download on a local file
-    log = logging.getLogger('unpack')
-    url = os.path.abspath(url)
-    log.info('unpacking %s', url)
-    return call(['tar', '-x', '-f', url], cwd=dest)
-
-def unpack(url, dest):
-    protocol = _url_protocol(url)
+    If url points to a tarball, it is unpacked, otherwise it is just copied.
+    '''
+    log = logging.getLogger('install')
     if not os.path.exists(dest):
-        logging.getLogger('unpack').info('creating directory "%s"', dest)
+        log.info('creating directory "%s"', dest)
         os.makedirs(dest)
-    return {'http': _unpack_http,
-            'ssh': _unpack_ssh,
-            'file': _unpack_file}[protocol](url, dest)
+    if url.endswith('.tar.bz2'):
+        return unpack(url, dest)
+    else:
+        log.info('installing %s', url)
+        return getURL(url, os.path.join(dest, url.rsplit('/', 1)[1]))
 
 def requiredPackages(files, projects=None, platforms=None, skip=None):
     '''
@@ -208,7 +228,8 @@ class Script(LbUtils.Script.PlainScript):
         f.close()
 
         try:
-            tarfiles = [f for f in listdir(url) if f.endswith('.tar.bz2')]
+            urllist = listdir(url)
+            tarfiles = [f for f in urllist if f.endswith('.tar.bz2')]
             installed = {}
             if os.path.exists(history_file):
                 installed = dict([l.strip().split(':', 1) for l in open(history_file)])
@@ -216,15 +237,17 @@ class Script(LbUtils.Script.PlainScript):
                                         self.options.projects, self.options.platforms,
                                         installed)
 
-            tarfiles = list(tarfiles) # tarfiles is a generator (so far)
-            if tarfiles:
-                self.log.info('installing %d packages', len(tarfiles))
+            requiredFiles = list(tarfiles) # tarfiles is a generator (so far)
+            requiredFiles.extend(set(['configuration.xml', 'confSummary.py']).intersection(urllist) - set(installed))
+            if requiredFiles:
+                self.log.info('installing %d files', len(requiredFiles))
             else:
                 self.log.info('nothing to install')
 
-            for f in tarfiles:
-                if unpack(url + '/' + f, dest) != 0:
-                    raise RuntimeError('error unpacking %s' % f)
+
+            for f in requiredFiles:
+                if install(url + '/' + f, dest): # 0 or None mean success
+                    raise RuntimeError('error installing %s' % f)
                 installed[f] = datetime.now().isoformat()
                 # record what has been installed so far
                 f = open(history_file, 'w')
