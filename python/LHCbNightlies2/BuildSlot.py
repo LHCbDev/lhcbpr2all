@@ -271,7 +271,7 @@ def main():
 
     fileListExcl = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
                                r'(\.git)|(\.svn)|'
-                               r'(\.{0}\.d)|(Testing)$'
+                               r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
                                ).format(platform)).match
 
     if opts.deploy_dir:
