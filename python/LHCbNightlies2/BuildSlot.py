@@ -429,8 +429,6 @@ def main():
         log.info('building %s', p.dir)
         call(build_cmd, cwd=projdir)
         dumpFileListSummary('sources_built.list')
-        if opts.rsync_dest:
-            jobs.append(DeployArtifactsTask())
 
         reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
         deployReports(reporter.genOldSummaries())
@@ -439,6 +437,9 @@ def main():
 
         call(['tar', 'chjf', packname,
               os.path.join(p.dir, 'InstallArea')], cwd=build_dir)
+
+        if opts.rsync_dest:
+            jobs.append(DeployArtifactsTask())
 
         if not opts.build_only:
             log.info('testing (in background) %s', p.dir)
