@@ -31,7 +31,7 @@ else
   config_file=artifacts/${slot}/${slot_build_id}/configuration.xml#${slot}
 fi
 
-deploybase=/build/artifacts/${slot}
+deploybase=/data/artifacts/${slot}
 # create moving symlinks in the artifacts deployment directory (ASAP)
 ssh buildlhcb.cern.ch "rm -fv ${deploybase}/${day} ${deploybase}/${timestamp} ; ln -sv ${slot_build_id} ${deploybase}/${day} ; ln -sv ${slot_build_id} ${deploybase}/${timestamp}"
 
