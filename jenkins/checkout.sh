@@ -9,14 +9,15 @@ echo ===================================================================
 set -xe
 . setup.sh
 
-mkdir -p artifacts/${slot}/${slot_build_id}
-svn cat -r "{"`date -I`"}" svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > artifacts/${slot}/${slot_build_id}/configuration.xml
-
 if [ -e ${slot}.json ] ; then
-  cp ${slot}.json artifacts/${slot}/${slot_build_id}/${slot}.json
-  config_file=artifacts/${slot}/${slot_build_id}/${slot}.json
+  config_file=${slot}.json
 else
-  config_file=artifacts/${slot}/${slot_build_id}/configuration.xml#${slot}
+  svn cat -r "{"`date -I`"}" svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > configuration.xml
+  config_file=configuration.xml#${slot}
 fi
 
 StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "artifacts/{slot}/${slot_build_id}" ${config_file}
+
+# We need to copy the configuration at the end because
+# StachCkeckout.py cleans the artifacts before starting
+cp ${config_file%%#*} artifacts/${slot}/${slot_build_id}
