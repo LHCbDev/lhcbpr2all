@@ -1,0 +1,26 @@
+{"slot": "lhcb-coverity",
+ "projects": [{"name": "LCGCMT",
+               "version": "preview",
+               "checkout": "noCheckout",
+               "dependencies": []},
+              {"name": "Gaudi",
+               "version": "HEAD",
+               "overrides": {},
+               "dependencies": ["LCGCMT"],
+               "checkout": "gitCheckout",
+               "checkout_opts": {"url": "http://cern.ch/gaudi/Gaudi.git",
+                                 "commit": "dev/cmake"}}
+              ],
+
+ "USE_CMT": true,
+
+ "preconditions" : [{"name": "waitForFile",
+                     "args": {"path": "/afs/cern.ch/sw/lcg/app/nightlies/dev/Tue/isDone-${CMTCONFIG}"}}],
+
+ "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/lcg/app/nightlies/dev/Tue:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
+
+ "cmake_cache": {"CASTOR_config_version": "2.1.13-6"},
+ "warning_exceptions": [".*/boost/.*",
+                        "^--->> genreflex: WARNING:.*",
+                        " note:"]
+}

@@ -180,6 +180,11 @@ def main():
                       help='deploy artifacts to this location using rsync '
                            '(accepts the same format specification as --build-id)')
 
+    parser.add_option('--coverity',
+                      action='store_true',
+                      help='enable special Coverity static analysis on the '
+                           'build (Coverity commands must be on the PATH)')
+
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
                         timeout='600',
@@ -366,6 +371,9 @@ def main():
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
         summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
+        coverity_dir = join(build_dir, 'coverity')
+        coverity_int = join(coverity_dir, p.name)
+        coverity_mod = join(coverity_dir, 'derived_models')
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
@@ -419,6 +427,12 @@ def main():
         if opts.level <= logging.DEBUG:
             test_cmd.insert(1, '-VV')
 
+        if opts.coverity:
+            # create all the directories that are missing
+            map(os.makedirs, filter(lambda x: not os.path.exists(x),
+                                    [coverity_int, coverity_mod]))
+            build_cmd = ['cov-build', '--dir', coverity_int]
+
         def writeExtraSummary(name, data):
             if not os.path.isdir(summary_dir):
                 os.makedirs(summary_dir)
@@ -447,7 +461,7 @@ def main():
         dumpConfSummary()
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
-        call(build_cmd, cwd=projdir)
+        build_retcode = call(build_cmd, cwd=projdir)
         dumpFileListSummary('sources_built.list')
 
         reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
@@ -461,7 +475,31 @@ def main():
         if opts.rsync_dest:
             jobs.append(DeployArtifactsTask())
 
-        if not opts.build_only:
+        if opts.coverity:
+            # run the Coverity analysis
+            if build_retcode != 0:
+                log.error('build exited with code %d: cannot run Coverity analysis on a failed build', build_retcode)
+            else:
+                # this call actually does not "submit" (commit-defects)
+                call(['analyze-submit.sh', coverity_int, coverity_mod])
+                # collect models for use with the other projects
+                call(['cov-collect-models', '--dir', coverity_int,
+                      '-of', join(coverity_mod, p.name.lower() + '.xmldb')])
+                # ensure that there is no stale lock
+                # FIXME: is it needed?
+                try:
+                    os.remove(join(coverity_mod, p.name.lower() + '.xmldb.lock'))
+                except:
+                    pass
+                # commit defect to Coverity Integrity Manager
+                #call(['cov-commit-defects',
+                #      '--host', 'lhcb-coverity.cern.ch',
+                #      '--port', '8080',
+                #      '--user', 'admin',
+                #      '--stream', p.name.lower() + '_trunk'],# + [stripPathArgs, commitArgs]
+                #     env={'COVERITY_PASSPHRASE': open('/afs/cern.ch/user/l/lhcbsoft/private/init').read().strip()})
+
+        if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
             jobs.append(TestTask(test_cmd, cwd=projdir,
                                  reports = [join(summary_dir, old_build_id + suff)
