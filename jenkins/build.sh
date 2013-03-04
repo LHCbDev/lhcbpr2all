@@ -38,7 +38,7 @@ fi
 
 deploybase=/data/artifacts/${slot}
 # create moving symlinks in the artifacts deployment directory (ASAP)
-ssh buildlhcb.cern.ch "ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}"
+ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}"
 
 if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
