@@ -431,7 +431,7 @@ def main():
             # create all the directories that are missing
             map(os.makedirs, filter(lambda x: not os.path.exists(x),
                                     [coverity_int, coverity_mod]))
-            build_cmd = ['cov-build', '--dir', coverity_int]
+            build_cmd = ['cov-build', '--dir', coverity_int] + build_cmd
 
         def writeExtraSummary(name, data):
             if not os.path.isdir(summary_dir):
