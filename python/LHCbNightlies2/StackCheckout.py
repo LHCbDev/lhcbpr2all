@@ -182,6 +182,9 @@ class StackDesc(object):
 
                 # find the project declaration call
                 m = gp_exp.search(data)
+                if m is None:
+                    log.warning('%s does not look like a Gaudi/CMake project, I\'m not touching it', p)
+                    return
                 args = m.group(1).split()
                 args[1] = p.version # the project version is always the second
 
