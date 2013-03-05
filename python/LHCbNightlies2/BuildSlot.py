@@ -23,6 +23,8 @@ from datetime import datetime, date
 
 log = logging.getLogger(__name__)
 
+COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'), 'private', 'cov-admin')
+
 def genProjectXml(name, projects):
     '''
     Take a list of ProjDesc instances and return the XML string usable to
@@ -509,10 +511,11 @@ def main():
                                             'c', 'output',
                                             'commit-args.txt')).read().split()
 
-                pph = open('/afs/cern.ch/user/l/lhcbsoft/private/init').read().strip()
+                tmpenv = {'COVERITY_PASSPHRASE': open(COV_PASSPHRASE_FILE).read().strip()}
+                tmpenv.update(os.environ)
                 log.info(str(cov_commit_cmd))
-                call(cov_commit_cmd, env={'COVERITY_PASSPHRASE': pph})
-                del pph
+                call(cov_commit_cmd, env=tmpenv)
+                del tmpenv
 
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
