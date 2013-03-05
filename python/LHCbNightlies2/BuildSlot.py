@@ -502,15 +502,16 @@ def main():
                                   '--port', '8080',
                                   '--user', 'admin',
                                   '--stream', p.name.lower() + '_trunk']
-                cov_commit_cmd += [join(build_dir, x.dir) + '/'
-                                   for x in sorted_projects]
+                for x in sorted_projects:
+                    cov_commit_cmd.append('--strip-path')
+                    cov_commit_cmd.append(join(build_dir, x.dir) + '/')
                 cov_commit_cmd += open(join(coverity_int,
                                             'c', 'output',
                                             'commit-args.txt')).read().split()
 
                 pph = open('/afs/cern.ch/user/l/lhcbsoft/private/init').read().strip()
                 log.info(str(cov_commit_cmd))
-                #call(cov_commit_cmd, env={'COVERITY_PASSPHRASE': pph})
+                call(cov_commit_cmd, env={'COVERITY_PASSPHRASE': pph})
                 del pph
 
         if not opts.build_only and not opts.coverity:
