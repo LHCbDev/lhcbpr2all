@@ -1,23 +1,13 @@
 {"slot": "lhcb-coverity",
- "projects": [{"name": "LCGCMT",
-               "version": "preview",
-               "checkout": "noCheckout",
-               "dependencies": []},
-              {"name": "Gaudi",
+ "projects": [{"name": "Test",
                "version": "HEAD",
                "overrides": {},
-               "dependencies": ["LCGCMT"],
                "checkout": "gitCheckout",
-               "checkout_opts": {"url": "http://cern.ch/gaudi/Gaudi.git",
-                                 "commit": "dev/cmake"}}
+               "checkout_opts": {"url": "http://cern.ch/marco.clemencic/git/TestProject.git",
+                                 "commit": "master"}}
               ],
 
- "USE_CMT": true,
-
- "preconditions" : [{"name": "waitForFile",
-                     "args": {"path": "/afs/cern.ch/sw/lcg/app/nightlies/dev/Tue/isDone-${CMTCONFIG}"}}],
-
- "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/lcg/app/nightlies/dev/Mon:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
+ "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
 
  "cmake_cache": {"CASTOR_config_version": "2.1.13-6"},
  "warning_exceptions": [".*/boost/.*",
