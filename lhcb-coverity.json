@@ -1,6 +1,7 @@
 {"slot": "lhcb-coverity",
  "projects": [{"name": "Test",
                "version": "HEAD",
+               "dependencies": [],
                "overrides": {},
                "checkout": "gitCheckout",
                "checkout_opts": {"url": "http://cern.ch/marco.clemencic/git/TestProject.git",
