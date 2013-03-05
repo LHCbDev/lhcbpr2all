@@ -373,8 +373,11 @@ def main():
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
         summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
-        coverity_dir = join(build_dir, 'coverity')
-        coverity_int = join(coverity_dir, p.name)
+        # use the ramdisk for Coverity intermediate dir if possible
+        if os.path.exists('/dev/shm'):
+            coverity_int = join('/dev/shm/coverity', opts.build_id, p.name)
+        else:
+            coverity_int = join(build_dir, 'coverity', p.name)
         coverity_mod = join(summary_dir, 'coverity', 'models')
         coverity_logs = join(summary_dir, 'coverity', p.name)
 
@@ -485,11 +488,13 @@ def main():
             else:
                 # this call actually does not "submit" (commit-defects), it just
                 # run the analysis
+                log.info('running Coverity analysis from %s', coverity_int)
                 call(['analyze-submit.sh', coverity_int, coverity_mod])
                 # keep a copy of the logs
                 for clf in ['log.txt', 'BUILD.metrics.xml']:
                     shutil.copy2(join(coverity_int, clf), coverity_logs)
                 # collect models for use with the other projects
+                log.info('collecting Coverity models')
                 call(['cov-collect-models', '--dir', coverity_int,
                       '-of', join(coverity_mod, p.name + '.xmldb')])
                 # ensure that there is no stale lock
@@ -513,9 +518,14 @@ def main():
 
                 tmpenv = {'COVERITY_PASSPHRASE': open(COV_PASSPHRASE_FILE).read().strip()}
                 tmpenv.update(os.environ)
-                log.info(str(cov_commit_cmd))
+                log.info('committing results Coverity Integrity Manager')
                 call(cov_commit_cmd, env=tmpenv)
                 del tmpenv
+                # remove the Coverity intermediate directory if it is on the ramdisk
+                if coverity_int.startswith('/dev/shm'):
+                    log.debug('cleaning Coverity intermediate directory')
+                    shutil.rmtree(coverity_int, ignore_errors=True)
+                    os.removedirs(os.path.dirname(coverity_int))
 
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
