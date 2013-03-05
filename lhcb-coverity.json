@@ -4,7 +4,7 @@
                "dependencies": [],
                "overrides": {},
                "checkout": "gitCheckout",
-               "checkout_opts": {"url": "http://cern.ch/marco.clemencic/git/TestProject.git",
+               "checkout_opts": {"url": "http://cern.ch/gaudi/Gaudi.git",
                                  "commit": "master"}}
               ],
 
