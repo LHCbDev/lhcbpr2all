@@ -373,7 +373,8 @@ def main():
         summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
         coverity_dir = join(build_dir, 'coverity')
         coverity_int = join(coverity_dir, p.name)
-        coverity_mod = join(coverity_dir, 'derived_models')
+        coverity_mod = join(summary_dir, 'coverity', 'models')
+        coverity_logs = join(summary_dir, 'coverity', p.name)
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
@@ -430,7 +431,7 @@ def main():
         if opts.coverity:
             # create all the directories that are missing
             map(os.makedirs, filter(lambda x: not os.path.exists(x),
-                                    [coverity_int, coverity_mod]))
+                                    [coverity_int, coverity_mod, coverity_logs]))
             build_cmd = ['cov-build', '--dir', coverity_int] + build_cmd
 
         def writeExtraSummary(name, data):
@@ -480,24 +481,37 @@ def main():
             if build_retcode != 0:
                 log.error('build exited with code %d: cannot run Coverity analysis on a failed build', build_retcode)
             else:
-                # this call actually does not "submit" (commit-defects)
+                # this call actually does not "submit" (commit-defects), it just
+                # run the analysis
                 call(['analyze-submit.sh', coverity_int, coverity_mod])
+                # keep a copy of the logs
+                for clf in ['log.txt', 'BUILD.metrics.xml']:
+                    shutil.copy2(join(coverity_int, clf), coverity_logs)
                 # collect models for use with the other projects
                 call(['cov-collect-models', '--dir', coverity_int,
-                      '-of', join(coverity_mod, p.name.lower() + '.xmldb')])
+                      '-of', join(coverity_mod, p.name + '.xmldb')])
                 # ensure that there is no stale lock
                 # FIXME: is it needed?
                 try:
-                    os.remove(join(coverity_mod, p.name.lower() + '.xmldb.lock'))
+                    os.remove(join(coverity_mod, p.name + '.xmldb.lock'))
                 except:
                     pass
                 # commit defect to Coverity Integrity Manager
-                #call(['cov-commit-defects',
-                #      '--host', 'lhcb-coverity.cern.ch',
-                #      '--port', '8080',
-                #      '--user', 'admin',
-                #      '--stream', p.name.lower() + '_trunk'],# + [stripPathArgs, commitArgs]
-                #     env={'COVERITY_PASSPHRASE': open('/afs/cern.ch/user/l/lhcbsoft/private/init').read().strip()})
+                cov_commit_cmd = ['cov-commit-defects',
+                                  '--host', 'lhcb-coverity.cern.ch',
+                                  '--port', '8080',
+                                  '--user', 'admin',
+                                  '--stream', p.name.lower() + '_trunk']
+                cov_commit_cmd += [join(build_dir, x.dir) + '/'
+                                   for x in sorted_projects]
+                cov_commit_cmd += open(join(coverity_int,
+                                            'c', 'output',
+                                            'commit-args.txt')).read().split()
+
+                pph = open('/afs/cern.ch/user/l/lhcbsoft/private/init').read().strip()
+                log.info(str(cov_commit_cmd))
+                #call(cov_commit_cmd, env={'COVERITY_PASSPHRASE': pph})
+                del pph
 
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
