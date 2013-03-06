@@ -23,6 +23,8 @@ from datetime import datetime, date
 
 log = logging.getLogger(__name__)
 
+COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'), 'private', 'cov-admin')
+
 def genProjectXml(name, projects):
     '''
     Take a list of ProjDesc instances and return the XML string usable to
@@ -52,7 +54,7 @@ def genSlotConfig(config):
         cmake.append('set(%(name)s_version %(version)s)' % p)
 
     for p in projects:
-        cmake.append('set(%s_version %s)' % (p[u'name'], ' '.join(p[u'dependencies'])))
+        cmake.append('set(%s_version %s)' % (p[u'name'], ' '.join(p.get(u'dependencies', []))))
 
     if u'warning_exceptions' in config:
         cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}')
@@ -179,6 +181,11 @@ def main():
                       action='store', metavar='DEST',
                       help='deploy artifacts to this location using rsync '
                            '(accepts the same format specification as --build-id)')
+
+    parser.add_option('--coverity',
+                      action='store_true',
+                      help='enable special Coverity static analysis on the '
+                           'build (Coverity commands must be on the PATH)')
 
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
@@ -366,6 +373,13 @@ def main():
     for p in sorted_projects:
         projdir = join(build_dir, p.dir)
         summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
+        # use the ramdisk for Coverity intermediate dir if possible
+        if os.path.exists('/dev/shm'):
+            coverity_int = join('/dev/shm/coverity', opts.build_id, p.name)
+        else:
+            coverity_int = join(build_dir, 'coverity', p.name)
+        coverity_mod = join(summary_dir, 'coverity', 'models')
+        coverity_logs = join(summary_dir, 'coverity', p.name)
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
@@ -419,6 +433,12 @@ def main():
         if opts.level <= logging.DEBUG:
             test_cmd.insert(1, '-VV')
 
+        if opts.coverity:
+            # create all the directories that are missing
+            map(os.makedirs, filter(lambda x: not os.path.exists(x),
+                                    [coverity_int, coverity_mod, coverity_logs]))
+            build_cmd = ['cov-build', '--dir', coverity_int] + build_cmd
+
         def writeExtraSummary(name, data):
             if not os.path.isdir(summary_dir):
                 os.makedirs(summary_dir)
@@ -447,7 +467,7 @@ def main():
         dumpConfSummary()
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
-        call(build_cmd, cwd=projdir)
+        build_retcode = call(build_cmd, cwd=projdir)
         dumpFileListSummary('sources_built.list')
 
         reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
@@ -461,7 +481,53 @@ def main():
         if opts.rsync_dest:
             jobs.append(DeployArtifactsTask())
 
-        if not opts.build_only:
+        if opts.coverity:
+            # run the Coverity analysis
+            if build_retcode != 0:
+                log.error('build exited with code %d: cannot run Coverity analysis on a failed build', build_retcode)
+            else:
+                # this call actually does not "submit" (commit-defects), it just
+                # run the analysis
+                log.info('running Coverity analysis from %s', coverity_int)
+                call(['analyze-submit.sh', coverity_int, coverity_mod])
+                # keep a copy of the logs
+                for clf in ['log.txt', 'BUILD.metrics.xml']:
+                    shutil.copy2(join(coverity_int, clf), coverity_logs)
+                # collect models for use with the other projects
+                log.info('collecting Coverity models')
+                call(['cov-collect-models', '--dir', coverity_int,
+                      '-of', join(coverity_mod, p.name + '.xmldb')])
+                # ensure that there is no stale lock
+                # FIXME: is it needed?
+                try:
+                    os.remove(join(coverity_mod, p.name + '.xmldb.lock'))
+                except:
+                    pass
+                # commit defect to Coverity Integrity Manager
+                cov_commit_cmd = ['cov-commit-defects',
+                                  '--host', 'lhcb-coverity.cern.ch',
+                                  '--port', '8080',
+                                  '--user', 'admin',
+                                  '--stream', p.name.lower() + '_trunk']
+                for x in sorted_projects:
+                    cov_commit_cmd.append('--strip-path')
+                    cov_commit_cmd.append(join(build_dir, x.dir) + '/')
+                cov_commit_cmd += open(join(coverity_int,
+                                            'c', 'output',
+                                            'commit-args.txt')).read().split()
+
+                tmpenv = {'COVERITY_PASSPHRASE': open(COV_PASSPHRASE_FILE).read().strip()}
+                tmpenv.update(os.environ)
+                log.info('committing results Coverity Integrity Manager')
+                call(cov_commit_cmd, env=tmpenv)
+                del tmpenv
+                # remove the Coverity intermediate directory if it is on the ramdisk
+                if coverity_int.startswith('/dev/shm'):
+                    log.debug('cleaning Coverity intermediate directory')
+                    shutil.rmtree(coverity_int, ignore_errors=True)
+                    os.removedirs(os.path.dirname(coverity_int))
+
+        if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
             jobs.append(TestTask(test_cmd, cwd=projdir,
                                  reports = [join(summary_dir, old_build_id + suff)
