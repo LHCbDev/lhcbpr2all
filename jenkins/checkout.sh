@@ -13,8 +13,6 @@ echo ===================================================================
 set -xe
 . setup.sh
 
-
-
 if [ -e ${slot}.json ] ; then
   config_file=${slot}.json
 else
