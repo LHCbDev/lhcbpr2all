@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export ARTIFACTS_DIR=artifacts/${slot}/${slot_build_id}
+export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
 
 echo ===================================================================
 echo Worker Node: $NODE_NAME
