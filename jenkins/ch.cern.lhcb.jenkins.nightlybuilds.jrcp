@@ -135,7 +135,7 @@ slot_build_id=${BUILD_NUMBER}
           <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
           <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
           <triggers class="vector"/>
-          <concurrentBuild>false</concurrentBuild>
+          <concurrentBuild>true</concurrentBuild>
           <builders>
             <hudson.plugins.parameterizedtrigger.TriggerBuilder plugin="parameterized-trigger@2.16">
               <configs>
@@ -657,7 +657,7 @@ slot_build_id=${BUILD_NUMBER}
           <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
           <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
           <triggers class="vector"/>
-          <concurrentBuild>false</concurrentBuild>
+          <concurrentBuild>true</concurrentBuild>
           <builders>
             <hudson.plugins.parameterizedtrigger.TriggerBuilder plugin="parameterized-trigger@2.16">
               <configs>
