@@ -1,10 +1,14 @@
-{"slot": "lhcb-coverity",
- "projects": [{"name": "Test",
+{"slot": "lhcb-testing",
+ "projects": [{"name": "Gaudi",
                "version": "HEAD",
                "overrides": {},
                "checkout": "gitCheckout",
-               "checkout_opts": {"url": "http://cern.ch/marco.clemencic/git/TestProject.git",
-                                 "commit": "master"}}
+               "checkout_opts": {"url": "http://git.cern.ch/pub/gaudi.git",
+                                 "commit": "master"}},
+              {"name": "LHCb",
+               "version": "HEAD",
+               "overrides": {},
+               "dependencies": ["Gaudi"]
               ],
 
  "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
