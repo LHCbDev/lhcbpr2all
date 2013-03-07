@@ -69,6 +69,8 @@ log = logging.getLogger(__name__)
 
 COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'), 'private', 'cov-admin')
 
+LOAD_AVERAGE_SCALE = 2
+
 def genProjectXml(name, projects):
     '''
     Take a list of ProjDesc instances and return the XML string usable to
@@ -211,8 +213,7 @@ def main():
     parser.add_option('-l', '--load-average',
                       action='store', type='float',
                       help='load average limit for parallel builds, use 0 to '
-                           'remove the limit (default: N of cores if building '
-                           'in parallel)')
+                           'remove the limit (default: N of cores x %g)' % LOAD_AVERAGE_SCALE)
     parser.add_option('--build-id',
                       action='store',
                       help='string to add to the tarballs of the build to '
@@ -247,7 +248,7 @@ def main():
                         level=logging.INFO,
                         timeout=600,
                         jobs=1,
-                        load_average=cpu_count(),
+                        load_average=cpu_count() * LOAD_AVERAGE_SCALE,
                         build_id='{slot}.{timestamp}',
                         artifacts_dir='artifacts')
 
