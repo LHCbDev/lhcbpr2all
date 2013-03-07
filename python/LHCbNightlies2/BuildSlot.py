@@ -544,7 +544,7 @@ def main():
 
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
-            jobs.append(TestTask(test_cmd, cwd=projdir,
+            jobs.append(TestTask(['nice'] + test_cmd, cwd=projdir,
                                  reports = [join(summary_dir, old_build_id + suff)
                                             for suff in ['-qmtest', '-qmtest.log']]))
 
