@@ -18,6 +18,11 @@ from subprocess import call
 from string import Template
 from socket import gethostname
 from datetime import datetime, date
+try:
+    from multiprocessing import cpu_count
+except ImportError:
+    cpu_count = lambda : 0
+
 # no-op 'call' function for testing
 #call = lambda *a,**k: None
 
@@ -146,7 +151,7 @@ def main():
                       help='be less verbose.')
     parser.add_option('--timeout',
                       metavar='SECONDS',
-                      action='store', type='string',
+                      action='store', type='int',
                       help='set a global timeout on all tests (default: 600)')
     parser.add_option('--build-only',
                       action='store_true',
@@ -155,8 +160,14 @@ def main():
                       action='store_true',
                       help='do not submit the results to CDash server')
     parser.add_option('-j', '--jobs',
-                      action='store',
-                      help='number of parallel jobs to use during the build (default: sequential build)')
+                      action='store', type='int',
+                      help='number of parallel jobs to use during the build '
+                           '(default: sequential build)')
+    parser.add_option('-l', '--load-average',
+                      action='store', type='float',
+                      help='load average limit for parallel builds, use 0 to '
+                           'remove the limit (default: N of cores if building '
+                           'in parallel)')
     parser.add_option('--build-id',
                       action='store',
                       help='string to add to the tarballs of the build to '
@@ -189,8 +200,9 @@ def main():
 
     parser.set_defaults(model=models[0],
                         level=logging.INFO,
-                        timeout='600',
-                        jobs='1',
+                        timeout=600,
+                        jobs=1,
+                        load_average=cpu_count(),
                         build_id='{slot}.{timestamp}',
                         artifacts_dir='artifacts')
 
@@ -416,9 +428,12 @@ def main():
                                       'Model': opts.model,
                                       'old_build_id': old_build_id}))
 
-        cmd = ['ctest', '--timeout', opts.timeout]
-        if opts.jobs != '1':
-            cmd.append('-DJOBS=' + opts.jobs)
+        cmd = ['ctest', '--timeout', str(opts.timeout)]
+        if opts.jobs != 1:
+            cmd.append('-DJOBS=%d' % opts.jobs)
+            if opts.load_average > 0:
+                cmd.append('-DMAX_LOAD=%g' % opts.load_average)
+
         if opts.no_submit:
             cmd.append('-DNO_SUBMIT=TRUE')
 

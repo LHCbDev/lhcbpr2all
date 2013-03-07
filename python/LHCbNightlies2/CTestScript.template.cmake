@@ -41,7 +41,10 @@ set(CTEST_CONFIGURE_COMMAND "$${CTEST_CONFIGURE_COMMAND} $${CTEST_SCRIPT_DIRECTO
 if(JOBS)
   set(JOBS "-j$${JOBS}")
 endif()
-set(CTEST_BUILD_COMMAND "make $${JOBS} -k")
+if(MAX_LOAD)
+  set(MAX_LOAD "-l$${MAX_LOAD}")
+endif()
+set(CTEST_BUILD_COMMAND "make $${JOBS} $${MAX_LOAD} -k")
 
 if(USE_CMT)
   # Builds driven by CMT need special settings
