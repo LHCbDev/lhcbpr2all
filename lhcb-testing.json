@@ -8,7 +8,7 @@
               {"name": "LHCb",
                "version": "HEAD",
                "overrides": {},
-               "dependencies": ["Gaudi"]
+               "dependencies": ["Gaudi"]}
               ],
 
  "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
