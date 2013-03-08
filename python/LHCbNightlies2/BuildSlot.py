@@ -387,7 +387,7 @@ def main():
         summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
         # use the ramdisk for Coverity intermediate dir if possible
         if os.path.exists('/dev/shm'):
-            coverity_int = join('/dev/shm/coverity', opts.build_id, p.name)
+            coverity_int = join('/dev/shm/coverity.{0}'.format(platform), opts.build_id, p.name)
         else:
             coverity_int = join(build_dir, 'coverity', p.name)
         coverity_mod = join(summary_dir, 'coverity', 'models')
@@ -540,13 +540,20 @@ def main():
                 if coverity_int.startswith('/dev/shm'):
                     log.debug('cleaning Coverity intermediate directory')
                     shutil.rmtree(coverity_int, ignore_errors=True)
-                    os.removedirs(os.path.dirname(coverity_int))
+                    try:
+                        os.removedirs(os.path.dirname(coverity_int))
+                    except os.error:
+                        log.warning("failed to clean %s", coverity_int)
 
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
             jobs.append(TestTask(['nice'] + test_cmd, cwd=projdir,
                                  reports = [join(summary_dir, old_build_id + suff)
                                             for suff in ['-qmtest', '-qmtest.log']]))
+
+    if opts.coverity:
+        # try again to clean the Coverity scratch space in the ramdisk (if it was ever created)
+        shutil.rmtree(join('/dev/shm/coverity.{0}'.format(platform)), ignore_errors=True)
 
     if jobs:
         log.info('waiting for pending tasks (tests, etc.)...')
