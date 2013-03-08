@@ -473,7 +473,9 @@ def main():
             for e in config.get(u'env', []):
                 if e.startswith('CMTPROJECTPATH='):
                     # dump it as a list in the summary file
-                    data += 'cmtProjectPathList = %r\n' % e.split('=', 1)[1].split(':')
+                    data += ('cmtProjectPathList = %r\n' %
+                             map(os.path.expandvars,
+                                e.split('=', 1)[1].split(':')))
             if data:
                 f = codecs.open(os.path.join(artifacts_dir, 'confSummary.py'), 'w', 'utf-8')
                 f.write(data)
