@@ -485,6 +485,8 @@ def main():
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
         build_retcode = call(build_cmd, cwd=projdir)
+        if build_retcode != 0:
+            log.warning('build exited with code %d', build_retcode)
         dumpFileListSummary('sources_built.list')
 
         reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
@@ -501,7 +503,7 @@ def main():
         if opts.coverity:
             # run the Coverity analysis
             if build_retcode != 0:
-                log.error('build exited with code %d: cannot run Coverity analysis on a failed build', build_retcode)
+                log.error('cannot run Coverity analysis on a failed build')
             else:
                 # this call actually does not "submit" (commit-defects), it just
                 # run the analysis
