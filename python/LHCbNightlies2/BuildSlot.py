@@ -223,7 +223,7 @@ def main():
     platform = os.environ['CMTCONFIG']
 
     starttime = datetime.now()
-    timestamp = date.today().isoformat()
+    timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
     # replace tokens in the options
     expanded_tokens = {'slot': config[u'slot'], 'timestamp': timestamp}

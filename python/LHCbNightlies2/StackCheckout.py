@@ -345,9 +345,9 @@ class Script(LbUtils.Script.PlainScript):
         slot = parseConfigFile(self.args[0])
 
         from datetime import datetime
-        starttime = datetime.now()
 
-        timestamp = date.today().isoformat()
+        starttime = datetime.now()
+        timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
         build_dir = join(os.getcwd(), 'build')
 
