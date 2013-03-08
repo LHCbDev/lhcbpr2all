@@ -536,14 +536,15 @@ def main():
                 log.info('committing results Coverity Integrity Manager')
                 call(cov_commit_cmd, env=tmpenv)
                 del tmpenv
-                # remove the Coverity intermediate directory if it is on the ramdisk
-                if coverity_int.startswith('/dev/shm'):
-                    log.debug('cleaning Coverity intermediate directory')
-                    shutil.rmtree(coverity_int, ignore_errors=True)
-                    try:
-                        os.removedirs(os.path.dirname(coverity_int))
-                    except os.error:
-                        log.warning("failed to clean %s", coverity_int)
+
+            # remove the Coverity intermediate directory if it is on the ramdisk
+            if coverity_int.startswith('/dev/shm'):
+                log.debug('cleaning Coverity intermediate directory')
+                shutil.rmtree(coverity_int, ignore_errors=True)
+                try:
+                    os.removedirs(os.path.dirname(coverity_int))
+                except os.error:
+                    log.warning("failed to clean %s", coverity_int)
 
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
