@@ -17,5 +17,5 @@ class SimpleTimingHandler(BaseHandler):
 
         # Now saving all the nodes
         for node in tp.getTimingList():
-            self.saveFloat(node[0], node[1], group="Timing")
+            self.saveFloat(node[0], node[1], group="VtuneTiming")
 
