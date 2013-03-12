@@ -32,7 +32,7 @@ class SimpleTimingParser:
         except OSError:
             raise Exception(str(self.__class__)+": No result directory, check the given result directory")
         except IOError:
-            raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'run.log' in the results directory' ")
+            raise Exception(str(self.__class__)+": Data file not found, please consider the correct name of the analysed log file.' ")
 
     def getTimingList(self):
 	return self.timingTable
