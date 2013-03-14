@@ -8,7 +8,7 @@
                                  "commit": "dev/cmake"}},
               {"name": "LHCb",
                "version": "HEAD",
-               "overrides": {},
+               "overrides": {"Tools/EventIndexer": "HEAD"},
                "dependencies": ["Gaudi"]},
               {"name": "Lbcom",
                "version": "HEAD",
