@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from time import sleep
 from os.path import exists
 
-def waitForFile(path, timeout=timedelta(hours=20), maxAge=None):
+def waitForFile(path, timeout=timedelta(hours=12), maxAge=None):
     '''
     Wait until a file becomes available, but not more than the timedelta specified
     as timeout.
