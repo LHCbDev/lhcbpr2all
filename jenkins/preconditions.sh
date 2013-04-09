@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# hack because of a bug with non-writable home
+# hack because of a bug with non-writable home (this script is run by tomcat)
 export HOME=$PWD
 
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
