@@ -43,6 +43,10 @@ def loadFromOldXML(source, slot):
             data['preconditions'] = [{"name": "waitForFile",
                                       "args": {"path": path}}]
 
+        data['default_platforms'] = [p.attrib['name']
+                                     for p in slotEl.findall('platforms/platform')
+                                     if 'name' in p.attrib]
+
         allProjs = []
         for proj in slotEl.findall('projects/project'):
             name = proj.attrib['name']
