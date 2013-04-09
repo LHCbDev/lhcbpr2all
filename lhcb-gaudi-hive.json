@@ -35,6 +35,8 @@
                "checkout_opts": {"url": "http://cern.ch/marco.clemencic/git/Brunel.git",
                                  "commit": "master"}}
               ],
+ "default_platforms": ["x86_64-slc6-gcc46-opt",
+                       "x86_64-slc6-gcc46-dbg"],
  "cmake_cache": {"CASTOR_config_version": "2.1.13-6"},
  "warning_exceptions": [".*/boost/.*",
                         "^--->> genreflex: WARNING:.*",

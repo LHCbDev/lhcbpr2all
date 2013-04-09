@@ -39,6 +39,11 @@
                "overrides": {},
                "dependencies": ["Analysis", "Stripping", "Lbcom"]}
               ],
+ "default_platforms": ["x86_64-slc6-gcc46-opt",
+                       "x86_64-slc6-gcc46-dbg",
+                       "x86_64-slc5-gcc46-opt",
+                       "x86_64-slc5-gcc46-dbg",
+                       "i686-slc5-gcc43-opt"],
  "env": ["CMTPROJECTPATH=/afs/cern.ch/lhcb/software/DEV/nightlies:/afs/cern.ch/sw/Gaudi/releases:/afs/cern.ch/sw/lcg/app/releases:/afs/cern.ch/lhcb/software/releases"],
  "cmake_cache": {"CASTOR_config_version": "2.1.13-6"},
  "warning_exceptions": [".*/boost/.*",
