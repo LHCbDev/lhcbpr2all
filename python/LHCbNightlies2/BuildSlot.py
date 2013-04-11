@@ -82,6 +82,12 @@ class ProjDesc():
         self.deps = desc_dict.get(u'dependencies', [])
         self.dir = os.path.join(self.name.upper(),
                                 '{0}_{1}'.format(self.name.upper(), self.version))
+        cov_version = self.version.lower()
+        if cov_version == 'head':
+            cov_version = 'trunk' # 'trunk' is used instead of 'head' in Coverity
+        self.coverity_stream = desc_dict.get(u'coverity_stream',
+                                             '{0}_{1}'.format(self.name.lower(),
+                                                              cov_version))
     def __str__(self):
         return '{0} {1}'.format(self.name, self.version)
 
@@ -527,7 +533,7 @@ def main():
                                   '--host', 'lhcb-coverity.cern.ch',
                                   '--port', '8080',
                                   '--user', 'admin',
-                                  '--stream', p.name.lower() + '_trunk']
+                                  '--stream', p.coverity_stream]
                 for x in sorted_projects:
                     cov_commit_cmd.append('--strip-path')
                     cov_commit_cmd.append(join(build_dir, x.dir) + '/')
