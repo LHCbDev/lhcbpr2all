@@ -13,7 +13,7 @@ class VTuneTimingHandler(BaseHandler):
     def collectResults(self,directory):
 
         from timing.VTuneTimingParser import VTuneTimingParser
-        tp = VTuneTimingParser(os.path.join(directory,'time.log'), os.path.join(directory,'task.log'))
+        tp = VTuneTimingParser(os.path.join(directory,'run.log'), os.path.join(directory,'task.log'))
 
         # Now saving all the nodes
         for node in tp.getAllSorted():
