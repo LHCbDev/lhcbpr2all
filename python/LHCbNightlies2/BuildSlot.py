@@ -516,7 +516,7 @@ def main():
                 log.info('running Coverity analysis from %s', coverity_int)
                 call(['analyze-submit.sh', coverity_int, coverity_mod])
                 # keep a copy of the logs
-                for clf in ['log.txt', 'BUILD.metrics.xml']:
+                for clf in ['log.txt', 'BUILD.metrics.xml', 'build-log.txt']:
                     shutil.copy2(join(coverity_int, clf), coverity_logs)
                 # collect models for use with the other projects
                 log.info('collecting Coverity models')
