@@ -221,6 +221,9 @@ class Script(LbUtils.Script.PlainScript):
             except os.error:
                 # if we cannot read the file, probably it just disappeared
                 pass
+            except ValueError:
+                # the lock file looks invalid, we can ignore it
+                pass
 
         f = open(lock_file, 'w')
         f.flush()
