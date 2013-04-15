@@ -1,6 +1,8 @@
 #!/bin/bash
 
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
+export TMPDIR=$WORKSPACE/tmp
+mkdir -p $TMPDIR
 
 echo ===================================================================
 echo Worker Node: $NODE_NAME
