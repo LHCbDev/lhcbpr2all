@@ -179,28 +179,31 @@ class StackDesc(object):
                 f = open(join(rootdir, cmakelists))
                 data = f.read()
                 f.close()
+                try:
+                    # find the project declaration call
+                    m = gp_exp.search(data)
+                    if m is None:
+                        log.warning('%s does not look like a Gaudi/CMake project, I\'m not touching it', p)
+                        return
+                    args = m.group(1).split()
+                    args[1] = p.version # the project version is always the second
 
-                # find the project declaration call
-                m = gp_exp.search(data)
-                if m is None:
-                    log.warning('%s does not look like a Gaudi/CMake project, I\'m not touching it', p)
+                    # fix the dependencies
+                    if 'USE' in args:
+                        # look for the indexes of the range 'USE' ... 'DATA'
+                        use_idx = args.index('USE') + 1
+                        if 'DATA' in args:
+                            data_idx = args.index('DATA')
+                        else:
+                            data_idx = len(args)
+                        # for each key, get the version (if available)
+                        for i in range(use_idx, data_idx, 2):
+                            args[i+1] = projVersions.get(args[i], args[i+1])
+                    # FIXME: we should take into account the declared dependencies
+                    newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
+                except:
+                    log.error('failed parsing of %s, not patching it', cmakelists)
                     return
-                args = m.group(1).split()
-                args[1] = p.version # the project version is always the second
-
-                # fix the dependencies
-                if 'USE' in args:
-                    # look for the indexes of the range 'USE' ... 'DATA'
-                    use_idx = args.index('USE') + 1
-                    if 'DATA' in args:
-                        data_idx = args.index('DATA')
-                    else:
-                        data_idx = len(args)
-                    # for each key, get the version (if available)
-                    for i in range(use_idx, data_idx, 2):
-                        args[i+1] = projVersions.get(args[i], args[i+1])
-                # FIXME: we should take into account the declared dependencies
-                newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
 
                 f = open(join(rootdir, cmakelists), 'w')
                 f.write(newdata)
@@ -210,6 +213,7 @@ class StackDesc(object):
                                                   newdata.splitlines(True),
                                                   fromfile=join('a', cmakelists),
                                                   tofile=join('b', cmakelists)))
+
 
         def fixCMT(p):
             '''
