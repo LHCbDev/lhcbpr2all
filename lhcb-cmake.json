@@ -16,7 +16,7 @@
                "dependencies": ["LHCb"]},
               {"name": "Rec",
                "version": "HEAD",
-               "overrides": {},
+               "overrides": {"Sft/FstTools": "v1r0"},
                "dependencies": ["LHCb"]},
               {"name": "Brunel",
                "version": "HEAD",
