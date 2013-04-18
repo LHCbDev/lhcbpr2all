@@ -17,7 +17,7 @@ logfile=$LHCBNIGHTLIES/www/logs/cleanup_slots.log
 # clean up the slots
 echo "$(date): moving installation areas for $day in trash spaces" >> $logfile 2>&1
 cd $LHCBNIGHTLIES
-for slotdir in */$day; do
+for slotdir in lhcb-*/$day; do
     echo "$(date):      $slotdir" >> $logfile 2>&1
     mkdir -p $slotdir/.trash 2>/dev/null
     mv -f $slotdir/* $slotdir/.installed $slotdir/.lock $slotdir/.trash 2>/dev/null
