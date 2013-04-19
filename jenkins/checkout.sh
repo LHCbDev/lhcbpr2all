@@ -18,7 +18,7 @@ set -xe
 if [ -e ${slot}.json ] ; then
   config_file=${slot}.json
 else
-  svn cat -r "{"`date -I`"}" svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > configuration.xml
+  svn cat svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > configuration.xml
   config_file=configuration.xml#${slot}
 fi
 
