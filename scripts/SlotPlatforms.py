@@ -9,7 +9,7 @@ import os
 import sys
 
 def parseConfigFile(path):
-    from LHCbNightlies2.Configuration import load
+    from LbNightlyTools.Configuration import load
     data = load(path)
     return data.get(u'default_platforms', [])
 

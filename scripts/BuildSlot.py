@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 import sys
-from LHCbNightlies2.BuildSlot import main
+from LbNightlyTools.BuildSlot import main
 sys.exit(main())
