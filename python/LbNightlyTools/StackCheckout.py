@@ -1,4 +1,13 @@
-#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
 '''
 Module containing the classes and functions used to checkout a set of projects,
 fixing their dependencies to produce a consistent set.
@@ -398,7 +407,3 @@ class Script(LbUtils.Script.PlainScript):
 
         self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)
         return 0
-
-
-if __name__ == '__main__':
-    sys.exit(Script().run())
