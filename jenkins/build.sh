@@ -20,6 +20,9 @@ echo Workspace: $WORKSPACE
 echo Artifacts dir: $ARTIFACTS_DIR
 echo ===================================================================
 
+# Clean LD_LIBRARY_PATH of /gcc/ entries (see comment on issue LBCORE-109 http://cern.ch/go/PLQ7)
+export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
+
 . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c $platform
 
 export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH
