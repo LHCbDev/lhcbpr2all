@@ -25,11 +25,13 @@ echo ===================================================================
 set -xe
 . setup.sh
 
-if [ -e ${slot}.json ] ; then
-  config_file=${slot}.json
+# Get the slot configuration files from Subversion
+svn export svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk tmpconfig
+
+if [ -e tmpconfig/${slot}.json ] ; then
+  config_file=tmpconfig/${slot}.json
 else
-  svn cat svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/configuration.xml > configuration.xml
-  config_file=configuration.xml#${slot}
+  config_file=tmpconfig/configuration.xml#${slot}
 fi
 
 StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
