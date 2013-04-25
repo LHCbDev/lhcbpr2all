@@ -48,6 +48,7 @@ rm -rf $LHCBNIGHTLIES/www/logs/${slot}.${day}*
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   date +"%a %b %d %H:%M:%S %Y" > $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
   echo ${slot}.${slot_build_id} >> $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
+  echo ${BUILD_URL} >> $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
 fi
 
 if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
@@ -69,4 +70,5 @@ if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
   date +"%a %b %d %H:%M:%S %Y" > $LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
   echo ${slot}.${slot_build_id} >> $LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
+  echo ${BUILD_URL} >> $LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
 fi
