@@ -25,7 +25,7 @@ Options:
                         Automatically send the zip results to the database.
 
                         
-Adding the -a argument , the collectRunResults will automatically upload the results zip file to the server, once it's produced.
+Adding the -a argument , the collectRunResults will automatically upload the results zip file to the diracStorageElement, once it's produced.
 
 If you wish to manually upload your results to the server , do not add the -a argument but use the LHCbPRHandler/sendToDB.py 
 for help run sendToDB.py --help:

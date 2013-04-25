@@ -5,9 +5,10 @@ from optparse import OptionParser
 from optparse import Option, OptionValueError
 
 logger = logging.getLogger('sendToDB.py')
+
 diracStorageElementName = 'StatSE'
-#uploaded/ <--- this will be the official one
-diracStorageElementFolder = 'uploaded_test'
+
+diracStorageElementFolder = 'uploaded'
 
 def sendViaDiracStorageElement(zipFile):
     head, tailzipFile = os.path.split(zipFile)
@@ -18,7 +19,7 @@ def sendViaDiracStorageElement(zipFile):
     from DIRAC.Resources.Storage.StorageElement import StorageElement
     statSE = StorageElement(diracStorageElementName)
     
-    log = statSE.putFile({ '{0}{1}{2}'.format(diracStorageElementFolder, os.sep, tailzipFile) : zipFile})
+    log = statSE.putFile({ os.path.join(diracStorageElementFolder, tailzipFile) : zipFile})
     logger.info('{0}'.format(log))
     
 def run(zipFile, ssss):
