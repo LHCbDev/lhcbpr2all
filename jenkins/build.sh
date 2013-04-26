@@ -38,9 +38,11 @@ rm -rf $LHCBNIGHTLIES/www/logs/${slot}.${day}*
 
 # create old-style progress stamp files
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
-  date +"%a %b %d %H:%M:%S %Y" > $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
-  echo ${slot}.${slot_build_id} >> $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
-  echo ${BUILD_URL} >> $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
+  stamp=$LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
+  date +"%a %b %d %H:%M:%S %Y" > $stamp
+  echo ${slot}.${slot_build_id} >> $stamp
+  echo ${BUILD_URL} >> $stamp
+  echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
 fi
 
 if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
@@ -59,8 +61,10 @@ fi
 time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --deploy-reports-to $LHCBNIGHTLIES/www/logs ${coverity_opt} ${config_file}
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
-  rm -f $LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
-  date +"%a %b %d %H:%M:%S %Y" > $LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
-  echo ${slot}.${slot_build_id} >> $LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
-  echo ${BUILD_URL} >> $LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
+  rm -f $stamp
+  stamp=$LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
+  date +"%a %b %d %H:%M:%S %Y" > $stamp
+  echo ${slot}.${slot_build_id} >> $stamp
+  echo ${BUILD_URL} >> $stamp
+  echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
 fi
