@@ -45,3 +45,8 @@ fi
 
 set -xe
 . setup.sh
+
+if klist -5 > /dev/null 2>&1 ; then
+  kinit -R
+  klist -5
+fi
