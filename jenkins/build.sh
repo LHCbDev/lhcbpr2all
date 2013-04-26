@@ -10,33 +10,25 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
-export TMPDIR=$WORKSPACE/tmp
-mkdir -p $TMPDIR
-
-echo ===================================================================
-echo Worker Node: $NODE_NAME
-echo Workspace: $WORKSPACE
-echo Artifacts dir: $ARTIFACTS_DIR
-echo ===================================================================
-
-# Clean LD_LIBRARY_PATH of /gcc/ entries (see comment on issue LBCORE-109 http://cern.ch/go/PLQ7)
+# Clean LD_LIBRARY_PATH of /gcc/ entries
+# (see comment on issue LBCORE-109 http://cern.ch/go/PLQ7)
 export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
 
-. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c $platform
+# Set common environment
+set_config=1
+. $(dirname $0)/common.sh
 
+day=$(date +%a)
+timestamp=$(date -I)
+deploybase=$(dirname /data/${ARTIFACTS_DIR})
+
+# special hack to get a dev version of the CMake configuration files
 export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH
 
 # ensure that Coverity is on the PATH
 if [ -e /build/coverity/static-analysis/bin ] ; then
   export PATH=/build/coverity/static-analysis/bin:/build/coverity:$PATH
 fi
-
-set -xe
-. setup.sh
-day=$(date +%a)
-timestamp=$(date -I)
-deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
 # hard-coded because it may point to CVMFS
 export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies

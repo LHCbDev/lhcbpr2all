@@ -10,20 +10,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
-export TMPDIR=$WORKSPACE/tmp
-mkdir -p $TMPDIR
-
-echo ===================================================================
-echo Worker Node: $NODE_NAME
-echo Workspace: $WORKSPACE
-echo Artifacts dir: $ARTIFACTS_DIR
-echo ===================================================================
-
-. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh
-
-set -xe
-. setup.sh
+# Set common environment
+. $(dirname $0)/common.sh
 
 # Get the slot configuration files from Subversion
 svn export svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk tmpconfig

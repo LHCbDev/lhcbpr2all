@@ -10,12 +10,31 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+#
+# Common set up for all the Jenkins scripts
+#
 
-# Set common environment
-. $(dirname $0)/common.sh
+export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
+export TMPDIR=$WORKSPACE/tmp
+mkdir -p $TMPDIR
 
-export CMTCONFIG=$platform
+echo ===================================================================
+echo Worker Node: $NODE_NAME
+echo Workspace: $WORKSPACE
+echo Artifacts dir: $ARTIFACTS_DIR
+echo ===================================================================
 
-SlotPreconditions.py --verbose ${config_file}
+if [ -n "${set_config}" ] ; then
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c ${platform}
+else
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh
+fi
+
+if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
+  config_file=${ARTIFACTS_DIR}/${slot}.json
+else
+  config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
+fi
+
+set -xe
+. setup.sh
