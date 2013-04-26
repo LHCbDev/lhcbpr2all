@@ -14,9 +14,16 @@
 # Common set up for all the Jenkins scripts
 #
 
+# initial environment seen by the Jenkins script
+env_log=$(basename $0)${platform:+.}${platform}.env
+printenv | sort > ${env_log}
+
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
-export TMPDIR=$WORKSPACE/tmp
-mkdir -p $TMPDIR
+mkdir -p ${ARTIFACTS_DIR}
+export TMPDIR=${WORKSPACE}/tmp
+mkdir -p ${TMPDIR}
+
+cp ${env_log} ${ARTIFACTS_DIR}
 
 echo ===================================================================
 echo Worker Node: $NODE_NAME

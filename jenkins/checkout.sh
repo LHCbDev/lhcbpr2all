@@ -27,3 +27,4 @@ StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --ar
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting
 cp ${config_file%%#*} ${ARTIFACTS_DIR}
+cp ${env_log} ${ARTIFACTS_DIR}
