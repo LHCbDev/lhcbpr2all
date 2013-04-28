@@ -43,10 +43,10 @@ else
   config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
 fi
 
-set -xe
-. setup.sh
-
 if klist -5 > /dev/null 2>&1 ; then
   kinit -R
   klist -5
 fi
+
+set -xe
+. setup.sh
