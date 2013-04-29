@@ -4,10 +4,10 @@ import sys
 import re
 
 #
-# Parser for the TimingAuditor logfile or ROOT dump
+# Parser for the IntelAuditor logfile 
 #
 ################################################################################
-class VTuneTimingHandler:
+class VTuneTimingParser:
     """ Class responsible for parsing the TimingAuditor log from the
     Gaudi run log files """
     def __init__(self, filename):
@@ -245,7 +245,7 @@ if __name__ == "__main__":
     else:
         filename = sys.argv[1]
         print "Processing %s" % filename
-        t = VTuneTimingHandler(filename)
+        t = VTuneTimingParser(filename)
 
         #for s in ["RecoRICHSeq", "RecoTrSeq" ]:
          #   pseq = t.findByName(s)
