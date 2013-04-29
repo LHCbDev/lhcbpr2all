@@ -1,4 +1,6 @@
+***For writing a new handler better check the documentation in LHCbPR/docs/ 
 
+This is an old guide
 *** How to write a handler
 	Each handler will work like any usual parser , will parse any data it wants and it will save it.
 	The only difference is the way you save the numbers/objects you want and that your handler class must extend the BaseHandler. 
