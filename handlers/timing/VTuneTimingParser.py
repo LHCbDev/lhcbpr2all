@@ -4,28 +4,43 @@ import sys
 import re
 
 #
-# Parser for the IntelAuditor logfile 
+# Parser for the TimingAuditor logfile or ROOT dump
 #
 ################################################################################
 class VTuneTimingParser:
     """ Class responsible for parsing the TimingAuditor log from the
     Gaudi run log files """
-    def __init__(self, filename):
+    def __init__(self, logfilename, vtune_filename):
         self.root = None
-        self.parse(filename)
+        self.parse(logfilename, vtune_filename)
     
-    def parse(self, logfilename):
+    def parse(self, tfname, vfname):
         """ Parse the log file"""
 
-        # Now iterating on the input and looking for the TimingAuditor lines
-        # The hiererarchy of Algos and sequences is rebuilt based on the order
-        # in the text file.
+        regxp = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO ([\s\w]+?)\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
+        nb_of_evts_per_alg = []
+        event_loop         = .0
+        try:
+            log = open(tfname, "r")
+            for l in log.readlines():
+                m = re.match(regxp, l)
+                if m != None:
+                    if "EVENT LOOP" == m.group(3).strip():
+                        event_loop = float(m.group(4).strip()) 
+                    nb_of_evts_per_alg.append([m.group(3).strip(), float(m.group(4).strip())])
+            log.close()
+            #print nb_of_evts_per_alg
+        except OSError:
+            raise Exception(str(self.__class__)+": No result directory, check the given result directory")
+        except IOError:
+            raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'run.log' in the results directory' ")
+            
         parent       = None
         lastparent   = [None]
         id = 0
         regxp = "^\s*([\w_ ]+)\s{5,}([\d\.]+)"
         try:
-            logf = open(logfilename, "r")
+            logf = open(vfname, "r")
             for l in logf.readlines():
                 m = re.match(regxp, l)
                 if m != None:
@@ -40,10 +55,16 @@ class VTuneTimingParser:
                     if level > 0:
                        parent = lastparent[level -1]
 
-                    id = id + 1
                     #print "Names:", names
                     #print "N: ", names[len(names)-1], "V: ", float(m.group(2)), "L: ", level
-                    node = Node(id, level, names[len(names)-1], float(m.group(2).strip()), 10000, parent)
+                    nb_of_evts = -1
+                    for i in nb_of_evts_per_alg:
+                        if i[0] == names[len(names)-1]:
+                            nb_of_evts = i[1]
+                            break 
+
+                    id = id + 1
+                    node = Node(id, level, names[len(names)-1], float(m.group(2).strip()), nb_of_evts, parent)
                     try:
                         lastparent[level] = node
                     except IndexError, e:
@@ -246,13 +267,6 @@ if __name__ == "__main__":
         filename = sys.argv[1]
         print "Processing %s" % filename
         t = VTuneTimingParser(filename)
-
-        #for s in ["RecoRICHSeq", "RecoTrSeq" ]:
-         #   pseq = t.findByName(s)
-         #   print pseq.name, ":", pseq.perTotal(), "%"
-        #for c in pseq.children:
-        #    print "\t",  c.name, ":", c.perTotal(), "%"
-
 
         for n in t.getTopN(10):
             print n.name, " - ", n.perTotal()
