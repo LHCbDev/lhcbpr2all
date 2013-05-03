@@ -17,7 +17,7 @@ class VTuneTaskTimingHandler(BaseHandler):
 
         # Now saving all the nodes
         for node in tp.getAllSorted():
-            self.saveFloat(node.name, node.value, "Produced by VTune", "Timing")
+            self.saveFloat(node.name, node.value, "Produced by VTune", "TaskTiming")
             self.saveInt(node.name + "_count", node.entries, "Produced by VTune", "TimingCount")
             self.saveInt(node.name + "_rank", node.rank, "Produced by VTune", "TimingRank")
             if node.parent != None:
