@@ -4,30 +4,30 @@ import sys
 import re
 
 #
-# Parser for the TimingAuditor logfile or ROOT dump
+# Parser for the IntelAuditor logfile
 #
 ################################################################################
 class VTuneTimingParser:
     """ Class responsible for parsing the TimingAuditor log from the
     Gaudi run log files """
-    def __init__(self, logfilename, vtune_filename):
+    def __init__(self, filename_run, filename_task):
         self.root = None
-        self.parse(logfilename, vtune_filename)
+        self.parse(filename_run, filename_task)
     
-    def parse(self, tfname, vfname):
+    def parse(self, rfname, tfname):
         """ Parse the log file"""
 
         regxp = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO ([\s\w]+?)\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
         nb_of_evts_per_alg = []
         event_loop         = .0
         try:
-            log = open(tfname, "r")
+            log = open(rfname, "r")
             for l in log.readlines():
                 m = re.match(regxp, l)
                 if m != None:
                     if "EVENT LOOP" == m.group(3).strip():
-                        event_loop = float(m.group(4).strip()) 
-                    nb_of_evts_per_alg.append([m.group(3).strip(), float(m.group(4).strip())])
+                        event_loop = float(m.group(7).strip()) 
+                    nb_of_evts_per_alg.append([m.group(3).strip(), float(m.group(7).strip())])
             log.close()
             #print nb_of_evts_per_alg
         except OSError:
@@ -40,7 +40,7 @@ class VTuneTimingParser:
         id = 0
         regxp = "^\s*([\w_ ]+)\s{5,}([\d\.]+)"
         try:
-            logf = open(vfname, "r")
+            logf = open(tfname, "r")
             for l in logf.readlines():
                 m = re.match(regxp, l)
                 if m != None:
@@ -260,13 +260,14 @@ class Node:
 ################################################################################
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 2:
-        print "Please specify log filename"
+    if len(sys.argv) < 3:
+        print "Please specify log filenames"
         sys.exit(1)
     else:
-        filename = sys.argv[1]
-        print "Processing %s" % filename
-        t = VTuneTimingParser(filename)
+        filename_run  = sys.argv[1]
+        filename_task = sys.argv[2]
+        print "Processing ... "
+        t = VTuneTimingParser(filename_run, filename_task)
 
         for n in t.getTopN(10):
             print n.name, " - ", n.perTotal()
