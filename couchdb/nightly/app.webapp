@@ -1,27 +1,17 @@
 {
-  "name": "My App",
-  "version" : "0.0.4",
-  "description": "My elevator pitch goes here",
-  "long_description" : "Something  really important",
+  "name": "LHCb Nightly Builds Summaries",
+  "version" : "0.0.1",
+  "description": "",
+  "long_description" : "",
   "launch_path": "/",
-  "url": "https://github.com/garden20/baseline-garden-app",
-  "categories": ["learning"],
-  "flattr_user_id" : "eckoit",
+  "url": "http://git.cern.ch/LbNightlyTools",
+  "categories": [],
   "icons": {
-         "16": "img/promo/icon_16.png",
-         "48": "img/promo/icon_48.png",
-         "96": "img/promo/icon_96.png",
-         "128": "img/promo/icon_128.png"
+         "jenkins": "images/jenkins_16.png",
+         "lemon": "images/lemon_16.png"
   },
-  "promo_images": {
-         "small": "img/promo/promo_small.png"
-  },
-  "screenshots": [
-     "img/promo/screenshot1.png"
-  ],
   "developer": {
-    "name": "Ryan Ramage",
-    "url": "http://your-homepage-here.org"
+    "name": "Marco Clemencic"
   },
   "default_locale": "en"
 }
