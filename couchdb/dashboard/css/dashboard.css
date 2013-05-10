@@ -1,5 +1,9 @@
 /* CSS for the Nightly Build Dashboard */
 
+body {
+	padding: 0;
+}
+
 table.summary td {
 	padding: 0px;
 	text-align: center;
