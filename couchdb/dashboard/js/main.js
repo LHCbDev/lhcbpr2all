@@ -14,8 +14,8 @@ jQuery.fn.lbSlotTable = function(data) {
 		   .append('<th>' + val.name + '</th><th>' + val.version + '</th>');
 		$.each(data.value.platforms, function(idx, val) {
 			tr.append('<td platform="' + val + '">' +
-					  '<table class="results" width="100%"><tr>' +
-					  '<td class="build" width="50%"/><td class="tests" width="50%"/></tr></table>');
+					  '<table class="results"><tr>' +
+					  '<td class="build"/><td class="tests"/></tr></table>');
 		});
 		tab.append(tr);
 	});
@@ -43,7 +43,7 @@ jQuery.fn.lbSlotTable = function(data) {
 					if (value.build) {
 						var b = summ.find('.build').text('build');
 						if (value.build.errors) {
-							b.addClass('error').append(' (' + value.build.errors + ')');
+							b.addClass('failure').append(' (' + value.build.errors + ')');
 						} else if (value.build.warnings) {
 							b.addClass('warning').append(' (' + value.build.warnings + ')');
 						} else {
@@ -53,7 +53,7 @@ jQuery.fn.lbSlotTable = function(data) {
 					if (value.tests) {
 						var t = summ.find('.tests').text('tests');
 						if (value.tests.failed) {
-							t.addClass('error').append(' (' + value.tests.failed + ')');
+							t.addClass('failure').append(' (' + value.tests.failed + ')');
 						} else if (!value.tests.total) {
 							t.addClass('warning').append(' (0)');
 						} else {
@@ -93,7 +93,7 @@ $(function(){
 	var today = moment();
 	for(var day = 0; day < 7; day++) {
 		var d = moment(today).subtract('days', day);
-		$('body').append('<div class="day" day="' + d.format('YYYY/MM/DD') + '"/>');
+		$('#middle').append('<div class="day" day="' + d.format('YYYY/MM/DD') + '"/>');
 	}
 
 	$('.day').lbNightly();

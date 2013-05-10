@@ -1,0 +1,18 @@
+/* CSS for the Nightly Build Dashboard */
+
+table.summary td {
+	padding: 0px;
+	text-align: center;
+}
+table.results {
+	width: 100%;
+}
+table.results td {
+	width: 50%;
+	padding: 0.2em;
+	border: none;
+	border-right: 1px solid #EAEAEA;;
+}
+td.success {background-color: #00F900;}
+td.warning {background-color: #FFB600;}
+td.failure {background-color: #FF1C00;}
