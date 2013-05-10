@@ -6,7 +6,8 @@ function(doc) {
                   version: doc.projects[idx].version});
     }
     emit([doc.date, doc.slot],
-         {"build_id": doc.build_id,
+         {"description": doc.description,
+    	  "build_id": doc.build_id,
           "platforms": doc.platforms,
           "projects": projs})
   }
