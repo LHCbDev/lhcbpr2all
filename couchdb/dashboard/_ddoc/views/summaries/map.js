@@ -9,10 +9,13 @@ function(doc) {
       emit([doc.slot, doc.build_id, doc.platform],
            {project: doc.summary[idx].project,
             build: {warnings: doc.summary[idx].build[0],
-            	    errors: doc.summary[idx].build[1]},
-            tests: {failed: doc.summary[idx].tests[0],
-                	total: doc.summary[idx].tests[1]},
+            	    errors: doc.summary[idx].build[1]}
             });
+      emit([doc.slot, doc.build_id, doc.platform],
+              {project: doc.summary[idx].project,
+               tests: {failed: doc.summary[idx].tests[0],
+                   	total: doc.summary[idx].tests[1]}
+               });
     }
   }
 }
