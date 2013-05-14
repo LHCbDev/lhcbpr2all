@@ -17,7 +17,6 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
-import sys
 import subprocess
 from datetime import date
 
