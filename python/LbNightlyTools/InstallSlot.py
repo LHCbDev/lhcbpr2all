@@ -8,7 +8,6 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import HTMLParser
-import urllib
 import urllib2
 import re
 import logging
@@ -251,7 +250,8 @@ class Script(LbUtils.Script.PlainScript):
                                         installed)
 
             requiredFiles = list(tarfiles) # tarfiles is a generator (so far)
-            requiredFiles.extend(set(['configuration.xml', 'confSummary.py']).intersection(urllist) - set(installed))
+            requiredFiles.extend(set(['configuration.xml', 'confSummary.py',
+                                      'searchPath.cmake']).intersection(urllist) - set(installed))
             if requiredFiles:
                 self.log.info('installing %d files', len(requiredFiles))
             else:

@@ -483,17 +483,19 @@ def main():
 
         def dumpConfSummary():
             '''Create special summary file used by SetupProject.'''
-            data = ''
+            data = []
             # find the declaration of CMTPROJECTPATH in the configuration
             for e in config.get(u'env', []):
                 if e.startswith('CMTPROJECTPATH='):
                     # dump it as a list in the summary file
-                    data += ('cmtProjectPathList = %r\n' %
-                             map(os.path.expandvars,
-                                e.split('=', 1)[1].split(':')))
+                    data += map(os.path.expandvars,
+                                e.split('=', 1)[1].split(':'))
             if data:
                 f = codecs.open(join(artifacts_dir, 'confSummary.py'), 'w', 'utf-8')
-                f.write(data)
+                f.write('cmtProjectPathList = %r\n' % data)
+                f.close()
+                f = codecs.open(join(artifacts_dir, 'searchPath.cmake'), 'w', 'utf-8')
+                f.write('set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' % ' '.join(data))
                 f.close()
 
         dumpConfSummary()
