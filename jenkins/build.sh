@@ -25,6 +25,11 @@ deploybase=$(dirname /data/${ARTIFACTS_DIR})
 # special hack to get a dev version of the CMake configuration files
 export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH
 
+# ensure that the distcc lock directory exists
+if [ -n "$DISTCC_DIR" ] ; then
+  mkdir -pv $DISTCC_DIR
+fi
+
 # ensure that Coverity is on the PATH
 if [ -e /build/coverity/static-analysis/bin ] ; then
   export PATH=/build/coverity/static-analysis/bin:/build/coverity:$PATH
