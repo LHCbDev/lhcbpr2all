@@ -492,7 +492,7 @@ def main():
                              map(os.path.expandvars,
                                 e.split('=', 1)[1].split(':')))
             if data:
-                f = codecs.open(os.path.join(artifacts_dir, 'confSummary.py'), 'w', 'utf-8')
+                f = codecs.open(join(artifacts_dir, 'confSummary.py'), 'w', 'utf-8')
                 f.write(data)
                 f.close()
 
@@ -503,6 +503,10 @@ def main():
         if build_retcode != 0:
             log.warning('build exited with code %d', build_retcode)
         dumpFileListSummary('sources_built.list')
+
+        # copy the file with the URL of the checkout job to the summaries
+        if os.path.exists(join(artifacts_dir, 'checkout_job_url.txt')):
+            shutil.copy(join(artifacts_dir, 'checkout_job_url.txt'), summary_dir)
 
         reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
         deployReports(reporter.genOldSummaries())
@@ -599,8 +603,9 @@ class BuildReporter(object):
         '''
         Initialize the instance.
 
-        @param build_dir: root directory of the build
+        @param summary_dir: directory of the build summaries
         @param project: ProjDesc instance of the project
+        @param platform: platform id
         @param config: configuration dictionary
         @param old_build_id: build id used in the old nightly builds
         '''
@@ -631,7 +636,7 @@ class BuildReporter(object):
 
         @return: list of generated files and directories
         '''
-        from os.path import join, dirname
+        from os.path import join, dirname, exists
         from itertools import islice
         import cgi
 
@@ -681,7 +686,11 @@ class BuildReporter(object):
 
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
-        checkout_lines = ['no checkout log\n']
+        if exists(join(self.summary_dir, 'checkout_job_url.txt')):
+            checkout_lines = [(u'<a href="{0}console">available on Jenkins</a>\n'
+                              .format(open(join(self.summary_dir, 'checkout_job_url.txt')).read().strip()))]
+        else:
+            checkout_lines = [u'<div class="even">no checkout log</div>\n']
         f = codecs.open(full_log, 'w', 'utf-8')
         f.writelines(env_lines)
         env_block_size = len(env_lines)
@@ -710,10 +719,18 @@ class BuildReporter(object):
         sections[-1][-1] = self.summary['size']
         logfile = codecs.open(self.build_log, 'r', 'utf-8')
         offset = 0
-        for n, lines in zip(['env', 'checkout'], [env_lines, checkout_lines]):
+        for n, lines in zip(['env'], [env_lines]):
             chunkname = join(chunksdir, n)
             chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.writelines(formatTxt(lines, offset))
+            chunkfile.close()
+            offset += len(lines)
+        for n, lines in zip(['checkout'], [checkout_lines]):
+            chunkname = join(chunksdir, n)
+            chunkfile = codecs.open(chunkname, 'w', 'utf-8')
+            chunkfile.write(u'<html>\n')
+            chunkfile.writelines(lines)
+            chunkfile.write(u'</html>\n')
             chunkfile.close()
             offset += len(lines)
         for n, b, e in sections:

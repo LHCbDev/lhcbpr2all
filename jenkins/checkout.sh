@@ -28,3 +28,4 @@ StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --ar
 # StachCkeckout.py cleans the artifacts before starting
 cp ${config_file%%#*} ${ARTIFACTS_DIR}
 cp ${env_log} ${ARTIFACTS_DIR}
+echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
