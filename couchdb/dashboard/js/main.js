@@ -29,7 +29,9 @@ jQuery.fn.lbSlotTable = function(data) {
 				/* Expects row like:
 				 * {"key": ["slot", build_id, "platform"],
 				 *  "value": {"project": "Gaudi",
-				 *            "build": {"warnings": 0, "errors": 0},
+				 *            "build": {"warnings": 0, "errors": 0}},
+				 * {"key": ["slot", build_id, "platform"],
+				 *  "value": {"project": "Gaudi",
 				 *            "tests": {"failed": 0, "total": 100}}
 				 * }
 				 */
@@ -73,8 +75,8 @@ jQuery.fn.lbNightly = function () {
 		var el = $(this);
 		var day = moment(el.attr('day'));
 		var next = moment(day).add('days', 1);
-		var query = {'startkey': JSON.stringify([day.format('YYYY/MM/DD')]),
-					 'endkey': JSON.stringify([next.format('YYYY/MM/DD')])};
+		var query = {'startkey': JSON.stringify([day.format('YYYY-MM-DD')]),
+					 'endkey': JSON.stringify([next.format('YYYY-MM-DD')])};
 		el.append($('<h1/>').append(day.format('dddd')).append('<hr/>'));
 		$.getJSON('_view/slots', query, function(data) {
 			$.each(data.rows, function(idx, row){
@@ -93,7 +95,7 @@ $(function(){
 	var today = moment();
 	for(var day = 0; day < 7; day++) {
 		var d = moment(today).subtract('days', day);
-		$('#middle').append('<div class="day" day="' + d.format('YYYY/MM/DD') + '"/>');
+		$('#middle').append('<div class="day" day="' + d.format('YYYY-MM-DD') + '"/>');
 	}
 
 	$('.day').lbNightly();

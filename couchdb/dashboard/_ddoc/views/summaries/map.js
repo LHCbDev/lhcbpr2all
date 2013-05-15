@@ -1,21 +1,25 @@
 function(doc) {
-  if (doc.type == "slot-build") {
-    emit([doc.slot, doc.build_id, doc.platform],
-         {"host": doc.host,
-          "job_id": doc.job_id,
-          "started": doc.started,
-          "completed": doc.completed});
-    for(var idx in doc.summary) {
-      emit([doc.slot, doc.build_id, doc.platform],
-           {project: doc.summary[idx].project,
-            build: {warnings: doc.summary[idx].build[0],
-            	    errors: doc.summary[idx].build[1]}
-            });
-      emit([doc.slot, doc.build_id, doc.platform],
-              {project: doc.summary[idx].project,
-               tests: {failed: doc.summary[idx].tests[0],
-                   	total: doc.summary[idx].tests[1]}
-               });
-    }
-  }
+	if (doc.type == "build-result"
+		|| doc.type == "tests-result"
+		|| doc.type == "job-infos") {
+		var k = [doc.slot, doc.build_id, doc.platform];
+		var data = {project: doc.project};
+		if (doc.type == "build-result") {
+			data.build = {warnings: doc.warnings,
+						  errors: doc.errors}
+		} else if (doc.type == "tests-result") {
+			data.tests = {failed: 0, total: doc.results.length}
+			for (var idx in doc.results) {
+				if (doc.results[idx].outcome != 'PASS' &&
+					doc.results[idx].outcome != 'UNTESTED')
+					data.tests.failed++;
+			}
+		} else {
+			data.host = doc.host;
+			data.job_id = doc.job_id;
+			data.started = doc.started;
+			data.completed = doc.completed;
+		}
+		emit(k, data);
+	}
 }
