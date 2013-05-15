@@ -22,6 +22,7 @@ import socket
 import threading
 import codecs
 import Configuration
+import json
 
 from subprocess import call
 from string import Template
@@ -255,12 +256,35 @@ def main():
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
 
-    # ensure that we have the artifacs directory for the sources
+    # ensure that we have the artifacts directory for the sources
     if not os.path.exists(artifacts_dir):
         os.makedirs(artifacts_dir)
-
+    if not os.path.exists(join(artifacts_dir, 'db')):
+        os.makedirs(join(artifacts_dir, 'db'))
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
+
+    # data to be reported in every JSON file
+    json_data = {'slot': config['slot'],
+                 'build_id': int(os.environ.get('slot_build_id', 0)),
+                 'platform': platform}
+
+    def dump_json(d, t):
+        if 'project' in d:
+            fmt = '{slot}.{build_id}.{project}.{platform}.' + t
+        else:
+            fmt = '{slot}.{build_id}.{platform}.' + t
+        fn = join(artifacts_dir, 'db', fmt.format(**d))
+        f = codecs.open(fn, 'w', 'utf-8')
+        json.dump(d, f)
+        f.close()
+
+    data = dict(json_data)
+    data.update({'type': 'job-start',
+                 'host': gethostname(),
+                 'job_id': os.environ.get('JOB_ID', 0),
+                 'started': starttime.isoformat()})
+    dump_json(data, 'start')
 
     log.info('Preparing build directory...')
     for f in os.listdir(artifacts_dir):
@@ -359,13 +383,41 @@ def main():
         The special parameter reports is passed to deployReports.
         '''
         def __init__(self, *args, **kwargs):
-            self.reports = kwargs.get('reports', [])
-            if 'reports' in kwargs:
-                del kwargs['reports']
+            local_args = ['reports', 'artifacts_dir', 'config', 'project',
+                          'platform']
+            for a in local_args:
+                if a in kwargs:
+                    setattr(self, a, kwargs[a])
+                    del kwargs[a]
+                else:
+                    setattr(self, a, None)
+            self.started = self.completed = None
+            if self.reports is None:
+                self.reports = []
             super(TestTask, self).__init__(*args, **kwargs)
+
+        def getTestSummary(self):
+            if self.reports:
+                for l in self.reports:
+                    l = os.path.join(l, 'summary.json')
+                    if os.path.exists(l):
+                        return json.load(codecs.open(l, 'r', 'utf-8'))
+            return []
+
         def run(self):
+            self.started = datetime.now()
             super(TestTask, self).run()
+            self.completed = datetime.now()
+            if self.artifacts_dir:
+                data = dict(json_data)
+                data.update({"type": "tests-result",
+                             "project": self.project.name,
+                             "started": self.started.isoformat(),
+                             "completed": self.completed.isoformat(),
+                             "results": self.getTestSummary()})
+                dump_json(data, 'tests')
             deployReports(self.reports)
+
 
     class DeployArtifactsTask(threading.Thread):
         '''
@@ -501,9 +553,11 @@ def main():
         dumpConfSummary()
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
-        build_retcode = call(build_cmd, cwd=projdir)
-        if build_retcode != 0:
-            log.warning('build exited with code %d', build_retcode)
+        p.started = datetime.now()
+        p.build_retcode = call(build_cmd, cwd=projdir)
+        if p.build_retcode != 0:
+            log.warning('build exited with code %d', p.build_retcode)
+        p.completed = datetime.now()
         dumpFileListSummary('sources_built.list')
 
         # copy the file with the URL of the checkout job to the summaries
@@ -512,6 +566,7 @@ def main():
 
         reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
         deployReports(reporter.genOldSummaries())
+        dump_json(reporter.json(), 'build')
 
         log.info('packing %s', p.dir)
 
@@ -523,7 +578,7 @@ def main():
 
         if opts.coverity:
             # run the Coverity analysis
-            if build_retcode != 0:
+            if p.build_retcode != 0:
                 log.error('cannot run Coverity analysis on a failed build')
             else:
                 # this call actually does not "submit" (commit-defects), it just
@@ -574,8 +629,12 @@ def main():
         if not opts.build_only and not opts.coverity:
             log.info('testing (in background) %s', p.dir)
             jobs.append(TestTask(['nice'] + test_cmd, cwd=projdir,
-                                 reports = [join(summary_dir, old_build_id + suff)
-                                            for suff in ['-qmtest', '-qmtest.log']]))
+                                 artifacts_dir=artifacts_dir,
+                                 config=config,
+                                 project=p,
+                                 platform=platform,
+                                 reports=[join(summary_dir, old_build_id + suff)
+                                          for suff in ['-qmtest', '-qmtest.log']]))
 
     if opts.coverity:
         # try again to clean the Coverity scratch space in the ramdisk (if it was ever created)
@@ -586,7 +645,15 @@ def main():
         for j in jobs:
             j.wait()
 
-    log.info('build completed in %s', datetime.now() - starttime)
+
+    completetime = datetime.now()
+
+    data = dict(json_data)
+    data.update({'type': 'job-end',
+                 'completed': completetime.isoformat()})
+    dump_json(data, 'completed')
+
+    log.info('build completed in %s', completetime - starttime)
     if opts.rsync_dest:
         log.info('deploying artifacts...')
         retcode = DeployArtifactsTask().wait()
@@ -631,6 +698,21 @@ class BuildReporter(object):
             self._summary = self._parseLog()
         return self._summary
 
+    def json(self):
+        wCount = sum(map(len, self.summary['warning'].values()))
+        eCount = sum(map(len, self.summary['error'].values()))
+        data = {}
+        data.update({"type": "build-result",
+                     "slot": self.config['slot'],
+                     "build_id": int(os.environ.get('slot_build_id', 0)),
+                     "project": self.project.name,
+                     "platform": self.platform,
+                     'started': self.project.started.isoformat(),
+                     'completed': self.project.completed.isoformat(),
+                     'retcode': self.project.build_retcode,
+                     "warnings": wCount,
+                     "errors": eCount})
+        return data
 
     def genOldSummaries(self):
         '''
