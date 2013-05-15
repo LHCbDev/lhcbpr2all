@@ -63,7 +63,13 @@ if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
 fi
 
-time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --deploy-reports-to $LHCBNIGHTLIES/www/logs ${coverity_opt} ${config_file}
+if [ "$JOB_NAME" = "nightly-slot-build-platform" ] ; then
+  deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
+else
+  deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
+fi
+
+time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" ${deploy_opt} ${coverity_opt} ${config_file}
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $stamp
