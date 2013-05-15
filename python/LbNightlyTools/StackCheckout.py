@@ -20,6 +20,8 @@ import os
 import subprocess
 from datetime import date
 
+import Configuration
+
 log = logging.getLogger(__name__)
 
 def call(*args, **kwargs):
@@ -290,8 +292,7 @@ class StackDesc(object):
         patchfile.close()
 
 def parseConfigFile(path):
-    from Configuration import load
-    data = load(path)
+    data = Configuration.load(path)
     projects = []
     for p in data[u'projects']:
         checkout = p.get(u'checkout', 'defaultCheckout')
@@ -350,6 +351,8 @@ class Script(LbUtils.Script.PlainScript):
     def main(self):
         """ User code place holder """
         from os.path import join
+        import json
+        import codecs
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -381,6 +384,17 @@ class Script(LbUtils.Script.PlainScript):
 
         os.makedirs(build_dir)
         os.makedirs(artifacts_dir)
+
+        # Prepare JSON doc for the database
+        os.makedirs(join(artifacts_dir, 'db'))
+        cfg = Configuration.load(self.args[0])
+        cfg['type'] = 'slot-config'
+        cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
+        cfg['date'] = timestamp
+        f = codecs.open(join(artifacts_dir, 'db',
+                             '{slot}.{build_id}'.format(**cfg)), 'w', 'utf-8')
+        json.dump(cfg, f)
+        f.close()
 
         slot.checkout(build_dir)
 
