@@ -1,7 +1,5 @@
 function(doc) {
-	if (doc.type == "build-result"
-		|| doc.type == "tests-result"
-		|| doc.type == "job-infos") {
+	if (doc.type == "build-result" || doc.type == "tests-result") {
 		var k = [doc.slot, doc.build_id, doc.platform];
 		var data = {project: doc.project};
 		if (doc.type == "build-result") {
@@ -14,10 +12,16 @@ function(doc) {
 					doc.results[idx].outcome != 'UNTESTED')
 					data.tests.failed++;
 			}
-		} else {
+		}
+		emit(k, data);
+	} else if (doc.type == "job-start" || doc.type == "job-end") {
+		var k = [doc.slot, doc.build_id, doc.platform];
+		var data = {type: doc.type};
+		if (doc.type == "job-start") {
 			data.host = doc.host;
 			data.job_id = doc.job_id;
 			data.started = doc.started;
+		} else if (doc.type == "job-end") {
 			data.completed = doc.completed;
 		}
 		emit(k, data);

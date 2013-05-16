@@ -1,21 +1,41 @@
+var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
+
+function buildURL(slot, build_id, platform, project, version, date) {
+	var day = moment(date).format('ddd');
+	var PROJECT = project.toUpperCase();
+	return ARTIFACTS_BASE_URL + slot + '/' + build_id
+		+ '/summaries.' + platform + '/' + project + '/'
+		+ slot + '.' + day + '_' + PROJECT + '_' + version
+		+ '-' + platform + '-log.html';
+}
+
+function testsURL(slot, build_id, platform, project) {
+	return ARTIFACTS_BASE_URL + slot + '/' + build_id
+		+ '/summaries.' + platform + '/' + project + '/html';
+}
+
 jQuery.fn.lbSlotTable = function(data) {
 	var tab = $('<table class="summary" border="1"/>');
 	// header
-	var hdr = $('<tr/>');
+	var hdr = $('<tr class="slot-header"/>');
 	hdr.append('<th>Project</th><th>Version</th>');
 	$.each(data.value.platforms, function(idx, val) {
-		hdr.append('<th nowrap>' + val + '</th>');
+		hdr.append('<th platform="' + val + '" nowrap>' + val + '<div/></th>');
 	});
 	tab.append(hdr);
 
 	// rows
 	$.each(data.value.projects, function(idx, val) {
+		var version = val.version;
 		var tr = $('<tr project="' + val.name + '"/>')
-		   .append('<th>' + val.name + '</th><th>' + val.version + '</th>');
+		   .append('<th>' + val.name + '</th><th>' + version + '</th>');
+
 		$.each(data.value.platforms, function(idx, val) {
 			tr.append('<td platform="' + val + '">' +
 					  '<table class="results"><tr>' +
-					  '<td class="build"/><td class="tests"/></tr></table>');
+					  '<td class="build" version="' +
+					  version + '" date="' + data.key[0]
+					  + '"/><td class="tests"/></tr></table>');
 		});
 		tab.append(tr);
 	});
@@ -43,7 +63,11 @@ jQuery.fn.lbSlotTable = function(data) {
 				                 + ' tr[project="' + value.project + '"]'
 					             + ' td[platform="' + key[2] + '"]');
 					if (value.build) {
-						var b = summ.find('.build').text('build');
+						var b = summ.find('.build');
+						b.html('<a href="'
+								+ buildURL(key[0], key[1], key[2],
+										   value.project, b.attr('version'), b.attr('date'))
+								+ '">build</a>');
 						if (value.build.errors) {
 							b.addClass('failure').append(' (' + value.build.errors + ')');
 						} else if (value.build.warnings) {
@@ -53,7 +77,10 @@ jQuery.fn.lbSlotTable = function(data) {
 						}
 					}
 					if (value.tests) {
-						var t = summ.find('.tests').text('tests');
+						var t = summ.find('.tests');
+						t.html('<a href="'
+								+ testsURL(key[0], key[1], key[2], value.project)
+								+ '">tests</a>');
 						if (value.tests.failed) {
 							t.addClass('failure').append(' (' + value.tests.failed + ')');
 						} else if (!value.tests.total) {
@@ -62,6 +89,20 @@ jQuery.fn.lbSlotTable = function(data) {
 							t.addClass('success');
 						}
 					}
+				} else if (value.type == 'job-start') {
+					// FIXME: simplify the selector
+					var h = $('div[slot="' + key[0] + '"][build_id="' + key[1] + '"]'
+			                 + ' tr.slot-header'
+				             + ' th[platform="' + key[2] + '"] div');
+					if (! h.text()) {
+						h.text('started: ' + moment(value.started).format('H:mm:ss'));
+					}
+				} else if (value.type == 'job-end') {
+					// FIXME: simplify the selector
+					var h = $('div[slot="' + key[0] + '"][build_id="' + key[1] + '"]'
+			                 + ' tr.slot-header'
+				             + ' th[platform="' + key[2] + '"] div');
+					h.text('ended: ' + moment(value.completed).format('H:mm:ss'));
 				}
 			});
 		});
