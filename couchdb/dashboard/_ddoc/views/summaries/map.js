@@ -19,7 +19,7 @@ function(doc) {
 		var data = {type: doc.type};
 		if (doc.type == "job-start") {
 			data.host = doc.host;
-			data.job_id = doc.job_id;
+			data.build_number = doc.build_number;
 			data.started = doc.started;
 		} else if (doc.type == "job-end") {
 			data.completed = doc.completed;
