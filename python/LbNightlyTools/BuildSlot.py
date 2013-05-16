@@ -282,7 +282,7 @@ def main():
     data = dict(json_data)
     data.update({'type': 'job-start',
                  'host': gethostname(),
-                 'job_id': os.environ.get('JOB_ID', 0),
+                 'build_number': os.environ.get('BUILD_NUMBER', 0),
                  'started': starttime.isoformat()})
     dump_json(data, 'start')
 
@@ -788,6 +788,8 @@ class BuildReporter(object):
         f = codecs.open(html_summary, 'w', 'utf-8')
         f.write(self._oldHtml(env_block_size, checkout_block_size))
         f.close()
+        # make a copy with a simpler name
+        shutil.copy(html_summary, join(self.summary_dir, 'build_log.html'))
 
 
         # generate HTML log chunks
@@ -822,6 +824,9 @@ class BuildReporter(object):
             chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.writelines(formatTxt(islice(logfile, e-b), b))
             chunkfile.close()
+
+        # FIXME: we should make a copy with a simpler name once the new dashboard is in place
+        #shutil.copytree(chunksdir, join(self.summary_dir, 'build_log.chunks'))
 
         # copy the JavascriptCode
         shutil.copy(join(dirname(__file__), 'logFileJQ.js'),
