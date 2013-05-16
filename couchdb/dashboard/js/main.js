@@ -1,12 +1,8 @@
 var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
 
-function buildURL(slot, build_id, platform, project, version, date) {
-	var day = moment(date).format('ddd');
-	var PROJECT = project.toUpperCase();
+function buildURL(slot, build_id, platform, project) {
 	return ARTIFACTS_BASE_URL + slot + '/' + build_id
-		+ '/summaries.' + platform + '/' + project + '/'
-		+ slot + '.' + day + '_' + PROJECT + '_' + version
-		+ '-' + platform + '-log.html';
+		+ '/summaries.' + platform + '/' + project + '/build_log.html';
 }
 
 function testsURL(slot, build_id, platform, project) {
@@ -26,16 +22,13 @@ jQuery.fn.lbSlotTable = function(data) {
 
 	// rows
 	$.each(data.value.projects, function(idx, val) {
-		var version = val.version;
 		var tr = $('<tr project="' + val.name + '"/>')
-		   .append('<th>' + val.name + '</th><th>' + version + '</th>');
+		   .append('<th>' + val.name + '</th><th>' + val.version + '</th>');
 
 		$.each(data.value.platforms, function(idx, val) {
 			tr.append('<td platform="' + val + '">' +
 					  '<table class="results"><tr>' +
-					  '<td class="build" version="' +
-					  version + '" date="' + data.key[0]
-					  + '"/><td class="tests"/></tr></table>');
+					  '<td class="build"/><td class="tests"/></tr></table>');
 		});
 		tab.append(tr);
 	});
@@ -65,8 +58,7 @@ jQuery.fn.lbSlotTable = function(data) {
 					if (value.build) {
 						var b = summ.find('.build');
 						b.html('<a href="'
-								+ buildURL(key[0], key[1], key[2],
-										   value.project, b.attr('version'), b.attr('date'))
+								+ buildURL(key[0], key[1], key[2], value.project)
 								+ '">build</a>');
 						if (value.build.errors) {
 							b.addClass('failure').append(' (' + value.build.errors + ')');
