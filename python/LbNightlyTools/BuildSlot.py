@@ -891,7 +891,7 @@ class BuildReporter(object):
         context = deque()
         sections = [] # List of section descriptions: ('name', start)
         i = -1
-        logfile = codecs.open(self.build_log, 'r', 'utf-8')
+        logfile = codecs.open(self.build_log, 'r', 'utf-8', errors='replace')
         current_section = 'build'
         build_section_offset = -1
         for i, l in enumerate(logfile):
