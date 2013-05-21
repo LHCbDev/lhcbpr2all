@@ -24,7 +24,6 @@ import codecs
 import Configuration
 import json
 
-from subprocess import call
 from string import Template
 from socket import gethostname
 from datetime import datetime, date
@@ -32,6 +31,35 @@ try:
     from multiprocessing import cpu_count
 except ImportError:
     cpu_count = lambda : 0
+
+def _timeoutTerminateCB(p, msg):
+    '''
+    Safely terminate a running Popen object.
+    '''
+    if p.poll() is None:
+        try:
+            logging.warning(msg)
+            p.terminate()
+        except:
+            pass
+
+def call(*popenargs, **kwargs):
+    """Reimplementation of subprocess.call with the addition of a timeout
+    option.
+    """
+    from subprocess import Popen
+    try:
+        timeout = kwargs.pop('timeout')
+        from threading import Timer
+        p = Popen(*popenargs, **kwargs)
+        msg = 'Timeout reached on command %r (%ds): terminated.' % (popenargs, timeout)
+        t = Timer(timeout, _timeoutTerminateCB, [p, msg])
+        t.start()
+        r = p.wait()
+        t.cancel()
+        return r
+    except KeyError:
+        return Popen(*popenargs, **kwargs).wait()
 
 # no-op 'call' function for testing
 #call = lambda *a,**k: None
@@ -554,7 +582,7 @@ def main():
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
         p.started = datetime.now()
-        p.build_retcode = call(build_cmd, cwd=projdir)
+        p.build_retcode = call(build_cmd, cwd=projdir, timeout=14400) # timeout of 4 hours
         if p.build_retcode != 0:
             log.warning('build exited with code %d', p.build_retcode)
         p.completed = datetime.now()
