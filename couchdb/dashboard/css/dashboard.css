@@ -20,3 +20,29 @@ table.results td {
 td.success {background-color: #00F900;}
 td.warning {background-color: #FFB600;}
 td.failure {background-color: #FF1C00;}
+
+div.day {
+	margin-top: 2em;
+}
+
+div.slots {
+	border-style: solid;
+	border-color: #CCC;
+	border-width: 1px;
+	padding: 1em;
+}
+
+.day .header {
+	border-style: none solid solid none;
+	border-color: #CCC;
+	border-width: 1px;
+}
+
+.day-name {
+	font-size: 2.5em;
+}
+
+.day .ui-button-text {
+	width: 4em;
+}
+
