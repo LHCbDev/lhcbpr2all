@@ -50,9 +50,10 @@ def call(*popenargs, **kwargs):
     from subprocess import Popen
     try:
         timeout = kwargs.pop('timeout')
+        msg = kwargs.pop('timeoutmsg', 'on command ' + repr(popenargs))
+        msg = 'Timeout reached %s (%ds): terminated.' % (msg, timeout)
         from threading import Timer
         p = Popen(*popenargs, **kwargs)
-        msg = 'Timeout reached on command %r (%ds): terminated.' % (popenargs, timeout)
         t = Timer(timeout, _timeoutTerminateCB, [p, msg])
         t.start()
         r = p.wait()
@@ -582,7 +583,8 @@ def main():
         dumpFileListSummary('sources.list')
         log.info('building %s', p.dir)
         p.started = datetime.now()
-        p.build_retcode = call(build_cmd, cwd=projdir, timeout=14400) # timeout of 4 hours
+        p.build_retcode = call(build_cmd, cwd=projdir,
+                               timeout=14400, timeoutmsg='building %s' % p.name) # timeout of 4 hours
         if p.build_retcode != 0:
             log.warning('build exited with code %d', p.build_retcode)
         p.completed = datetime.now()
