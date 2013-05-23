@@ -16,6 +16,31 @@ function testsURL(slot, build_id, platform, project) {
 		+ '/summaries.' + platform + '/' + project + '/html';
 }
 
+function spinInit(day) {
+	var spin = $('<img id="spinner-' + day + '" src="images/ajax-loader.gif" text="loading...">');
+	spin.data('count', 0);
+	spin.hide();
+	return spin;
+}
+
+function spinIncrease(day) {
+	var spin = $('#spinner-' + day);
+	var count = spin.data('count');
+	spin.data('count', count + 1);
+	spin.show();
+}
+
+function spinDecrease(day) {
+	var spin = $('#spinner-' + day);
+	var count = spin.data('count');
+	count = count - 1;
+	if (count <= 0) {
+		count = 0;
+		spin.hide();
+	}
+	spin.data('count', count);
+}
+
 jQuery.fn.lbSlotTable = function(data) {
 	var tab = $('<table class="summary" border="1"/>');
 	// header
@@ -43,7 +68,13 @@ jQuery.fn.lbSlotTable = function(data) {
 	// trigger load of the results of each platform
 	$.each(data.value.platforms, function(idx, val) {
 		var query = {'key': JSON.stringify([data.key[1], data.value.build_id, val])};
-		$.getJSON('_view/summaries', query, function(data) {
+		spinIncrease(data.key[0]);
+
+		var jqXHR = $.ajax({dataType: "json",
+			url: '_view/summaries',
+			data: query});
+		jqXHR.day = data.key[0];
+		jqXHR.done(function(data, textStatus, jqXHR) {
 			$.each(data.rows, function(idx, row){
 				/* Expects row like:
 				 * {"key": ["slot", build_id, "platform"],
@@ -103,6 +134,7 @@ jQuery.fn.lbSlotTable = function(data) {
 					h.text('ended: ' + moment(value.completed).format('H:mm:ss'));
 				}
 			});
+			spinDecrease(jqXHR.day);
 		});
 	});
 	return this;
@@ -116,7 +148,7 @@ jQuery.fn.loadButton = function () {
 		day = day.format('YYYY-MM-DD');
 
 		$(this).unbind('click').button("disable");
-		$('img[day="' + day + '"]').show();
+		spinIncrease(day);
 		var jqXHR = $.ajax({dataType: "json",
 			url: '_view/slots',
 			data: {'startkey': JSON.stringify([day]),
@@ -136,7 +168,7 @@ jQuery.fn.loadButton = function () {
 				el.text('no data for this day');
 			}
 			el.show();
-			$('img[day="' + jqXHR.day + '"]').hide();
+			spinDecrease(jqXHR.day);
 			$('button[day="' + jqXHR.day + '"]').hideButton().button("enable");
 		});
 	});
@@ -164,15 +196,18 @@ jQuery.fn.showButton = function () {
 jQuery.fn.lbNightly = function () {
 	return this.each(function(){
 		var day = moment($(this).attr('day'));
-		var btn = $('<button day="' + day.format('YYYY-MM-DD') + '">show</button>')
+		var daystr = day.format('YYYY-MM-DD');
+		var btn = $('<button day="' + daystr + '">show</button>')
 		.loadButton();
+
+		var spin = spinInit(daystr);
 
 		$(this).append($('<div class="header"/>')
 				.append($('<span/>').append(btn))
 				.append('<span class="day-name"> ' + day.format('dddd') + ' </span>')
-				.append($('<img day="' + day.format('YYYY-MM-DD') + '" src="images/ajax-loader.gif" text="loading...">').hide())
-				)
+				.append(spin))
 			.append($('<div class="slots"/>').hide());
+
 		if ($(this).hasClass("enabled"))
 			btn.click();
 	});
