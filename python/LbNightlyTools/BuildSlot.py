@@ -830,7 +830,8 @@ class BuildReporter(object):
             if sections:
                 sections[-1][-1] = i
             sections.append([n, i, 0])
-        sections[-1][-1] = self.summary['size']
+        if sections:
+            sections[-1][-1] = self.summary['size']
         logfile = codecs.open(self.build_log, 'r', 'utf-8')
         offset = 0
         for n, lines in zip(['env'], [env_lines]):
