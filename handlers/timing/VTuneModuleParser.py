@@ -8,9 +8,8 @@ import re
 # Parser for the VTune logfile 
 #
 ################################################################################
-class SimpleTimingParser:
-    """ Class responsible for parsing the TimingAuditor log from the
-    Gaudi run  log files """
+class VTuneModuleParser:
+    """ Class responsible for parsing the IntelAuditor log for modules (libraries)."""
     def __init__(self, filename):
         self.root = None
     	self.timingTable = [] 
@@ -49,6 +48,6 @@ if __name__ == "__main__":
     else:
         filename = sys.argv[1]
         print "Processing %s" % filename
-        t = SimpleTimingParser(filename)
+        t = VTuneModuleParser(filename)
         for node in t.getTimingList():
             print node[0], " - ", node[1]
