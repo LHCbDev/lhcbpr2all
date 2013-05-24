@@ -1,10 +1,15 @@
 var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
 
-// variable set from a cookie
+// variables set from cookies
 if (!$.cookie("enabled_days")) {
 	$.cookie("enabled_days", JSON.stringify(["Today"]));
 }
 var enabled_days = JSON.parse($.cookie("enabled_days"));
+
+if (!$.cookie("hidden_slots")) {
+	$.cookie("hidden_slots", JSON.stringify([]));
+}
+var hidden_slots = JSON.parse($.cookie("hidden_slots"));
 
 function buildURL(slot, build_id, platform, project) {
 	return ARTIFACTS_BASE_URL + slot + '/' + build_id
@@ -212,21 +217,55 @@ jQuery.fn.lbNightly = function () {
 	});
 }
 
-$(function(){
-	// prepare the dialog data
+function initFilterDays() {
 	$('#filter-dialog input[name="enabled_days"]').val(enabled_days);
+}
+
+function initFilterSlots() {
+	if ($('#filter-dialog-slots').attr('loaded')) {
+		$('#filter-dialog input[name="enabled_slots"]').val(function(){
+			var el = $(this);
+			if ($.inArray(el.val(), hidden_slots) >= 0) {
+				el.prop('checked', false);
+			} else {
+				el.prop('checked', true);
+			}
+			return el.val();
+		});
+	}
+}
+
+
+function prepareFilterDialog() {
+	// prepare the dialog data
+	initFilterDays();
+
+	// bind buttons
 	$('#all_days').button().click(function() {
 		$('#filter-dialog input:checkbox[name="enabled_days"]').prop("checked", true);
 	});
 	$('#no_days').button().click(function() {
 		$('#filter-dialog input:checkbox[name="enabled_days"]').prop("checked", false);
 	});
+	$('#all_slots').button().click(function() {
+		$('#filter-dialog input:checkbox[name="enabled_slots"]').prop("checked", true);
+	});
+	$('#no_slots').button().click(function() {
+		$('#filter-dialog input:checkbox[name="enabled_slots"]').prop("checked", false);
+	});
+
+	// initialize tabbed view
+	$("#filter-dialog-tabs").tabs();
+	$('#filter-dialog-slots > table').hide();
+
+	// initialize dialog
 	$("#filter-dialog").dialog({
 		autoOpen: false,
 		modal: true,
 		buttons: {
 	        OK: function() {
 	        	var values = [];
+	        	// get days
 	        	$('#filter-dialog input:checkbox[name="enabled_days"]:checked')
 	        	.each(function (idx, el) { values.push($(el).val()); });
 	        	enabled_days = values;
@@ -248,9 +287,24 @@ $(function(){
         					btn.click()
         			}
         		});
+
+        		// get slots
+        		values = [];
+	        	$('#filter-dialog input:checkbox[name="enabled_slots"]')
+	        	.each(function (idx, el) {
+	        		var el = $(this);
+	        		if (!el.prop('checked'))
+	        			values.push(el.val());
+	        	});
+	        	hidden_slots = values;
+	        	$.cookie("hidden_slots", JSON.stringify(hidden_slots));
+
 	        	$(this).dialog("close");
 	        },
 	        Cancel: function() {
+	        	// restore previous settings
+	        	initFilterDays();
+	        	initFilterSlots();
 	        	$(this).dialog("close");
 	        }
 		}
@@ -259,8 +313,27 @@ $(function(){
 	$("#set-filter")
     	.button()
     	.click(function() {
+    		if (!$("#filter-dialog-slots").attr("loaded")) {
+				$("#filter-dialog-slots").attr("loaded", "true");
+    			$.getJSON("_view/slotsNames?group=true", function (data) {
+    				$("#filter-dialog-slots > img").hide();
+
+    				var slots = $('#filter-dialog-slots > table').show();
+
+    				$.each(data.rows, function(idx, row){
+    					slots.append('<tr><td><input type="checkbox" name="enabled_slots" value="'
+    							+ row.key  +'">' + row.key + '</td></tr>');
+    				});
+
+    	        	initFilterSlots();
+    			});
+    		}
     		$("#filter-dialog").dialog("open");
     });
+}
+
+$(function(){
+	prepareFilterDialog();
 
 	// Prepare day tables
 	var today = moment();
