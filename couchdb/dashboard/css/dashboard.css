@@ -62,3 +62,7 @@ div.slots {
 	width: 4em;
 }
 
+table.buttons td {
+	border: none;
+	padding: 0.1em;
+}

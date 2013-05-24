@@ -62,31 +62,41 @@
     <ul>
       <li><a href="#filter-dialog-days">Days</a></li>
       <li><a href="#filter-dialog-slots">Slots</a></li>
+      <li><a href="#filter-dialog-projects">Projects</a></li>
     </ul>
     <div id="filter-dialog-days">
       <table>
-      <tr><td><table><tr>
-      <td style="border: none; padding: 0.1em"><button id="all_days">all</button></td>
-      <td style="border: none; padding: 0.1em"><button id="no_days">none</button></td>
+      <tr><td><table class="buttons"><tr>
+      <td><button>all</button></td>
+      <td><button>none</button></td>
       </tr></table></td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Today">Today</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Yesterday">Yesterday</td></tr>
+      <tr><td><input type="checkbox" value="Today">Today</td></tr>
+      <tr><td><input type="checkbox" value="Yesterday">Yesterday</td></tr>
       <tr><td></td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Monday">Monday</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Tuesday">Tuesday</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Wednesday">Wednesday</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Thursday">Thursday</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Friday">Friday</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Saturday">Saturday</td></tr>
-      <tr><td><input type="checkbox" name="enabled_days" value="Sunday">Sunday</td></tr>
+      <tr><td><input type="checkbox" value="Monday">Monday</td></tr>
+      <tr><td><input type="checkbox" value="Tuesday">Tuesday</td></tr>
+      <tr><td><input type="checkbox" value="Wednesday">Wednesday</td></tr>
+      <tr><td><input type="checkbox" value="Thursday">Thursday</td></tr>
+      <tr><td><input type="checkbox" value="Friday">Friday</td></tr>
+      <tr><td><input type="checkbox" value="Saturday">Saturday</td></tr>
+      <tr><td><input type="checkbox" value="Sunday">Sunday</td></tr>
       </table>
     </div>
     <div id="filter-dialog-slots">
-      <img src="images/ajax-loader.gif" text="loading..."/>
+      <img src="images/ajax-loader.gif" title="loading..."/>
       <table>
-      <tr><td><table><tr>
-      <td style="border: none; padding: 0.1em"><button id="all_slots">all</button></td>
-      <td style="border: none; padding: 0.1em"><button id="no_slots">none</button></td>
+      <tr><td><table class="buttons"><tr>
+      <td><button>all</button></td>
+      <td><button>none</button></td>
+      </tr></table></td></tr>
+      </table>
+    </div>
+    <div id="filter-dialog-projects">
+      <img src="images/ajax-loader.gif" title="loading..."/>
+      <table>
+      <tr><td><table class="buttons"><tr>
+      <td><button>all</button></td>
+      <td><button>none</button></td>
       </tr></table></td></tr>
       </table>
     </div>

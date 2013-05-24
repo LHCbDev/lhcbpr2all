@@ -1,15 +1,16 @@
 var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
 
 // variables set from cookies
-if (!$.cookie("enabled_days")) {
-	$.cookie("enabled_days", JSON.stringify(["Today"]));
+if (!$.cookie("filters")) {
+	$.cookie("filters",
+			JSON.stringify({
+				days: ["Today"],
+				slots: [],
+				projects: []
+			}));
 }
-var enabled_days = JSON.parse($.cookie("enabled_days"));
+var filters = JSON.parse($.cookie("filters"));
 
-if (!$.cookie("hidden_slots")) {
-	$.cookie("hidden_slots", JSON.stringify([]));
-}
-var hidden_slots = JSON.parse($.cookie("hidden_slots"));
 
 function buildURL(slot, build_id, platform, project) {
 	return ARTIFACTS_BASE_URL + slot + '/' + build_id
@@ -22,7 +23,7 @@ function testsURL(slot, build_id, platform, project) {
 }
 
 function spinInit(day) {
-	var spin = $('<img id="spinner-' + day + '" src="images/ajax-loader.gif" text="loading...">');
+	var spin = $('<img id="spinner-' + day + '" src="images/ajax-loader.gif" title="loading...">');
 	spin.data('count', 0);
 	spin.hide();
 	return spin;
@@ -168,7 +169,7 @@ jQuery.fn.loadButton = function () {
 					el.append(slot);
 
 					// do show/load only non-hidden slots
-					if ($.inArray(value.slot, hidden_slots) >= 0) {
+					if ($.inArray(value.slot, filters.slots) >= 0) {
 						slot.append($('<p>Data for this slot not loaded. </p>')
 								.append('<a href="' + window.location.href + '">Reload the page</a>'));
 						slot.hide();
@@ -226,54 +227,88 @@ jQuery.fn.lbNightly = function () {
 	});
 }
 
-function initFilterDays() {
-	$('#filter-dialog input[name="enabled_days"]').val(enabled_days);
-}
-
-function initFilterSlots() {
-	if ($('#filter-dialog-slots').attr('loaded')) {
-		$('#filter-dialog input[name="enabled_slots"]').val(function(){
+function initFilterCheckboxes(tab) {
+	var reverse = tab != 'days'; // days use the direct filtering
+	var id = "#filter-dialog-" + tab;
+	var flags = filters[tab];
+	if ($(id).attr('loaded')) {
+		$(id + ' input:checkbox').val(function(){
 			var el = $(this);
-			if ($.inArray(el.val(), hidden_slots) >= 0) {
-				el.prop('checked', false);
+			if ($.inArray(el.val(), flags) >= 0) {
+				el.prop('checked', ! reverse);
 			} else {
-				el.prop('checked', true);
+				el.prop('checked', reverse);
 			}
 			return el.val();
 		});
 	}
+}
+function getFilterCheckboxes(tab) {
+	var reverse = tab != 'days'; // days use the direct filtering
+	var values = [];
+	$('#filter-dialog-' + tab + ' input:checkbox')
+	.each(function (idx, el) {
+		var el = $(this);
+		var checked = el.prop('checked')
+		if ((reverse && !checked) || (!reverse && checked))
+			values.push(el.val());
+	});
+	filters[tab] = values;
 }
 
 var todayName = moment().format('dddd');
 var yesterdayName = moment().subtract('days', 1).format('dddd');
 
 function isDayEnabled(dayName) {
-	return ($.inArray(dayName, enabled_days) >= 0
-			|| (dayName == todayName && $.inArray('Today', enabled_days) >= 0)
-			|| (dayName == yesterdayName && $.inArray('Yesterday', enabled_days) >= 0));
+	return ($.inArray(dayName, filters.days) >= 0
+			|| (dayName == todayName && $.inArray('Today', filters.days) >= 0)
+			|| (dayName == yesterdayName && $.inArray('Yesterday', filters.days) >= 0));
+}
+
+
+function fillDialogTab(tab) {
+	var id = "#filter-dialog-" + tab;
+	if (!$(id).attr("loaded")) {
+		$(id).attr("loaded", "true");
+
+		var jqXHR = $.ajax({dataType: "json",
+			url: "_view/" + tab + "Names?group=true"});
+		jqXHR.tab_id = id;
+		jqXHR.done(function (data, textStatus, jqXHR) {
+			$(jqXHR.tab_id + ' > img').hide();
+
+			var table = $(jqXHR.tab_id + ' > table').show();
+
+			$.each(data.rows, function(idx, row){
+				table.append('<tr><td><input type="checkbox" value="'
+						+ row.key  +'">' + row.key + '</td></tr>');
+			});
+			initFilterCheckboxes(tab);
+		});
+	}
 }
 
 function prepareFilterDialog() {
 	// prepare the dialog data
-	initFilterDays();
+
+	// the list of days is known, the others are retrieved
+	$('#filter-dialog-days').attr("loaded", "true")
+	initFilterCheckboxes('days');
 
 	// bind buttons
-	$('#all_days').button().click(function() {
-		$('#filter-dialog input:checkbox[name="enabled_days"]').prop("checked", true);
-	});
-	$('#no_days').button().click(function() {
-		$('#filter-dialog input:checkbox[name="enabled_days"]').prop("checked", false);
-	});
-	$('#all_slots').button().click(function() {
-		$('#filter-dialog input:checkbox[name="enabled_slots"]').prop("checked", true);
-	});
-	$('#no_slots').button().click(function() {
-		$('#filter-dialog input:checkbox[name="enabled_slots"]').prop("checked", false);
+	$("#filter-dialog-tabs > div > table button").button().click(function() {
+		var el = $(this);
+		// if the button has label 'all' it checks all entries, otherwise unchecks
+		var check = el.button('option', 'label') == 'all';
+		// apply the check to all the checkboxes in the same div as the button
+		el.parentsUntil('#filter-dialog-tabs', 'div')
+		  .find('input:checkbox').prop("checked", check);
 	});
 
 	// initialize tabbed view
 	$("#filter-dialog-tabs").tabs();
 	$('#filter-dialog-slots > table').hide();
+	$('#filter-dialog-projects > table').hide();
 
 	// initialize dialog
 	$("#filter-dialog").dialog({
@@ -281,12 +316,9 @@ function prepareFilterDialog() {
 		modal: true,
 		buttons: {
 	        OK: function() {
-	        	var values = [];
-	        	// get days
-	        	$('#filter-dialog input:checkbox[name="enabled_days"]:checked')
-	        	.each(function (idx, el) { values.push($(el).val()); });
-	        	enabled_days = values;
-	        	$.cookie("enabled_days", JSON.stringify(enabled_days));
+	        	getFilterCheckboxes('days');
+        		getFilterCheckboxes('slots');
+        		getFilterCheckboxes('projects');
 
         		$('div.day table.header button').each(function(){
         			var btn = $(this);
@@ -300,32 +332,25 @@ function prepareFilterDialog() {
         			}
         		});
 
-        		// get slots
-        		values = [];
-	        	$('#filter-dialog input:checkbox[name="enabled_slots"]')
-	        	.each(function (idx, el) {
-	        		var el = $(this);
-	        		if (!el.prop('checked'))
-	        			values.push(el.val());
-	        	});
-	        	hidden_slots = values;
-	        	$.cookie("hidden_slots", JSON.stringify(hidden_slots));
-	        	$('div.slot').each(function(){
+        		$('div.slot').each(function(){
 	        		var el = $(this);
 	        		var s = el.attr("slot")
-	        		if (s && $.inArray(s, hidden_slots) < 0) {
+	        		if (s && $.inArray(s, filters.slots) < 0) {
 	        			el.show();
 	        		} else {
 	        			el.hide();
 	        		}
 	        	});
 
+	        	$.cookie("filters", JSON.stringify(filters));
+
 	        	$(this).dialog("close");
 	        },
 	        Cancel: function() {
 	        	// restore previous settings
-	        	initFilterDays();
-	        	initFilterSlots();
+				initFilterCheckboxes('days');
+				initFilterCheckboxes('slots');
+				initFilterCheckboxes('projects');
 	        	$(this).dialog("close");
 	        }
 		}
@@ -334,22 +359,9 @@ function prepareFilterDialog() {
 	$("#set-filter")
     	.button()
     	.click(function() {
-    		if (!$("#filter-dialog-slots").attr("loaded")) {
-				$("#filter-dialog-slots").attr("loaded", "true");
-    			$.getJSON("_view/slotsNames?group=true", function (data) {
-    				$("#filter-dialog-slots > img").hide();
-
-    				var slots = $('#filter-dialog-slots > table').show();
-
-    				$.each(data.rows, function(idx, row){
-    					slots.append('<tr><td><input type="checkbox" name="enabled_slots" value="'
-    							+ row.key  +'">' + row.key + '</td></tr>');
-    				});
-
-    	        	initFilterSlots();
-    			});
-    		}
-    		$("#filter-dialog").dialog("open");
+    		fillDialogTab('slots');
+    		fillDialogTab('projects');
+       		$("#filter-dialog").dialog("open");
     });
 }
 
