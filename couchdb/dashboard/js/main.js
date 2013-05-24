@@ -161,11 +161,20 @@ jQuery.fn.loadButton = function () {
 			if (data.rows.length) {
 				$.each(data.rows, function(idx, row){
 					var value = row.value;
+
 					var slot = $('<div class="slot" slot="' + value.slot
 					+ '" build_id="' + value.build_id + '"/>');
 					slot.append($('<h4/>').append(value.slot + ': ' + value.description));
 					el.append(slot);
-					slot.lbSlotTable(row);
+
+					// do show/load only non-hidden slots
+					if ($.inArray(value.slot, hidden_slots) >= 0) {
+						slot.append($('<p>Data for this slot not loaded. </p>')
+								.append('<a href="' + window.location.href + '">Reload the page</a>'));
+						slot.hide();
+					} else {
+						slot.lbSlotTable(row);
+					}
 				});
 			} else {
 				el.text('no data for this day');
@@ -298,6 +307,15 @@ function prepareFilterDialog() {
 	        	});
 	        	hidden_slots = values;
 	        	$.cookie("hidden_slots", JSON.stringify(hidden_slots));
+	        	$('div.slot').each(function(){
+	        		var el = $(this);
+	        		var s = el.attr("slot")
+	        		if (s && $.inArray(s, hidden_slots) < 0) {
+	        			el.show();
+	        		} else {
+	        			el.hide();
+	        		}
+	        	});
 
 	        	$(this).dialog("close");
 	        },
