@@ -200,10 +200,11 @@ jQuery.fn.lbNightly = function () {
 
 		var spin = spinInit(daystr);
 
-		$(this).append($('<div class="header"/>')
-				.append($('<span/>').append(btn))
-				.append('<span class="day-name"> ' + day.format('dddd') + ' </span>')
-				.append(spin))
+		$(this).append($('<table class="header"/>')
+				 .append($('<tr/>')
+				   .append($('<td class="button"/>').append(btn))
+				   .append($('<td class="spinner"/>').append(spin))
+				   .append('<td class="day-name">' + day.format('dddd') + '</td>')))
 			.append($('<div class="slots"/>').hide());
 
 		if ($(this).hasClass("enabled"))
@@ -234,7 +235,7 @@ $(function(){
 	        	var today = moment().format('dddd');
         		var yesterday = moment().subtract('days', 1).format('dddd');
 
-        		$('div.day div.header button').each(function(){
+        		$('div.day table.header button').each(function(){
         			var btn = $(this);
         			var day = moment(btn.attr('day')).format('dddd');
         			if ($.inArray(day, enabled_days) >= 0

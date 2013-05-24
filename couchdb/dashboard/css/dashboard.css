@@ -32,14 +32,35 @@ div.slots {
 	padding: 1em;
 }
 
-.day .header {
+.day table.header {
 	border-style: none solid solid none;
 	border-color: #CCC;
 	border-width: 1px;
+	border-collapse: separate;
+	width: 100%;
+}
+
+.day table.header tr {
+	vertical-align: middle;
+}
+
+.day table.header td {
+	border-style: none;
+	padding: 0.2em;
+}
+
+.day table.header td.button {
+	width: 6em;
+}
+
+.day table.header td.spinner {
+	width: 20px;
+	text-align: center;
 }
 
 .day-name {
 	font-size: 2.5em;
+	text-align: left;
 }
 
 .day .ui-button-text {
