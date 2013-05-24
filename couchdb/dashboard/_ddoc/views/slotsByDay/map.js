@@ -5,15 +5,16 @@ function(doc) {
 			projs.push({name: doc.projects[idx].name,
 				version: doc.projects[idx].version});
 		}
-		data = {"description": doc.description,
+		data = {"slot": doc.slot,
+				"description": doc.description,
 				"build_id": doc.build_id,
 				"platforms": [],
 				"projects": projs};
 		if (doc.platforms) {
-			data.platforms = doc.platforms
+			data.platforms = doc.platforms;
 		} else if (doc.default_platforms) {
-			data.platforms = doc.default_platforms
+			data.platforms = doc.default_platforms;
 		}
-		emit([doc.date, doc.slot], data)
+		emit(doc.date, data);
 	}
 }

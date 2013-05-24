@@ -67,13 +67,13 @@ jQuery.fn.lbSlotTable = function(data) {
 
 	// trigger load of the results of each platform
 	$.each(data.value.platforms, function(idx, val) {
-		var query = {'key': JSON.stringify([data.key[1], data.value.build_id, val])};
-		spinIncrease(data.key[0]);
+		var query = {'key': JSON.stringify([data.value.slot, data.value.build_id, val])};
+		spinIncrease(data.key);
 
 		var jqXHR = $.ajax({dataType: "json",
 			url: '_view/summaries',
 			data: query});
-		jqXHR.day = data.key[0];
+		jqXHR.day = data.key;
 		jqXHR.done(function(data, textStatus, jqXHR) {
 			$.each(data.rows, function(idx, row){
 				/* Expects row like:
@@ -143,24 +143,22 @@ jQuery.fn.lbSlotTable = function(data) {
 jQuery.fn.loadButton = function () {
 	return this.button({label: "show"})
 	.click(function () {
-		var day = moment($(this).attr('day'));
-		var next = moment(day).add('days', 1).format('YYYY-MM-DD');
-		day = day.format('YYYY-MM-DD');
+		var day = $(this).attr('day');
 
 		$(this).unbind('click').button("disable");
 		spinIncrease(day);
 		var jqXHR = $.ajax({dataType: "json",
-			url: '_view/slots',
-			data: {'startkey': JSON.stringify([day]),
-				'endkey': JSON.stringify([next])}});
+			url: '_view/slotsByDay',
+			data: {'key': JSON.stringify(day)}});
 		jqXHR.day = day;
 		jqXHR.done(function(data, textStatus, jqXHR) {
 			var el = $('.day[day="' + jqXHR.day + '"] div.slots');
 			if (data.rows.length) {
 				$.each(data.rows, function(idx, row){
-					var slot = $('<div class="slot" slot="' + row.key[1]
-					+ '" build_id="' + row.value.build_id + '"/>');
-					slot.append($('<h4/>').append(row.key[1] + ': ' + row.value.description));
+					var value = row.value;
+					var slot = $('<div class="slot" slot="' + value.slot
+					+ '" build_id="' + value.build_id + '"/>');
+					slot.append($('<h4/>').append(value.slot + ': ' + value.description));
 					el.append(slot);
 					slot.lbSlotTable(row);
 				});
