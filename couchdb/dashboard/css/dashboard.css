@@ -33,10 +33,6 @@ div.slots {
 }
 
 .day table.header {
-	border-style: none solid solid none;
-	border-color: #CCC;
-	border-width: 1px;
-	border-collapse: separate;
 	width: 100%;
 }
 
@@ -45,7 +41,6 @@ div.slots {
 }
 
 .day table.header td {
-	border-style: none;
 	padding: 0.2em;
 }
 
