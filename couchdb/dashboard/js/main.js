@@ -207,21 +207,21 @@ jQuery.fn.showButton = function () {
 // fill an element with one <div> per slot build for the given day
 jQuery.fn.lbNightly = function () {
 	return this.each(function(){
-		var day = moment($(this).attr('day'));
-		var daystr = day.format('YYYY-MM-DD');
-		var btn = $('<button day="' + daystr + '">show</button>')
+		var day = $(this).attr('day');
+		var dayName = moment(day).format('dddd');
+		var btn = $('<button day="' + day + '">show</button>')
 		.loadButton();
 
-		var spin = spinInit(daystr);
+		var spin = spinInit(day);
 
 		$(this).append($('<table class="header"/>')
 				 .append($('<tr/>')
 				   .append($('<td class="button"/>').append(btn))
 				   .append($('<td class="spinner"/>').append(spin))
-				   .append('<td class="day-name">' + day.format('dddd') + '</td>')))
+				   .append('<td class="day-name">' + dayName + '</td>')))
 			.append($('<div class="slots"/>').hide());
 
-		if ($(this).hasClass("enabled"))
+		if (isDayEnabled(dayName))
 			btn.click();
 	});
 }
@@ -244,6 +244,14 @@ function initFilterSlots() {
 	}
 }
 
+var todayName = moment().format('dddd');
+var yesterdayName = moment().subtract('days', 1).format('dddd');
+
+function isDayEnabled(dayName) {
+	return ($.inArray(dayName, enabled_days) >= 0
+			|| (dayName == todayName && $.inArray('Today', enabled_days) >= 0)
+			|| (dayName == yesterdayName && $.inArray('Yesterday', enabled_days) >= 0));
+}
 
 function prepareFilterDialog() {
 	// prepare the dialog data
@@ -280,15 +288,10 @@ function prepareFilterDialog() {
 	        	enabled_days = values;
 	        	$.cookie("enabled_days", JSON.stringify(enabled_days));
 
-	        	var today = moment().format('dddd');
-        		var yesterday = moment().subtract('days', 1).format('dddd');
-
         		$('div.day table.header button').each(function(){
         			var btn = $(this);
         			var day = moment(btn.attr('day')).format('dddd');
-        			if ($.inArray(day, enabled_days) >= 0
-        					|| (day == today && $.inArray('Today', enabled_days) >= 0)
-        					|| (day == yesterday && $.inArray('Yesterday', enabled_days) >= 0)) {
+        			if (isDayEnabled(day)) {
         				if (btn.button('option', 'label') == 'show')
         					btn.click();
         			} else {
@@ -357,15 +360,7 @@ $(function(){
 	var today = moment();
 	for(var day = 0; day < 7; day++) {
 		var d = moment(today).subtract('days', day);
-		var e = "disabled";
-		if (day == 0 && $.inArray('Today', enabled_days) >= 0) {
-			e = "enabled";
-		} else if (day == 1 && $.inArray('Yesterday', enabled_days) >= 0) {
-			e = "enabled";
-		} else if ($.inArray(d.format('dddd'), enabled_days) >= 0) {
-			e = "enabled";
-		}
-		$('#middle').append('<div class="day ' + e + '" day="' + d.format('YYYY-MM-DD') + '"/>');
+		$('#middle').append('<div class="day" day="' + d.format('YYYY-MM-DD') + '"/>');
 	}
 
 	$('.day').lbNightly();
