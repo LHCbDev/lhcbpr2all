@@ -468,7 +468,7 @@ def main():
                 os.makedirs(opts.rsync_dest)
 
             cmd = ['rsync', '--archive',
-                   '--partial-dir=.rsync-partial.'+ gethostname(),
+                   '--partial-dir=.rsync-partial.%s.%d' % (gethostname(), os.getpid()),
                    '--delay-updates', '--rsh=ssh',
                    artifacts_dir + '/', opts.rsync_dest]
             self.retcode = call(cmd)
