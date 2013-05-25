@@ -67,6 +67,9 @@ jQuery.fn.lbSlotTable = function(data) {
 					  '<table class="results"><tr>' +
 					  '<td class="build"/><td class="tests"/></tr></table>');
 		});
+		if ($.inArray(val.name, filters.projects) >= 0) {
+			tr.hide();
+		}
 		tab.append(tr);
 	});
 	this.append(tab);
@@ -341,6 +344,15 @@ function prepareFilterDialog() {
 	        			el.hide();
 	        		}
 	        	});
+
+        		$('tr[project]').each(function() {
+        			var el = $(this);
+        			if ($.inArray(el.attr('project'), filters.projects) >= 0) {
+        				el.hide();
+        			} else {
+        				el.show();
+        			}
+        		});
 
 	        	$.cookie("filters", JSON.stringify(filters));
 
