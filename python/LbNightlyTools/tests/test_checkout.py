@@ -22,6 +22,7 @@ from _utils import *
 
 from .. import StackCheckout
 
+os.environ['LANG'] = 'C'
 
 def test_call():
     'StackCheckout.call()'
@@ -196,7 +197,7 @@ def test_checkout():
         assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements'))
 
         StackCheckout.gitCheckout(ProjectDesc('Gaudi', 'v23r6',
-                                              checkout_opts={'url': 'http://cern.ch/gaudi/Gaudi.git',
+                                              checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
                                                              'commit': 'GAUDI/GAUDI_v23r6'}),
                                   tmpdir)
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))

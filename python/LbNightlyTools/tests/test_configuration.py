@@ -76,6 +76,7 @@ def test_loadXML():
 </configuration>
     '''
     expected = {'slot': 'lhcb-lcg-head',
+                'description': "head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot",
                 'projects': [{'name': 'LCGCMT',
                               'version': 'preview',
                               'checkout': 'noCheckout',
@@ -127,4 +128,7 @@ def test_loadXML():
 
     load = lambda path: Configuration.load(path+"#lhcb-lcg-head")
     found = processFile(xml, load)
+    #from pprint import pprint
+    #pprint(found)
+    #pprint(expected)
     assert found == expected
