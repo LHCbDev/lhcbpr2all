@@ -43,7 +43,11 @@ def loadFromOldXML(source, slot):
         if cmtProjPath:
             data['env'].append('CMTPROJECTPATH=' + cmtProjPath)
 
-        data['description'] = slotEl.attrib.get('description', '(no description)')
+        d = slotEl.attrib.get('description', '(no description)')
+        m = re.match(r'%s(:| -|\.)\s+' % slot, d)
+        if m:
+            d = d[:m.start()] + d[m.end():]
+        data['description'] = d
 
         el = slotEl.find('cmtextratags')
         if el is not None:
