@@ -398,8 +398,11 @@ class Script(LbUtils.Script.PlainScript):
 
         slot.checkout(build_dir)
 
-        slot.patch(build_dir,
-                   join(artifacts_dir, '.'.join([build_id or 'slot', 'patch'])))
+        if not cfg.get('no_patch'):
+            slot.patch(build_dir,
+                       join(artifacts_dir, '.'.join([build_id or 'slot', 'patch'])))
+        else:
+            self.log.info('not patching the sources')
 
         for p in slot.projects:
             # ignore missing directories (the project may not have been checked out)
