@@ -69,7 +69,7 @@ log = logging.getLogger(__name__)
 
 COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'), 'private', 'cov-admin')
 
-LOAD_AVERAGE_SCALE = 2
+LOAD_AVERAGE_SCALE = 1.2
 
 def genProjectXml(name, projects):
     '''
