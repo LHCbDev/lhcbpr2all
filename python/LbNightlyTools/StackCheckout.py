@@ -93,16 +93,17 @@ class StackDesc(object):
         gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
 
         # cache of the project versions
-        projVersions = dict([(p.name, p.version)
-                             for p in self.projects])
-        PROJVersions = dict([(p.name.upper(), p.version)
-                             for p in self.projects])
+        proj_versions = dict([(p.name, p.version)
+                              for p in self.projects])
+        proj_versions_uc = dict([(p.name.upper(), p.version)
+                                 for p in self.projects])
 
         patchfile = open(join(rootdir, patchfile), 'w')
         def write_patch(data, newdata, filename):
             '''
             Write the difference between data and newdata in the patchfile.
             '''
+            # pylint: disable=E1103
             if hasattr(data, 'splitlines'):
                 data = data.splitlines(True)
             if hasattr(newdata, 'splitlines'):
@@ -131,7 +132,8 @@ class StackDesc(object):
                                         'project, I\'m not touching it', proj)
                         return
                     args = m.group(1).split()
-                    args[1] = proj.version # the project version is always the second
+                    # the project version is always the second
+                    args[1] = proj.version
 
                     # fix the dependencies
                     if 'USE' in args:
@@ -143,11 +145,11 @@ class StackDesc(object):
                             data_idx = len(args)
                         # for each key, get the version (if available)
                         for i in range(use_idx, data_idx, 2):
-                            args[i+1] = projVersions.get(args[i], args[i+1])
-                    # FIXME: we should take into account the declared dependencies
+                            args[i+1] = proj_versions.get(args[i], args[i+1])
+                    # FIXME: we should take into account the declared deps
                     start, end = m.start(1), m.end(1)
                     newdata = data[:start] + ' '.join(args) + data[end:]
-                except Exception:
+                except: # pylint: disable=W0702
                     __log__.error('failed parsing of %s, not patching it',
                                   cmakelists)
                     return
@@ -176,8 +178,8 @@ class StackDesc(object):
                 for l in data:
                     n = l.strip().split()
                     if len(n) == 3 and n[0] == 'use':
-                        if n[1] in PROJVersions:
-                            n[2] = n[1] + '_' + PROJVersions[n[1]]
+                        if n[1] in proj_versions_uc:
+                            n[2] = n[1] + '_' + proj_versions_uc[n[1]]
                             # special case
                             if n[2] == 'LCGCMT_preview':
                                 n[2] = 'LCGCMT-preview'
@@ -351,7 +353,8 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info('not patching the sources')
 
         for proj in slot.projects:
-            # ignore missing directories (the project may not have been checked out)
+            # ignore missing directories
+            # (the project may not have been checked out)
             if not os.path.exists(join(build_dir, proj.projectDir)):
                 self.log.warning('no sources for %s, skip packing', proj)
                 continue
