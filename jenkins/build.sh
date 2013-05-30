@@ -79,3 +79,9 @@ if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   echo ${BUILD_URL} >> $stamp
   echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
 fi
+
+# FIXME: For the special slot lhcb-release we also keep a copy of the
+# whole build directory
+if [ "${slot}" == "lhcb-release" ] ; then
+  tar -c -j -f "${ARTIFACTS_DIR}"/${slot}.${slot_build_id}.${platform}.full.tar.bz2 -C build .
+fi
