@@ -27,6 +27,9 @@ def loadFromOldXML(source, slot):
     doc = parse(source)
 
     def fixPlaceHolders(s):
+        '''
+        Replace the old placeolders with the new ones.
+        '''
         s = s.replace('%DAY%', '${TODAY}')
         s = s.replace('%YESTERDAY%', '${YESTERDAY}')
         s = s.replace('%PLATFORM%', '${CMTCONFIG}')
@@ -39,7 +42,8 @@ def loadFromOldXML(source, slot):
                   if el.attrib.get('name') == slot).next()
 
         cmtProjPath = ':'.join([fixPlaceHolders(el.attrib['value'])
-                                for el in slotEl.findall('cmtprojectpath/path')])
+                                for el in
+                                    slotEl.findall('cmtprojectpath/path')])
         if cmtProjPath:
             data['env'].append('CMTPROJECTPATH=' + cmtProjPath)
 
@@ -60,7 +64,8 @@ def loadFromOldXML(source, slot):
                                       "args": {"path": path}}]
 
         data['default_platforms'] = [p.attrib['name']
-                                     for p in slotEl.findall('platforms/platform')
+                                     for p in
+                                         slotEl.findall('platforms/platform')
                                      if 'name' in p.attrib]
 
         allProjs = []
@@ -111,8 +116,10 @@ def loadFromOldXML(source, slot):
                 return v
             else:
                 return re.escape(v)
-        data['error_exceptions'] = map(el2re, doc.findall('general/ignore/error'))
-        data['warning_exceptions'] = map(el2re, doc.findall('general/ignore/warning'))
+        data['error_exceptions'] = map(el2re,
+                                       doc.findall('general/ignore/error'))
+        data['warning_exceptions'] = map(el2re,
+                                         doc.findall('general/ignore/warning'))
 
         return data
     except StopIteration:

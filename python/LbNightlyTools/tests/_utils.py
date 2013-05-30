@@ -44,8 +44,8 @@ def processFile(data, function):
     Process the string data via the function 'function' that accepts a filename
     as parameter.
     '''
-    fd, path = tempfile.mkstemp()
-    f = os.fdopen(fd, 'w')
+    fdesc, path = tempfile.mkstemp()
+    f = os.fdopen(fdesc, 'w')
     try:
         f.write(data)
         f.close()

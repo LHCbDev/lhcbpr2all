@@ -57,6 +57,7 @@ class ProjectDesc(object):
 
     @property
     def projectDir(self):
+        '''Name of the project directory (relative to the build directory).'''
         u = self.name.upper()
         return os.path.join(u, '{0}_{1}'.format(u, self.version))
 
@@ -98,19 +99,18 @@ class StackDesc(object):
         proj_versions_uc = dict([(p.name.upper(), p.version)
                                  for p in self.projects])
 
-        patchfile = open(join(rootdir, patchfile), 'w')
+        pfile = open(join(rootdir, patchfile), 'w')
         def write_patch(data, newdata, filename):
             '''
             Write the difference between data and newdata in the patchfile.
             '''
-            # pylint: disable=E1103
             if hasattr(data, 'splitlines'):
                 data = data.splitlines(True)
             if hasattr(newdata, 'splitlines'):
                 newdata = newdata.splitlines(True)
-            patchfile.writelines(context_diff(data, newdata,
-                                              fromfile=join('a', filename),
-                                              tofile=join('b', filename)))
+            pfile.writelines(context_diff(data, newdata,
+                                          fromfile=join('a', filename),
+                                          tofile=join('b', filename)))
 
         def fixCMake(proj):
             '''
@@ -175,16 +175,16 @@ class StackDesc(object):
                 f.close()
 
                 newdata = []
-                for l in data:
-                    n = l.strip().split()
+                for line in data:
+                    n = line.strip().split()
                     if len(n) == 3 and n[0] == 'use':
                         if n[1] in proj_versions_uc:
                             n[2] = n[1] + '_' + proj_versions_uc[n[1]]
                             # special case
                             if n[2] == 'LCGCMT_preview':
                                 n[2] = 'LCGCMT-preview'
-                            l = ' '.join(n) + '\n'
-                    newdata.append(l)
+                            line = ' '.join(n) + '\n'
+                    newdata.append(line)
 
                 f = open(join(rootdir, project_cmt), 'w')
                 f.writelines(newdata)
@@ -223,7 +223,7 @@ class StackDesc(object):
             fixCMake(proj)
             fixCMT(proj)
 
-        patchfile.close()
+        pfile.close()
 
 def parseConfigFile(path):
     '''
@@ -295,6 +295,17 @@ class Script(LbUtils.Script.PlainScript):
         parser.set_defaults(build_id='{slot}.{timestamp}',
                             artifacts_dir='artifacts')
 
+    def packname(self, proj):
+        '''
+        Return the filename of the archive (package) of the given project.
+        '''
+        packname = [proj.name, proj.version]
+        if self.options.build_id:
+            packname.append(self.options.build_id)
+        packname.append('src')
+        packname.append('tar.bz2')
+        return '.'.join(packname)
+
     def main(self):
         """ User code place holder """
         from os.path import join
@@ -316,12 +327,11 @@ class Script(LbUtils.Script.PlainScript):
         # replace tokens in the options
         expanded_tokens = {'slot': slot.name, 'timestamp': timestamp}
         for opt_name in ['build_id', 'artifacts_dir']:
-            v = getattr(self.options, opt_name)
-            if v:
-                setattr(self.options, opt_name, v.format(**expanded_tokens))
+            val = getattr(self.options, opt_name)
+            if val:
+                setattr(self.options, opt_name, val.format(**expanded_tokens))
 
         artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
-        build_id = self.options.build_id
 
         self.log.info('cleaning directories.')
         if os.path.exists(build_dir):
@@ -348,7 +358,8 @@ class Script(LbUtils.Script.PlainScript):
         if not cfg.get('no_patch'):
             slot.patch(build_dir,
                        join(artifacts_dir,
-                            '.'.join([build_id or 'slot', 'patch'])))
+                            '.'.join([self.options.build_id or 'slot',
+                                      'patch'])))
         else:
             self.log.info('not patching the sources')
 
@@ -360,14 +371,8 @@ class Script(LbUtils.Script.PlainScript):
                 continue
 
             self.log.info('packing %s %s...', proj.name, proj.version)
-            packname = [proj.name, proj.version]
-            if build_id:
-                packname.append(build_id)
-            packname.append('src')
-            packname.append('tar.bz2')
-            packname = '.'.join(packname)
 
-            call(['tar', 'chjf', join(artifacts_dir, packname),
+            call(['tar', 'chjf', join(artifacts_dir, self.packname(proj)),
                   proj.projectDir], cwd=build_dir)
 
         self.log.info('sources ready for build (time taken: %s).',

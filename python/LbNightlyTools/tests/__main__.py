@@ -9,15 +9,22 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-import os
-import sys
-from nose.core import main
+'''
+Wrapper script to run nosetests.
+'''
 
-argv = ['nosetests', '-v', '--with-doctest']
-if not 'coverage' in sys.modules:
-    # nosetests coverage conflicts with the PyDev one, so we enable it only
-    # if the coverage is not yet in memory
-    argv.extend(['--with-coverage', '--cover-erase', '--cover-inclusive',
-                 '--cover-package', 'LbNightlyTools'])
+def main():
+    import os
+    import sys
+    from nose.core import main
 
-main(defaultTest=os.path.dirname(os.path.dirname(__file__)), argv=argv)
+    argv = ['nosetests', '-v', '--with-doctest', '--with-xunit']
+    if not 'coverage' in sys.modules:
+        # nosetests coverage conflicts with the PyDev one, so we enable it only
+        # if the coverage is not yet in memory
+        argv.extend(['--with-coverage', '--cover-erase', '--cover-inclusive',
+                     '--cover-package', 'LbNightlyTools'])
+
+    main(defaultTest=os.path.dirname(os.path.dirname(__file__)), argv=argv)
+
+main()

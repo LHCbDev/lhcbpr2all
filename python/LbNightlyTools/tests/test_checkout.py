@@ -15,7 +15,7 @@ import re
 import shutil
 import nose
 from subprocess import Popen, PIPE
-from _utils import *
+from LbNightlyTools.tests._utils import *
 
 # Uncomment to disable the tests.
 #__test__ = False

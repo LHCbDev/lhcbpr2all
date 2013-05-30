@@ -28,18 +28,19 @@ def setDayNamesEnv(day=None):
     if day is None:
         day = datetime.today().weekday()
     os.environ['TODAY'] = os.environ.get('TODAY', DAY_NAMES[day])
-    os.environ['YESTERDAY'] = os.environ.get('YESTERDAY', DAY_NAMES[day - 1]) # it works for day == 0 too
+    # Note: it works for day == 0 too
+    os.environ['YESTERDAY'] = os.environ.get('YESTERDAY', DAY_NAMES[day - 1])
 
 
-def _timeoutTerminateCB(p, msg):
+def _timeoutTerminateCB(proc, msg):
     '''
     Safely terminate a running Popen object.
     '''
-    if p.poll() is None:
+    if proc.poll() is None:
         try:
             logging.warning(msg)
-            p.terminate()
-        except:
+            proc.terminate()
+        except: # pylint: disable=W0702
             pass
 
 def timeout_call(*popenargs, **kwargs):
@@ -52,12 +53,12 @@ def timeout_call(*popenargs, **kwargs):
         msg = kwargs.pop('timeoutmsg', 'on command ' + repr(popenargs))
         msg = 'Timeout reached %s (%ds): terminated.' % (msg, timeout)
         from threading import Timer
-        p = Popen(*popenargs, **kwargs)
-        t = Timer(timeout, _timeoutTerminateCB, [p, msg])
-        t.start()
-        r = p.wait()
-        t.cancel()
-        return r
+        proc = Popen(*popenargs, **kwargs)
+        timer = Timer(timeout, _timeoutTerminateCB, [proc, msg])
+        timer.start()
+        result = proc.wait()
+        timer.cancel()
+        return result
     except KeyError:
         return Popen(*popenargs, **kwargs).wait()
 

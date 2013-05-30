@@ -10,12 +10,12 @@
 ###############################################################################
 import json
 
-from _utils import processFile
+from LbNightlyTools.tests._utils import processFile
 
 # Uncomment to disable the tests.
 #__test__ = False
 
-from .. import Configuration
+from LbNightlyTools import Configuration
 
 def test_loadJSON():
     'Configuration.load(json_file)'
