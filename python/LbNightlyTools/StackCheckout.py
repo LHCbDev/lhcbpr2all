@@ -20,7 +20,7 @@ import os
 import subprocess
 from datetime import date
 
-import Configuration
+from LbNightlyTools import Configuration
 
 __log__ = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def defaultCheckout(desc, rootdir='.'):
 
     __log__.debug('checkout of %s completed in %s', desc, prjroot)
 
-def noCheckout(desc, rootdir='.'):
+def noCheckout(desc, rootdir='.'): # pylint: disable=W0613
     '''
     Special checkout function used to just declare a project version in the
     configuration but do not perform the checkout, so that it's picked up from
@@ -87,6 +87,12 @@ def noCheckout(desc, rootdir='.'):
     __log__.info('checkout not requested for %s', desc)
 
 def gitCheckout(desc, rootdir='.'):
+    '''
+    Checkout from a git repository.
+
+    This function requires mandatory 'url' field in the 'checkout_opts' of the
+    project description.
+    '''
     if 'url' not in desc.checkout_opts:
         raise RuntimeError('mandatory checkout_opts "url" is missing')
     url = desc.checkout_opts['url']
@@ -100,17 +106,11 @@ def gitCheckout(desc, rootdir='.'):
     f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
-def specialLHCbCheckout(desc, rootdir='.'):
-    getpack = ['getpack', '--batch', '--no-config']
-    __log__.debug('checking out %s', desc)
-    cmd = getpack + ['-P', desc.name, desc.version]
-    call(cmd, cwd=rootdir, retry=3)
-
 class ProjectDesc(object):
     '''
     Describe a project to be checked out.
     '''
-    def __init__(self, name, version, overrides=None, checkout=None, checkout_opts=None):
+    def __init__(self, name, version, **kwargs):
         '''
         @param name: name of the project
         @param version: version of the project as 'vXrY' or 'HEAD', where 'HEAD'
@@ -119,14 +119,15 @@ class ProjectDesc(object):
                           versions of the packages in the requested projects
                           version and the ones required in the checkout
         @param checkout: callable that can check out the specified project
+        @param checkout_opts: dictionary with extra options for the
         '''
         self.name = name
         if version.upper() == 'HEAD':
             version = 'HEAD'
         self.version = version
-        self.overrides = overrides or {}
-        self._checkout = checkout or defaultCheckout
-        self.checkout_opts = checkout_opts or {}
+        self.overrides = kwargs.get('overrides', {})
+        self._checkout = kwargs.get('checkout', defaultCheckout)
+        self.checkout_opts = kwargs.get('checkout_opts', {})
 
     def checkout(self, rootdir='.'):
         '''
@@ -157,8 +158,8 @@ class StackDesc(object):
         Call check out all the projects.
         '''
         __log__.info('checking out stack...')
-        for p in self.projects:
-            p.checkout(rootdir)
+        for proj in self.projects:
+            proj.checkout(rootdir)
         __log__.info('... done.')
 
     def patch(self, rootdir='.', patchfile='stack.patch'):
@@ -173,17 +174,30 @@ class StackDesc(object):
         gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
 
         # cache of the project versions
-        projVersions = dict([(p.name, p.version) for p in self.projects])
-        PROJVersions = dict([(p.name.upper(), p.version) for p in self.projects])
+        projVersions = dict([(p.name, p.version)
+                             for p in self.projects])
+        PROJVersions = dict([(p.name.upper(), p.version)
+                             for p in self.projects])
 
         patchfile = open(join(rootdir, patchfile), 'w')
+        def write_patch(data, newdata, filename):
+            '''
+            Write the difference between data and newdata in the patchfile.
+            '''
+            if hasattr(data, 'splitlines'):
+                data = data.splitlines(True)
+            if hasattr(newdata, 'splitlines'):
+                newdata = newdata.splitlines(True)
+            patchfile.writelines(context_diff(data, newdata,
+                                              fromfile=join('a', filename),
+                                              tofile=join('b', filename)))
 
-        def fixCMake(p):
+        def fixCMake(proj):
             '''
             Fix the CMake configuration of a project, if it exists, and write
             the changes in 'patchfile'.
             '''
-            cmakelists = join(p.projectDir, 'CMakeLists.txt')
+            cmakelists = join(proj.projectDir, 'CMakeLists.txt')
 
             if exists(join(rootdir, cmakelists)):
                 __log__.info('patching %s', cmakelists)
@@ -195,10 +209,10 @@ class StackDesc(object):
                     m = gp_exp.search(data)
                     if m is None:
                         __log__.warning('%s does not look like a Gaudi/CMake '
-                                        'project, I\'m not touching it', p)
+                                        'project, I\'m not touching it', proj)
                         return
                     args = m.group(1).split()
-                    args[1] = p.version # the project version is always the second
+                    args[1] = proj.version # the project version is always the second
 
                     # fix the dependencies
                     if 'USE' in args:
@@ -212,27 +226,26 @@ class StackDesc(object):
                         for i in range(use_idx, data_idx, 2):
                             args[i+1] = projVersions.get(args[i], args[i+1])
                     # FIXME: we should take into account the declared dependencies
-                    newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
-                except:
-                    __log__.error('failed parsing of %s, not patching it', cmakelists)
+                    start, end = m.start(1), m.end(1)
+                    newdata = data[:start] + ' '.join(args) + data[end:]
+                except Exception:
+                    __log__.error('failed parsing of %s, not patching it',
+                                  cmakelists)
                     return
 
                 f = open(join(rootdir, cmakelists), 'w')
                 f.write(newdata)
                 f.close()
 
-                patchfile.writelines(context_diff(data.splitlines(True),
-                                                  newdata.splitlines(True),
-                                                  fromfile=join('a', cmakelists),
-                                                  tofile=join('b', cmakelists)))
+                write_patch(data, newdata, cmakelists)
 
 
-        def fixCMT(p):
+        def fixCMT(proj):
             '''
             Fix the CMT configuration of a project, if it exists, and write
             the changes in 'patchfile'.
             '''
-            project_cmt = join(p.projectDir, 'cmt', 'project.cmt')
+            project_cmt = join(proj.projectDir, 'cmt', 'project.cmt')
 
             if exists(join(rootdir, project_cmt)):
                 __log__.info('patching %s', project_cmt)
@@ -256,14 +269,14 @@ class StackDesc(object):
                 f.writelines(newdata)
                 f.close()
 
-                patchfile.writelines(context_diff(data, newdata,
-                                                  fromfile=join('a', project_cmt),
-                                                  tofile=join('b', project_cmt)))
+                write_patch(data, newdata, project_cmt)
 
             # find the container package
-            requirements = join(p.projectDir, p.name + 'Release', 'cmt', 'requirements')
+            requirements = join(proj.projectDir, proj.name + 'Release',
+                                'cmt', 'requirements')
             if not exists(join(rootdir, requirements)):
-                requirements = join(p.projectDir, p.name + 'Sys', 'cmt', 'requirements')
+                requirements = join(proj.projectDir, proj.name + 'Sys',
+                                    'cmt', 'requirements')
 
             if exists(join(rootdir, requirements)):
                 __log__.info('patching %s', requirements)
@@ -283,30 +296,29 @@ class StackDesc(object):
                 f.writelines(newdata)
                 f.close()
 
-                patchfile.writelines(context_diff(data, newdata,
-                                                  fromfile=join('a', requirements),
-                                                  tofile=join('b', requirements)))
+                write_patch(data, newdata, requirements)
 
-        for p in self.projects:
-            fixCMake(p)
-            fixCMT(p)
+        for proj in self.projects:
+            fixCMake(proj)
+            fixCMT(proj)
 
         patchfile.close()
 
 def parseConfigFile(path):
     data = Configuration.load(path)
     projects = []
-    for p in data[u'projects']:
-        checkout = p.get(u'checkout', 'defaultCheckout')
+    for proj in data[u'projects']:
+        checkout = proj.get(u'checkout', 'defaultCheckout')
         if '.' in checkout:
             m, f = checkout.rsplit('.', 1)
             checkout = getattr(__import__(m, fromlist=[f]), f)
         else:
             checkout = globals()[checkout]
-        projects.append(ProjectDesc(p[u'name'], p[u'version'],
-                                    overrides=p.get(u'overrides', {}),
+        projects.append(ProjectDesc(proj[u'name'], proj[u'version'],
+                                    overrides=proj.get(u'overrides', {}),
                                     checkout=checkout,
-                                    checkout_opts=p.get(u'checkout_opts', {})))
+                                    checkout_opts=proj.get(u'checkout_opts',
+                                                           {})))
     return StackDesc(projects=projects, name=data.get(u'slot', None))
 
 import LbUtils.Script
@@ -338,9 +350,9 @@ class Script(LbUtils.Script.PlainScript):
         parser.add_option('--build-id',
                           action='store',
                           help='string to add to the tarballs of the build to '
-                               'distinguish them from others, the string can be a '
-                               'format string using the parameters "timestamp" '
-                               'and "slot" (a separation "." will '
+                               'distinguish them from others, the string can '
+                               'be a format string using the parameters '
+                               '"timestamp" and "slot" (a separation "." will '
                                'be added automatically) [default: %default]')
 
         parser.add_option('--artifacts-dir',
@@ -402,18 +414,19 @@ class Script(LbUtils.Script.PlainScript):
 
         if not cfg.get('no_patch'):
             slot.patch(build_dir,
-                       join(artifacts_dir, '.'.join([build_id or 'slot', 'patch'])))
+                       join(artifacts_dir,
+                            '.'.join([build_id or 'slot', 'patch'])))
         else:
             self.log.info('not patching the sources')
 
-        for p in slot.projects:
+        for proj in slot.projects:
             # ignore missing directories (the project may not have been checked out)
-            if not os.path.exists(join(build_dir, p.projectDir)):
-                self.log.warning('no sources for %s, skip packing', p)
+            if not os.path.exists(join(build_dir, proj.projectDir)):
+                self.log.warning('no sources for %s, skip packing', proj)
                 continue
 
-            self.log.info('packing %s %s...', p.name, p.version)
-            packname = [p.name, p.version]
+            self.log.info('packing %s %s...', proj.name, proj.version)
+            packname = [proj.name, proj.version]
             if build_id:
                 packname.append(build_id)
             packname.append('src')
@@ -421,7 +434,8 @@ class Script(LbUtils.Script.PlainScript):
             packname = '.'.join(packname)
 
             call(['tar', 'chjf', join(artifacts_dir, packname),
-                  p.projectDir], cwd=build_dir)
+                  proj.projectDir], cwd=build_dir)
 
-        self.log.info('sources ready for build (time taken: %s).', datetime.now() - starttime)
+        self.log.info('sources ready for build (time taken: %s).',
+                      datetime.now() - starttime)
         return 0
