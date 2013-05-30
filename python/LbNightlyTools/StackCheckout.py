@@ -20,7 +20,7 @@ import os
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools._utils import retry_call as call
+from LbNightlyTools.Utils import retry_call as call
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)

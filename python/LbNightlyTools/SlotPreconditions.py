@@ -87,7 +87,7 @@ class Script(LbUtils.Script.PlainScript):
 
         preconds = parseConfigFile(self.args[0])
 
-        from _utils import setDayNamesEnv
+        from LbNightlyTools.Utils import setDayNamesEnv
         setDayNamesEnv()
 
         starttime = datetime.now()

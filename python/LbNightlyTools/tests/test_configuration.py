@@ -10,7 +10,7 @@
 ###############################################################################
 import json
 
-from LbNightlyTools.tests._utils import processFile
+from LbNightlyTools.tests.utils import processFile
 
 # Uncomment to disable the tests.
 #__test__ = False

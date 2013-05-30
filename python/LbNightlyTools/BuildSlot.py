@@ -24,7 +24,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
-from LbNightlyTools._utils import timeout_call as call
+from LbNightlyTools.Utils import timeout_call as call
 
 from string import Template
 from socket import gethostname
@@ -234,7 +234,7 @@ def main():
     from os.path import join, dirname
     config = Configuration.load(args[0])
 
-    from _utils import setDayNamesEnv
+    from LbNightlyTools.Utils import setDayNamesEnv
     setDayNamesEnv()
 
     # FIXME: we need something better

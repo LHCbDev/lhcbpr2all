@@ -17,7 +17,7 @@ import logging
 import shutil
 import os
 
-from LbNightlyTools._utils import retry_call as call
+from LbNightlyTools.Utils import retry_call as call
 
 __log__ = logging.getLogger(__name__)
 
