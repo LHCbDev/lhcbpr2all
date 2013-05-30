@@ -214,7 +214,7 @@ def test_checkout():
 
 
         StackCheckout.gitCheckout(ProjectDesc('Gaudi', 'HEAD',
-                                              checkout_opts={'url': 'http://cern.ch/gaudi/Gaudi.git'}),
+                                              checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'}),
                                   tmpdir)
         check([join('GAUDI', 'GAUDI_HEAD', join(*x))
                for x in [('Makefile',),
