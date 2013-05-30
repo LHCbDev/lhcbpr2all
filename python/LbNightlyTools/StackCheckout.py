@@ -22,7 +22,7 @@ from datetime import date
 
 import Configuration
 
-log = logging.getLogger(__name__)
+__log__ = logging.getLogger(__name__)
 
 def call(*args, **kwargs):
     '''
@@ -55,27 +55,28 @@ def defaultCheckout(desc, rootdir='.'):
     '''
     Checkout the project described by the ProjectDesc 'desc'.
     '''
+    from os.path import normpath, join
     getpack = ['getpack', '--batch', '--no-config']
-    log.debug('checking out %s', desc)
+    __log__.debug('checking out %s', desc)
     cmd = getpack + ['-P',
                      '-H' if desc.version == 'HEAD' else '-r',
                      desc.name, desc.version]
     call(cmd, cwd=rootdir, retry=3)
 
-    prjroot = os.path.normpath(os.path.join(rootdir, desc.projectDir))
+    prjroot = normpath(join(rootdir, desc.projectDir))
 
     overrides = desc.overrides
     if overrides:
-        log.debug('overriding packages')
+        __log__.debug('overriding packages')
         for package, version in overrides.items():
             if version:
                 cmd = getpack + [package, version]
                 call(cmd, cwd=prjroot, retry=3)
             else:
                 print 'Removing', package
-                shutil.rmtree(os.path.join(prjroot, package), ignore_errors=True)
+                shutil.rmtree(join(prjroot, package), ignore_errors=True)
 
-    log.debug('checkout of %s completed in %s', desc, prjroot)
+    __log__.debug('checkout of %s completed in %s', desc, prjroot)
 
 def noCheckout(desc, rootdir='.'):
     '''
@@ -83,25 +84,25 @@ def noCheckout(desc, rootdir='.'):
     configuration but do not perform the checkout, so that it's picked up from
     the release area.
     '''
-    log.info('checkout not requested for %s', desc)
+    __log__.info('checkout not requested for %s', desc)
 
 def gitCheckout(desc, rootdir='.'):
     if 'url' not in desc.checkout_opts:
         raise RuntimeError('mandatory checkout_opts "url" is missing')
     url = desc.checkout_opts['url']
     commit = desc.checkout_opts.get('commit', 'master')
-    log.debug('checking out %s from %s (%s)', desc, url, commit)
+    __log__.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = os.path.join(rootdir, desc.projectDir)
     call(['git', 'clone', url, dest])
     call(['git', 'checkout', commit], cwd=dest)
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
-    log.debug('checkout of %s completed in %s', desc, dest)
+    __log__.debug('checkout of %s completed in %s', desc, dest)
 
 def specialLHCbCheckout(desc, rootdir='.'):
     getpack = ['getpack', '--batch', '--no-config']
-    log.debug('checking out %s', desc)
+    __log__.debug('checking out %s', desc)
     cmd = getpack + ['-P', desc.name, desc.version]
     call(cmd, cwd=rootdir, retry=3)
 
@@ -131,7 +132,7 @@ class ProjectDesc(object):
         '''
         Helper function to call the checkout method.
         '''
-        log.info('checking out %s', self)
+        __log__.info('checking out %s', self)
         self._checkout(self, rootdir=rootdir)
 
     @property
@@ -155,10 +156,10 @@ class StackDesc(object):
         '''
         Call check out all the projects.
         '''
-        log.info('checking out stack...')
+        __log__.info('checking out stack...')
         for p in self.projects:
             p.checkout(rootdir)
-        log.info('... done.')
+        __log__.info('... done.')
 
     def patch(self, rootdir='.', patchfile='stack.patch'):
         '''
@@ -185,7 +186,7 @@ class StackDesc(object):
             cmakelists = join(p.projectDir, 'CMakeLists.txt')
 
             if exists(join(rootdir, cmakelists)):
-                log.info('patching %s', cmakelists)
+                __log__.info('patching %s', cmakelists)
                 f = open(join(rootdir, cmakelists))
                 data = f.read()
                 f.close()
@@ -193,7 +194,8 @@ class StackDesc(object):
                     # find the project declaration call
                     m = gp_exp.search(data)
                     if m is None:
-                        log.warning('%s does not look like a Gaudi/CMake project, I\'m not touching it', p)
+                        __log__.warning('%s does not look like a Gaudi/CMake '
+                                        'project, I\'m not touching it', p)
                         return
                     args = m.group(1).split()
                     args[1] = p.version # the project version is always the second
@@ -212,7 +214,7 @@ class StackDesc(object):
                     # FIXME: we should take into account the declared dependencies
                     newdata = data[:m.start(1)] + ' '.join(args) + data[m.end(1):]
                 except:
-                    log.error('failed parsing of %s, not patching it', cmakelists)
+                    __log__.error('failed parsing of %s, not patching it', cmakelists)
                     return
 
                 f = open(join(rootdir, cmakelists), 'w')
@@ -233,7 +235,7 @@ class StackDesc(object):
             project_cmt = join(p.projectDir, 'cmt', 'project.cmt')
 
             if exists(join(rootdir, project_cmt)):
-                log.info('patching %s', project_cmt)
+                __log__.info('patching %s', project_cmt)
                 f = open(join(rootdir, project_cmt))
                 data = f.readlines()
                 f.close()
@@ -264,7 +266,7 @@ class StackDesc(object):
                 requirements = join(p.projectDir, p.name + 'Sys', 'cmt', 'requirements')
 
             if exists(join(rootdir, requirements)):
-                log.info('patching %s', requirements)
+                __log__.info('patching %s', requirements)
                 f = open(join(rootdir, requirements))
                 data = f.readlines()
                 f.close()

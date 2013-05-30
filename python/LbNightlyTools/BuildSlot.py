@@ -21,8 +21,9 @@ import time
 import socket
 import threading
 import codecs
-import Configuration
 import json
+
+from LbNightlyTools import Configuration
 
 from string import Template
 from socket import gethostname
@@ -65,7 +66,7 @@ def call(*popenargs, **kwargs):
 # no-op 'call' function for testing
 #call = lambda *a,**k: None
 
-log = logging.getLogger(__name__)
+__log__ = logging.getLogger(__name__)
 
 COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'), 'private', 'cov-admin')
 
@@ -282,7 +283,7 @@ def main():
     artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
 
     if not opts.no_clean:
-        log.info('Cleaning build directory.')
+        __log__.info('Cleaning build directory.')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
 
@@ -316,17 +317,17 @@ def main():
                  'started': starttime.isoformat()})
     dump_json(data, 'start')
 
-    log.info('Preparing build directory...')
+    __log__.info('Preparing build directory...')
     for f in os.listdir(artifacts_dir):
         if f.endswith('.tar.bz2'):
             f = join(artifacts_dir, f)
-            log.info('  unpacking %s', f)
+            __log__.info('  unpacking %s', f)
             # do not overwrite existing sources when unpacking
             # (either we just cleaned the directory or we were asked not to do it)
             call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
                   '-f', f], cwd=build_dir)
 
-    log.info("Generating CTest scripts and configurations.")
+    __log__.info("Generating CTest scripts and configurations.")
 
     def write(path, data):
         f = open(path, 'w')
@@ -377,15 +378,15 @@ def main():
                         shutil.rmtree(d)
                     elif os.path.isfile(d) or os.path.islink(d):
                         os.remove(d)
-                    log.info('Copying %s to deployment directory', f)
+                    __log__.info('Copying %s to deployment directory', f)
                     if os.path.isdir(f):
                         shutil.copytree(f, d)
                     elif os.path.isfile(f):
                         shutil.copy2(f, d)
                     else:
-                        log.warning('Cannot deploy %s (does it exist?)', f)
+                        __log__.warning('Cannot deploy %s (does it exist?)', f)
                 except os.error, err:
-                    log.warning('Problems deploying %s: %s', f, err)
+                    __log__.warning('Problems deploying %s: %s', f, err)
     else:
         def deployReports(_):
             pass
@@ -492,7 +493,7 @@ def main():
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
-            log.warning('no sources for %s, skip build', p)
+            __log__.warning('no sources for %s, skip build', p)
             continue
 
         packname = [p.name, p.version]
@@ -503,7 +504,7 @@ def main():
         packname = '.'.join(packname)
         packname = os.path.join(artifacts_dir, packname)
         if os.path.exists(packname):
-            log.info('binary tarball for %s already present, skip build', p)
+            __log__.info('binary tarball for %s already present, skip build', p)
             continue
 
         old_build_id = OLD_BUILD_ID.format(slot=config[u'slot'],
@@ -582,12 +583,12 @@ def main():
 
         dumpConfSummary()
         dumpFileListSummary('sources.list')
-        log.info('building %s', p.dir)
+        __log__.info('building %s', p.dir)
         p.started = datetime.now()
         p.build_retcode = call(build_cmd, cwd=projdir,
                                timeout=14400, timeoutmsg='building %s' % p.name) # timeout of 4 hours
         if p.build_retcode != 0:
-            log.warning('build exited with code %d', p.build_retcode)
+            __log__.warning('build exited with code %d', p.build_retcode)
         p.completed = datetime.now()
         dumpFileListSummary('sources_built.list')
 
@@ -599,7 +600,7 @@ def main():
         deployReports(reporter.genOldSummaries())
         dump_json(reporter.json(), 'build')
 
-        log.info('packing %s', p.dir)
+        __log__.info('packing %s', p.dir)
 
         call(['tar', 'chjf', packname,
               os.path.join(p.dir, 'InstallArea')], cwd=build_dir)
@@ -610,17 +611,17 @@ def main():
         if opts.coverity:
             # run the Coverity analysis
             if p.build_retcode != 0:
-                log.error('cannot run Coverity analysis on a failed build')
+                __log__.error('cannot run Coverity analysis on a failed build')
             else:
                 # this call actually does not "submit" (commit-defects), it just
                 # run the analysis
-                log.info('running Coverity analysis from %s', coverity_int)
+                __log__.info('running Coverity analysis from %s', coverity_int)
                 call(['analyze-submit.sh', coverity_int, coverity_mod])
                 # keep a copy of the logs
                 for clf in ['log.txt', 'BUILD.metrics.xml', 'build-log.txt']:
                     shutil.copy2(join(coverity_int, clf), coverity_logs)
                 # collect models for use with the other projects
-                log.info('collecting Coverity models')
+                __log__.info('collecting Coverity models')
                 call(['cov-collect-models', '--dir', coverity_int,
                       '-of', join(coverity_mod, p.name + '.xmldb')])
                 # ensure that there is no stale lock
@@ -644,21 +645,21 @@ def main():
 
                 tmpenv = {'COVERITY_PASSPHRASE': open(COV_PASSPHRASE_FILE).read().strip()}
                 tmpenv.update(os.environ)
-                log.info('committing results Coverity Integrity Manager')
+                __log__.info('committing results Coverity Integrity Manager')
                 call(cov_commit_cmd, env=tmpenv)
                 del tmpenv
 
             # remove the Coverity intermediate directory if it is on the ramdisk
             if coverity_int.startswith('/dev/shm'):
-                log.debug('cleaning Coverity intermediate directory')
+                __log__.debug('cleaning Coverity intermediate directory')
                 shutil.rmtree(coverity_int, ignore_errors=True)
                 try:
                     os.removedirs(os.path.dirname(coverity_int))
                 except os.error:
-                    log.warning("failed to clean %s", coverity_int)
+                    __log__.warning("failed to clean %s", coverity_int)
 
         if not opts.build_only and not opts.coverity:
-            log.info('testing (in background) %s', p.dir)
+            __log__.info('testing (in background) %s', p.dir)
             jobs.append(TestTask(['nice'] + test_cmd, cwd=projdir,
                                  artifacts_dir=artifacts_dir,
                                  config=config,
@@ -672,7 +673,7 @@ def main():
         shutil.rmtree(join('/dev/shm/coverity.{0}'.format(platform)), ignore_errors=True)
 
     if jobs:
-        log.info('waiting for pending tasks (tests, etc.)...')
+        __log__.info('waiting for pending tasks (tests, etc.)...')
         for j in jobs:
             j.wait()
 
@@ -684,14 +685,14 @@ def main():
                  'completed': completetime.isoformat()})
     dump_json(data, 'completed')
 
-    log.info('build completed in %s', completetime - starttime)
+    __log__.info('build completed in %s', completetime - starttime)
     if opts.rsync_dest:
-        log.info('deploying artifacts...')
+        __log__.info('deploying artifacts...')
         retcode = DeployArtifactsTask().wait()
         if retcode == 0:
-            log.info('... artifacts deployed')
+            __log__.info('... artifacts deployed')
         else:
-            log.error('artifacts deployment failed')
+            __log__.error('artifacts deployment failed')
             return retcode
     return 0
 
