@@ -79,7 +79,7 @@ def test_loadXML():
                 'description': "head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot",
                 'projects': [{'name': 'LCGCMT',
                               'version': 'preview',
-                              'checkout': 'noCheckout',
+                              'checkout': 'ignore',
                               'dependencies': [],
                               'overrides': {}},
                              {'name': 'Gaudi',

@@ -20,7 +20,8 @@ from _utils import *
 # Uncomment to disable the tests.
 #__test__ = False
 
-from .. import StackCheckout
+from LbNightlyTools import StackCheckout
+from LbNightlyTools import CheckoutMethods
 
 os.environ['LANG'] = 'C'
 
@@ -46,7 +47,7 @@ def test_ProjectDesc():
     assert p.name == 'Gaudi'
     assert p.version == 'v23r5'
     assert p.overrides == {}
-    assert p._checkout == StackCheckout.defaultCheckout
+    assert p._checkout == CheckoutMethods.default
     assert p.projectDir == 'GAUDI/GAUDI_v23r5'
     assert str(p) == 'Gaudi v23r5'
 
@@ -54,7 +55,7 @@ def test_ProjectDesc():
     assert p.name == 'Gaudi'
     assert p.version == 'HEAD'
     assert p.overrides == {}
-    assert p._checkout == StackCheckout.defaultCheckout
+    assert p._checkout == CheckoutMethods.default
     assert p.projectDir == 'GAUDI/GAUDI_HEAD'
     assert str(p) == 'Gaudi HEAD'
 
@@ -113,11 +114,11 @@ def test_parseConfigFile():
 
     doCall = lambda data: processFile(json.dumps(data), StackCheckout.parseConfigFile)
 
-    StackCheckout.specialCheckoutFunction = MockFunc()
+    CheckoutMethods.special_test = MockFunc()
 
     s = doCall({'projects':[{"name": "Gaudi",
                              "version": "v23r5",
-                             "checkout": "specialCheckoutFunction"},
+                             "checkout": "special_test"},
                             {"name": "LHCb",
                              "version": "v32r5",
                              "overrides": {"GaudiObjDesc": "HEAD",
@@ -127,10 +128,10 @@ def test_parseConfigFile():
     assert len(s.projects) == 2
     p = s.projects[0]
     assert (p.name, p.version) == ('Gaudi', 'v23r5')
-    assert p._checkout == StackCheckout.specialCheckoutFunction #@UndefinedVariable
+    assert p._checkout == CheckoutMethods.special_test #@UndefinedVariable
     p = s.projects[1]
     assert (p.name, p.version) == ('LHCb', 'v32r5')
-    assert p._checkout == StackCheckout.defaultCheckout
+    assert p._checkout == CheckoutMethods.default
     assert p.overrides == {"GaudiObjDesc": "HEAD",
                            "GaudiPython": "v12r4",
                            "Online/RootCnv": None}
@@ -165,14 +166,14 @@ def test_checkout():
         for f in files:
             assert exists(join(tmpdir, f)), 'Missing %s' % f
     try:
-        StackCheckout.defaultCheckout(ProjectDesc('Brunel', 'v44r1'), tmpdir)
+        CheckoutMethods.default(ProjectDesc('Brunel', 'v44r1'), tmpdir)
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
                          ('cmt', 'project.cmt'),
                          ('BrunelSys', 'cmt', 'requirements')]])
 
-        StackCheckout.defaultCheckout(ProjectDesc('Brunel', 'head'), tmpdir)
+        CheckoutMethods.default(ProjectDesc('Brunel', 'head'), tmpdir)
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -181,10 +182,11 @@ def test_checkout():
                          ('BrunelSys', 'cmt', 'requirements')]])
 
         shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
-        StackCheckout.defaultCheckout(ProjectDesc('Brunel', 'head',
-                                                  overrides={'GaudiObjDesc': 'head',
-                                                             'GaudiPolicy': 'v12r0',
-                                                             'Rec/Brunel': None}), tmpdir)
+        CheckoutMethods.default(ProjectDesc('Brunel', 'head',
+                                            overrides={'GaudiObjDesc': 'head',
+                                                       'GaudiPolicy': 'v12r0',
+                                                       'Rec/Brunel': None}),
+                                tmpdir)
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -196,10 +198,10 @@ def test_checkout():
         assert re.search(r'version\s+v12r0', GaudiPolicy_requirements)
         assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements'))
 
-        StackCheckout.gitCheckout(ProjectDesc('Gaudi', 'v23r6',
-                                              checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
-                                                             'commit': 'GAUDI/GAUDI_v23r6'}),
-                                  tmpdir)
+        CheckoutMethods.git(ProjectDesc('Gaudi', 'v23r6',
+                                        checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
+                                                       'commit': 'GAUDI/GAUDI_v23r6'}),
+                            tmpdir)
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -213,9 +215,9 @@ def test_checkout():
         assert '* (no branch)' in branches
 
 
-        StackCheckout.gitCheckout(ProjectDesc('Gaudi', 'HEAD',
-                                              checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'}),
-                                  tmpdir)
+        CheckoutMethods.git(ProjectDesc('Gaudi', 'HEAD',
+                                        checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'}),
+                            tmpdir)
         check([join('GAUDI', 'GAUDI_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -230,7 +232,7 @@ def test_checkout():
 
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'), ignore_errors=True)
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_HEAD'), ignore_errors=True)
-        StackCheckout.noCheckout(ProjectDesc('Gaudi', 'v23r6'), tmpdir)
+        CheckoutMethods.ignore(ProjectDesc('Gaudi', 'v23r6'), tmpdir)
         assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
 
 
