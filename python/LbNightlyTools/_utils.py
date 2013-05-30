@@ -70,7 +70,7 @@ def retry_call(*args, **kwargs):
 
     For example:
 
-    >>> call(['false'], retry=3)
+    >>> retry_call(['false'], retry=3)
     Traceback (most recent call last):
     ...
     RuntimeError: the command ['false'] failed 3 times
