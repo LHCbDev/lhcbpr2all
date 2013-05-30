@@ -17,94 +17,13 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
-import subprocess
 from datetime import date
 
 from LbNightlyTools import Configuration
+from LbNightlyTools._utils import retry_call as call
+from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
-
-def call(*args, **kwargs):
-    '''
-    Replacement for subprocess.call() that can retry if the command fails.
-    To enable the retries, pass the keyword argument 'retry' setting it to the
-    number of timed to try.
-
-    For example:
-
-    >>> call(['false'], retry=3)
-    Traceback (most recent call last):
-    ...
-    RuntimeError: the command ['false'] failed 3 times
-
-    '''
-    if 'retry' not in kwargs:
-        # no retry
-        return subprocess.call(*args, **kwargs)
-    else:
-        retry = kwargs.pop('retry')
-        for _count in range(retry):
-            if subprocess.call(*args, **kwargs) == 0:
-                break
-        else: # Note: else of the 'for' block
-            raise RuntimeError('the command {0} failed {1} times'
-                                .format(args[0], retry))
-        return 0
-
-def defaultCheckout(desc, rootdir='.'):
-    '''
-    Checkout the project described by the ProjectDesc 'desc'.
-    '''
-    from os.path import normpath, join
-    getpack = ['getpack', '--batch', '--no-config']
-    __log__.debug('checking out %s', desc)
-    cmd = getpack + ['-P',
-                     '-H' if desc.version == 'HEAD' else '-r',
-                     desc.name, desc.version]
-    call(cmd, cwd=rootdir, retry=3)
-
-    prjroot = normpath(join(rootdir, desc.projectDir))
-
-    overrides = desc.overrides
-    if overrides:
-        __log__.debug('overriding packages')
-        for package, version in overrides.items():
-            if version:
-                cmd = getpack + [package, version]
-                call(cmd, cwd=prjroot, retry=3)
-            else:
-                print 'Removing', package
-                shutil.rmtree(join(prjroot, package), ignore_errors=True)
-
-    __log__.debug('checkout of %s completed in %s', desc, prjroot)
-
-def noCheckout(desc, rootdir='.'): # pylint: disable=W0613
-    '''
-    Special checkout function used to just declare a project version in the
-    configuration but do not perform the checkout, so that it's picked up from
-    the release area.
-    '''
-    __log__.info('checkout not requested for %s', desc)
-
-def gitCheckout(desc, rootdir='.'):
-    '''
-    Checkout from a git repository.
-
-    This function requires mandatory 'url' field in the 'checkout_opts' of the
-    project description.
-    '''
-    if 'url' not in desc.checkout_opts:
-        raise RuntimeError('mandatory checkout_opts "url" is missing')
-    url = desc.checkout_opts['url']
-    commit = desc.checkout_opts.get('commit', 'master')
-    __log__.debug('checking out %s from %s (%s)', desc, url, commit)
-    dest = os.path.join(rootdir, desc.projectDir)
-    call(['git', 'clone', url, dest])
-    call(['git', 'checkout', commit], cwd=dest)
-    f = open(os.path.join(dest, 'Makefile'), 'w')
-    f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
-    f.close()
-    __log__.debug('checkout of %s completed in %s', desc, dest)
 
 class ProjectDesc(object):
     '''
@@ -126,7 +45,7 @@ class ProjectDesc(object):
             version = 'HEAD'
         self.version = version
         self.overrides = kwargs.get('overrides', {})
-        self._checkout = kwargs.get('checkout', defaultCheckout)
+        self._checkout = kwargs.get('checkout', CheckoutMethods.default)
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
     def checkout(self, rootdir='.'):
@@ -305,15 +224,27 @@ class StackDesc(object):
         patchfile.close()
 
 def parseConfigFile(path):
+    '''
+    Load the slot configuration file and translate it in a StackDesc instance.
+    '''
     data = Configuration.load(path)
     projects = []
+    old_checkout_names = {'defaultCheckout': 'default',
+                          'gitCheckout': 'git',
+                          'noCheckout': 'ignore'}
     for proj in data[u'projects']:
-        checkout = proj.get(u'checkout', 'defaultCheckout')
+        checkout = proj.get(u'checkout', 'default')
+        # add backward compatibility check for the checkout functions
+        if checkout in old_checkout_names:
+            new_name = old_checkout_names[checkout]
+            __log__.warning('the checkout name "%s" is deprecated, '
+                            'use "%s" instead', checkout, new_name)
+            checkout = new_name
         if '.' in checkout:
             m, f = checkout.rsplit('.', 1)
             checkout = getattr(__import__(m, fromlist=[f]), f)
         else:
-            checkout = globals()[checkout]
+            checkout = getattr(CheckoutMethods, checkout)
         projects.append(ProjectDesc(proj[u'name'], proj[u'version'],
                                     overrides=proj.get(u'overrides', {}),
                                     checkout=checkout,

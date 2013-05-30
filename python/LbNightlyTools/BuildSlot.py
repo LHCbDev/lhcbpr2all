@@ -24,6 +24,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
+from LbNightlyTools._utils import timeout_call as call
 
 from string import Template
 from socket import gethostname
@@ -32,36 +33,6 @@ try:
     from multiprocessing import cpu_count
 except ImportError:
     cpu_count = lambda : 0
-
-def _timeoutTerminateCB(p, msg):
-    '''
-    Safely terminate a running Popen object.
-    '''
-    if p.poll() is None:
-        try:
-            logging.warning(msg)
-            p.terminate()
-        except:
-            pass
-
-def call(*popenargs, **kwargs):
-    """Reimplementation of subprocess.call with the addition of a timeout
-    option.
-    """
-    from subprocess import Popen
-    try:
-        timeout = kwargs.pop('timeout')
-        msg = kwargs.pop('timeoutmsg', 'on command ' + repr(popenargs))
-        msg = 'Timeout reached %s (%ds): terminated.' % (msg, timeout)
-        from threading import Timer
-        p = Popen(*popenargs, **kwargs)
-        t = Timer(timeout, _timeoutTerminateCB, [p, msg])
-        t.start()
-        r = p.wait()
-        t.cancel()
-        return r
-    except KeyError:
-        return Popen(*popenargs, **kwargs).wait()
 
 # no-op 'call' function for testing
 #call = lambda *a,**k: None
