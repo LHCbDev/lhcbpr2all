@@ -38,30 +38,40 @@ class VTuneTimingParser:
         parent       = None
         lastparent   = [None]
         id = 0
-        regxp = "^\s*([\w_ ]+)\s{5,}([\d\.]+)"
+        regxp = "^\s*([\[\]\w_ ]+)\s{5,}([\d\.]+)"
         try:
             logf = open(tfname, "r")
             for l in logf.readlines():
                 m = re.match(regxp, l)
                 if m != None:
-                    full_name = m.group(1)
+                    full_name = m.group(1).rstrip()
+                    if str(full_name) == "[Outside any task]":
+                        full_name = "EVENT_LOOP"
+
                     final_digit = re.search('\s{3,}\d+', full_name)
                     if final_digit != None:
                         full_name = full_name[:final_digit.start(0)]
                             
                     names = full_name.split()
-                    level = len(names)-1
+                    if full_name == "EVENT_LOOP":
+                       level = 0
+                    else:
+                       level = len(names)
                     parent = None
                     if level > 0:
-                       parent = lastparent[level -1]
+                       parent = lastparent[level-1]
 
-                    #print "Names:", names
-                    #print "N: ", names[len(names)-1], "V: ", float(m.group(2)), "L: ", level
                     nb_of_evts = -1
                     for i in nb_of_evts_per_alg:
                         if i[0] == names[len(names)-1]:
                             nb_of_evts = i[1]
-                            break 
+                            break
+                        elif i[0] == "EVENT LOOP":
+                            nb_of_evts = i[1]
+                            break
+
+                    print "Names:", names
+                    print "N: ", names[len(names)-1], "V: ", float(m.group(2)), "L: ", level, "E: ", nb_of_evts
 
                     id = id + 1
                     if nb_of_evts > 0:
