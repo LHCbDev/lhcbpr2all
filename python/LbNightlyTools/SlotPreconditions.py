@@ -21,12 +21,12 @@ from datetime import datetime, timedelta
 from time import sleep
 from os.path import exists
 
-def waitForFile(path, timeout=timedelta(hours=12), maxAge=None):
+def waitForFile(path, timeout=timedelta(hours=12), max_age=None):
     '''
-    Wait until a file becomes available, but not more than the timedelta specified
-    as timeout.
-    If maxAge is not None, it must be a timedelta and an existing file is ignored if
-    it is older than that age.
+    Wait until a file becomes available, but not more than the timedelta
+    specified as timeout.
+    If max_age is not None, it must be a timedelta and an existing file is
+    ignored if it is older than that age.
 
     @return: True if a valid file appeared within the timeout, False otherwise
     '''
@@ -41,15 +41,15 @@ def waitForFile(path, timeout=timedelta(hours=12), maxAge=None):
 
     now = datetime.now()
 
-    whenToStop = now + timeout
+    when_to_stop = now + timeout
 
-    if maxAge:
-        minFileDate = now - maxAge
+    if max_age:
+        min_file_date = now - max_age
     else:
-        minFileDate = datetime.fromtimestamp(0)
+        min_file_date = datetime.fromtimestamp(0)
 
-    while datetime.now() < whenToStop:
-        if exists(path) and fileTime(path) > minFileDate:
+    while datetime.now() < when_to_stop:
+        if exists(path) and fileTime(path) > min_file_date:
             return True
         sleep(60)
 
@@ -57,7 +57,10 @@ def waitForFile(path, timeout=timedelta(hours=12), maxAge=None):
 
 
 def parseConfigFile(path):
-    from Configuration import load
+    '''
+    Extract required information from the configuration file.
+    '''
+    from LbNightlyTools.Configuration import load
     data = load(path)
     return data.get(u'preconditions', [])
 
@@ -102,5 +105,6 @@ class Script(LbUtils.Script.PlainScript):
                 self.log.error('precondition failed')
                 return 1
 
-        self.log.info('all preconditions are met (time taken: %s).', datetime.now() - starttime)
+        self.log.info('all preconditions are met (time taken: %s).',
+                      datetime.now() - starttime)
         return 0

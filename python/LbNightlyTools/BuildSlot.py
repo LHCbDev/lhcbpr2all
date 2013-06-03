@@ -9,7 +9,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 '''
-Module containing the classes and functions used to build a "Nightly Build Slot".
+Module containing the classes and functions used to build a
+"Nightly Build Slot".
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
@@ -32,14 +33,15 @@ from datetime import datetime, date
 try:
     from multiprocessing import cpu_count
 except ImportError:
-    cpu_count = lambda : 0
+    cpu_count = lambda : 0 # pylint: disable=C0103
 
 # no-op 'call' function for testing
 #call = lambda *a,**k: None
 
 __log__ = logging.getLogger(__name__)
 
-COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'), 'private', 'cov-admin')
+COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'),
+                                   'private', 'cov-admin')
 
 LOAD_AVERAGE_SCALE = 1.2
 
@@ -51,16 +53,21 @@ def genProjectXml(name, projects):
     versions = dict([(p.name, str(p)) for p in projects])
 
     xml = [u'<Project name="{0}">'.format(name)]
-    for p in projects:
-        xml.append(u'  <SubProject name="{0}">'.format(p))
-        for d in p.deps:
-            xml.append(u'    <Dependency name="{0}"/>'.format(versions[d]))
+    for proj in projects:
+        xml.append(u'  <SubProject name="{0}">'.format(proj))
+        for dep in proj.deps:
+            xml.append(u'    <Dependency name="{0}"/>'.format(versions[dep]))
         xml.append(u'  </SubProject>')
     xml.append(u'</Project>\n')
 
     return u'\n'.join(xml)
 
 def genSlotConfig(config):
+    '''
+    Generate SlotConfig.cmake, needed by the CTest build script.
+
+    @return: the data to be written to the file
+    '''
     projects = config[u'projects']
 
     cmake = ['set(slot %(slot)s)' % config,
@@ -68,36 +75,46 @@ def genSlotConfig(config):
              'set(projects %s)' % ' '.join([p[u'name']
                                             for p in projects])]
 
-    for p in projects:
-        cmake.append('set(%(name)s_version %(version)s)' % p)
+    for proj in projects:
+        cmake.append('set(%(name)s_version %(version)s)' % proj)
 
-    for p in projects:
-        cmake.append('set(%s_version %s)' % (p[u'name'], ' '.join(p.get(u'dependencies', []))))
+    for proj in projects:
+        cmake.append('set(%s_version %s)' %
+                     (proj[u'name'], ' '.join(proj.get(u'dependencies', []))))
 
     if u'warning_exceptions' in config:
-        cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION ${CTEST_CUSTOM_WARNING_EXCEPTION}')
-        for x in config[u'warning_exceptions']:
-            cmake.append('    "%s"' % x.replace('\\', '\\\\').replace('"', r'\"'))
+        cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION '
+                     '${CTEST_CUSTOM_WARNING_EXCEPTION}')
+        for ex in config[u'warning_exceptions']:
+            cmake.append('    "%s"' %
+                         ex.replace('\\', '\\\\').replace('"', r'\"'))
         cmake.append('    )\n')
 
     if u'error_exceptions' in config:
-        cmake.append('set(CTEST_CUSTOM_ERROR_EXCEPTION ${CTEST_CUSTOM_ERROR_EXCEPTION}')
-        for x in config[u'error_exceptions']:
-            cmake.append('    "%s"' % x.replace('\\', '\\\\').replace('"', r'\"'))
+        cmake.append('set(CTEST_CUSTOM_ERROR_EXCEPTION '
+                     '${CTEST_CUSTOM_ERROR_EXCEPTION}')
+        for ex in config[u'error_exceptions']:
+            cmake.append('    "%s"' %
+                         ex.replace('\\', '\\\\').replace('"', r'\"'))
         cmake.append('    )\n')
 
     return '\n'.join(cmake)
 
 class ProjDesc():
+    '''
+    Description of the project to build.
+    '''
+    # pylint: disable=R0903
     def __init__(self, desc_dict):
         self.name = desc_dict[u'name']
         self.version = desc_dict[u'version']
         self.deps = desc_dict.get(u'dependencies', [])
         self.dir = os.path.join(self.name.upper(),
-                                '{0}_{1}'.format(self.name.upper(), self.version))
+                                '{0}_{1}'.format(self.name.upper(),
+                                                 self.version))
         cov_version = self.version.lower()
         if cov_version == 'head':
-            cov_version = 'trunk' # 'trunk' is used instead of 'head' in Coverity
+            cov_version = 'trunk' # we use 'trunk' instead of 'head' in Coverity
         self.coverity_stream = desc_dict.get(u'coverity_stream',
                                              '{0}_{1}'.format(self.name.lower(),
                                                               cov_version))
@@ -110,20 +127,20 @@ def sortedByDeps(deps):
     return the list of keys sorted according to their dependencies so that
     that a key comes after its dependencies.
 
-    >>> sortedByDeps({'4': ['2', '3'], '3': ['1'], '2': ['1'], '1': ['0'], '0': []})
+    >>> sortedByDeps({'4':['2','3'],'3':['1'],'2':['1'],'1':['0'],'0':[]})
     ['0', '1', '3', '2', '4']
     '''
-    def unique(l):
+    def unique(iterable):
         '''Return only the unique elements in the list l.
 
         >>> unique([0, 0, 1, 2, 1])
         [0, 1, 2]
         '''
-        u = []
-        for i in l:
-            if i not in u:
-                u.append(i)
-        return u
+        uniquelist = []
+        for item in iterable:
+            if item not in uniquelist:
+                uniquelist.append(item)
+        return uniquelist
     def recurse(keys):
         '''
         Recursive helper function to sort by dependency: for each key we
@@ -142,15 +159,65 @@ def listAllFiles(path, excl=None):
     Return the list of all files in a directory and in its subdirectories.
     '''
     if excl is None:
-        excl = lambda f: False
+        excl = lambda _: False
     from os.path import join
-    for r, ds, fs in os.walk(path):
-        for f in fs:
+    for root, dirs, files in os.walk(path):
+        for f in files:
             if not excl(f):
-                yield join(r, f)
-        ds[:] = [d for d in ds if not excl(d)]
+                yield join(root, f)
+        dirs[:] = [d for d in dirs if not excl(d)]
+
+def ensureDirs(dirs):
+    '''
+    Ensure that the specified directories exist, creating them if needed.
+    '''
+    for path in dirs:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+def setenv(definitions):
+    '''
+    Modify the environment from a list of definitions of the type 'name=value',
+    expanding the variables in 'value'.
+
+    >>> setenv(['foo=bar'])
+    >>> os.environ['foo']
+    'bar'
+    >>> setenv(['baz=some_${foo}'])
+    >>> os.environ['baz']
+    'some_bar'
+    '''
+    for item in definitions:
+        name, value = item.split('=', 1)
+        os.environ[name] = os.path.expandvars(value)
+
+class ListDict(dict):
+    '''
+    Extension of dict to append to the value associated to a key,
+    creating the list if the key is not found.
+
+    >>> d = ListDict()
+    >>> d.append('foo', 'bar')
+    >>> d
+    {'foo': ['bar']}
+    >>> d.append('foo', 'baz')
+    >>> d
+    {'foo': ['bar', 'baz']}
+    '''
+    def append(self, key, value):
+        '''
+        Append value to the list associated to key.
+        If key is not found, create the list.
+        '''
+        if key not in self:
+            self[key] = [value]
+        else:
+            self[key].append(value)
 
 def main():
+    '''
+    Main function of the BuildSlot.py script.
+    '''
     from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] <config.json>')
     models = ['Nightly', 'Experimental', 'Continuous']
@@ -185,7 +252,8 @@ def main():
     parser.add_option('-l', '--load-average',
                       action='store', type='float',
                       help='load average limit for parallel builds, use 0 to '
-                           'remove the limit (default: N of cores x %g)' % LOAD_AVERAGE_SCALE)
+                           'remove the limit (default: N of cores x %g)'
+                           % LOAD_AVERAGE_SCALE)
     parser.add_option('--build-id',
                       action='store',
                       help='string to add to the tarballs of the build to '
@@ -209,7 +277,8 @@ def main():
     parser.add_option('--rsync-dest',
                       action='store', metavar='DEST',
                       help='deploy artifacts to this location using rsync '
-                           '(accepts the same format specification as --build-id)')
+                           '(accepts the same format specification as '
+                           '--build-id)')
 
     parser.add_option('--coverity',
                       action='store_true',
@@ -246,9 +315,9 @@ def main():
     # replace tokens in the options
     expanded_tokens = {'slot': config[u'slot'], 'timestamp': timestamp}
     for opt_name in ['build_id', 'artifacts_dir', 'rsync_dest']:
-        v = getattr(opts, opt_name)
-        if v:
-            setattr(opts, opt_name, v.format(**expanded_tokens))
+        val = getattr(opts, opt_name)
+        if val:
+            setattr(opts, opt_name, val.format(**expanded_tokens))
 
     build_dir = join(os.getcwd(), 'build')
     artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
@@ -259,26 +328,27 @@ def main():
             shutil.rmtree(build_dir)
 
     # ensure that we have the artifacts directory for the sources
-    if not os.path.exists(artifacts_dir):
-        os.makedirs(artifacts_dir)
-    if not os.path.exists(join(artifacts_dir, 'db')):
-        os.makedirs(join(artifacts_dir, 'db'))
-    if not os.path.exists(build_dir):
-        os.makedirs(build_dir)
+    ensureDirs([artifacts_dir, join(artifacts_dir, 'db'), build_dir])
 
     # data to be reported in every JSON file
     json_data = {'slot': config['slot'],
                  'build_id': int(os.environ.get('slot_build_id', 0)),
                  'platform': platform}
 
-    def dump_json(d, t):
-        if 'project' in d:
-            fmt = '{slot}.{build_id}.{project}.{platform}.' + t
+    def dump_json(data, suff):
+        '''
+        Write a JSON file into the special artifacts 'db' directory.
+
+        @param data: mapping with the data to write
+        @param suff: suffix of the file (added to the standard filename)
+        '''
+        if 'project' in data:
+            fmt = '{slot}.{build_id}.{project}.{platform}.' + suff
         else:
-            fmt = '{slot}.{build_id}.{platform}.' + t
-        fn = join(artifacts_dir, 'db', fmt.format(**d))
-        f = codecs.open(fn, 'w', 'utf-8')
-        json.dump(d, f)
+            fmt = '{slot}.{build_id}.{platform}.' + suff
+        filename = join(artifacts_dir, 'db', fmt.format(**data))
+        f = codecs.open(filename, 'w', 'utf-8')
+        json.dump(data, f)
         f.close()
 
     data = dict(json_data)
@@ -294,24 +364,28 @@ def main():
             f = join(artifacts_dir, f)
             __log__.info('  unpacking %s', f)
             # do not overwrite existing sources when unpacking
-            # (either we just cleaned the directory or we were asked not to do it)
+            # (either we just cleaned the directory or we were asked not to
+            # do it)
             call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
                   '-f', f], cwd=build_dir)
 
     __log__.info("Generating CTest scripts and configurations.")
 
     def write(path, data):
+        '''Simple function to write some data to a file.'''
         f = open(path, 'w')
         f.write(data)
         f.close()
 
-    configCmake = genSlotConfig(config)
-    ctestConfig = Template(open(join(dirname(__file__), 'CTestConfig.template.cmake')).read())
-    ctestScript = Template(open(join(dirname(__file__), 'CTestScript.template.cmake')).read())
+    config_cmake = genSlotConfig(config)
+    ctest_config = Template(open(join(dirname(__file__),
+                                      'CTestConfig.template.cmake')).read())
+    ctest_script = Template(open(join(dirname(__file__),
+                                      'CTestScript.template.cmake')).read())
 
     if u'cmake_cache' in config:
         cache_preload = '\n'.join(['set(%s "%s" CACHE STRING "override")' % i
-                                   for i in config[u'cmake_cache'].items()]) + '\n'
+                                   for i in config[u'cmake_cache'].items()])
     else:
         cache_preload = None
 
@@ -325,46 +399,50 @@ def main():
     del project_xml # no need to keep this temp variable
 
     # prepare special environment, if needed
-    for e in config.get(u'env', []):
-        n, v = e.split('=', 1)
-        os.environ[n] = os.path.expandvars(v)
+    setenv(config.get(u'env', []))
 
-    fileListExcl = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
-                               r'(\.git)|(\.svn)|'
-                               r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
-                               ).format(platform)).match
+    file_exclusion_regex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
+                                       r'(\.git)|(\.svn)|'
+                                       r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
+                                       ).format(platform))
 
     if opts.deploy_dir:
         # ensure that the deployment dir ends with the slot name...
         if os.path.basename(opts.deploy_dir) != config[u'slot']:
             opts.deploy_dir = join(opts.deploy_dir, config[u'slot'])
         # ... and that the directory exists
-        if not os.path.exists(opts.deploy_dir):
-            os.makedirs(opts.deploy_dir)
+        ensureDirs([opts.deploy_dir])
         def deployReports(files):
-            for f in files:
+            '''
+            Helper function to filename the reports in the required directory.
+            '''
+            for filename in files:
                 try:
-                    d = join(opts.deploy_dir, os.path.basename(f))
-                    if os.path.isdir(d):
-                        shutil.rmtree(d)
-                    elif os.path.isfile(d) or os.path.islink(d):
-                        os.remove(d)
-                    __log__.info('Copying %s to deployment directory', f)
-                    if os.path.isdir(f):
-                        shutil.copytree(f, d)
-                    elif os.path.isfile(f):
-                        shutil.copy2(f, d)
+                    dirname = join(opts.deploy_dir, os.path.basename(filename))
+                    if os.path.isdir(dirname):
+                        shutil.rmtree(dirname)
+                    elif os.path.isfile(dirname) or os.path.islink(dirname):
+                        os.remove(dirname)
+                    __log__.info('Copying %s to deployment directory %s',
+                                 filename, dirname)
+                    if os.path.isdir(filename):
+                        shutil.copytree(filename, dirname)
+                    elif os.path.isfile(filename):
+                        shutil.copy2(filename, dirname)
                     else:
-                        __log__.warning('Cannot deploy %s (does it exist?)', f)
+                        __log__.warning('Cannot deploy %s (does it exist?)',
+                                        filename)
                 except os.error, err:
-                    __log__.warning('Problems deploying %s: %s', f, err)
+                    __log__.warning('Problems deploying %s: %s', filename, err)
     else:
         def deployReports(_):
+            '''dummy helper function'''
             pass
 
     class AsyncTask(threading.Thread):
         '''
-        Simple wrapper around subprocess.call to execute it in a separate thread.
+        Simple wrapper around subprocess.call to execute it in a separate
+        thread.
         '''
         def __init__(self, *args, **kwargs):
             super(AsyncTask, self).__init__()
@@ -375,6 +453,9 @@ def main():
         def run(self):
             self.retcode = call(*self.args, **self.kwargs)
         def wait(self):
+            '''
+            Block until the subprocess exits and return its exit code.
+            '''
             self.join()
             return self.retcode
 
@@ -385,25 +466,32 @@ def main():
         The special parameter reports is passed to deployReports.
         '''
         def __init__(self, *args, **kwargs):
+            self.reports = []
+            self.artifacts_dir = None
+            self.config = None
+            self.project = None
+            self.platform = None
+
             local_args = ['reports', 'artifacts_dir', 'config', 'project',
                           'platform']
-            for a in local_args:
-                if a in kwargs:
-                    setattr(self, a, kwargs[a])
-                    del kwargs[a]
-                else:
-                    setattr(self, a, None)
+            for arg in local_args:
+                if arg in kwargs:
+                    setattr(self, arg, kwargs[arg])
+                    del kwargs[arg]
+
             self.started = self.completed = None
-            if self.reports is None:
-                self.reports = []
+
             super(TestTask, self).__init__(*args, **kwargs)
 
         def getTestSummary(self):
-            if self.reports:
-                for l in self.reports:
-                    l = os.path.join(l, 'summary.json')
-                    if os.path.exists(l):
-                        return json.load(codecs.open(l, 'r', 'utf-8'))
+            '''
+            Return the JSON object in the file summary.json in the reports, if
+            it exists, otherwise an empty list.
+            '''
+            for rep in self.reports:
+                rep = os.path.join(rep, 'summary.json')
+                if os.path.exists(rep):
+                    return json.load(codecs.open(rep, 'r', 'utf-8'))
             return []
 
         def run(self):
@@ -437,37 +525,43 @@ def main():
             if ':' in opts.rsync_dest:
                 host, path = opts.rsync_dest.split(':', 1)
                 call(['ssh', host, 'mkdir -pv "%s"' % path])
-            elif not os.path.exists(opts.rsync_dest):
-                os.makedirs(opts.rsync_dest)
+            else:
+                ensureDirs([opts.rsync_dest])
 
             cmd = ['rsync', '--archive',
-                   '--partial-dir=.rsync-partial.%s.%d' % (gethostname(), os.getpid()),
+                   '--partial-dir=.rsync-partial.%s.%d' %
+                   (gethostname(), os.getpid()),
                    '--delay-updates', '--rsh=ssh',
                    artifacts_dir + '/', opts.rsync_dest]
             self.retcode = call(cmd)
         def wait(self):
+            '''
+            Block until the subprocess exits and return its exit code.
+            '''
             if opts.rsync_dest:
                 self.join()
             return self.retcode
 
     jobs = []
-    for p in sorted_projects:
-        projdir = join(build_dir, p.dir)
-        summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform), p.name)
+    for proj in sorted_projects:
+        projdir = join(build_dir, proj.dir)
+        summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform),
+                           proj.name)
         # use the ramdisk for Coverity intermediate dir if possible
         if os.path.exists('/dev/shm'):
-            coverity_int = join('/dev/shm/coverity.{0}'.format(platform), opts.build_id, p.name)
+            coverity_int = join('/dev/shm/coverity.{0}'.format(platform),
+                                opts.build_id, proj.name)
         else:
-            coverity_int = join(build_dir, 'coverity', p.name)
+            coverity_int = join(build_dir, 'coverity', proj.name)
         coverity_mod = join(summary_dir, 'coverity', 'models')
-        coverity_logs = join(summary_dir, 'coverity', p.name)
+        coverity_logs = join(summary_dir, 'coverity', proj.name)
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(projdir):
-            __log__.warning('no sources for %s, skip build', p)
+            __log__.warning('no sources for %s, skip build', proj)
             continue
 
-        packname = [p.name, p.version]
+        packname = [proj.name, proj.version]
         if opts.build_id:
             packname.append(opts.build_id)
         packname.append(platform)
@@ -475,27 +569,30 @@ def main():
         packname = '.'.join(packname)
         packname = os.path.join(artifacts_dir, packname)
         if os.path.exists(packname):
-            __log__.info('binary tarball for %s already present, skip build', p)
+            __log__.info('binary tarball for %s already present, skip build',
+                         proj)
             continue
 
         old_build_id = OLD_BUILD_ID.format(slot=config[u'slot'],
                                            today=os.environ['TODAY'],
-                                           project=p.name.upper(),
-                                           version=p.version,
+                                           project=proj.name.upper(),
+                                           version=proj.version,
                                            platform=platform)
 
         Configuration.save(join(projdir, 'SlotConfig.json'), config)
-        write(join(projdir, 'SlotConfig.cmake'), configCmake)
+        write(join(projdir, 'SlotConfig.cmake'), config_cmake)
         if cache_preload:
-            write(join(projdir, 'cache_preload.cmake'), cache_preload)
+            write(join(projdir, 'cache_preload.cmake'), cache_preload + '\n')
         write(join(projdir, 'CTestConfig.cmake'),
-              ctestConfig.substitute(config))
+              ctest_config.substitute(config))
         write(join(projdir, 'CTestScript.cmake'),
-              ctestScript.substitute({'project': p.name, 'version': p.version,
-                                      'build_dir': build_dir, 'site': gethostname(),
-                                      'summary_dir': summary_dir,
-                                      'Model': opts.model,
-                                      'old_build_id': old_build_id}))
+              ctest_script.substitute({'project': proj.name,
+                                       'version': proj.version,
+                                       'build_dir': build_dir,
+                                       'site': gethostname(),
+                                       'summary_dir': summary_dir,
+                                       'Model': opts.model,
+                                       'old_build_id': old_build_id}))
 
         cmd = ['ctest', '--timeout', str(opts.timeout)]
         if opts.jobs != 1:
@@ -519,19 +616,25 @@ def main():
 
         if opts.coverity:
             # create all the directories that are missing
-            map(os.makedirs, filter(lambda x: not os.path.exists(x),
-                                    [coverity_int, coverity_mod, coverity_logs]))
+            ensureDirs([coverity_int, coverity_mod, coverity_logs])
             build_cmd = ['cov-build', '--dir', coverity_int] + build_cmd
 
         def writeExtraSummary(name, data):
-            if not os.path.isdir(summary_dir):
-                os.makedirs(summary_dir)
+            '''
+            Write 'data' to the file 'name' in the summary directory.
+            '''
+            ensureDirs([summary_dir])
             f = codecs.open(os.path.join(summary_dir, name), 'w', 'utf-8')
             f.write(data)
             f.close()
 
         def dumpFileListSummary(name):
-            data = '\n'.join(sorted(listAllFiles(projdir, fileListExcl)))
+            '''
+            Dump the list of all the files in the project directory in the
+            summary file 'name'.
+            '''
+            data = '\n'.join(sorted(listAllFiles(projdir,
+                                                 file_exclusion_regex.match)))
             data += '\n'
             writeExtraSummary(name, data)
 
@@ -539,49 +642,55 @@ def main():
             '''Create special summary file used by SetupProject.'''
             data = []
             # find the declaration of CMTPROJECTPATH in the configuration
-            for e in config.get(u'env', []):
-                if e.startswith('CMTPROJECTPATH='):
+            for decl in config.get(u'env', []):
+                if decl.startswith('CMTPROJECTPATH='):
                     # dump it as a list in the summary file
                     data += map(os.path.expandvars,
-                                e.split('=', 1)[1].split(':'))
+                                decl.split('=', 1)[1].split(':'))
             if data:
-                f = codecs.open(join(artifacts_dir, 'confSummary.py'), 'w', 'utf-8')
+                f = codecs.open(join(artifacts_dir, 'confSummary.py'),
+                                'w', 'utf-8')
                 f.write('cmtProjectPathList = %r\n' % data)
                 f.close()
-                f = codecs.open(join(artifacts_dir, 'searchPath.cmake'), 'w', 'utf-8')
-                f.write('set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' % ' '.join(data))
+                f = codecs.open(join(artifacts_dir, 'searchPath.cmake'),
+                                'w', 'utf-8')
+                f.write('set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' %
+                        ' '.join(data))
                 f.close()
 
         dumpConfSummary()
         dumpFileListSummary('sources.list')
-        __log__.info('building %s', p.dir)
-        p.started = datetime.now()
-        p.build_retcode = call(build_cmd, cwd=projdir,
-                               timeout=14400, timeoutmsg='building %s' % p.name) # timeout of 4 hours
-        if p.build_retcode != 0:
-            __log__.warning('build exited with code %d', p.build_retcode)
-        p.completed = datetime.now()
+        __log__.info('building %s', proj.dir)
+        proj.started = datetime.now()
+        proj.build_retcode = call(build_cmd, cwd=projdir,
+                                  timeout=14400, # timeout of 4 hours
+                                  timeoutmsg='building %s' % proj.name)
+        if proj.build_retcode != 0:
+            __log__.warning('build exited with code %d', proj.build_retcode)
+        proj.completed = datetime.now()
         dumpFileListSummary('sources_built.list')
 
         # copy the file with the URL of the checkout job to the summaries
         if os.path.exists(join(artifacts_dir, 'checkout_job_url.txt')):
-            shutil.copy(join(artifacts_dir, 'checkout_job_url.txt'), summary_dir)
+            shutil.copy(join(artifacts_dir, 'checkout_job_url.txt'),
+                        summary_dir)
 
-        reporter = BuildReporter(summary_dir, p, platform, config, old_build_id)
+        reporter = BuildReporter(summary_dir, proj, platform,
+                                 config, old_build_id)
         deployReports(reporter.genOldSummaries())
         dump_json(reporter.json(), 'build')
 
-        __log__.info('packing %s', p.dir)
+        __log__.info('packing %s', proj.dir)
 
         call(['tar', 'chjf', packname,
-              os.path.join(p.dir, 'InstallArea')], cwd=build_dir)
+              os.path.join(proj.dir, 'InstallArea')], cwd=build_dir)
 
         if opts.rsync_dest:
             jobs.append(DeployArtifactsTask())
 
         if opts.coverity:
             # run the Coverity analysis
-            if p.build_retcode != 0:
+            if proj.build_retcode != 0:
                 __log__.error('cannot run Coverity analysis on a failed build')
             else:
                 # this call actually does not "submit" (commit-defects), it just
@@ -594,11 +703,11 @@ def main():
                 # collect models for use with the other projects
                 __log__.info('collecting Coverity models')
                 call(['cov-collect-models', '--dir', coverity_int,
-                      '-of', join(coverity_mod, p.name + '.xmldb')])
+                      '-of', join(coverity_mod, proj.name + '.xmldb')])
                 # ensure that there is no stale lock
                 # FIXME: is it needed?
                 try:
-                    os.remove(join(coverity_mod, p.name + '.xmldb.lock'))
+                    os.remove(join(coverity_mod, proj.name + '.xmldb.lock'))
                 except:
                     pass
                 # commit defect to Coverity Integrity Manager
@@ -606,15 +715,22 @@ def main():
                                   '--host', 'lhcb-coverity.cern.ch',
                                   '--port', '8080',
                                   '--user', 'admin',
-                                  '--stream', p.coverity_stream]
-                for x in sorted_projects:
-                    cov_commit_cmd.append('--strip-path')
-                    cov_commit_cmd.append(join(build_dir, x.dir) + '/')
+                                  '--stream', proj.coverity_stream]
+                # strip the project build directories when submitting
+                proj_build_dirs = [join(build_dir, p.dir) + '/'
+                                   for p in sorted_projects]
+                # (this is an interesting trick to intersperse two lists)
+                from itertools import repeat
+                cov_commit_cmd += [val
+                                   for pair in zip(repeat('--strip-path'),
+                                                   proj_build_dirs)
+                                   for val in pair]
                 cov_commit_cmd += open(join(coverity_int,
                                             'c', 'output',
                                             'commit-args.txt')).read().split()
 
-                tmpenv = {'COVERITY_PASSPHRASE': open(COV_PASSPHRASE_FILE).read().strip()}
+                tmpenv = {'COVERITY_PASSPHRASE':
+                          open(COV_PASSPHRASE_FILE).read().strip()}
                 tmpenv.update(os.environ)
                 __log__.info('committing results Coverity Integrity Manager')
                 call(cov_commit_cmd, env=tmpenv)
@@ -630,18 +746,21 @@ def main():
                     __log__.warning("failed to clean %s", coverity_int)
 
         if not opts.build_only and not opts.coverity:
-            __log__.info('testing (in background) %s', p.dir)
+            __log__.info('testing (in background) %s', proj.dir)
             jobs.append(TestTask(['nice'] + test_cmd, cwd=projdir,
                                  artifacts_dir=artifacts_dir,
                                  config=config,
-                                 project=p,
+                                 project=proj,
                                  platform=platform,
                                  reports=[join(summary_dir, old_build_id + suff)
-                                          for suff in ['-qmtest', '-qmtest.log']]))
+                                          for suff in ['-qmtest',
+                                                       '-qmtest.log']]))
 
     if opts.coverity:
-        # try again to clean the Coverity scratch space in the ramdisk (if it was ever created)
-        shutil.rmtree(join('/dev/shm/coverity.{0}'.format(platform)), ignore_errors=True)
+        # try again to clean the Coverity scratch space in the ramdisk
+        # (if it was ever created)
+        shutil.rmtree(join('/dev/shm/coverity.{0}'.format(platform)),
+                      ignore_errors=True)
 
     if jobs:
         __log__.info('waiting for pending tasks (tests, etc.)...')
@@ -702,8 +821,11 @@ class BuildReporter(object):
         return self._summary
 
     def json(self):
-        wCount = sum(map(len, self.summary['warning'].values()))
-        eCount = sum(map(len, self.summary['error'].values()))
+        '''
+        Return the build report summary as a JSON object (dictionary).
+        '''
+        w_count = sum(map(len, self.summary['warning'].values()))
+        e_count = sum(map(len, self.summary['error'].values()))
         data = {}
         data.update({"type": "build-result",
                      "slot": self.config['slot'],
@@ -713,8 +835,8 @@ class BuildReporter(object):
                      'started': self.project.started.isoformat(),
                      'completed': self.project.completed.isoformat(),
                      'retcode': self.project.build_retcode,
-                     "warnings": wCount,
-                     "errors": eCount})
+                     "warnings": w_count,
+                     "errors": e_count})
         return data
 
     def genOldSummaries(self):
@@ -727,30 +849,37 @@ class BuildReporter(object):
         from itertools import islice
         import cgi
 
-        def formatTxt(iterable, lineOffset=0):
+        def formatTxt(iterable, line_offset=0):
             '''
             Helper function to generate HTML version of a log file.
             '''
             lineclass = ['even', 'odd']
             yield u'<html>\n'
             for i, line in enumerate(iterable):
-                styleCls = None
+                style_cls = None
                 found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
                 if found:
-                    styleCls = found.group(1).lower()
-                if line.startswith('Scanning dependencies') or line.startswith('Linking '):
-                    styleCls = 'cmake_message'
+                    style_cls = found.group(1).lower()
+                if (line.startswith('Scanning dependencies') or
+                    line.startswith('Linking ')):
+                    style_cls = 'cmake_message'
                 elif re.match(r'\[[ 0-9]{3}%\]', line):
-                    styleCls = 'cmake_progress'
-                i += lineOffset
+                    style_cls = 'cmake_progress'
+                i += line_offset
                 line = cgi.escape(line.rstrip())
-                if styleCls:
-                    line = '<a id="line_%s" class="%s">%s</a>' % (i, styleCls, line)
-                yield u'<div class="%s">%s</div>\n' % (lineclass[i % 2], line or '&nbsp;')
+                if style_cls:
+                    line = ('<a id="line_%s" class="%s">%s</a>' %
+                            (i, style_cls, line))
+                yield u'<div class="%s">%s</div>\n' % (lineclass[i % 2],
+                                                       line or '&nbsp;')
             yield u'</html>\n'
 
         report_files = []
         def reportFileName(suff):
+            '''
+            Return the name of a report file given the suffix, and add it to
+            the list of report files.
+            '''
             f = join(self.summary_dir, self.old_build_id + suff)
             report_files.append(f)
             return f
@@ -760,7 +889,8 @@ class BuildReporter(object):
         if not os.path.exists(self.build_log):
             # very bad: the build log was not produced, let's create a dummy one
             f = open(self.build_log, 'w')
-            f.write('error: the build log file was not generated (ctest failure?)\n')
+            f.write('error: the build log file was not generated '
+                    '(ctest failure?)\n')
             f.close()
 
         full_log = reportFileName('.log')
@@ -774,8 +904,11 @@ class BuildReporter(object):
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
         if exists(join(self.summary_dir, 'checkout_job_url.txt')):
-            checkout_lines = [(u'<a href="{0}console">available on Jenkins</a>\n'
-                              .format(open(join(self.summary_dir, 'checkout_job_url.txt')).read().strip()))]
+            checkout_fmt = u'<a href="{0}console">available on ''Jenkins</a>\n'
+            jenkins_co_url = (open(join(self.summary_dir,
+                                        'checkout_job_url.txt'))
+                              .read().strip())
+            checkout_lines = [checkout_fmt.format(jenkins_co_url)]
         else:
             checkout_lines = [u'<div class="even">no checkout log</div>\n']
         f = codecs.open(full_log, 'w', 'utf-8')
@@ -796,40 +929,40 @@ class BuildReporter(object):
 
 
         # generate HTML log chunks
-        # - convert the sections from (name, start) -> (name, start, end+1)
+        # - convert the sections from (name, begin) -> (name, begin, end+1)
         chunksdir = reportFileName('.log.chunks')
-        if not os.path.isdir(chunksdir):
-            os.makedirs(chunksdir)
+        ensureDirs([chunksdir])
         sections = []
-        for n, i in self.summary['sections']:
+        for name, begin in self.summary['sections']:
             if sections:
-                sections[-1][-1] = i
-            sections.append([n, i, 0])
+                sections[-1][-1] = begin
+            sections.append([name, begin, 0])
         if sections:
             sections[-1][-1] = self.summary['size']
         logfile = codecs.open(self.build_log, 'r', 'utf-8')
         offset = 0
-        for n, lines in zip(['env'], [env_lines]):
-            chunkname = join(chunksdir, n)
+        for chunkname, lines in zip(['env'], [env_lines]):
+            chunkname = join(chunksdir, chunkname)
             chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.writelines(formatTxt(lines, offset))
             chunkfile.close()
             offset += len(lines)
-        for n, lines in zip(['checkout'], [checkout_lines]):
-            chunkname = join(chunksdir, n)
+        for chunkname, lines in zip(['checkout'], [checkout_lines]):
+            chunkname = join(chunksdir, chunkname)
             chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.write(u'<html>\n')
             chunkfile.writelines(lines)
             chunkfile.write(u'</html>\n')
             chunkfile.close()
             offset += len(lines)
-        for n, b, e in sections:
-            chunkname = join(chunksdir, 'section%d' % (b+offset))
+        for _, begin, end in sections:
+            chunkname = join(chunksdir, 'section%d' % (begin + offset))
             chunkfile = codecs.open(chunkname, 'w', 'utf-8')
-            chunkfile.writelines(formatTxt(islice(logfile, e-b), b))
+            chunkfile.writelines(formatTxt(islice(logfile, end - begin), begin))
             chunkfile.close()
 
-        # FIXME: we should make a copy with a simpler name once the new dashboard is in place
+        # FIXME: we should make a copy with a simpler name once the new
+        #        dashboard is in place
         #shutil.copytree(chunksdir, join(self.summary_dir, 'build_log.chunks'))
 
         # copy the JavascriptCode
@@ -846,9 +979,10 @@ class BuildReporter(object):
         '''
         from collections import deque
 
-        wExp = re.compile(r'\bwarning\b', re.IGNORECASE)
-        eExp = re.compile(r'\berror\b', re.IGNORECASE)
-        #cExp = re.compile(r'cov-|(Coverity (warning|error|message))', re.IGNORECASE)
+        w_exp = re.compile(r'\bwarning\b', re.IGNORECASE)
+        e_exp = re.compile(r'\berror\b', re.IGNORECASE)
+        #cExp = re.compile(r'cov-|(Coverity (warning|error|message))',
+        #                  re.IGNORECASE)
 
         class ExclusionCounter(object):
             '''
@@ -858,76 +992,78 @@ class BuildReporter(object):
                 self.exp = exp
                 self._exp = re.compile(exp)
                 self.count = 0
-            def search(self, l):
-                r = self._exp.search(l)
-                if r:
+            def search(self, line):
+                '''
+                Search the line for the regular expression and increase the
+                counter if found.
+                '''
+                m = self._exp.search(line)
+                if m:
                     self.count += 1
-                return r
+                return m
 
-        wExc = map(ExclusionCounter, self.config.get('warning_exceptions', []))
-        eExc = map(ExclusionCounter, self.config.get('error_exceptions', []))
+        w_exc = map(ExclusionCounter, self.config.get('warning_exceptions', []))
+        e_exc = map(ExclusionCounter, self.config.get('error_exceptions', []))
         #cExc = []
 
-        def excluded(l, excl):
-            for e in excl:
-                if e.search(l):
+        def excluded(line, excl):
+            '''
+            Return True if the given line matches an entry in the exclusion
+            list.
+            '''
+            for ex in excl:
+                if ex.search(line):
                     return True
             return False
 
-        class ListDict(dict):
-            def append(self, k, v):
-                if k not in self:
-                    self[k] = [v]
-                else:
-                    self[k].append(v)
-
-        def getLineType(l):
+        def getLineType(line):
             '''tell the type of line'''
-            if eExp.search(l) and not excluded(l, eExc):
+            if e_exp.search(line) and not excluded(line, e_exc):
                 return 'error'
-            elif wExp.search(l) and not excluded(l, wExc):
+            elif w_exp.search(line) and not excluded(line, w_exc):
                 return 'warning'
             #elif cExp.search(l) and not excluded(l, cExc):
             #    return 'coverity'
             return None
 
-        summary = dict([(k, ListDict()) for k in ['error', 'warning', 'coverity']])
+        summary = dict([(k, ListDict())
+                        for k in ['error', 'warning', 'coverity']])
         context = deque()
-        sections = [] # List of section descriptions: ('name', start)
+        sections = [] # List of section descriptions: ('name', begin)
         i = -1
         logfile = codecs.open(self.build_log, 'r', 'utf-8', errors='replace')
         current_section = 'build'
         build_section_offset = -1
-        for i, l in enumerate(logfile):
-            context.append(l)
+        for i, line in enumerate(logfile):
+            context.append(line)
             if len(context) > 5:
                 context.popleft()
-            t = getLineType(l)
-            if t:
-                summary[t].append(l, (i, list(context)))
+            linetype = getLineType(line)
+            if linetype:
+                summary[linetype].append(line, (i, list(context)))
             if self.config.get('USE_CMT'):
-                if l.startswith('# Building package'):
-                    sections.append((l.split()[3], i-1))
+                if line.startswith('# Building package'):
+                    sections.append((line.split()[3], i-1))
             else:
-                if l.startswith('#### CMake'):
-                    current_section = l.split()[2]
+                if line.startswith('#### CMake'):
+                    current_section = line.split()[2]
                     if current_section != 'build':
                         if sections and sections[-1][0].startswith('lines'):
-                            i2 = i - build_section_offset
+                            j = i - build_section_offset
                             s = sections[-1]
-                            sections[-1] = (s[0] + str(i2-1), s[1])
+                            sections[-1] = (s[0] + str(j-1), s[1])
                         sections.append((current_section, i))
                 if current_section == 'build':
                     if build_section_offset < 0:
                         build_section_offset = i
-                    i2 = i - build_section_offset
-                    if (i2 % 500) == 0:
+                    j = i - build_section_offset
+                    if (j % 500) == 0:
                         if sections and sections[-1][0].startswith('lines'):
                             s = sections[-1]
-                            sections[-1] = (s[0] + str(i2-1), s[1])
-                        sections.append(('lines %d-' % i2, i))
-        summary['ignored_warning'] = [w for w in wExc if w.count]
-        summary['ignored_error'] = [e for e in eExc if e.count]
+                            sections[-1] = (s[0] + str(j-1), s[1])
+                        sections.append(('lines %d-' % j, i))
+        summary['ignored_warning'] = [w for w in w_exc if w.count]
+        summary['ignored_error'] = [e for e in e_exc if e.count]
         summary['size'] = i + 1
         summary['sections'] = sections
         return summary
@@ -936,23 +1072,25 @@ class BuildReporter(object):
         '''
         @return: content of the summary file used by the old dashboard.
         '''
-        wCount = sum(map(len, self.summary['warning'].values()))
-        eCount = sum(map(len, self.summary['error'].values()))
-        t = time.time()
-        data = ('{t} ({at}) {slot} {project}_{version} {platform}\n'
-                .format(t=t,
-                        at=time.ctime(t),
+        w_count = sum(map(len, self.summary['warning'].values()))
+        e_count = sum(map(len, self.summary['error'].values()))
+        timestamp = time.time()
+        data = ('{timestamp} ({ctime}) {slot} {project}_{version} {platform}\n'
+                .format(timestamp=timestamp,
+                        ctime=time.ctime(timestamp),
                         slot=self.config[u'slot'],
                         project=self.project.name.upper(),
                         version=self.project.version,
                         platform=self.platform))
-        data += ','.join(map(str, [wCount, eCount, 0, 0])) + '\n'
+        data += ','.join(map(str, [w_count, e_count, 0, 0])) + '\n'
         return data
 
     def _oldHtml(self, env_size=0, checkout_size=0):
         '''
-        @param env_size: number of lines of the log file used for the environment dump
-        @param checkout_size: number of lines of the log file used for the checkout dump
+        @param env_size: number of lines of the log file used for the
+                         environment dump
+        @param checkout_size: number of lines of the log file used for the
+                              checkout dump
 
         @return: HTML report page of the build of a project.
         '''
@@ -961,27 +1099,29 @@ class BuildReporter(object):
         from itertools import cycle
         import cgi
 
-        html = Template(open(join(dirname(__file__), 'report.template.html')).read())
+        html = Template(open(join(dirname(__file__),
+                                  'report.template.html')).read())
 
         logfile_links = []
         logfile_links.append({'id': 'env',
                               'f': 0, 'l': max(0, env_size-1),
                               'desc': 'Show details of environment'})
         logfile_links.append({'id': 'checkout',
-                              'f': env_size, 'l': env_size + max(0, checkout_size-1),
+                              'f': env_size,
+                              'l': env_size + max(0, checkout_size-1),
                               'desc': 'Show getpack log'})
         offset = env_size + checkout_size
         # When using CMT, the logfile_links must have 'name' and not 'desc'
         if self.config.get('USE_CMT'):
-            descKey = 'name'
+            desc_key = 'name'
         else:
-            descKey = 'desc'
-        for n, i in self.summary['sections']:
-            i += offset
-            logfile_links[-1]['l'] = i - 1
-            logfile_links.append({'id': 'section%d' % i,
-                                  'f': i,
-                                  descKey: n})
+            desc_key = 'desc'
+        for name, begin in self.summary['sections']:
+            begin += offset
+            logfile_links[-1]['l'] = begin - 1
+            logfile_links.append({'id': 'section%d' % begin,
+                                  'f': begin,
+                                  desc_key: name})
         logfile_links[-1]['l'] = self.summary['size'] - 1
 
 
@@ -994,15 +1134,18 @@ class BuildReporter(object):
                                                     'text': w.exp}
                                                    for w in ignored]})
 
-        wCount = sum(map(len, self.summary['warning'].values()))
-        eCount = sum(map(len, self.summary['error'].values()))
-        cCount = sum(map(len, self.summary['coverity'].values()))
+        w_count = sum(map(len, self.summary['warning'].values()))
+        e_count = sum(map(len, self.summary['error'].values()))
+        c_count = sum(map(len, self.summary['coverity'].values()))
 
-        def find_block(l):
-            l += offset
-            for d in logfile_links:
-                if d['f'] <= l <= d['l']:
-                    return d['id']
+        def find_block(linenum):
+            '''
+            find the section id containing a line (+offset)
+            '''
+            linenum += offset
+            for block in logfile_links:
+                if block['f'] <= linenum <= block['l']:
+                    return block['id']
 
         code_links = []
         def formatList(cls):
@@ -1015,29 +1158,30 @@ class BuildReporter(object):
 
             # sort the values according to their first occurrence
             values = sorted(self.summary[cls].values(), key=lambda x: x[0][0])
-            li = '<li><a class="codeLink" id="%s%s">%s</a></li>'
+            li_el = '<li><a class="codeLink" id="%s%s">%s</a></li>'
             lines = []
-            for v in values:
+            for val in values:
                 lines.append('<ul class="%s">' % cls)
-                for l, c in v:
+                for linenum, context_lines in val:
                     # convert a list of lines in something like
                     # ['<div class="even">line one</div>',
                     #  '<div class="odd">line two &amp;</div>']
-                    c = ['<div class="%s">%s</div>' % x
+                    context_lines = ['<div class="%s">%s</div>' % x
                          for x in zip(cycle(['even', 'odd']),
-                                      map(cgi.escape, c))]
-                    c[-1] = '<strong>%s</strong>' % c[-1].rstrip()
-                    c = ''.join(c)
-                    lines.append(li % (cls, l, c))
-                    code_links.append({'id': '%s%s' % (cls, l),
-                                       'block': find_block(l),
-                                       'line': l})
+                                      map(cgi.escape, context_lines))]
+                    context_lines[-1] = ('<strong>%s</strong>'
+                                         % context_lines[-1].rstrip())
+                    context_lines = ''.join(context_lines)
+                    lines.append(li_el % (cls, linenum, context_lines))
+                    code_links.append({'id': '%s%s' % (cls, linenum),
+                                       'block': find_block(linenum),
+                                       'line': linenum})
                 lines.append('</ul>')
             return '\n'.join(lines)
 
-        eSumm = formatList('error')
-        wSumm = formatList('warning')
-        cSumm = formatList('coverity')
+        e_summ = formatList('error')
+        w_summ = formatList('warning')
+        c_summ = formatList('coverity')
 
         return html.substitute(project=self.project,
                                slot=self.config['slot'],
@@ -1046,9 +1190,9 @@ class BuildReporter(object):
                                logfile_links=dumps(logfile_links, indent=2),
                                code_links=dumps(code_links, indent=2),
                                ignored_counts=dumps(ignored_counts, indent=2),
-                               eCount=eCount,
-                               wCount=wCount,
-                               covCount=cCount,
-                               errors_summary=eSumm,
-                               warnings_summary=wSumm,
-                               coverity_summary=cSumm)
+                               eCount=e_count,
+                               wCount=w_count,
+                               covCount=c_count,
+                               errors_summary=e_summ,
+                               warnings_summary=w_summ,
+                               coverity_summary=c_summ)

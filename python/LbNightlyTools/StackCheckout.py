@@ -58,8 +58,8 @@ class ProjectDesc(object):
     @property
     def projectDir(self):
         '''Name of the project directory (relative to the build directory).'''
-        u = self.name.upper()
-        return os.path.join(u, '{0}_{1}'.format(u, self.version))
+        upcase = self.name.upper()
+        return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
 
     def __str__(self):
         '''String representation of the project.'''
@@ -176,14 +176,15 @@ class StackDesc(object):
 
                 newdata = []
                 for line in data:
-                    n = line.strip().split()
-                    if len(n) == 3 and n[0] == 'use':
-                        if n[1] in proj_versions_uc:
-                            n[2] = n[1] + '_' + proj_versions_uc[n[1]]
+                    tokens = line.strip().split()
+                    if len(tokens) == 3 and tokens[0] == 'use':
+                        if tokens[1] in proj_versions_uc:
+                            tokens[2] = (tokens[1] + '_'
+                                         + proj_versions_uc[tokens[1]])
                             # special case
-                            if n[2] == 'LCGCMT_preview':
-                                n[2] = 'LCGCMT-preview'
-                            line = ' '.join(n) + '\n'
+                            if tokens[2] == 'LCGCMT_preview':
+                                tokens[2] = 'LCGCMT-preview'
+                            line = ' '.join(tokens) + '\n'
                     newdata.append(line)
 
                 f = open(join(rootdir, project_cmt), 'w')
@@ -206,12 +207,12 @@ class StackDesc(object):
                 f.close()
 
                 newdata = []
-                for l in data:
-                    n = l.strip().split()
-                    if len(n) >= 3 and n[0] == 'use':
-                        n[2] = '*'
-                        l = ' '.join(n) + '\n'
-                    newdata.append(l)
+                for line in data:
+                    tokens = line.strip().split()
+                    if len(tokens) >= 3 and tokens[0] == 'use':
+                        tokens[2] = '*'
+                        line = ' '.join(tokens) + '\n'
+                    newdata.append(line)
 
                 f = open(join(rootdir, requirements), 'w')
                 f.writelines(newdata)

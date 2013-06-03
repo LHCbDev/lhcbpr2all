@@ -28,6 +28,7 @@ from subprocess import Popen, PIPE, call
 from tempfile import mkstemp
 from datetime import datetime
 
+ARTIFACTS_URL = 'https://buildlhcb.cern.ch/artifacts'
 
 def _list_http(url):
     '''
@@ -37,13 +38,19 @@ def _list_http(url):
     format.
     '''
     class ListHTMLParser(HTMLParser.HTMLParser):
+        '''
+        Specialized HTML parser to extract the list of files from standard
+        Apache directory listing.
+        '''
+        # pylint: disable=R0904
         def __init__(self):
             HTMLParser.HTMLParser.__init__(self)
             self.data = []
         def handle_starttag(self, tag, attrs):
             if tag == 'a':
                 attrs = dict(attrs)
-                href = attrs.get('href', '?') # avoid check for '' in the following 'if'
+                # avoid check for '' in the following 'if'
+                href = attrs.get('href', '?')
                 # ignore special entries like sorting links ("?...") or link to
                 # parent directory
                 if '?' not in href and href not in url:
@@ -57,8 +64,8 @@ def _list_ssh(url):
     Implementation of listdir for SSH.
     '''
     host, path = url.split(':', 1)
-    p = Popen(['ssh', host, 'ls -a1 %r' % path], stdout=PIPE)
-    return p.communicate()[0].splitlines()
+    proc = Popen(['ssh', host, 'ls -a1 %r' % path], stdout=PIPE)
+    return proc.communicate()[0].splitlines()
 
 def _url_protocol(url):
     '''
@@ -73,19 +80,24 @@ def _url_protocol(url):
 
 def listdir(url):
     '''
-    @return the list of entries in a directory, being it over HTTP, ssh or local filesystem.
+    @return the list of entries in a directory, being it over HTTP, ssh or
+            local filesystem.
     '''
     protocol = _url_protocol(url)
-    l = {'http': _list_http,
-         'ssh': _list_ssh,
-         'file': os.listdir}[protocol](url)
-    l.sort()
-    return l
+    listing = {'http': _list_http,
+               'ssh': _list_ssh,
+               'file': os.listdir}[protocol](url)
+    return sorted(listing)
 
 
 def getURL(url, dst):
+    '''
+    Generic URL retriever with suppotr for 'http:', 'file:' and 'ssh:'
+    protocols.
+    '''
     protocol = _url_protocol(url)
     def getHTTP(url, dst):
+        '''Retrieve from 'http:'.'''
         # code copied from shutil.copyfile
         fsrc = None
         fdst = None
@@ -99,12 +111,16 @@ def getURL(url, dst):
             if fsrc:
                 fsrc.close()
     def getSSH(url, dst):
+        '''Retrieve from 'ssh:'.'''
         call(['scp', '-q', url, dst])
     return {'http': getHTTP,
             'ssh': getSSH,
             'file': shutil.copy2}[protocol](url, dst)
 
 def unpack(url, dest):
+    '''
+    Unpack a tarball from 'url' into the directory 'dest'.
+    '''
     # download on a local file
     log = logging.getLogger('unpack')
     protocol = _url_protocol(url)
@@ -127,7 +143,7 @@ def unpack(url, dest):
 
 def install(url, dest):
     '''
-    Install the file at 'url' in the directory dest.
+    Install the file at 'url' in the directory 'dest'.
 
     If url points to a tarball, it is unpacked, otherwise it is just copied.
     '''
@@ -152,16 +168,17 @@ def requiredPackages(files, projects=None, platforms=None, skip=None):
     else:
         skip = set(skip)
     if projects:
-        projects = map(str.lower, projects) # change to lowercase to make the check case-insensitive
-    for f in files:
+        # change to lowercase to make the check case-insensitive
+        projects = map(str.lower, projects)
+    for filename in files:
         # file names have the format
         #   <project>.<version>.<tag.id>.<platform>.tar.bz2
-        d = f.split('.')
-        pr, pl = d[0], d[-3]
-        if projects is None or pr.lower() in projects:
-            if platforms is None or pl in platforms:
-                if f not in skip:
-                    yield f
+        tokens = filename.split('.')
+        project, platform = tokens[0], tokens[-3]
+        if projects is None or project.lower() in projects:
+            if platforms is None or platform in platforms:
+                if filename not in skip:
+                    yield filename
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -192,27 +209,28 @@ class Script(LbUtils.Script.PlainScript):
                                '[default: <slot-name>/<build-id>]')
 
 
-        parser.set_defaults(artifacts_root='https://buildlhcb.cern.ch/artifacts')
+        parser.set_defaults(artifacts_root=ARTIFACTS_URL)
 
     def main(self):
         # split the 'comma-separated list' options
-        if self.options.projects:
-            self.options.projects = map(str.strip, self.options.projects.split(','))
-        if self.options.platforms:
-            self.options.platforms = map(str.strip, self.options.platforms.split(','))
-            self.options.platforms.append('src') # ensure that 'src' is included
+        opts = self.options
+        if opts.projects:
+            opts.projects = map(str.strip, opts.projects.split(','))
+        if opts.platforms:
+            opts.platforms = map(str.strip, opts.platforms.split(','))
+            opts.platforms.append('src') # ensure that 'src' is included
 
         try:
             slot, build_id = self.args
         except ValueError:
             self.parser.error('wrong number of arguments')
 
-        dest = self.options.dest or os.path.join(slot, build_id)
+        dest = opts.dest or os.path.join(slot, build_id)
         if not os.path.exists(dest):
             self.log.debug('creating directory %s' % dest)
             os.makedirs(dest)
 
-        url = '/'.join([self.options.artifacts_root, slot, build_id])
+        url = '/'.join([opts.artifacts_root, slot, build_id])
         history_file = os.path.join(dest, '.installed')
 
         lock_file = os.path.join(dest, '.lock')
@@ -224,8 +242,11 @@ class Script(LbUtils.Script.PlainScript):
         else:
             # the log file is still there: give up
             try:
-                p, t = open(lock_file).readline().strip().split(':', 1)
-                self.log.error('lockfile %s still present (generated by pid %s on %s)', lock_file, p, t)
+                pid, timestamp = (open(lock_file).readline()
+                                  .strip().split(':', 1))
+                self.log.error('lockfile %s still present '
+                               '(generated by pid %s on %s)',
+                               lock_file, pid, timestamp)
                 return 2
             except os.error:
                 # if we cannot read the file, probably it just disappeared
@@ -235,7 +256,7 @@ class Script(LbUtils.Script.PlainScript):
                 pass
 
         f = open(lock_file, 'w')
-        f.flush()
+        f.flush() # ensure that the files gets on disk ASAP
         f.write('{0}:{1}\n'.format(os.getpid(), datetime.now().isoformat()))
         f.close()
 
@@ -244,21 +265,25 @@ class Script(LbUtils.Script.PlainScript):
             tarfiles = [f for f in urllist if f.endswith('.tar.bz2')]
             installed = {}
             if os.path.exists(history_file):
-                installed = dict([l.strip().split(':', 1) for l in open(history_file)])
+                installed = dict([l.strip().split(':', 1)
+                                  for l in open(history_file)])
             tarfiles = requiredPackages(tarfiles,
-                                        self.options.projects, self.options.platforms,
+                                        opts.projects, opts.platforms,
                                         installed)
 
-            requiredFiles = list(tarfiles) # tarfiles is a generator (so far)
-            requiredFiles.extend(set(['configuration.xml', 'confSummary.py',
-                                      'searchPath.cmake']).intersection(urllist) - set(installed))
-            if requiredFiles:
-                self.log.info('installing %d files', len(requiredFiles))
+            required_files = list(tarfiles) # tarfiles is a generator (so far)
+            # add required non-tar files
+            other_files = set(['configuration.xml', 'confSummary.py',
+                               'searchPath.cmake'])
+            required_files.extend(other_files.intersection(urllist) -
+                                 set(installed))
+            if required_files:
+                self.log.info('installing %d files', len(required_files))
             else:
                 self.log.info('nothing to install')
 
 
-            for f in requiredFiles:
+            for f in required_files:
                 if install(url + '/' + f, dest): # 0 or None mean success
                     raise RuntimeError('error installing %s' % f)
                 installed[f] = datetime.now().isoformat()
@@ -267,8 +292,8 @@ class Script(LbUtils.Script.PlainScript):
                 f.writelines(['%s:%s\n' % i for i in sorted(installed.items())])
                 f.close()
 
-        except Exception, x:
-            self.log.error('Fatal error: %s' % x)
+        except Exception, ex:
+            self.log.error('Fatal error: %s' % ex)
             if logging.getLogger().level <= logging.DEBUG:
                 # re-raise the exception in debug mode
                 raise
