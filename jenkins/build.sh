@@ -57,7 +57,8 @@ else
 fi
 
 # create moving symlinks in the artifacts deployment directory (ASAP)
-ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}"
+# (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
+ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
 if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
