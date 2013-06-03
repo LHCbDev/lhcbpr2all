@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -10,6 +10,16 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-cd $(dirname $0)
+# prepare the environment for testing
+. /cvmfs/lhcb.cern.ch/lib/lhcb/LBSCRIPTS/prod/InstallArea/scripts/LbLogin.sh
+. SetupProject.sh LCGCMT Python pytools
+set -ex
+
+cd $(dirname $0)/..
+. ./setup.sh
 
 nosetests -v --with-doctest --with-xunit --with-coverage --cover-erase --cover-inclusive --cover-package LbNightlyTools python
+coverage xml --include="python/*"
+
+# Ignoring pylint return code (to avoid failure of the test).
+pylint --rcfile=docs/pylint.rc LbNightlyTools > pylint.txt || true
