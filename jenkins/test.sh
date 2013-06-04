@@ -1,3 +1,4 @@
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -8,23 +9,17 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-'''
-Common utility functions.
-'''
-__author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
-import os
-from datetime import datetime
+# prepare the environment for testing
+. /cvmfs/lhcb.cern.ch/lib/lhcb/LBSCRIPTS/prod/InstallArea/scripts/LbLogin.sh
+. SetupProject.sh LCGCMT Python pytools
+set -ex
 
-DAY_NAMES = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
+cd $(dirname $0)/..
+. ./setup.sh
 
-def setDayNamesEnv(day=None):
-    '''
-    Set the environment variables TODAY and YESTERDAY if not already set.
+nosetests -v --with-doctest --with-xunit --with-coverage --cover-erase --cover-inclusive --cover-package LbNightlyTools python
+coverage xml --include="python/*"
 
-    @param day: weekday number for 'TODAY', if not specified, defaults to today.
-    '''
-    if day is None:
-        day = datetime.today().weekday()
-    os.environ['TODAY'] = os.environ.get('TODAY', DAY_NAMES[day])
-    os.environ['YESTERDAY'] = os.environ.get('YESTERDAY', DAY_NAMES[day - 1]) # it works for day == 0 too
+# Ignoring pylint return code (to avoid failure of the test).
+pylint --rcfile=docs/pylint.rc LbNightlyTools > pylint.txt || true

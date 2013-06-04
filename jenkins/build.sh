@@ -57,13 +57,20 @@ else
 fi
 
 # create moving symlinks in the artifacts deployment directory (ASAP)
-ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}"
+# (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
+ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
 if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
 fi
 
-time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --deploy-reports-to $LHCBNIGHTLIES/www/logs ${coverity_opt} ${config_file}
+if [ "$JOB_NAME" = "nightly-slot-build-platform" ] ; then
+  deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
+else
+  deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
+fi
+
+time BuildSlot.py --jobs 8 --timeout 18000 --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" ${deploy_opt} ${coverity_opt} ${config_file}
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $stamp
@@ -72,4 +79,10 @@ if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   echo ${slot}.${slot_build_id} >> $stamp
   echo ${BUILD_URL} >> $stamp
   echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
+fi
+
+# FIXME: For the special slot lhcb-release we also keep a copy of the
+# whole build directory
+if [ "${slot}" == "lhcb-release" ] ; then
+  tar -c -j -f "${ARTIFACTS_DIR}"/${slot}.${slot_build_id}.${platform}.full.tar.bz2 -C build .
 fi

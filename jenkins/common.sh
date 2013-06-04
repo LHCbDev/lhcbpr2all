@@ -18,6 +18,9 @@
 env_log=$(basename $0)${platform:+.}${platform}.env
 printenv | sort > ${env_log}
 
+# enforce English language
+export LANG=C
+
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
 mkdir -p ${ARTIFACTS_DIR}
 export TMPDIR=${WORKSPACE}/tmp

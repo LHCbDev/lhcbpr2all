@@ -16,7 +16,7 @@ from StringIO import StringIO
 # Uncomment to disable the tests.
 #__test__ = False
 
-from .. import BuildSlot
+from LbNightlyTools import BuildSlot
 
 
 def test_ProjDesc():

@@ -27,6 +27,9 @@ def loadFromOldXML(source, slot):
     doc = parse(source)
 
     def fixPlaceHolders(s):
+        '''
+        Replace the old placeholders with the new ones.
+        '''
         s = s.replace('%DAY%', '${TODAY}')
         s = s.replace('%YESTERDAY%', '${YESTERDAY}')
         s = s.replace('%PLATFORM%', '${CMTCONFIG}')
@@ -35,80 +38,88 @@ def loadFromOldXML(source, slot):
     data = {'slot': slot,
             'env': []}
     try:
-        slotEl = (el for el in doc.findall('slot')
-                  if el.attrib.get('name') == slot).next()
+        slot_el = (el for el in doc.findall('slot')
+                   if el.attrib.get('name') == slot).next()
 
-        cmtProjPath = ':'.join([fixPlaceHolders(el.attrib['value'])
-                                for el in slotEl.findall('cmtprojectpath/path')])
-        if cmtProjPath:
-            data['env'].append('CMTPROJECTPATH=' + cmtProjPath)
+        cmt_proj_path = ':'.join([fixPlaceHolders(el.attrib['value'])
+                                  for el in
+                                      slot_el.findall('cmtprojectpath/path')])
+        if cmt_proj_path:
+            data['env'].append('CMTPROJECTPATH=' + cmt_proj_path)
 
-        data['description'] = slotEl.attrib.get('description', '(no description)')
+        desc = slot_el.attrib.get('description', '(no description)')
+        m = re.match(r'%s(:| -|\.)\s+' % slot, desc)
+        if m:
+            desc = desc[:m.start()] + desc[m.end():]
+        data['description'] = desc
 
-        el = slotEl.find('cmtextratags')
-        if el is not None:
-            data['env'].append('CMTEXTRATAGS=' + el.attrib['value'])
+        elem = slot_el.find('cmtextratags')
+        if elem is not None:
+            data['env'].append('CMTEXTRATAGS=' + elem.attrib['value'])
 
-        el = slotEl.find('waitfor')
-        if el is not None:
-            path = fixPlaceHolders(el.attrib['flag'])
+        elem = slot_el.find('waitfor')
+        if elem is not None:
+            path = fixPlaceHolders(elem.attrib['flag'])
             data['preconditions'] = [{"name": "waitForFile",
                                       "args": {"path": path}}]
 
         data['default_platforms'] = [p.attrib['name']
-                                     for p in slotEl.findall('platforms/platform')
+                                     for p in
+                                         slot_el.findall('platforms/platform')
                                      if 'name' in p.attrib]
 
-        allProjs = []
-        for proj in slotEl.findall('projects/project'):
+        projects = []
+        for proj in slot_el.findall('projects/project'):
             name = proj.attrib['name']
             version = proj.attrib['tag'].split('_', 1)[1]
             overrides = {}
-            for el in proj.findall('addon') + proj.findall('change'):
-                overrides[el.attrib['package']] = el.attrib['value']
+            for elem in proj.findall('addon') + proj.findall('change'):
+                overrides[elem.attrib['package']] = elem.attrib['value']
             # since dependencies are declared only to override versions, but the
             # new config needs them for the ordering, we fake dependencies on
             # all the projects encountered so far
-            dependencies = [p['name'] for p in allProjs]
+            dependencies = [p['name'] for p in projects]
             # check if we have dep overrides
-            for el in proj.findall('dependence'):
-                depName = el.attrib['project']
-                if depName not in dependencies:
-                    dependencies.append(depName)
-                    depVer = el.attrib['tag']
-                    if depVer == 'LCGCMT-preview':
-                        depVer = 'preview'
+            for elem in proj.findall('dependence'):
+                dep_name = elem.attrib['project']
+                if dep_name not in dependencies:
+                    dependencies.append(dep_name)
+                    dep_vers = elem.attrib['tag']
+                    if dep_vers == 'LCGCMT-preview':
+                        dep_vers = 'preview'
                     else:
-                        depVer = depVer.split('_', 1)[1]
-                    allProjs.append({'name': depName,
-                                     'version': depVer,
+                        dep_vers = dep_vers.split('_', 1)[1]
+                    projects.append({'name': dep_name,
+                                     'version': dep_vers,
                                      'overrides': {},
                                      'dependencies': [],
-                                     'checkout': 'noCheckout'})
+                                     'checkout': 'ignore'})
 
-            projData = {'name': name,
-                        'version': version,
-                        'overrides': overrides,
-                        'dependencies': dependencies}
+            proj_data = {'name': name,
+                         'version': version,
+                         'overrides': overrides,
+                         'dependencies': dependencies}
             if proj.attrib.get('disabled', 'false').lower() != 'false':
-                projData['checkout'] = 'noCheckout'
+                proj_data['checkout'] = 'ignore'
 
-            allProjs.append(projData)
+            projects.append(proj_data)
 
-        data['projects'] = allProjs
+        data['projects'] = projects
 
         # we assume that all slots from old config use CMT
         data['USE_CMT'] = True
 
-        def el2re(el):
+        def el2re(elem):
             '''Regex string for ignored warning or error.'''
-            v = el.attrib['value']
-            if el.attrib.get('type', 'string') == 'regex':
-                return v
+            val = elem.attrib['value']
+            if elem.attrib.get('type', 'string') == 'regex':
+                return val
             else:
-                return re.escape(v)
-        data['error_exceptions'] = map(el2re, doc.findall('general/ignore/error'))
-        data['warning_exceptions'] = map(el2re, doc.findall('general/ignore/warning'))
+                return re.escape(val)
+        data['error_exceptions'] = map(el2re,
+                                       doc.findall('general/ignore/error'))
+        data['warning_exceptions'] = map(el2re,
+                                         doc.findall('general/ignore/warning'))
 
         return data
     except StopIteration:
