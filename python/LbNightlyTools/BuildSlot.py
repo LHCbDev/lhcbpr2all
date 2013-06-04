@@ -300,7 +300,7 @@ def main():
     if len(args) != 1:
         parser.error('wrong number of arguments')
 
-    from os.path import join, dirname
+    from os.path import join, dirname, relpath
     config = Configuration.load(args[0])
 
     from LbNightlyTools.Utils import setDayNamesEnv
@@ -499,6 +499,7 @@ def main():
             super(TestTask, self).run()
             self.completed = datetime.now()
             if self.artifacts_dir:
+                # generate the test summary JSON file for the new dashboard
                 data = dict(json_data)
                 data.update({"type": "tests-result",
                              "project": self.project.name,
@@ -506,6 +507,21 @@ def main():
                              "completed": self.completed.isoformat(),
                              "results": self.getTestSummary()})
                 dump_json(data, 'tests')
+                # Find the .new files in the project directory and copy them to
+                # the artifacts directory.
+                cwd = self.kwargs.get('cwd', os.path.curdir)
+                new_refs = listAllFiles(cwd,
+                                        lambda f: not re.match(r'.*\.new$', f))
+                for src in new_refs:
+                    dst = join(self.artifacts_dir, 'newrefs',
+                               self.project.name, relpath(src, cwd))
+                    try:
+                        ensureDirs([dirname(dst)])
+                        shutil.copy(src, dst)
+                    except IOError:
+                        # ignore failures in the copy (not fatal)
+                        pass
+            # deploy the test reports if needed
             deployReports(self.reports)
 
 
