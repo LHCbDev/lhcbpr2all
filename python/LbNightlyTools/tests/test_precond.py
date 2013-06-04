@@ -10,12 +10,12 @@
 ###############################################################################
 import json
 
-from _utils import processFile
+from LbNightlyTools.tests.utils import processFile
 
 # Uncomment to disable the tests.
 #__test__ = False
 
-from .. import SlotPreconditions
+from LbNightlyTools import SlotPreconditions
 
 def test_parseConfigFile():
     'SlotPreconditions.parseConfigFile()'
