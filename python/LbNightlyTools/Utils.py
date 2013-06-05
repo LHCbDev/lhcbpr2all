@@ -95,3 +95,11 @@ def retry_call(*args, **kwargs):
                                 .format(args[0], retry))
         return 0
 
+
+def ensureDirs(dirs):
+    '''
+    Ensure that the specified directories exist, creating them if needed.
+    '''
+    for path in dirs:
+        if not os.path.exists(path):
+            os.makedirs(path)

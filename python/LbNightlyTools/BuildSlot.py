@@ -25,7 +25,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import timeout_call as call
+from LbNightlyTools.Utils import timeout_call as call, ensureDirs
 
 from string import Template
 from socket import gethostname
@@ -166,14 +166,6 @@ def listAllFiles(path, excl=None):
             if not excl(f):
                 yield join(root, f)
         dirs[:] = [d for d in dirs if not excl(d)]
-
-def ensureDirs(dirs):
-    '''
-    Ensure that the specified directories exist, creating them if needed.
-    '''
-    for path in dirs:
-        if not os.path.exists(path):
-            os.makedirs(path)
 
 def setenv(definitions):
     '''
