@@ -1184,6 +1184,9 @@ class Script(LbUtils.Script.PlainScript):
         packname = os.path.join(self.artifacts_dir, packname)
         proj.packname = packname
 
+        if self.options.tests_only:
+           return
+
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(proj.build_dir):
             self.log.warning('no sources for %s, skip build', proj)
@@ -1398,7 +1401,7 @@ class Script(LbUtils.Script.PlainScript):
                 self.config = self.script.config
                 self.platform = self.script.platform
 
-                self.cwd = self.kwargs.get('cwd', os.path.curdir)
+                self.cwd = kwargs.get('cwd', os.path.curdir)
 
                 self.started = self.completed = None
 
@@ -1490,8 +1493,8 @@ class Script(LbUtils.Script.PlainScript):
 
         jobs = []
         for proj in self.sorted_projects:
-            if not opts.tests_only:
-                self._buildProject(proj)
+
+            self._buildProject(proj)
 
             if opts.rsync_dest:
                 jobs.append(DeployArtifactsTask())
