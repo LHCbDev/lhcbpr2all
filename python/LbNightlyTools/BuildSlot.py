@@ -803,6 +803,8 @@ class Script(LbUtils.Script.PlainScript):
     __usage__ = '%prog [options] <config.json>'
     __version__ = ''
 
+    # unavoidable or fake warnings
+    # pylint: disable=E1002,W0201
     def defineBuildOptions(self):
         '''
         Add build-specific options to the parser.
@@ -1156,11 +1158,11 @@ class Script(LbUtils.Script.PlainScript):
 
         proj.build_dir = join(self.build_dir, proj.dir)
         proj.summary_dir = join(self.artifacts_dir,
-                                'summaries.{0}'.format(self.platform),
+                                'summaries.' + self.platform,
                                 proj.name)
         # use the ramdisk for Coverity intermediate dir if possible
         if os.path.exists('/dev/shm'):
-            proj.coverity_int = join('/dev/shm/coverity.{0}'.format(self.platform),
+            proj.coverity_int = join('/dev/shm/coverity.' + self.platform,
                                      self.options.build_id, proj.name)
         else:
             proj.coverity_int = join(self.build_dir, 'coverity', proj.name)
@@ -1185,7 +1187,7 @@ class Script(LbUtils.Script.PlainScript):
         proj.packname = packname
 
         if self.options.tests_only:
-           return
+            return
 
         # ignore missing directories (the project may not have been checked out)
         if not os.path.exists(proj.build_dir):
@@ -1457,7 +1459,7 @@ class Script(LbUtils.Script.PlainScript):
             '''
             def __init__(self, script):
                 self.script = script
-                if self.script.opts.rsync_dest:
+                if self.script.options.rsync_dest:
                     self.retcode = -1
                     super(DeployArtifactsTask, self).__init__()
                     self.start()
@@ -1465,24 +1467,24 @@ class Script(LbUtils.Script.PlainScript):
                     self.retcode = 0
             def run(self):
                 # create destination directory, if missing
-                if ':' in self.script.opts.rsync_dest:
-                    host, path = self.script.opts.rsync_dest.split(':', 1)
+                if ':' in self.script.options.rsync_dest:
+                    host, path = self.script.options.rsync_dest.split(':', 1)
                     call(['ssh', host, 'mkdir -pv "%s"' % path])
                 else:
-                    ensureDirs([self.script.opts.rsync_dest])
+                    ensureDirs([self.script.options.rsync_dest])
 
                 cmd = ['rsync', '--archive',
                        '--partial-dir=.rsync-partial.%s.%d' %
                        (gethostname(), os.getpid()),
                        '--delay-updates', '--rsh=ssh',
                        self.script.artifacts_dir + '/',
-                       self.script.opts.rsync_dest]
+                       self.script.options.rsync_dest]
                 self.retcode = call(cmd)
             def wait(self):
                 '''
                 Block until the subprocess exits and return its exit code.
                 '''
-                if self.script.opts.rsync_dest:
+                if self.script.options.rsync_dest:
                     self.join()
                 return self.retcode
             def __str__(self):
@@ -1497,14 +1499,14 @@ class Script(LbUtils.Script.PlainScript):
             self._buildProject(proj)
 
             if opts.rsync_dest:
-                jobs.append(DeployArtifactsTask())
+                jobs.append(DeployArtifactsTask(self))
 
             if opts.coverity:
                 if proj.build_retcode != 0:
                     self.log.error('cannot run Coverity analysis on a '
                                    'failed build')
                 else:
-                    self._coverityAnalysis()
+                    self._coverityAnalysis(proj)
                 # try in any case to remove the Coverity intermediate directory
                 # if it is on the ramdisk
                 if proj.coverity_int.startswith('/dev/shm'):
@@ -1552,7 +1554,7 @@ class Script(LbUtils.Script.PlainScript):
                       self.completetime - self.starttime)
         if opts.rsync_dest:
             self.log.info('deploying artifacts...')
-            retcode = DeployArtifactsTask().wait()
+            retcode = DeployArtifactsTask(self).wait()
             if retcode == 0:
                 self.log.info('... artifacts deployed')
             else:
