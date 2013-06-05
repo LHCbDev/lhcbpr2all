@@ -830,6 +830,11 @@ class Script(LbUtils.Script.PlainScript):
                               'to remove the limit (default: N of cores x %g)'
                               % LOAD_AVERAGE_SCALE)
 
+        group.add_option('--no-distcc',
+                         action='store_true',
+                         help='prevent use of distcc (used by default if '
+                              'present on the system)')
+
         group.add_option('--coverity',
                          action='store_true',
                          help='enable special Coverity static analysis on the '
@@ -839,6 +844,7 @@ class Script(LbUtils.Script.PlainScript):
         self.parser.set_defaults(clean=False,
                                  jobs=1,
                                  load_average=cpu_count() * LOAD_AVERAGE_SCALE,
+                                 no_distcc=False,
                                  coverity=False)
 
     def defineTestOptions(self):
@@ -1014,6 +1020,9 @@ class Script(LbUtils.Script.PlainScript):
 
         if self.config.get(u'USE_CMT'):
             cmd.append('-DUSE_CMT=TRUE')
+
+        if opts.no_distcc:
+            cmd.append('-DDISABLE_DISTCC=TRUE')
 
         self.build_cmd = cmd + ['-DSTEP=BUILD', '-S', 'CTestScript.cmake']
         self.test_cmd = cmd + ['-DSTEP=TEST', '-S', 'CTestScript.cmake']
