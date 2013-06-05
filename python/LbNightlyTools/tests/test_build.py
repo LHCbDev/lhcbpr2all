@@ -18,6 +18,16 @@ from StringIO import StringIO
 
 from LbNightlyTools import BuildSlot
 
+_env_bk = dict(os.environ)
+
+def setup():
+    global _env_bk
+    _env_bk = dict(os.environ)
+
+def teardown():
+    global _env_bk
+    os.environ.clear()
+    os.environ.update(_env_bk)
 
 def test_ProjDesc():
     'BuildSlot.ProjDesc'
@@ -60,3 +70,27 @@ def test_genProjectXml():
         assert len(deps) == len(p.deps)
         for a, b in zip(sorted(map(getName, deps)), sorted(map(versions.get, p.deps))):
             assert a == b, 'Dependencies of %s not matching (%s != %s)' % (p, a, b)
+
+def test_script_inconsistent_options():
+    try:
+        script = BuildSlot.Script()
+        script.run(['--tests-only', '--coverity'])
+    except SystemExit, x:
+        assert x.code != 0
+        pass
+
+def test_script_missing_args():
+    try:
+        script = BuildSlot.Script()
+        script.run()
+    except SystemExit, x:
+        assert x.code != 0
+        pass
+
+def test_script_simple_build():
+    try:
+        script = BuildSlot.Script()
+        script.run()
+    except SystemExit, x:
+        assert x.code != 0
+        pass
