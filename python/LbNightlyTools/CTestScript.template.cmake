@@ -93,11 +93,12 @@ set_property(GLOBAL PROPERTY Label "${project} ${version}")
 # Create directory for QMTest summaries and reports
 file(MAKE_DIRECTORY ${summary_dir})
 
+execute_process(COMMAND date OUTPUT_VARIABLE configure_start)
+ctest_configure()
+execute_process(COMMAND date OUTPUT_VARIABLE configure_end)
+
 if(NOT STEP STREQUAL TEST)
   ##ctest_update()
-  execute_process(COMMAND date OUTPUT_VARIABLE configure_start)
-  ctest_configure()
-  execute_process(COMMAND date OUTPUT_VARIABLE configure_end)
   execute_process(COMMAND date OUTPUT_VARIABLE build_start)
   ctest_build()
   execute_process(COMMAND date OUTPUT_VARIABLE build_end)
