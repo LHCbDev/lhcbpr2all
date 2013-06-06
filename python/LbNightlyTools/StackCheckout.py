@@ -334,7 +334,8 @@ class Script(LbUtils.Script.PlainScript):
         cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
         cfg['date'] = timestamp
         f = codecs.open(join(artifacts_dir, 'db',
-                             '{slot}.{build_id}'.format(**cfg)), 'w', 'utf-8')
+                             '{slot}.{build_id}.json'.format(**cfg)),
+                        'w', 'utf-8')
         json.dump(cfg, f)
         f.close()
 
