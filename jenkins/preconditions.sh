@@ -18,4 +18,4 @@ export HOME=$PWD
 
 export CMTCONFIG=$platform
 
-SlotPreconditions.py --verbose ${config_file}
+lbn-check-preconditions --verbose ${config_file}
