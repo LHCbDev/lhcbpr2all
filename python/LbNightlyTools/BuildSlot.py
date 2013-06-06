@@ -346,7 +346,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Prepare the option parser.
         '''
-        from ScriptsCommon import addBasicOptions
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
         addBasicOptions(self.parser)
 
         self.defineBuildOptions()
