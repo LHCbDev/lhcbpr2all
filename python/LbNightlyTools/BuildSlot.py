@@ -562,9 +562,27 @@ class Script(LbUtils.Script.PlainScript):
         self.write(project_xml_name, project_xml)
         self.keepArtifact(project_xml_name)
 
-    def _buildProject(self, proj):
+        def dumpConfSummary():
+            '''Create special summary file used by SetupProject.'''
+            data = []
+            # find the declaration of CMTPROJECTPATH in the configuration
+            for decl in self.config.get(u'env', []):
+                if decl.startswith('CMTPROJECTPATH='):
+                    # dump it as a list in the summary file
+                    data += map(os.path.expandvars,
+                                decl.split('=', 1)[1].split(':'))
+            if data:
+                self.write(os.path.join(self.artifacts_dir, 'confSummary.py'),
+                           'cmtProjectPathList = %r\n' % data)
+                self.write(os.path.join(self.artifacts_dir, 'searchPath.cmake'),
+                           'set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' %
+                           ' '.join(data))
+
+        dumpConfSummary()
+
+    def _prepareProject(self, proj):
         '''
-        Build a project of the slot.
+        Prepare a project directory for build or test.
         '''
         from os.path import join
 
@@ -598,19 +616,6 @@ class Script(LbUtils.Script.PlainScript):
         packname = os.path.join(self.artifacts_dir, packname)
         proj.packname = packname
 
-        if self.options.tests_only:
-            return
-
-        # ignore missing directories (the project may not have been checked out)
-        if not os.path.exists(proj.build_dir):
-            self.log.warning('no sources for %s, skip build', proj)
-            return
-
-        if os.path.exists(proj.packname):
-            self.log.info('binary tarball for %s already present, skip build',
-                          proj)
-            return
-
         Configuration.save(join(proj.build_dir, 'SlotConfig.json'), self.config)
         self.write(join(proj.build_dir, 'SlotConfig.cmake'), self.config_cmake)
         if self.cache_preload:
@@ -627,6 +632,23 @@ class Script(LbUtils.Script.PlainScript):
                                             'Model': self.options.model,
                                             'old_build_id': proj.old_build_id}))
 
+        return proj
+
+    def _buildProject(self, proj):
+        '''
+        Build a project of the slot.
+        '''
+        from os.path import join
+
+        # ignore missing directories (the project may not have been checked out)
+        if not os.path.exists(proj.build_dir):
+            self.log.warning('no sources for %s, skip build', proj)
+            return
+
+        if os.path.exists(proj.packname):
+            self.log.info('binary tarball for %s already present, skip build',
+                          proj)
+            return
 
         build_cmd = self.build_cmd
         if self.options.coverity:
@@ -649,23 +671,6 @@ class Script(LbUtils.Script.PlainScript):
             data.append('')
             self.write(os.path.join(proj.summary_dir, name), '\n'.join(data))
 
-        def dumpConfSummary():
-            '''Create special summary file used by SetupProject.'''
-            data = []
-            # find the declaration of CMTPROJECTPATH in the configuration
-            for decl in self.config.get(u'env', []):
-                if decl.startswith('CMTPROJECTPATH='):
-                    # dump it as a list in the summary file
-                    data += map(os.path.expandvars,
-                                decl.split('=', 1)[1].split(':'))
-            if data:
-                self.write(join(self.artifacts_dir, 'confSummary.py'),
-                           'cmtProjectPathList = %r\n' % data)
-                self.write(join(self.artifacts_dir, 'searchPath.cmake'),
-                           'set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' %
-                           ' '.join(data))
-
-        dumpConfSummary()
         dumpFileListSummary('sources.list')
 
         self.log.info('building %s', proj.dir)
@@ -908,7 +913,10 @@ class Script(LbUtils.Script.PlainScript):
         jobs = []
         for proj in self.sorted_projects:
 
-            self._buildProject(proj)
+            self._prepareProject(proj)
+
+            if not self.options.tests_only:
+                self._buildProject(proj)
 
             if opts.rsync_dest:
                 jobs.append(DeployArtifactsTask(self))
