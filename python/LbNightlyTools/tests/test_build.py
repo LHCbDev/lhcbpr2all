@@ -18,17 +18,6 @@ from StringIO import StringIO
 
 from LbNightlyTools import BuildSlot
 
-_env_bk = dict(os.environ)
-
-def setup():
-    global _env_bk
-    _env_bk = dict(os.environ)
-
-def teardown():
-    global _env_bk
-    os.environ.clear()
-    os.environ.update(_env_bk)
-
 def test_ProjDesc():
     'BuildSlot.ProjDesc'
     p = BuildSlot.ProjDesc({u'name': u'MyProject',
@@ -71,26 +60,29 @@ def test_genProjectXml():
         for a, b in zip(sorted(map(getName, deps)), sorted(map(versions.get, p.deps))):
             assert a == b, 'Dependencies of %s not matching (%s != %s)' % (p, a, b)
 
-def test_script_inconsistent_options():
-    try:
-        script = BuildSlot.Script()
-        script.run(['--tests-only', '--coverity'])
-    except SystemExit, x:
-        assert x.code != 0
-        pass
 
-def test_script_missing_args():
-    try:
-        script = BuildSlot.Script()
-        script.run()
-    except SystemExit, x:
-        assert x.code != 0
-        pass
+def test_genSlotConfig():
+    'BuildSlot.genSlotConfig()'
+    config = dict(slot='some-slot',
+                  projects=[{'name': 'Gaudi', 'version': 'v23r8'},
+                            {'name': 'LHCb', 'version': 'HEAD',
+                             'dependencies': ['Gaudi']}],
+                  warning_exceptions=['.*/Boost/.*warning', '.*/ROOT/.*warning'],
+                  error_exceptions=[r'\[distcc\]'])
+    cmake = BuildSlot.genSlotConfig(config)
 
-def test_script_simple_build():
-    try:
-        script = BuildSlot.Script()
-        script.run()
-    except SystemExit, x:
-        assert x.code != 0
-        pass
+    print cmake
+
+    assert 'set(slot some-slot)\n' in cmake
+    assert 'set(config $ENV{CMTCONFIG})\n' in cmake
+    assert 'set(projects Gaudi LHCb)\n' in cmake
+    assert 'set(Gaudi_version v23r8)\n' in cmake
+    assert 'set(LHCb_version HEAD)\n' in cmake
+    assert 'set(Gaudi_dependencies )\n' in cmake
+    assert 'set(LHCb_dependencies Gaudi)\n' in cmake
+
+    # FIXME: these shoud be improved
+    assert r'.*/Boost/.*warning' in cmake
+    assert r'.*/ROOT/.*warning' in cmake
+    assert r'"\\[distcc\\]"' in cmake
+
