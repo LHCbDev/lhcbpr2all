@@ -205,7 +205,8 @@ def test_lbcore_164():
 
         _check_build_artifacts(join(tmpd, 'testdata'), info)
 
-        assert exists(join(tmpd, 'testdata', 'artifacts', 'newrefs',
+        assert exists(join(tmpd, 'testdata', 'artifacts',
+                           'newrefs.{config}'.format(**info),
                            'TestProject', 'TestProjectSys', 'cmt',
                            'output.ref.new'))
 

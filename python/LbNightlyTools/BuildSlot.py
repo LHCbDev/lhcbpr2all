@@ -856,7 +856,8 @@ class Script(LbUtils.Script.PlainScript):
                 for src in new_refs:
                     if not src.endswith('.new'):
                         continue
-                    dst = join(self.artifacts_dir, 'newrefs',
+                    dst = join(self.artifacts_dir,
+                               'newrefs.' + self.script.platform,
                                self.project.name, relpath(src, self.cwd))
                     try:
                         self.script.keepArtifact(src, dst)
