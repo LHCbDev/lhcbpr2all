@@ -18,7 +18,8 @@ from tempfile import mkdtemp
 import shutil
 
 from datetime import date
-from os.path import exists, normpath, join
+from os.path import exists, normpath, join, dirname
+from LbNightlyTools.Utils import ensureDirs
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
@@ -163,3 +164,52 @@ def test_simple_build_w_test():
     finally:
         os.chdir(oldcwd)
         shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_lbcore_164():
+    '''https://its.cern.ch/jira/browse/LBCORE-164
+
+    store in the artifacts of the builds the output of failed tests
+    '''
+
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        filename = join(proj_root, 'TestProjectSys', 'cmt', 'output.ref.new')
+        ensureDirs([dirname(filename)])
+        f = open(filename, 'w')
+        f.write('new reference file\n')
+        f.close()
+
+        script = BuildSlot.Script()
+        retcode = script.run(['--with-tests', 'testing-slot.json'])
+        assert retcode == 0
+
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+        assert exists(join(tmpd, 'testdata', 'artifacts', 'newrefs',
+                           'TestProject', 'TestProjectSys', 'cmt',
+                           'output.ref.new'))
+
+    finally:
+        os.chdir(oldcwd)
+        #shutil.rmtree(tmpd, ignore_errors=True)
+        print tmpd

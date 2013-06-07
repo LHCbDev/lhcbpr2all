@@ -850,10 +850,12 @@ class Script(LbUtils.Script.PlainScript):
                                       'tests')
                 # Find the .new files in the project directory and copy them to
                 # the artifacts directory.
+                self.script.log.debug('looking for .new files')
                 from os.path import join, relpath
-                new_refs = listAllFiles(self.cwd,
-                                        lambda f: not re.match(r'.*\.new$', f))
+                new_refs = listAllFiles(self.cwd)
                 for src in new_refs:
+                    if not src.endswith('.new'):
+                        continue
                     dst = join(self.artifacts_dir, 'newrefs',
                                self.project.name, relpath(src, self.cwd))
                     try:
