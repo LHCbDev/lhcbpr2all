@@ -14,15 +14,15 @@
 . $(dirname $0)/common.sh
 
 # Get the slot configuration files from Subversion
-svn export svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk tmpconfig
+lbn-get-configs
 
-if [ -e tmpconfig/${slot}.json ] ; then
-  config_file=tmpconfig/${slot}.json
+if [ -e configs/${slot}.json ] ; then
+  config_file=configs/${slot}.json
 else
-  config_file=tmpconfig/configuration.xml#${slot}
+  config_file=configs/configuration.xml#${slot}
 fi
 
-StackCheckout.py --verbose --build-id "{slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
+lbn-checkout --verbose --build-id "${slot}.${slot_build_id}.${timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting

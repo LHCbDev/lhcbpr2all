@@ -1,0 +1,7 @@
+{"slot": "testing-slot",
+ "description": "slot used for unit testing of LbNighltyTools",
+ "projects": [{"name": "TestProject",
+               "version": "HEAD",
+               "checkout": "ignore"}],
+ "USE_CMT": true
+}

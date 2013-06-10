@@ -48,6 +48,7 @@ def timeout_call(*popenargs, **kwargs):
     option.
     """
     from subprocess import Popen
+    timer = None
     try:
         timeout = kwargs.pop('timeout')
         msg = kwargs.pop('timeoutmsg', 'on command ' + repr(popenargs))
@@ -61,6 +62,10 @@ def timeout_call(*popenargs, **kwargs):
         return result
     except KeyError:
         return Popen(*popenargs, **kwargs).wait()
+    finally:
+        # ensure that we do not wait for the timer if there is an abnormal exit
+        if timer:
+            timer.cancel()
 
 def retry_call(*args, **kwargs):
     '''
@@ -90,3 +95,11 @@ def retry_call(*args, **kwargs):
                                 .format(args[0], retry))
         return 0
 
+
+def ensureDirs(dirs):
+    '''
+    Ensure that the specified directories exist, creating them if needed.
+    '''
+    for path in dirs:
+        if not os.path.exists(path):
+            os.makedirs(path)

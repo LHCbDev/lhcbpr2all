@@ -19,7 +19,7 @@ export HOME=$PWD
 export CMTCONFIG=$platform
 
 if [ -z "${platforms}" ] ; then
-  platforms=$(SlotPlatforms.py ${config_file})
+  platforms=$(lbn-list-platforms ${config_file})
 fi
 
 if [ -z "${platforms}" ] ; then
