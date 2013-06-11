@@ -25,7 +25,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import timeout_call as call
+from LbNightlyTools.Utils import timeout_call as call, ensureDirs
 
 from string import Template
 from socket import gethostname
@@ -79,7 +79,7 @@ def genSlotConfig(config):
         cmake.append('set(%(name)s_version %(version)s)' % proj)
 
     for proj in projects:
-        cmake.append('set(%s_version %s)' %
+        cmake.append('set(%s_dependencies %s)' %
                      (proj[u'name'], ' '.join(proj.get(u'dependencies', []))))
 
     if u'warning_exceptions' in config:
@@ -167,14 +167,6 @@ def listAllFiles(path, excl=None):
                 yield join(root, f)
         dirs[:] = [d for d in dirs if not excl(d)]
 
-def ensureDirs(dirs):
-    '''
-    Ensure that the specified directories exist, creating them if needed.
-    '''
-    for path in dirs:
-        if not os.path.exists(path):
-            os.makedirs(path)
-
 def setenv(definitions):
     '''
     Modify the environment from a list of definitions of the type 'name=value',
@@ -214,577 +206,796 @@ class ListDict(dict):
         else:
             self[key].append(value)
 
-def main():
+
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
     '''
-    Main function of the BuildSlot.py script.
+    Script to build and test all the projects described in a configuration file.
     '''
-    from optparse import OptionParser
-    parser = OptionParser(usage='%prog [options] <config.json>')
-    models = ['Nightly', 'Experimental', 'Continuous']
-    parser.add_option('-m', '--model',
-                      action='store', type='choice', choices=models,
-                      help='build model: {0} (default: {0[0]}).'.format(models))
-    parser.add_option('--no-clean',
-                      action='store_true',
-                      help='do not purge the build directory before building')
-    parser.add_option('-d', '--debug',
-                      action='store_const', dest='level',
-                      const=logging.DEBUG,
-                      help='print debug informations.')
-    parser.add_option('-q', '--quiet',
-                      action='store_const', dest='level',
-                      const=logging.WARNING,
-                      help='be less verbose.')
-    parser.add_option('--timeout',
-                      metavar='SECONDS',
-                      action='store', type='int',
-                      help='set a global timeout on all tests (default: 600)')
-    parser.add_option('--build-only',
-                      action='store_true',
-                      help='build only, do not run the tests')
-    parser.add_option('--no-submit',
-                      action='store_true',
-                      help='do not submit the results to CDash server')
-    parser.add_option('-j', '--jobs',
-                      action='store', type='int',
-                      help='number of parallel jobs to use during the build '
-                           '(default: sequential build)')
-    parser.add_option('-l', '--load-average',
-                      action='store', type='float',
-                      help='load average limit for parallel builds, use 0 to '
-                           'remove the limit (default: N of cores x %g)'
-                           % LOAD_AVERAGE_SCALE)
-    parser.add_option('--build-id',
-                      action='store',
-                      help='string to add to the tarballs of the build to '
-                           'distinguish them from others, the string can be a '
-                           'format string using the parameters "timestamp" '
-                           'and "slot" (a separation "." will '
-                           'be added automatically) [default: %default]')
+    __usage__ = '%prog [options] <config.json>'
+    __version__ = ''
 
-    parser.add_option('--deploy-reports-to',
-                      action='store', metavar='DEST_DIR', dest='deploy_dir',
-                      help='if the destination directory is specified, the '
-                           'old-style summaries are deployed to that directory '
-                           'as soon as they are produced')
-
-    parser.add_option('--artifacts-dir',
-                      action='store', metavar='DIR',
-                      help='directory where to store the artifacts (accepts '
-                           'the same format specification as --build-id) '
-                           '[default: %default]')
-
-    parser.add_option('--rsync-dest',
-                      action='store', metavar='DEST',
-                      help='deploy artifacts to this location using rsync '
-                           '(accepts the same format specification as '
-                           '--build-id)')
-
-    parser.add_option('--coverity',
-                      action='store_true',
-                      help='enable special Coverity static analysis on the '
-                           'build (Coverity commands must be on the PATH)')
-
-    parser.set_defaults(model=models[0],
-                        level=logging.INFO,
-                        timeout=600,
-                        jobs=1,
-                        load_average=cpu_count() * LOAD_AVERAGE_SCALE,
-                        build_id='{slot}.{timestamp}',
-                        artifacts_dir='artifacts')
-
-    opts, args = parser.parse_args()
-    logging.basicConfig(level=opts.level,
-                        format='%(asctime)s:' + logging.BASIC_FORMAT)
-
-    if len(args) != 1:
-        parser.error('wrong number of arguments')
-
-    from os.path import join, dirname
-    config = Configuration.load(args[0])
-
-    from LbNightlyTools.Utils import setDayNamesEnv
-    setDayNamesEnv()
-
-    # FIXME: we need something better
-    platform = os.environ['CMTCONFIG']
-
-    starttime = datetime.now()
-    timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
-
-    # replace tokens in the options
-    expanded_tokens = {'slot': config[u'slot'], 'timestamp': timestamp}
-    for opt_name in ['build_id', 'artifacts_dir', 'rsync_dest']:
-        val = getattr(opts, opt_name)
-        if val:
-            setattr(opts, opt_name, val.format(**expanded_tokens))
-
-    build_dir = join(os.getcwd(), 'build')
-    artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
-
-    if not opts.no_clean:
-        __log__.info('Cleaning build directory.')
-        if os.path.exists(build_dir):
-            shutil.rmtree(build_dir)
-
-    # ensure that we have the artifacts directory for the sources
-    ensureDirs([artifacts_dir, join(artifacts_dir, 'db'), build_dir])
-
-    # data to be reported in every JSON file
-    json_data = {'slot': config['slot'],
-                 'build_id': int(os.environ.get('slot_build_id', 0)),
-                 'platform': platform}
-
-    def dump_json(data, suff):
+    # unavoidable or fake warnings
+    # pylint: disable=E1002,W0201
+    def defineBuildOptions(self):
         '''
-        Write a JSON file into the special artifacts 'db' directory.
-
-        @param data: mapping with the data to write
-        @param suff: suffix of the file (added to the standard filename)
+        Add build-specific options to the parser.
         '''
-        if 'project' in data:
-            fmt = '{slot}.{build_id}.{project}.{platform}.' + suff
+        from optparse import OptionGroup
+        group = OptionGroup(self.parser, "Build Options")
+
+        group.add_option('--clean',
+                         action='store_true',
+                         help='purge the build directory before building')
+
+        group.add_option('--no-clean',
+                         action='store_false', dest='clean',
+                         help='do not purge the build directory before '
+                              'building')
+
+        group.add_option('-j', '--jobs',
+                         action='store', type='int',
+                         help='number of parallel jobs to use during the build '
+                              '(default: sequential build)')
+
+        group.add_option('-l', '--load-average',
+                         action='store', type='float',
+                         help='load average limit for parallel builds, use 0 '
+                              'to remove the limit (default: N of cores x %g)'
+                              % LOAD_AVERAGE_SCALE)
+
+        group.add_option('--no-distcc',
+                         action='store_true',
+                         help='prevent use of distcc (used by default if '
+                              'present on the system)')
+
+        group.add_option('--coverity',
+                         action='store_true',
+                         help='enable special Coverity static analysis on the '
+                              'build (Coverity commands must be on the PATH)')
+
+        self.parser.add_option_group(group)
+        self.parser.set_defaults(clean=False,
+                                 jobs=1,
+                                 load_average=cpu_count() * LOAD_AVERAGE_SCALE,
+                                 no_distcc=False,
+                                 coverity=False)
+
+    def defineTestOptions(self):
+        '''
+        Add test-specific options to the parser.
+        '''
+        from optparse import OptionGroup
+        group = OptionGroup(self.parser, "Test Options")
+
+        group.add_option('--with-tests',
+                         action='store_true',
+                         help='run the tests after the build')
+
+        group.add_option('--tests-only',
+                         action='store_true',
+                         help='run the tests without building')
+
+        group.add_option('--test-suite',
+                         action='store',
+                         help='specify a test suite to launch '
+                              '[default: all test]')
+
+        group.add_option('--timeout',
+                         metavar='SECONDS',
+                         action='store', type='int',
+                         help='set a global timeout on all tests '
+                              '(default: %default)')
+
+        self.parser.add_option_group(group)
+        self.parser.set_defaults(with_tests=False,
+                                 tests_only=False,
+                                 test_suite=None,
+                                 timeout=600)
+
+    def defineDeploymentOptions(self):
+        '''
+        Add report-specific options to the parser.
+        '''
+        from optparse import OptionGroup
+        group = OptionGroup(self.parser, "Deployment Options")
+
+        group.add_option('--deploy-reports-to',
+                         action='store', metavar='DEST_DIR', dest='deploy_dir',
+                         help='if the destination directory is specified, the '
+                              'old-style summaries are deployed to that '
+                              'directory as soon as they are produced')
+
+        group.add_option('--rsync-dest',
+                         action='store', metavar='DEST',
+                         help='deploy artifacts to this location using rsync '
+                              '(accepts the same format specification as '
+                              '--build-id)')
+
+        self.parser.add_option_group(group)
+        self.parser.set_defaults(deploy_dir=None,
+                                 rsync_dest=None)
+
+    def defineCDashOptions(self):
+        '''
+        Add CDash-specific options to the parser.
+        '''
+        from optparse import OptionGroup
+        group = OptionGroup(self.parser, "CDash Options")
+
+        models = ['Nightly', 'Experimental', 'Continuous']
+        group.add_option('--model',
+                         action='store', type='choice', choices=models,
+                         help='build model: {0} (default: {0[0]}).'
+                              .format(models))
+
+        group.add_option('--submit',
+                         action='store_true',
+                         help='submit the results to CDash server')
+
+        group.add_option('--no-submit',
+                         action='store_false', dest='submit',
+                         help='do not submit the results to CDash server '
+                              '(default)')
+
+        self.parser.add_option_group(group)
+        self.parser.set_defaults(model=models[0],
+                                 submit=False)
+
+    def defineOpts(self):
+        '''
+        Prepare the option parser.
+        '''
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        addBasicOptions(self.parser)
+
+        self.defineBuildOptions()
+        self.defineTestOptions()
+        self.defineDeploymentOptions()
+        self.defineCDashOptions()
+
+
+    def _setup(self):
+        '''
+        Initialize variables.
+        '''
+        from os.path import join, dirname, basename
+
+        opts = self.options
+
+        self.config = Configuration.load(self.args[0])
+
+        from LbNightlyTools.Utils import setDayNamesEnv
+        setDayNamesEnv()
+
+        # FIXME: we need something better
+        self.platform = os.environ['CMTCONFIG']
+
+        self.starttime = datetime.now()
+        self.timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
+
+        # replace tokens in the options
+        expanded_tokens = {'slot': self.config[u'slot'],
+                           'timestamp': self.timestamp}
+        for opt_name in ['build_id', 'artifacts_dir', 'rsync_dest']:
+            val = getattr(opts, opt_name)
+            if val:
+                setattr(opts, opt_name, val.format(**expanded_tokens))
+
+        self.build_dir = join(os.getcwd(), 'build')
+        self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
+
+        # ensure that we have the artifacts directory for the sources
+        ensureDirs([self.artifacts_dir, join(self.artifacts_dir, 'db'),
+                    self.build_dir])
+
+        # template data to be reported in every JSON file
+        self.json_tmpl = {'slot': self.config['slot'],
+                          'build_id': int(os.environ.get('slot_build_id', 0)),
+                          'platform': self.platform}
+
+        self.log.info("Preparing CTest scripts and configurations.")
+        # load CTest script templates
+        filename = join(dirname(__file__), 'CTest{0}.template.cmake')
+        self.ctest_config = Template(open(filename.format('Config')).read())
+        self.ctest_script = Template(open(filename.format('Script')).read())
+
+        self.config_cmake = genSlotConfig(self.config)
+
+        if u'cmake_cache' in self.config:
+            preload_lines = ['set(%s "%s" CACHE STRING "override")' % item
+                             for item in self.config[u'cmake_cache'].items()]
+            self.cache_preload = '\n'.join(preload_lines)
         else:
-            fmt = '{slot}.{build_id}.{platform}.' + suff
-        filename = join(artifacts_dir, 'db', fmt.format(**data))
-        f = codecs.open(filename, 'w', 'utf-8')
-        json.dump(data, f)
-        f.close()
+            self.cache_preload = None
 
-    data = dict(json_data)
-    data.update({'type': 'job-start',
-                 'host': gethostname(),
-                 'build_number': os.environ.get('BUILD_NUMBER', 0),
-                 'started': starttime.isoformat()})
-    dump_json(data, 'start')
+        self.projects = dict([(p.name, p)
+                              for p in map(ProjDesc, self.config[u'projects'])])
 
-    __log__.info('Preparing build directory...')
-    for f in os.listdir(artifacts_dir):
-        if f.endswith('.tar.bz2'):
-            f = join(artifacts_dir, f)
-            __log__.info('  unpacking %s', f)
-            # do not overwrite existing sources when unpacking
-            # (either we just cleaned the directory or we were asked not to
-            # do it)
-            call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
-                  '-f', f], cwd=build_dir)
+        deps = dict([(p.name, p.deps) for p in self.projects.values()])
+        self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]
 
-    __log__.info("Generating CTest scripts and configurations.")
+        if opts.deploy_dir:
+            # ensure that the deployment dir ends with the slot name...
+            if basename(opts.deploy_dir) != self.config[u'slot']:
+                opts.deploy_dir = join(opts.deploy_dir, self.config[u'slot'])
+            # ... and that the directory exists
+            ensureDirs([opts.deploy_dir])
 
-    def write(path, data):
-        '''Simple function to write some data to a file.'''
-        f = open(path, 'w')
-        f.write(data)
-        f.close()
-
-    config_cmake = genSlotConfig(config)
-    ctest_config = Template(open(join(dirname(__file__),
-                                      'CTestConfig.template.cmake')).read())
-    ctest_script = Template(open(join(dirname(__file__),
-                                      'CTestScript.template.cmake')).read())
-
-    if u'cmake_cache' in config:
-        cache_preload = '\n'.join(['set(%s "%s" CACHE STRING "override")' % i
-                                   for i in config[u'cmake_cache'].items()])
-    else:
-        cache_preload = None
-
-    projects = dict([(p.name, p) for p in map(ProjDesc, config[u'projects'])])
-    deps = dict([(p.name, p.deps) for p in projects.values()])
-    sorted_projects = [projects[p] for p in sortedByDeps(deps)]
-
-    project_xml = genProjectXml(config[u'slot'], sorted_projects)
-    write(join(build_dir, 'Project.xml'), project_xml)
-    write(join(artifacts_dir, 'Project.xml'), project_xml)
-    del project_xml # no need to keep this temp variable
-
-    # prepare special environment, if needed
-    setenv(config.get(u'env', []))
-
-    file_exclusion_regex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
-                                       r'(\.git)|(\.svn)|'
-                                       r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
-                                       ).format(platform))
-
-    if opts.deploy_dir:
-        # ensure that the deployment dir ends with the slot name...
-        if os.path.basename(opts.deploy_dir) != config[u'slot']:
-            opts.deploy_dir = join(opts.deploy_dir, config[u'slot'])
-        # ... and that the directory exists
-        ensureDirs([opts.deploy_dir])
-        def deployReports(files):
-            '''
-            Helper function to filename the reports in the required directory.
-            '''
-            for filename in files:
-                try:
-                    dirname = join(opts.deploy_dir, os.path.basename(filename))
-                    if os.path.isdir(dirname):
-                        shutil.rmtree(dirname)
-                    elif os.path.isfile(dirname) or os.path.islink(dirname):
-                        os.remove(dirname)
-                    __log__.info('Copying %s to deployment directory %s',
-                                 filename, dirname)
-                    if os.path.isdir(filename):
-                        shutil.copytree(filename, dirname)
-                    elif os.path.isfile(filename):
-                        shutil.copy2(filename, dirname)
-                    else:
-                        __log__.warning('Cannot deploy %s (does it exist?)',
-                                        filename)
-                except os.error, err:
-                    __log__.warning('Problems deploying %s: %s', filename, err)
-    else:
-        def deployReports(_):
-            '''dummy helper function'''
-            pass
-
-    class AsyncTask(threading.Thread):
-        '''
-        Simple wrapper around subprocess.call to execute it in a separate
-        thread.
-        '''
-        def __init__(self, *args, **kwargs):
-            super(AsyncTask, self).__init__()
-            self.args = args
-            self.kwargs = kwargs
-            self.retcode = -1
-            self.start()
-        def run(self):
-            self.retcode = call(*self.args, **self.kwargs)
-        def wait(self):
-            '''
-            Block until the subprocess exits and return its exit code.
-            '''
-            self.join()
-            return self.retcode
-
-    class TestTask(AsyncTask):
-        '''
-        Asynchronously run the tests and deploy the test reports, if needed.
-
-        The special parameter reports is passed to deployReports.
-        '''
-        def __init__(self, *args, **kwargs):
-            self.reports = []
-            self.artifacts_dir = None
-            self.config = None
-            self.project = None
-            self.platform = None
-
-            local_args = ['reports', 'artifacts_dir', 'config', 'project',
-                          'platform']
-            for arg in local_args:
-                if arg in kwargs:
-                    setattr(self, arg, kwargs[arg])
-                    del kwargs[arg]
-
-            self.started = self.completed = None
-
-            super(TestTask, self).__init__(*args, **kwargs)
-
-        def getTestSummary(self):
-            '''
-            Return the JSON object in the file summary.json in the reports, if
-            it exists, otherwise an empty list.
-            '''
-            for rep in self.reports:
-                rep = os.path.join(rep, 'summary.json')
-                if os.path.exists(rep):
-                    return json.load(codecs.open(rep, 'r', 'utf-8'))
-            return []
-
-        def run(self):
-            self.started = datetime.now()
-            super(TestTask, self).run()
-            self.completed = datetime.now()
-            if self.artifacts_dir:
-                data = dict(json_data)
-                data.update({"type": "tests-result",
-                             "project": self.project.name,
-                             "started": self.started.isoformat(),
-                             "completed": self.completed.isoformat(),
-                             "results": self.getTestSummary()})
-                dump_json(data, 'tests')
-            deployReports(self.reports)
-
-
-    class DeployArtifactsTask(threading.Thread):
-        '''
-        Call asynchronously 'rsync' to deploy the build artifacts.
-        '''
-        def __init__(self):
-            if opts.rsync_dest:
-                self.retcode = -1
-                super(DeployArtifactsTask, self).__init__()
-                self.start()
-            else:
-                self.retcode = 0
-        def run(self):
-            # create destination directory, if missing
-            if ':' in opts.rsync_dest:
-                host, path = opts.rsync_dest.split(':', 1)
-                call(['ssh', host, 'mkdir -pv "%s"' % path])
-            else:
-                ensureDirs([opts.rsync_dest])
-
-            cmd = ['rsync', '--archive',
-                   '--partial-dir=.rsync-partial.%s.%d' %
-                   (gethostname(), os.getpid()),
-                   '--delay-updates', '--rsh=ssh',
-                   artifacts_dir + '/', opts.rsync_dest]
-            self.retcode = call(cmd)
-        def wait(self):
-            '''
-            Block until the subprocess exits and return its exit code.
-            '''
-            if opts.rsync_dest:
-                self.join()
-            return self.retcode
-
-    jobs = []
-    for proj in sorted_projects:
-        projdir = join(build_dir, proj.dir)
-        summary_dir = join(artifacts_dir, 'summaries.{0}'.format(platform),
-                           proj.name)
-        # use the ramdisk for Coverity intermediate dir if possible
-        if os.path.exists('/dev/shm'):
-            coverity_int = join('/dev/shm/coverity.{0}'.format(platform),
-                                opts.build_id, proj.name)
-        else:
-            coverity_int = join(build_dir, 'coverity', proj.name)
-        coverity_mod = join(summary_dir, 'coverity', 'models')
-        coverity_logs = join(summary_dir, 'coverity', proj.name)
-
-        # ignore missing directories (the project may not have been checked out)
-        if not os.path.exists(projdir):
-            __log__.warning('no sources for %s, skip build', proj)
-            continue
-
-        packname = [proj.name, proj.version]
-        if opts.build_id:
-            packname.append(opts.build_id)
-        packname.append(platform)
-        packname.append('tar.bz2')
-        packname = '.'.join(packname)
-        packname = os.path.join(artifacts_dir, packname)
-        if os.path.exists(packname):
-            __log__.info('binary tarball for %s already present, skip build',
-                         proj)
-            continue
-
-        old_build_id = OLD_BUILD_ID.format(slot=config[u'slot'],
-                                           today=os.environ['TODAY'],
-                                           project=proj.name.upper(),
-                                           version=proj.version,
-                                           platform=platform)
-
-        Configuration.save(join(projdir, 'SlotConfig.json'), config)
-        write(join(projdir, 'SlotConfig.cmake'), config_cmake)
-        if cache_preload:
-            write(join(projdir, 'cache_preload.cmake'), cache_preload + '\n')
-        write(join(projdir, 'CTestConfig.cmake'),
-              ctest_config.substitute(config))
-        write(join(projdir, 'CTestScript.cmake'),
-              ctest_script.substitute({'project': proj.name,
-                                       'version': proj.version,
-                                       'build_dir': build_dir,
-                                       'site': gethostname(),
-                                       'summary_dir': summary_dir,
-                                       'Model': opts.model,
-                                       'old_build_id': old_build_id}))
-
+        # Prepare command lines for the build
         cmd = ['ctest', '--timeout', str(opts.timeout)]
         if opts.jobs != 1:
             cmd.append('-DJOBS=%d' % opts.jobs)
             if opts.load_average > 0:
                 cmd.append('-DMAX_LOAD=%g' % opts.load_average)
 
-        if opts.no_submit:
+        if not opts.submit:
             cmd.append('-DNO_SUBMIT=TRUE')
 
-        if config.get(u'USE_CMT'):
+        if self.config.get(u'USE_CMT'):
             cmd.append('-DUSE_CMT=TRUE')
 
-        build_cmd = cmd + ['-DSTEP=BUILD', '-S', 'CTestScript.cmake']
-        test_cmd = cmd + ['-DSTEP=TEST', '-S', 'CTestScript.cmake']
+        if opts.no_distcc:
+            cmd.append('-DDISABLE_DISTCC=TRUE')
 
-        if opts.level <= logging.INFO:
-            build_cmd.insert(1, '-VV')
-        if opts.level <= logging.DEBUG:
-            test_cmd.insert(1, '-VV')
+        self.build_cmd = cmd + ['-DSTEP=BUILD', '-S', 'CTestScript.cmake']
+        self.test_cmd = cmd + ['-DSTEP=TEST', '-S', 'CTestScript.cmake']
 
-        if opts.coverity:
+        log_level = self.log.getEffectiveLevel()
+        if log_level <= logging.INFO:
+            self.build_cmd.insert(1, '-VV')
+        if log_level <= logging.DEBUG:
+            self.test_cmd.insert(1, '-VV')
+
+
+    def dump_json(self, data, suff):
+        '''
+        Write a JSON file into the special artifacts 'db' directory.
+
+        @param data: mapping with the data to write
+        @param suff: suffix of the file (added to the standard filename)
+        '''
+        output_data = dict(self.json_tmpl)
+        output_data.update(data)
+        if 'project' in output_data:
+            fmt = '{slot}.{build_id}.{project}.{platform}.' + suff + '.json'
+        else:
+            fmt = '{slot}.{build_id}.{platform}.' + suff + '.json'
+        filename = os.path.join(self.artifacts_dir, 'db',
+                                fmt.format(**output_data))
+        f = codecs.open(filename, 'w', 'utf-8')
+        json.dump(output_data, f)
+        f.close()
+
+    def write(self, path, data):
+        '''
+        Simple function to write some text (UTF-8) to a file.
+
+        @param path: name of the file to write
+        @param data: string to write
+        '''
+        self.log.debug('writing %s', path)
+        ensureDirs([os.path.dirname(path)])
+        f = codecs.open(path, 'w', 'utf-8')
+        f.write(data)
+        f.close()
+
+    def writeBin(self, path, data):
+        '''
+        Simple function to write some binary data to a file.
+
+        @param path: name of the file to write
+        @param data: string to write
+        '''
+        self.log.debug('writing (bin) %s', path)
+        ensureDirs([os.path.dirname(path)])
+        f = open(path, 'wb')
+        f.write(data)
+        f.close()
+
+    def keepArtifact(self, src, dst=os.path.curdir, new_name=None):
+        '''
+        Copy a file in the artifacts directory.
+
+        @param src: file to copy
+        @param dst: subdirectory of the artifacts directory where to store the
+                    copy
+        @param new_name: name to give to the file in the artifacts directory
+                         (by default keep the same name)
+        '''
+        if not new_name:
+            new_name = os.path.basename(src)
+        self.log.debug('keep %s as artifact %s in %s', src, new_name, dst)
+        ensureDirs([dst])
+        shutil.copy(src, os.path.join(self.artifacts_dir, dst, new_name))
+
+    def deployReports(self, files):
+        '''
+        Helper function to copy the reports in the required directory.
+        '''
+        if not self.options.deploy_dir:
+            return
+        from os.path import join, basename, isdir, isfile, islink
+        for filename in files:
+            try:
+                dirname = join(self.options.deploy_dir, basename(filename))
+                if isdir(dirname):
+                    shutil.rmtree(dirname)
+                elif isfile(dirname) or islink(dirname):
+                    os.remove(dirname)
+                self.log.info('Copying %s to deployment directory %s',
+                              filename, dirname)
+                if isdir(filename):
+                    shutil.copytree(filename, dirname)
+                elif isfile(filename):
+                    shutil.copy2(filename, dirname)
+                else:
+                    self.log.warning('Cannot deploy %s (does it exist?)',
+                                     filename)
+            except os.error, err:
+                self.log.warning('Problems deploying %s: %s', filename, err)
+
+    def _prepareBuildDir(self):
+        '''
+        Prepare the build directory unpacking all the available artifacts
+        tarballs, cleaning it before if requested.
+        '''
+        if self.options.clean:
+            self.log.info('Cleaning build directory.')
+            if os.path.exists(self.build_dir):
+                shutil.rmtree(self.build_dir)
+                ensureDirs([self.build_dir])
+
+        self.log.info('Preparing build directory...')
+        for f in os.listdir(self.artifacts_dir):
+            if f.endswith('.tar.bz2'):
+                f = os.path.join(self.artifacts_dir, f)
+                self.log.info('  unpacking %s', f)
+                # do not overwrite existing sources when unpacking
+                # (we must preserve user changes, anyway we have the --clean
+                # option)
+                call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
+                      '-f', f], cwd=self.build_dir)
+
+        project_xml = genProjectXml(self.config[u'slot'], self.sorted_projects)
+        project_xml_name = os.path.join(self.build_dir, 'Project.xml')
+        self.write(project_xml_name, project_xml)
+        self.keepArtifact(project_xml_name)
+
+        def dumpConfSummary():
+            '''Create special summary file used by SetupProject.'''
+            data = []
+            # find the declaration of CMTPROJECTPATH in the configuration
+            for decl in self.config.get(u'env', []):
+                if decl.startswith('CMTPROJECTPATH='):
+                    # dump it as a list in the summary file
+                    data += map(os.path.expandvars,
+                                decl.split('=', 1)[1].split(':'))
+            if data:
+                self.write(os.path.join(self.artifacts_dir, 'confSummary.py'),
+                           'cmtProjectPathList = %r\n' % data)
+                self.write(os.path.join(self.artifacts_dir, 'searchPath.cmake'),
+                           'set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' %
+                           ' '.join(data))
+
+        dumpConfSummary()
+
+    def _prepareProject(self, proj):
+        '''
+        Prepare a project directory for build or test.
+        '''
+        from os.path import join
+
+        proj.build_dir = join(self.build_dir, proj.dir)
+        proj.enabled = os.path.exists(proj.build_dir)
+        if not proj.enabled:
+            self.log.debug('%s not found, imply %s disabled', proj.dir, proj)
+
+        proj.summary_dir = join(self.artifacts_dir,
+                                'summaries.' + self.platform,
+                                proj.name)
+        # use the ramdisk for Coverity intermediate dir if possible
+        if os.path.exists('/dev/shm'):
+            proj.coverity_int = join('/dev/shm/coverity.' + self.platform,
+                                     self.options.build_id, proj.name)
+        else:
+            proj.coverity_int = join(self.build_dir, 'coverity', proj.name)
+        proj.coverity_mod = join(proj.summary_dir, 'coverity', 'models')
+        proj.coverity_logs = join(proj.summary_dir, 'coverity', proj.name)
+
+        proj.old_build_id = OLD_BUILD_ID.format(slot=self.config[u'slot'],
+                                                today=os.environ['TODAY'],
+                                                project=proj.name.upper(),
+                                                version=proj.version,
+                                                platform=self.platform)
+
+        proj.started = proj.completed = proj.build_retcode = None
+
+        packname = [proj.name, proj.version]
+        if self.options.build_id:
+            packname.append(self.options.build_id)
+        packname.append(self.platform)
+        packname.append('tar.bz2')
+        packname = '.'.join(packname)
+        packname = os.path.join(self.artifacts_dir, packname)
+        proj.packname = packname
+
+        if proj.enabled:
+            # write files only if the project is enabled
+            Configuration.save(join(proj.build_dir, 'SlotConfig.json'),
+                               self.config)
+
+            self.write(join(proj.build_dir, 'SlotConfig.cmake'),
+                       self.config_cmake)
+
+            if self.cache_preload:
+                self.write(join(proj.build_dir, 'cache_preload.cmake'),
+                           self.cache_preload + '\n')
+
+            self.write(join(proj.build_dir, 'CTestConfig.cmake'),
+                       self.ctest_config.substitute(self.config))
+
+            script_data = {'project': proj.name,
+                           'version': proj.version,
+                           'build_dir': self.build_dir,
+                           'site': gethostname(),
+                           'summary_dir': proj.summary_dir,
+                           'Model': self.options.model,
+                           'old_build_id': proj.old_build_id}
+            self.write(join(proj.build_dir, 'CTestScript.cmake'),
+                       self.ctest_script.substitute(script_data))
+
+        return proj
+
+    def _buildProject(self, proj):
+        '''
+        Build a project of the slot.
+        '''
+        from os.path import join
+
+        if os.path.exists(proj.packname):
+            self.log.info('binary tarball for %s already present, skip build',
+                          proj)
+            return
+
+        build_cmd = self.build_cmd
+        if self.options.coverity:
             # create all the directories that are missing
-            ensureDirs([coverity_int, coverity_mod, coverity_logs])
-            build_cmd = ['cov-build', '--dir', coverity_int] + build_cmd
-
-        def writeExtraSummary(name, data):
-            '''
-            Write 'data' to the file 'name' in the summary directory.
-            '''
-            ensureDirs([summary_dir])
-            f = codecs.open(os.path.join(summary_dir, name), 'w', 'utf-8')
-            f.write(data)
-            f.close()
+            ensureDirs([proj.coverity_int, proj.coverity_mod,
+                        proj.coverity_logs])
+            build_cmd = ['cov-build', '--dir', proj.coverity_int] + build_cmd
 
         def dumpFileListSummary(name):
             '''
             Dump the list of all the files in the project directory in the
             summary file 'name'.
             '''
-            data = '\n'.join(sorted(listAllFiles(projdir,
-                                                 file_exclusion_regex.match)))
-            data += '\n'
-            writeExtraSummary(name, data)
+            file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
+                                        r'(\.git)|(\.svn)|'
+                                        r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
+                                        ).format(self.platform))
 
-        def dumpConfSummary():
-            '''Create special summary file used by SetupProject.'''
-            data = []
-            # find the declaration of CMTPROJECTPATH in the configuration
-            for decl in config.get(u'env', []):
-                if decl.startswith('CMTPROJECTPATH='):
-                    # dump it as a list in the summary file
-                    data += map(os.path.expandvars,
-                                decl.split('=', 1)[1].split(':'))
-            if data:
-                f = codecs.open(join(artifacts_dir, 'confSummary.py'),
-                                'w', 'utf-8')
-                f.write('cmtProjectPathList = %r\n' % data)
-                f.close()
-                f = codecs.open(join(artifacts_dir, 'searchPath.cmake'),
-                                'w', 'utf-8')
-                f.write('set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' %
-                        ' '.join(data))
-                f.close()
+            data = sorted(listAllFiles(proj.build_dir, file_excl_rex.match))
+            data.append('')
+            self.write(os.path.join(proj.summary_dir, name), '\n'.join(data))
 
-        dumpConfSummary()
         dumpFileListSummary('sources.list')
-        __log__.info('building %s', proj.dir)
+
+        self.log.info('building %s', proj.dir)
         proj.started = datetime.now()
-        proj.build_retcode = call(build_cmd, cwd=projdir,
+        self.log.debug('cmd: %s', build_cmd)
+        proj.build_retcode = call(build_cmd, cwd=proj.build_dir,
                                   timeout=14400, # timeout of 4 hours
                                   timeoutmsg='building %s' % proj.name)
         if proj.build_retcode != 0:
-            __log__.warning('build exited with code %d', proj.build_retcode)
+            self.log.warning('build exited with code %d', proj.build_retcode)
         proj.completed = datetime.now()
+
         dumpFileListSummary('sources_built.list')
 
         # copy the file with the URL of the checkout job to the summaries
-        if os.path.exists(join(artifacts_dir, 'checkout_job_url.txt')):
-            shutil.copy(join(artifacts_dir, 'checkout_job_url.txt'),
-                        summary_dir)
+        if os.path.exists(join(self.artifacts_dir, 'checkout_job_url.txt')):
+            shutil.copy(join(self.artifacts_dir, 'checkout_job_url.txt'),
+                        proj.summary_dir)
 
-        reporter = BuildReporter(summary_dir, proj, platform,
-                                 config, old_build_id)
-        deployReports(reporter.genOldSummaries())
-        dump_json(reporter.json(), 'build')
+        reporter = BuildReporter(proj.summary_dir, proj, self.platform,
+                                 self.config, proj.old_build_id)
+        self.deployReports(reporter.genOldSummaries())
+        self.dump_json(reporter.json(), 'build')
 
-        __log__.info('packing %s', proj.dir)
+        self.log.info('packing %s', proj.dir)
 
-        call(['tar', 'chjf', packname,
-              os.path.join(proj.dir, 'InstallArea')], cwd=build_dir)
+        call(['tar', 'chjf', proj.packname,
+              os.path.join(proj.dir, 'InstallArea')], cwd=self.build_dir)
 
-        if opts.rsync_dest:
-            jobs.append(DeployArtifactsTask())
+        return proj
+
+    def _coverityAnalysis(self, proj):
+        '''
+        Run the coverity analysis on a project.
+        '''
+        from os.path import join
+        # this call actually does not "submit" (commit-defects), it just
+        # run the analysis
+        self.log.info('running Coverity analysis from %s', proj.coverity_int)
+        call(['analyze-submit.sh', proj.coverity_int, proj.coverity_mod])
+        # keep a copy of the logs
+        for clf in ['log.txt', 'BUILD.metrics.xml', 'build-log.txt']:
+            shutil.copy2(join(proj.coverity_int, clf), proj.coverity_logs)
+        # collect models for use with the other projects
+        self.log.info('collecting Coverity models')
+        call(['cov-collect-models', '--dir', proj.coverity_int,
+              '-of', join(proj.coverity_mod, proj.name + '.xmldb')])
+        # ensure that there is no stale lock
+        # FIXME: is it needed?
+        try:
+            os.remove(join(proj.coverity_mod, proj.name + '.xmldb.lock'))
+        except:
+            pass
+        # commit defect to Coverity Integrity Manager
+        cov_commit_cmd = ['cov-commit-defects',
+                          '--host', 'lhcb-coverity.cern.ch',
+                          '--port', '8080',
+                          '--user', 'admin',
+                          '--stream', proj.coverity_stream]
+        # strip the project build directories when submitting
+        proj_build_dirs = [join(self.build_dir, p.dir) + '/'
+                           for p in self.sorted_projects]
+        # (this is an interesting trick to intersperse two lists)
+        from itertools import repeat
+        cov_commit_cmd += [val
+                           for pair in zip(repeat('--strip-path'),
+                                           proj_build_dirs)
+                           for val in pair]
+        cov_commit_cmd += open(join(proj.coverity_int,
+                                    'c', 'output',
+                                    'commit-args.txt')).read().split()
+
+        tmpenv = {'COVERITY_PASSPHRASE':
+                  open(COV_PASSPHRASE_FILE).read().strip()}
+        tmpenv.update(os.environ)
+        self.log.info('committing results Coverity Integrity Manager')
+        call(cov_commit_cmd, env=tmpenv)
+
+    def main(self):
+        '''
+        Main function of the script.
+        '''
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
+
+        opts = self.options
+
+        # implied options:
+        # - we run the test if we ask for them in a way or another
+        opts.with_tests = opts.with_tests or opts.tests_only
+        # - do not run the tests if building for coverity
+        opts.with_tests = opts.with_tests and not opts.coverity
+        # - test-only and coverity cannot coexist
+        if opts.tests_only and opts.coverity:
+            self.parser.error('incompatible options --tests-only and '
+                              '--coverity')
+
+
+        self._setup()
+
+        self.dump_json({'type': 'job-start',
+                        'host': gethostname(),
+                        'build_number': os.environ.get('BUILD_NUMBER', 0),
+                        'started': self.starttime.isoformat()}, 'start')
+
+        self._prepareBuildDir()
+
+        # prepare special environment, if needed
+        setenv(self.config.get(u'env', []))
+
+        class AsyncTask(threading.Thread):
+            '''
+            Simple wrapper around subprocess.call to execute it in a separate
+            thread.
+            '''
+            def __init__(self, *args, **kwargs):
+                super(AsyncTask, self).__init__()
+                self.args = args
+                self.kwargs = kwargs
+                self.retcode = -1
+                self.start()
+            def run(self):
+                self.retcode = call(*self.args, **self.kwargs)
+            def wait(self):
+                '''
+                Block until the subprocess exits and return its exit code.
+                '''
+                self.join()
+                return self.retcode
+
+        class TestTask(AsyncTask):
+            '''
+            Asynchronously run the tests and deploy the test reports, if needed.
+
+            The special parameter reports is passed to deployReports.
+            '''
+            def __init__(self, *args, **kwargs):
+                self.reports = []
+                self.project = None
+                self.script = None
+
+                local_args = ['reports', 'project', 'script']
+                for arg in local_args:
+                    setattr(self, arg, kwargs.pop(arg, None))
+
+                self.artifacts_dir = self.script.artifacts_dir
+                self.config = self.script.config
+                self.platform = self.script.platform
+
+                self.cwd = kwargs.get('cwd', os.path.curdir)
+
+                self.started = self.completed = None
+
+                super(TestTask, self).__init__(*args, **kwargs)
+
+            def getTestSummary(self):
+                '''
+                Return the JSON object in the file summary.json in the reports, if
+                it exists, otherwise an empty list.
+                '''
+                for rep in self.reports:
+                    rep = os.path.join(rep, 'summary.json')
+                    if os.path.exists(rep):
+                        return json.load(codecs.open(rep, 'r', 'utf-8'))
+                return []
+
+            def run(self):
+                self.started = datetime.now()
+                super(TestTask, self).run()
+                self.completed = datetime.now()
+                # generate the test summary JSON file for the new dashboard
+                self.script.dump_json({"type": "tests-result",
+                                       "project": self.project.name,
+                                       "started": self.started.isoformat(),
+                                       "completed": self.completed.isoformat(),
+                                       "results": self.getTestSummary()},
+                                      'tests')
+                # Find the .new files in the project directory and copy them to
+                # the artifacts directory.
+                self.script.log.debug('looking for .new files')
+                from os.path import join, relpath
+                new_refs = listAllFiles(self.cwd)
+                for src in new_refs:
+                    if not src.endswith('.new'):
+                        continue
+                    dst = join(self.artifacts_dir,
+                               'newrefs.' + self.script.platform,
+                               self.project.name, relpath(src, self.cwd))
+                    try:
+                        self.script.keepArtifact(src, dst)
+                    except IOError:
+                        # ignore failures in the copy (not fatal)
+                        pass
+                # deploy the test reports if needed
+                self.script.deployReports(self.reports)
+
+            def __str__(self):
+                '''
+                Task description.
+                '''
+                return 'testing %s' % self.project
+
+        class DeployArtifactsTask(threading.Thread):
+            '''
+            Call asynchronously 'rsync' to deploy the build artifacts.
+            '''
+            def __init__(self, script):
+                self.script = script
+                if self.script.options.rsync_dest:
+                    self.retcode = -1
+                    super(DeployArtifactsTask, self).__init__()
+                    self.start()
+                else:
+                    self.retcode = 0
+            def run(self):
+                # create destination directory, if missing
+                if ':' in self.script.options.rsync_dest:
+                    host, path = self.script.options.rsync_dest.split(':', 1)
+                    call(['ssh', host, 'mkdir -pv "%s"' % path])
+                else:
+                    ensureDirs([self.script.options.rsync_dest])
+
+                cmd = ['rsync', '--archive',
+                       '--partial-dir=.rsync-partial.%s.%d' %
+                       (gethostname(), os.getpid()),
+                       '--delay-updates', '--rsh=ssh',
+                       self.script.artifacts_dir + '/',
+                       self.script.options.rsync_dest]
+                self.retcode = call(cmd)
+            def wait(self):
+                '''
+                Block until the subprocess exits and return its exit code.
+                '''
+                if self.script.options.rsync_dest:
+                    self.join()
+                return self.retcode
+            def __str__(self):
+                '''
+                Task description.
+                '''
+                return 'deploy artifacts'
+
+        jobs = []
+        for proj in self.sorted_projects:
+
+            self._prepareProject(proj)
+
+            if not proj.enabled:
+                self.log.warning('project %s disabled, skip build', proj)
+                continue
+
+            if not self.options.tests_only:
+                self._buildProject(proj)
+
+            if opts.rsync_dest:
+                jobs.append(DeployArtifactsTask(self))
+
+            if opts.coverity:
+                if proj.build_retcode != 0:
+                    self.log.error('cannot run Coverity analysis on a '
+                                   'failed build')
+                else:
+                    self._coverityAnalysis(proj)
+                # try in any case to remove the Coverity intermediate directory
+                # if it is on the ramdisk
+                if proj.coverity_int.startswith('/dev/shm'):
+                    self.log.debug('cleaning Coverity intermediate directory')
+                    shutil.rmtree(proj.coverity_int, ignore_errors=True)
+                    try:
+                        os.removedirs(os.path.dirname(proj.coverity_int))
+                    except os.error:
+                        self.log.warning("failed to clean %s",
+                                         proj.coverity_int)
+
+
+            if opts.with_tests:
+                self.log.info('testing (in background) %s', proj.dir)
+                job = TestTask(['nice'] + self.test_cmd,
+                               cwd=proj.build_dir,
+                               script=self,
+                               project=proj,
+                               reports=[os.path.join(proj.summary_dir,
+                                                     proj.old_build_id + suff)
+                                        for suff in ['-qmtest',
+                                                     '-qmtest.log']])
+                jobs.append(job)
 
         if opts.coverity:
-            # run the Coverity analysis
-            if proj.build_retcode != 0:
-                __log__.error('cannot run Coverity analysis on a failed build')
+            # try again to clean the Coverity scratch space in the ramdisk
+            # (if it was ever created)
+            shutil.rmtree(os.path.join('/dev/shm/coverity.{0}'
+                                       .format(self.platform)),
+                          ignore_errors=True)
+
+        if jobs:
+            self.log.info('waiting for pending tasks (tests, etc.)...')
+            for i, j in enumerate(jobs):
+                self.log.info('- (%d/%d) %s', i+1, len(jobs), j)
+                j.wait()
+
+        self.completetime = datetime.now()
+
+        self.dump_json({'type': 'job-end',
+                        'completed': self.completetime.isoformat()},
+                       'completed')
+
+        self.log.info('build completed in %s',
+                      self.completetime - self.starttime)
+        if opts.rsync_dest:
+            self.log.info('deploying artifacts...')
+            retcode = DeployArtifactsTask(self).wait()
+            if retcode == 0:
+                self.log.info('... artifacts deployed')
             else:
-                # this call actually does not "submit" (commit-defects), it just
-                # run the analysis
-                __log__.info('running Coverity analysis from %s', coverity_int)
-                call(['analyze-submit.sh', coverity_int, coverity_mod])
-                # keep a copy of the logs
-                for clf in ['log.txt', 'BUILD.metrics.xml', 'build-log.txt']:
-                    shutil.copy2(join(coverity_int, clf), coverity_logs)
-                # collect models for use with the other projects
-                __log__.info('collecting Coverity models')
-                call(['cov-collect-models', '--dir', coverity_int,
-                      '-of', join(coverity_mod, proj.name + '.xmldb')])
-                # ensure that there is no stale lock
-                # FIXME: is it needed?
-                try:
-                    os.remove(join(coverity_mod, proj.name + '.xmldb.lock'))
-                except:
-                    pass
-                # commit defect to Coverity Integrity Manager
-                cov_commit_cmd = ['cov-commit-defects',
-                                  '--host', 'lhcb-coverity.cern.ch',
-                                  '--port', '8080',
-                                  '--user', 'admin',
-                                  '--stream', proj.coverity_stream]
-                # strip the project build directories when submitting
-                proj_build_dirs = [join(build_dir, p.dir) + '/'
-                                   for p in sorted_projects]
-                # (this is an interesting trick to intersperse two lists)
-                from itertools import repeat
-                cov_commit_cmd += [val
-                                   for pair in zip(repeat('--strip-path'),
-                                                   proj_build_dirs)
-                                   for val in pair]
-                cov_commit_cmd += open(join(coverity_int,
-                                            'c', 'output',
-                                            'commit-args.txt')).read().split()
-
-                tmpenv = {'COVERITY_PASSPHRASE':
-                          open(COV_PASSPHRASE_FILE).read().strip()}
-                tmpenv.update(os.environ)
-                __log__.info('committing results Coverity Integrity Manager')
-                call(cov_commit_cmd, env=tmpenv)
-                del tmpenv
-
-            # remove the Coverity intermediate directory if it is on the ramdisk
-            if coverity_int.startswith('/dev/shm'):
-                __log__.debug('cleaning Coverity intermediate directory')
-                shutil.rmtree(coverity_int, ignore_errors=True)
-                try:
-                    os.removedirs(os.path.dirname(coverity_int))
-                except os.error:
-                    __log__.warning("failed to clean %s", coverity_int)
-
-        if not opts.build_only and not opts.coverity:
-            __log__.info('testing (in background) %s', proj.dir)
-            jobs.append(TestTask(['nice'] + test_cmd, cwd=projdir,
-                                 artifacts_dir=artifacts_dir,
-                                 config=config,
-                                 project=proj,
-                                 platform=platform,
-                                 reports=[join(summary_dir, old_build_id + suff)
-                                          for suff in ['-qmtest',
-                                                       '-qmtest.log']]))
-
-    if opts.coverity:
-        # try again to clean the Coverity scratch space in the ramdisk
-        # (if it was ever created)
-        shutil.rmtree(join('/dev/shm/coverity.{0}'.format(platform)),
-                      ignore_errors=True)
-
-    if jobs:
-        __log__.info('waiting for pending tasks (tests, etc.)...')
-        for j in jobs:
-            j.wait()
-
-
-    completetime = datetime.now()
-
-    data = dict(json_data)
-    data.update({'type': 'job-end',
-                 'completed': completetime.isoformat()})
-    dump_json(data, 'completed')
-
-    __log__.info('build completed in %s', completetime - starttime)
-    if opts.rsync_dest:
-        __log__.info('deploying artifacts...')
-        retcode = DeployArtifactsTask().wait()
-        if retcode == 0:
-            __log__.info('... artifacts deployed')
-        else:
-            __log__.error('artifacts deployment failed')
-            return retcode
-    return 0
+                self.log.error('artifacts deployment failed')
+                return retcode
+        return 0
 
 class BuildReporter(object):
     '''

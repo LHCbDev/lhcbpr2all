@@ -18,7 +18,6 @@ from StringIO import StringIO
 
 from LbNightlyTools import BuildSlot
 
-
 def test_ProjDesc():
     'BuildSlot.ProjDesc'
     p = BuildSlot.ProjDesc({u'name': u'MyProject',
@@ -60,3 +59,30 @@ def test_genProjectXml():
         assert len(deps) == len(p.deps)
         for a, b in zip(sorted(map(getName, deps)), sorted(map(versions.get, p.deps))):
             assert a == b, 'Dependencies of %s not matching (%s != %s)' % (p, a, b)
+
+
+def test_genSlotConfig():
+    'BuildSlot.genSlotConfig()'
+    config = dict(slot='some-slot',
+                  projects=[{'name': 'Gaudi', 'version': 'v23r8'},
+                            {'name': 'LHCb', 'version': 'HEAD',
+                             'dependencies': ['Gaudi']}],
+                  warning_exceptions=['.*/Boost/.*warning', '.*/ROOT/.*warning'],
+                  error_exceptions=[r'\[distcc\]'])
+    cmake = BuildSlot.genSlotConfig(config)
+
+    print cmake
+
+    assert 'set(slot some-slot)\n' in cmake
+    assert 'set(config $ENV{CMTCONFIG})\n' in cmake
+    assert 'set(projects Gaudi LHCb)\n' in cmake
+    assert 'set(Gaudi_version v23r8)\n' in cmake
+    assert 'set(LHCb_version HEAD)\n' in cmake
+    assert 'set(Gaudi_dependencies )\n' in cmake
+    assert 'set(LHCb_dependencies Gaudi)\n' in cmake
+
+    # FIXME: these shoud be improved
+    assert r'.*/Boost/.*warning' in cmake
+    assert r'.*/ROOT/.*warning' in cmake
+    assert r'"\\[distcc\\]"' in cmake
+

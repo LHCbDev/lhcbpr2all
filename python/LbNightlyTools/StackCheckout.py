@@ -20,7 +20,7 @@ import os
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import retry_call as call
+from LbNightlyTools.Utils import retry_call as call, ensureDirs
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -280,21 +280,8 @@ class Script(LbUtils.Script.PlainScript):
 
     def defineOpts(self):
         """ User options -- has to be overridden """
-        parser = self.parser
-        parser.add_option('--build-id',
-                          action='store',
-                          help='string to add to the tarballs of the build to '
-                               'distinguish them from others, the string can '
-                               'be a format string using the parameters '
-                               '"timestamp" and "slot" (a separation "." will '
-                               'be added automatically) [default: %default]')
-
-        parser.add_option('--artifacts-dir',
-                          action='store', metavar='DIR',
-                          help='directory where to store the artifacts')
-
-        parser.set_defaults(build_id='{slot}.{timestamp}',
-                            artifacts_dir='artifacts')
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        addBasicOptions(self.parser)
 
     def packname(self, proj):
         '''
@@ -323,7 +310,7 @@ class Script(LbUtils.Script.PlainScript):
         starttime = datetime.now()
         timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
-        build_dir = join(os.getcwd(), 'build')
+        build_dir = join(os.getcwd(), 'tmp', 'checkout')
 
         # replace tokens in the options
         expanded_tokens = {'slot': slot.name, 'timestamp': timestamp}
@@ -334,23 +321,21 @@ class Script(LbUtils.Script.PlainScript):
 
         artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
 
-        self.log.info('cleaning directories.')
+        self.log.debug('cleaning checkout directory')
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
-        if os.path.exists(artifacts_dir):
-            shutil.rmtree(artifacts_dir)
 
-        os.makedirs(build_dir)
-        os.makedirs(artifacts_dir)
+        ensureDirs([build_dir, artifacts_dir, join(artifacts_dir, 'db')])
 
         # Prepare JSON doc for the database
-        os.makedirs(join(artifacts_dir, 'db'))
+        ensureDirs([join(artifacts_dir, 'db')])
         cfg = Configuration.load(self.args[0])
         cfg['type'] = 'slot-config'
         cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
         cfg['date'] = timestamp
         f = codecs.open(join(artifacts_dir, 'db',
-                             '{slot}.{build_id}'.format(**cfg)), 'w', 'utf-8')
+                             '{slot}.{build_id}.json'.format(**cfg)),
+                        'w', 'utf-8')
         json.dump(cfg, f)
         f.close()
 
