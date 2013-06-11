@@ -1,0 +1,11 @@
+{"slot": "testing-slot-2",
+ "description": "slot used for unit testing of LbNighltyTools",
+ "projects": [{"name": "DummyProject",
+               "version": "HEAD",
+               "checkout": "ignore"},
+              {"name": "TestProject",
+               "version": "HEAD",
+               "checkout": "ignore",
+               "dependencies": ["DummyProject"]}],
+ "USE_CMT": true
+}

@@ -214,3 +214,38 @@ def test_lbcore_164():
         os.chdir(oldcwd)
         #shutil.rmtree(tmpd, ignore_errors=True)
         print tmpd
+
+def test_simple_build_2():
+    # Test the case of "disabled" projects.
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot-2',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+
+        script = BuildSlot.Script()
+        retcode = script.run(['testing-slot-2.json'])
+        assert retcode == 0
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)
+

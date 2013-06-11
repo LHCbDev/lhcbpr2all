@@ -587,6 +587,10 @@ class Script(LbUtils.Script.PlainScript):
         from os.path import join
 
         proj.build_dir = join(self.build_dir, proj.dir)
+        proj.enabled = os.path.exists(proj.build_dir)
+        if not proj.enabled:
+            self.log.debug('%s not found, imply %s disabled', proj.dir, proj)
+
         proj.summary_dir = join(self.artifacts_dir,
                                 'summaries.' + self.platform,
                                 proj.name)
@@ -616,21 +620,30 @@ class Script(LbUtils.Script.PlainScript):
         packname = os.path.join(self.artifacts_dir, packname)
         proj.packname = packname
 
-        Configuration.save(join(proj.build_dir, 'SlotConfig.json'), self.config)
-        self.write(join(proj.build_dir, 'SlotConfig.cmake'), self.config_cmake)
-        if self.cache_preload:
-            self.write(join(proj.build_dir, 'cache_preload.cmake'),
-                       self.cache_preload + '\n')
-        self.write(join(proj.build_dir, 'CTestConfig.cmake'),
-              self.ctest_config.substitute(self.config))
-        self.write(join(proj.build_dir, 'CTestScript.cmake'),
-              self.ctest_script.substitute({'project': proj.name,
-                                            'version': proj.version,
-                                            'build_dir': self.build_dir,
-                                            'site': gethostname(),
-                                            'summary_dir': proj.summary_dir,
-                                            'Model': self.options.model,
-                                            'old_build_id': proj.old_build_id}))
+        if proj.enabled:
+            # write files only if the project is enabled
+            Configuration.save(join(proj.build_dir, 'SlotConfig.json'),
+                               self.config)
+
+            self.write(join(proj.build_dir, 'SlotConfig.cmake'),
+                       self.config_cmake)
+
+            if self.cache_preload:
+                self.write(join(proj.build_dir, 'cache_preload.cmake'),
+                           self.cache_preload + '\n')
+
+            self.write(join(proj.build_dir, 'CTestConfig.cmake'),
+                       self.ctest_config.substitute(self.config))
+
+            script_data = {'project': proj.name,
+                           'version': proj.version,
+                           'build_dir': self.build_dir,
+                           'site': gethostname(),
+                           'summary_dir': proj.summary_dir,
+                           'Model': self.options.model,
+                           'old_build_id': proj.old_build_id}
+            self.write(join(proj.build_dir, 'CTestScript.cmake'),
+                       self.ctest_script.substitute(script_data))
 
         return proj
 
@@ -639,11 +652,6 @@ class Script(LbUtils.Script.PlainScript):
         Build a project of the slot.
         '''
         from os.path import join
-
-        # ignore missing directories (the project may not have been checked out)
-        if not os.path.exists(proj.build_dir):
-            self.log.warning('no sources for %s, skip build', proj)
-            return
 
         if os.path.exists(proj.packname):
             self.log.info('binary tarball for %s already present, skip build',
@@ -917,6 +925,10 @@ class Script(LbUtils.Script.PlainScript):
         for proj in self.sorted_projects:
 
             self._prepareProject(proj)
+
+            if not proj.enabled:
+                self.log.warning('project %s disabled, skip build', proj)
+                continue
 
             if not self.options.tests_only:
                 self._buildProject(proj)
