@@ -867,6 +867,7 @@ class Script(LbUtils.Script.PlainScript):
                     dst = join(self.artifacts_dir,
                                'newrefs.' + self.script.platform,
                                self.project.name, relpath(src, self.cwd))
+                    dst = os.path.dirname(dst)
                     try:
                         self.script.keepArtifact(src, dst)
                     except IOError:

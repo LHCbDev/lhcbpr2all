@@ -18,7 +18,7 @@ from tempfile import mkdtemp
 import shutil
 
 from datetime import date
-from os.path import exists, normpath, join, dirname
+from os.path import exists, normpath, join, dirname, isfile
 from LbNightlyTools.Utils import ensureDirs
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
@@ -205,7 +205,7 @@ def test_lbcore_164():
 
         _check_build_artifacts(join(tmpd, 'testdata'), info)
 
-        assert exists(join(tmpd, 'testdata', 'artifacts',
+        assert isfile(join(tmpd, 'testdata', 'artifacts',
                            'newrefs.{config}'.format(**info),
                            'TestProject', 'TestProjectSys', 'cmt',
                            'output.ref.new'))
