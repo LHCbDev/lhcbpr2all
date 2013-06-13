@@ -30,9 +30,7 @@ def test_loadJSON():
     found = processFile(json.dumps(expected), Configuration.load)
     assert found == expected
 
-def test_loadXML():
-    'Configuration.load(xml)'
-    xml = u'''
+TEST_XML = u'''
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="configuration.xsd">
     <general>
         <ignore>
@@ -42,7 +40,7 @@ def test_loadXML():
             <warning value="was hidden"/>
         </ignore>
     </general>
-        <slot name="lhcb-lcg-head" description="lhcb-lcg-head - head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
+    <slot name="lhcb-lcg-head" description="lhcb-lcg-head - head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
         <cmtprojectpath>
             <path value="dir1"/>
             <path value="dir2/%DAY%"/>
@@ -73,8 +71,28 @@ def test_loadXML():
             <project name="Brunel" tag="BRUNEL_HEAD" headofeverything="true"/>
         </projects>
     </slot>
+    <slot name="lhcb-lcg-test" description="a test" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
+        <cmtprojectpath>
+            <path value="dir1"/>
+            <path value="dir2/%DAY%"/>
+            <path value="/afs/cern.ch/lhcb/software/releases"/>
+        </cmtprojectpath>
+        <platforms>
+            <platform name="x86_64-slc6-gcc47-opt"/>
+            <platform name="x86_64-slc6-clang32-opt"/>
+        </platforms>
+        <cmtextratags value="use-distcc,no-pyzip"/>
+        <projects>
+            <project name="LCGCMT" tag="LCGCMT-preview" headofeverything="false" disabled="true"/>
+            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
+            </project>
+        </projects>
+    </slot>
 </configuration>
-    '''
+'''
+
+def test_loadXML():
+    'Configuration.load(xml)'
     expected = {'slot': 'lhcb-lcg-head',
                 'description': "head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot",
                 'projects': [{'name': 'LCGCMT',
@@ -127,7 +145,37 @@ def test_loadXML():
                 }
 
     load = lambda path: Configuration.load(path+"#lhcb-lcg-head")
-    found = processFile(xml, load)
+    found = processFile(TEST_XML, load)
+    #from pprint import pprint
+    #pprint(found)
+    #pprint(expected)
+    assert found == expected
+
+def test_loadXML_2():
+    'Configuration.load(xml) [with LCGCMT-preview]'
+
+    expected = {'slot': 'lhcb-lcg-test',
+                'description': "a test",
+                'projects': [{'name': 'LCGCMT',
+                              'version': 'preview',
+                              'checkout': 'ignore',
+                              'dependencies': [],
+                              'overrides': {}},
+                             {'name': 'Gaudi',
+                              'version': 'HEAD',
+                              'dependencies': ['LCGCMT'],
+                              'overrides': {}}],
+                'env': ['CMTPROJECTPATH=dir1:dir2/${TODAY}:/afs/cern.ch/lhcb/software/releases',
+                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
+                'USE_CMT': True,
+                'default_platforms': ['x86_64-slc6-gcc47-opt',
+                                      'x86_64-slc6-clang32-opt'],
+                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
+                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
+                }
+
+    load = lambda path: Configuration.load(path+"#lhcb-lcg-test")
+    found = processFile(TEST_XML, load)
     #from pprint import pprint
     #pprint(found)
     #pprint(expected)

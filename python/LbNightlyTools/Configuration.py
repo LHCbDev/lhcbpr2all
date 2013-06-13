@@ -35,6 +35,12 @@ def loadFromOldXML(source, slot):
         s = s.replace('%PLATFORM%', '${CMTCONFIG}')
         return s
 
+    def extractVersion(tag):
+        if tag == 'LCGCMT-preview':
+            return 'preview'
+        else:
+            return tag.split('_', 1)[1]
+
     data = {'slot': slot,
             'env': []}
     try:
@@ -71,7 +77,7 @@ def loadFromOldXML(source, slot):
         projects = []
         for proj in slot_el.findall('projects/project'):
             name = proj.attrib['name']
-            version = proj.attrib['tag'].split('_', 1)[1]
+            version = extractVersion(proj.attrib['tag'])
             overrides = {}
             for elem in proj.findall('addon') + proj.findall('change'):
                 overrides[elem.attrib['package']] = elem.attrib['value']
@@ -84,11 +90,7 @@ def loadFromOldXML(source, slot):
                 dep_name = elem.attrib['project']
                 if dep_name not in dependencies:
                     dependencies.append(dep_name)
-                    dep_vers = elem.attrib['tag']
-                    if dep_vers == 'LCGCMT-preview':
-                        dep_vers = 'preview'
-                    else:
-                        dep_vers = dep_vers.split('_', 1)[1]
+                    dep_vers = extractVersion(elem.attrib['tag'])
                     projects.append({'name': dep_name,
                                      'version': dep_vers,
                                      'overrides': {},
