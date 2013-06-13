@@ -15,6 +15,20 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import re
 
+def extractVersion(tag):
+    '''
+    Extract the version number from as SVN tag.
+
+    >>> extractVersion('GAUDI_v23r8')
+    'v23r8'
+    >>> extractVersion('LCGCMT-preview')
+    'preview'
+    '''
+    if tag == 'LCGCMT-preview':
+        return 'preview'
+    else:
+        return tag.split('_', 1)[1]
+
 def loadFromOldXML(source, slot):
     '''
     Read an old-style XML configuration and generate the corresponding
@@ -34,12 +48,6 @@ def loadFromOldXML(source, slot):
         s = s.replace('%YESTERDAY%', '${YESTERDAY}')
         s = s.replace('%PLATFORM%', '${CMTCONFIG}')
         return s
-
-    def extractVersion(tag):
-        if tag == 'LCGCMT-preview':
-            return 'preview'
-        else:
-            return tag.split('_', 1)[1]
 
     data = {'slot': slot,
             'env': []}
