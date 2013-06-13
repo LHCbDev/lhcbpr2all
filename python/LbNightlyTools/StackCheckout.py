@@ -206,13 +206,26 @@ class StackDesc(object):
                 data = f.readlines()
                 f.close()
 
+                used_pkgs = set()
+
                 newdata = []
                 for line in data:
                     tokens = line.strip().split()
                     if len(tokens) >= 3 and tokens[0] == 'use':
                         tokens[2] = '*'
+                        if len(tokens) >= 4 and tokens[3][0] not in ('-', '#'):
+                            used_pkgs.add('{3}/{1}'.format(*tokens))
+                        else:
+                            used_pkgs.add(tokens[1])
                         line = ' '.join(tokens) + '\n'
                     newdata.append(line)
+
+                for added_pkg in set(proj.overrides.keys()) - used_pkgs:
+                    if '/' in added_pkg:
+                        hat, added_pkg = added_pkg.rsplit('/', 1)
+                    else:
+                        hat = ''
+                    newdata.append('use {0} * {1}\n'.format(added_pkg, hat))
 
                 f = open(join(rootdir, requirements), 'w')
                 f.writelines(newdata)

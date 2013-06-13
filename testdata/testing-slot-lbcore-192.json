@@ -1,0 +1,8 @@
+{"slot": "testing-slot-lbcore-192",
+ "description": "slot used for unit testing of LbNighltyTools",
+ "projects": [{"name": "TestProject",
+               "version": "HEAD",
+               "checkout": "ignore",
+               "overrides": {"NewPack": "HEAD"}}],
+ "USE_CMT": true
+}

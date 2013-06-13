@@ -17,7 +17,7 @@ import logging
 import shutil
 import os
 
-from LbNightlyTools.Utils import retry_call as call
+from LbNightlyTools.Utils import retry_call as call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 
@@ -75,3 +75,48 @@ def git(desc, rootdir='.'):
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
+
+def copy(desc, rootdir='.'):
+    '''
+    Copy the content of a directory.
+
+    Requires a mandatory 'src' field in the 'checkout_opts' of the
+    project description.
+    '''
+    if 'src' not in desc.checkout_opts:
+        raise RuntimeError('mandatory checkout_opts "src" is missing')
+    src = desc.checkout_opts['src']
+    __log__.debug('copying %s from %s', desc, src)
+    dest = os.path.join(rootdir, desc.projectDir)
+    ensureDirs([dest])
+    shutil.copytree(os.path.join(src, os.curdir), dest)
+    top_makefile = os.path.join(dest, 'Makefile')
+    if not os.path.exists(top_makefile):
+        f = open(top_makefile, 'w')
+        f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
+        f.close()
+    __log__.debug('copy of %s completed in %s', desc, dest)
+
+def untar(desc, rootdir='.'):
+    '''
+    Unpack a tarball in the rootdir (assuming that the tarball already contains
+    the <PROJECT>/<PROJECT>_<version> directories..
+
+    Requires a mandatory 'src' field in the 'checkout_opts' of the
+    project description.
+    '''
+    if 'src' not in desc.checkout_opts:
+        raise RuntimeError('mandatory checkout_opts "src" is missing')
+    src = desc.checkout_opts['src']
+    __log__.debug('unpacking %s', src)
+    call(['tar', '-x', '-C', rootdir, '-f', src])
+    dest = os.path.join(rootdir, desc.projectDir)
+    if not os.path.isdir(dest):
+        raise RuntimeError('the tarfile %s does not contain %s',
+                           src, desc.projectDir)
+    top_makefile = os.path.join(dest, 'Makefile')
+    if not os.path.exists(top_makefile):
+        f = open(top_makefile, 'w')
+        f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
+        f.close()
+    __log__.debug('unpacking of %s from %s completed', desc, src)
