@@ -88,6 +88,31 @@ TEST_XML = u'''
             </project>
         </projects>
     </slot>
+    <slot name="lhcb-compatibility-x" description="lhcb-compatibility-x - testing released software against latest database tags" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
+        <paths>
+            <path value="%BUILDROOT%/nightlies/%SLOT%/%DAY%/%CMTCONFIG%" name="builddir"/>
+            <path value="%BUILDROOT%/builders/%SLOT%" name="buildersdir"/>
+            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/%SLOT%/%DAY%" name="releasedir"/>
+            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/www/logs/%SLOT%" name="wwwdir"/>
+        </paths>
+        <cmtprojectpath>
+            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
+            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
+            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
+            <path value="/afs/cern.ch/lhcb/software/releases"/>
+        </cmtprojectpath>
+        <platforms>
+            <platform name="x86_64-slc5-gcc43-opt"/>
+            <platform name="x86_64-slc5-gcc43-dbg"/>
+        </platforms>
+        <cmtextratags value="use-distcc,no-pyzip"/>
+        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
+        <projects>
+            <project name="Brunel" tag="BRUNEL_v37r8p4"/>
+            <project name="Moore" tag="MOORE_v10r2p4"/>
+            <project name="DaVinci" tag="DAVINCI_v26r3p3"/>
+        </projects>
+    </slot>
 </configuration>
 '''
 
@@ -175,6 +200,44 @@ def test_loadXML_2():
                 }
 
     load = lambda path: Configuration.load(path+"#lhcb-lcg-test")
+    found = processFile(TEST_XML, load)
+    #from pprint import pprint
+    #pprint(found)
+    #pprint(expected)
+    assert found == expected
+
+def test_loadXML_3():
+    'Configuration.load(xml) [with lhcb-compatibility*]'
+
+    expected = {'slot': 'lhcb-compatibility-x',
+                'description': "testing released software against latest database tags",
+                'projects': [{'name': 'Brunel',
+                              'version': 'v37r8p4',
+                              'dependencies': [],
+                              'overrides': {}},
+                             {'name': 'Moore',
+                              'version': 'v10r2p4',
+                              'dependencies': ['Brunel'],
+                              'overrides': {}},
+                             {'name': 'DaVinci',
+                              'version': 'v26r3p3',
+                              'dependencies': ['Brunel', 'Moore'],
+                              'overrides': {}}],
+                'env': ['CMTPROJECTPATH=' +
+                          ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
+                                    '/afs/cern.ch/sw/Gaudi/releases',
+                                    '/afs/cern.ch/sw/lcg/app/releases',
+                                    '/afs/cern.ch/lhcb/software/releases']),
+                        'CMTEXTRATAGS=use-distcc,no-pyzip',
+                        'GAUDI_QMTEST_DEFAULT_SUITE=compatibility'],
+                'USE_CMT': True,
+                'default_platforms': ['x86_64-slc5-gcc43-opt',
+                                      'x86_64-slc5-gcc43-dbg'],
+                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
+                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
+                }
+
+    load = lambda path: Configuration.load(path+"#lhcb-compatibility-x")
     found = processFile(TEST_XML, load)
     #from pprint import pprint
     #pprint(found)

@@ -63,6 +63,9 @@ def loadFromOldXML(source, slot):
         if elem is not None:
             data['env'].append('CMTEXTRATAGS=' + elem.attrib['value'])
 
+        if slot.startswith('lhcb-compatibility'):
+            data['env'].append('GAUDI_QMTEST_DEFAULT_SUITE=compatibility')
+
         elem = slot_el.find('waitfor')
         if elem is not None:
             path = fixPlaceHolders(elem.attrib['flag'])
