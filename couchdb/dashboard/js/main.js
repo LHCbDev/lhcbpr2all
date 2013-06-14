@@ -1,4 +1,7 @@
 var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
+var JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-slot-build-platform/';
+var LEMON_SEARCH_PREFIX = 'https://lemon.cern.ch/lemon-web/index.php?target=process_search&amp;fb=';
+var MAX_BUILD_IDLE_TIME = 180; // minutes
 
 // variables set from cookies
 if (!$.cookie("filters")) {
@@ -47,13 +50,26 @@ function spinDecrease(day) {
 	spin.data('count', count);
 }
 
+function jenkinsIcon(build_id) {
+	return $('<a href="' + JENKINS_JOB_URL + build_id + '/">')
+	  .append('<img src="images/jenkins_16.png" alt="Jenkins build" ' +
+			  'title="Jenkins build"/>').tooltip();
+}
+
+function lemonIcon(hostname) {
+	return $('<a href="' + LEMON_SEARCH_PREFIX + hostname + '">')
+	  .append('<img src="images/lemon_16.png" alt="Lemon stats" ' +
+			  'title="Lemon stats for ' + hostname + '"/>').tooltip();
+}
+
 jQuery.fn.lbSlotTable = function(data) {
 	var tab = $('<table class="summary" border="1"/>');
 	// header
 	var hdr = $('<tr class="slot-header"/>');
 	hdr.append('<th>Project</th><th>Version</th>');
 	$.each(data.value.platforms, function(idx, val) {
-		hdr.append('<th platform="' + val + '" nowrap>' + val + '<div/></th>');
+		hdr.append('<th platform="' + val + '" nowrap>' +
+				   val + '<div class="slot-info"/></th>');
 	});
 	tab.append(hdr);
 
@@ -83,7 +99,11 @@ jQuery.fn.lbSlotTable = function(data) {
 			url: '_view/summaries',
 			data: query});
 		jqXHR.day = data.key;
+		jqXHR.key = [data.value.slot, data.value.build_id, val];
 		jqXHR.done(function(data, textStatus, jqXHR) {
+			var last_update = moment('1970-01-01');
+			var started = last_update;
+			var running = data.rows.length > 0;
 			$.each(data.rows, function(idx, row){
 				/* Expects row like:
 				 * {"key": ["slot", build_id, "platform"],
@@ -127,22 +147,50 @@ jQuery.fn.lbSlotTable = function(data) {
 							t.addClass('success');
 						}
 					}
+					if (value.completed) {
+						var m = moment(value.completed);
+						if (m.isAfter(last_update)) {
+							last_update = m;
+						}
+					}
 				} else if (value.type == 'job-start') {
 					// FIXME: simplify the selector
 					var h = $('div[slot="' + key[0] + '"][build_id="' + key[1] + '"]'
 			                 + ' tr.slot-header'
 				             + ' th[platform="' + key[2] + '"] div');
-					if (! h.text()) {
-						h.text('started: ' + moment(value.started).format('H:mm:ss'));
+					started = moment(value.started);
+					if (running) {
+						h.text('running for ' + started.fromNow(true));
+						h.append('&nbsp;')
+						 .append(jenkinsIcon(value.build_number))
+						 .append('&nbsp;')
+						 .append(lemonIcon(value.host));
+					}
+					if (started.isAfter(last_update)) {
+						last_update = started;
 					}
 				} else if (value.type == 'job-end') {
 					// FIXME: simplify the selector
 					var h = $('div[slot="' + key[0] + '"][build_id="' + key[1] + '"]'
 			                 + ' tr.slot-header'
 				             + ' th[platform="' + key[2] + '"] div');
-					h.text('ended: ' + moment(value.completed).format('H:mm:ss'));
+					h.text('completed at ' + moment(value.completed).format('H:mm:ss'));
+					running = false;
 				}
 			});
+			if (running && ! last_update.isSame(started)) {
+				var m = moment();
+				if (m.diff(last_update, 'minutes') > MAX_BUILD_IDLE_TIME) {
+					var key = jqXHR.key;
+					var h = $('div[slot="' + key[0] + '"][build_id="' + key[1] + '"]'
+			                 + ' tr.slot-header'
+				             + ' th[platform="' + key[2] + '"]');
+					h.addClass('lagging')
+					 .attr('title',
+						   'no update for ' + last_update.fromNow(true))
+					 .tooltip();
+				}
+			}
 			spinDecrease(jqXHR.day);
 		});
 	});

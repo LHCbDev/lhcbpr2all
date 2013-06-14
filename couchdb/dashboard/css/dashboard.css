@@ -53,6 +53,20 @@ div.slots {
 	text-align: center;
 }
 
+.day .slot-info {
+	font-weight: normal;
+	font-size: smaller;
+	text-align: center;
+}
+
+.day .slot-info img {
+	vertical-align: middle;
+}
+
+.day th.lagging {
+	background-color: red;
+}
+
 .day-name {
 	font-size: 2.5em;
 	text-align: left;
