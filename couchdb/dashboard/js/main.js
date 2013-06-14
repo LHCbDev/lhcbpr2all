@@ -77,6 +77,9 @@ jQuery.fn.lbSlotTable = function(data) {
 	$.each(data.value.projects, function(idx, val) {
 		var tr = $('<tr project="' + val.name + '"/>')
 		   .append('<th>' + val.name + '</th><th>' + val.version + '</th>');
+		if (val.disabled) {
+			tr.addClass('disabled');
+		}
 
 		$.each(data.value.platforms, function(idx, val) {
 			tr.append('<td platform="' + val + '">' +

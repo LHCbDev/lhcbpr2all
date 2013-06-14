@@ -12,6 +12,14 @@ table.summary th {
 	padding: 0.2em 0.5em;
 	text-align: center;
 }
+table.summary tr.disabled {
+	color: grey;
+	background-color: lightGrey;
+}
+table.summary tr.disabled th {
+	color: grey;
+	font-weight: normal;
+}
 
 table.results {
 	width: 100%;
