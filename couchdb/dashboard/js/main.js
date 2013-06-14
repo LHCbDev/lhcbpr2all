@@ -2,15 +2,15 @@ var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
 var JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-slot-build-platform/';
 var LEMON_SEARCH_PREFIX = 'https://lemon.cern.ch/lemon-web/index.php?target=process_search&amp;fb=';
 var MAX_BUILD_IDLE_TIME = 180; // minutes
+var FILTER_DEFAULT = {
+		days: ["Today"],
+		slots: [],
+		projects: []
+	};
 
 // variables set from cookies
 if (!$.cookie("filters")) {
-	$.cookie("filters",
-			JSON.stringify({
-				days: ["Today"],
-				slots: [],
-				projects: []
-			}));
+	$.cookie("filters", JSON.stringify(FILTER_DEFAULT));
 }
 var filters = JSON.parse($.cookie("filters"));
 
@@ -342,6 +342,41 @@ function fillDialogTab(tab) {
 	}
 }
 
+function applyFilters() {
+	$('div.day table.header button').each(function(){
+		var btn = $(this);
+		var day = moment(btn.attr('day')).format('dddd');
+		if (isDayEnabled(day)) {
+			if (btn.button('option', 'label') == 'show')
+				btn.click();
+		} else {
+			if (btn.button('option', 'label') == 'hide')
+				btn.click()
+		}
+	});
+
+	$('div.slot').each(function(){
+		var el = $(this);
+		var s = el.attr("slot")
+		if (s && $.inArray(s, filters.slots) < 0) {
+			el.show();
+		} else {
+			el.hide();
+		}
+	});
+
+	$('tr[project]').each(function() {
+		var el = $(this);
+		if ($.inArray(el.attr('project'), filters.projects) >= 0) {
+			el.hide();
+		} else {
+			el.show();
+		}
+	});
+
+	$.cookie("filters", JSON.stringify(filters));
+}
+
 function prepareFilterDialog() {
 	// prepare the dialog data
 
@@ -374,43 +409,22 @@ function prepareFilterDialog() {
         		getFilterCheckboxes('slots');
         		getFilterCheckboxes('projects');
 
-        		$('div.day table.header button').each(function(){
-        			var btn = $(this);
-        			var day = moment(btn.attr('day')).format('dddd');
-        			if (isDayEnabled(day)) {
-        				if (btn.button('option', 'label') == 'show')
-        					btn.click();
-        			} else {
-        				if (btn.button('option', 'label') == 'hide')
-        					btn.click()
-        			}
-        		});
-
-        		$('div.slot').each(function(){
-	        		var el = $(this);
-	        		var s = el.attr("slot")
-	        		if (s && $.inArray(s, filters.slots) < 0) {
-	        			el.show();
-	        		} else {
-	        			el.hide();
-	        		}
-	        	});
-
-        		$('tr[project]').each(function() {
-        			var el = $(this);
-        			if ($.inArray(el.attr('project'), filters.projects) >= 0) {
-        				el.hide();
-        			} else {
-        				el.show();
-        			}
-        		});
-
-	        	$.cookie("filters", JSON.stringify(filters));
+        		applyFilters();
 
 	        	$(this).dialog("close");
 	        },
 	        Cancel: function() {
 	        	// restore previous settings
+				initFilterCheckboxes('days');
+				initFilterCheckboxes('slots');
+				initFilterCheckboxes('projects');
+	        	$(this).dialog("close");
+	        },
+			Defaults: function() {
+	        	// restore default settings
+	        	filters = FILTER_DEFAULT;
+	        	applyFilters();
+
 				initFilterCheckboxes('days');
 				initFilterCheckboxes('slots');
 				initFilterCheckboxes('projects');
