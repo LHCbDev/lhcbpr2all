@@ -8,6 +8,11 @@ table.summary td {
 	padding: 0px;
 	text-align: center;
 }
+table.summary th {
+	padding: 0.2em 0.5em;
+	text-align: center;
+}
+
 table.results {
 	width: 100%;
 }
