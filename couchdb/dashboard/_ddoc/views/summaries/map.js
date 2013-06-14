@@ -1,7 +1,7 @@
 function(doc) {
 	if (doc.type == "build-result" || doc.type == "tests-result") {
 		var k = [doc.slot, doc.build_id, doc.platform];
-		var data = {project: doc.project};
+		var data = {project: doc.project, completed: doc.completed};
 		if (doc.type == "build-result") {
 			data.build = {warnings: doc.warnings,
 						  errors: doc.errors}
