@@ -107,21 +107,21 @@ def ensureDirs(dirs):
             os.makedirs(path)
 
 def genDocId(data):
-        '''
-        Internal function to generate the document id from the data dictionary.
+    '''
+    Internal function to generate the document id from the data dictionary.
 
-        >>> genDocId({'slot': 'lhcb-head', 'build_id': 123, 'type': 'config'})
-        'lhcb-head.123.config'
-        >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
-        ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'start'})
-        'lhcb-head.123.x86_64-slc6-gcc48-opt.start'
-        >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
-        ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'tests',
-        ... 'project': 'Gaudi'})
-        'lhcb-head.123.Gaudi.x86_64-slc6-gcc48-opt.tests'
-        '''
-        fields = ['slot', 'build_id', 'project', 'platform', 'type']
-        return '.'.join([str(data[f]) for f in fields if f in data])
+    >>> genDocId({'slot': 'lhcb-head', 'build_id': 123, 'type': 'config'})
+    'lhcb-head.123.config'
+    >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
+    ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'start'})
+    'lhcb-head.123.x86_64-slc6-gcc48-opt.start'
+    >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
+    ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'tests',
+    ... 'project': 'Gaudi'})
+    'lhcb-head.123.Gaudi.x86_64-slc6-gcc48-opt.tests'
+    '''
+    fields = ['slot', 'build_id', 'project', 'platform', 'type']
+    return '.'.join([str(data[f]) for f in fields if f in data])
 
 class Dashboard(object):
     '''

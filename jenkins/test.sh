@@ -21,5 +21,7 @@ cd $(dirname $0)/..
 nosetests -v --with-doctest --with-xunit --with-coverage --cover-erase --cover-inclusive --cover-package LbNightlyTools python
 coverage xml --include="python/*"
 
+# Added the contrib directory to the Python path (needed by pylint)
+export PYTHONPATH=$PWD/python/LbNightlyTools/contrib:$PYTHONPATH
 # Ignoring pylint return code (to avoid failure of the test).
 pylint --rcfile=docs/pylint.rc LbNightlyTools > pylint.txt || true
