@@ -12,3 +12,10 @@
 LHCb Nightly Build System module.
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
+
+# Ensure that we have the contrib directory in the path
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'contrib'))
+del sys
+del os
