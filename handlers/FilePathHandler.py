@@ -11,13 +11,20 @@ class FilePathHandler(BaseHandler):
         self.results = []
 
     def collectResults(self,directory):
-        filename = 'report.txt'
-        report_path = directory + '/' + filename 
-        if os.path.exists(report_path) :
-           self.saveString("intel_report", report_path, "Path to Vtune generated reports", "file")
-           print '... reported!' 
+        logfile = 'run.log'
+        run_path = directory + '/' + logfile
+
+        loglines = open(logfile, 'r')
+        lls = loglines.readlines()
+        line = lls[len(lls)-3]
+        loglines.close()
+         
+        if os.path.exists(run_path) :
+           self.saveString("Results", line, "", "FilePath")
+           print 'Path ' + line
+           print '... stored!' 
         else:
-           print 'Report file does not exist (file: ' + report_path + ')'
+           print 'File or path does not exist (file: ' + run_path + ')'
 
 if __name__ == "__main__":
     fh = FilePathHandler()
