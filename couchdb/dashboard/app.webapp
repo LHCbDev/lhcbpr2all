@@ -1,0 +1,17 @@
+{
+  "name": "LHCb Nightly Builds Summaries",
+  "version" : "0.0.1",
+  "description": "",
+  "long_description" : "",
+  "launch_path": "/",
+  "url": "http://git.cern.ch/LbNightlyTools",
+  "categories": [],
+  "icons": {
+         "jenkins": "images/jenkins_16.png",
+         "lemon": "images/lemon_16.png"
+  },
+  "developer": {
+    "name": "Marco Clemencic"
+  },
+  "default_locale": "en"
+}

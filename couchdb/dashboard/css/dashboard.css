@@ -1,0 +1,95 @@
+/* CSS for the Nightly Build Dashboard */
+
+body {
+	padding: 0;
+}
+
+table.summary td {
+	padding: 0px;
+	text-align: center;
+}
+table.summary th {
+	padding: 0.2em 0.5em;
+	text-align: center;
+}
+table.summary tr.disabled {
+	color: grey;
+	background-color: lightGrey;
+}
+table.summary tr.disabled th {
+	color: grey;
+	font-weight: normal;
+}
+
+table.results {
+	width: 100%;
+}
+table.results td {
+	width: 50%;
+	padding: 0.2em;
+	border: none;
+	border-right: 1px solid #EAEAEA;;
+}
+td.success {background-color: #00F900;}
+td.warning {background-color: #FFB600;}
+td.failure {background-color: #FF1C00;}
+
+div.day {
+	margin-top: 2em;
+}
+
+div.slots {
+	border-style: solid;
+	border-color: #CCC;
+	border-width: 1px;
+	padding: 1em;
+}
+
+.day table.header {
+	width: 100%;
+}
+
+.day table.header tr {
+	vertical-align: middle;
+}
+
+.day table.header td {
+	padding: 0.2em;
+}
+
+.day table.header td.button {
+	width: 6em;
+}
+
+.day table.header td.spinner {
+	width: 20px;
+	text-align: center;
+}
+
+.day .slot-info {
+	font-weight: normal;
+	font-size: smaller;
+	text-align: center;
+}
+
+.day .slot-info img {
+	vertical-align: middle;
+}
+
+.day th.lagging {
+	background-color: red;
+}
+
+.day-name {
+	font-size: 2.5em;
+	text-align: left;
+}
+
+.day .ui-button-text {
+	width: 4em;
+}
+
+table.buttons td {
+	border: none;
+	padding: 0.1em;
+}

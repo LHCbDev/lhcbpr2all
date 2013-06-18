@@ -15,6 +15,8 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import logging
+import json
+import codecs
 from datetime import datetime
 
 DAY_NAMES = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
@@ -103,3 +105,87 @@ def ensureDirs(dirs):
     for path in dirs:
         if not os.path.exists(path):
             os.makedirs(path)
+
+def genDocId(data):
+    '''
+    Internal function to generate the document id from the data dictionary.
+
+    >>> genDocId({'slot': 'lhcb-head', 'build_id': 123, 'type': 'config'})
+    'lhcb-head.123.config'
+    >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
+    ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'start'})
+    'lhcb-head.123.x86_64-slc6-gcc48-opt.start'
+    >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
+    ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'tests',
+    ... 'project': 'Gaudi'})
+    'lhcb-head.123.Gaudi.x86_64-slc6-gcc48-opt.tests'
+    '''
+    fields = ['slot', 'build_id', 'project', 'platform', 'type']
+    return '.'.join([str(data[f]) for f in fields if f in data])
+
+class Dashboard(object):
+    '''
+    Wrapper for the CouchDB-based dashboard.
+    '''
+    COUCHDB_SERVER = 'https://lbtestbuild.cern.ch/nightlies/'
+    COUCHDB_DB = '_db'
+    def __init__(self, credentials=None, dumpdir=None, submit=True):
+        '''
+        @param credentials: pair with (username, password) of a valid account on
+                            the server
+        @param dumpdir: optional name of a directory where to keep a dump
+                        of the data uploaded to the server
+        @param submit: if set to False the data is not sent to the server
+        '''
+        import couchdb
+        import socket
+        self._log = logging.getLogger('Dashboard')
+        self._log.debug('preparing connection to dashboard')
+        self.submit = submit
+        if submit:
+            self.server = couchdb.Server(self.COUCHDB_SERVER)
+            self.server.resource.credentials = credentials
+            try:
+                self.db = self.server[self.COUCHDB_DB]
+            except (couchdb.ResourceNotFound, socket.error):
+                # ignore connection failures
+                self.db = None
+        else:
+            self.server = None
+            self.db = None
+        self.dumpdir = dumpdir
+        if dumpdir:
+            if not os.path.isdir(dumpdir):
+                os.makedirs(dumpdir)
+            self._log.debug('keep JSON back-ups in %s', dumpdir)
+
+    def publish(self, data):
+        '''
+        Store the given dictionary in the dashboard database.
+
+        The id of the document is derived from the data dictionary.
+        '''
+        from couchdb import ResourceConflict, Unauthorized
+
+        name = genDocId(data)
+        self._log.debug('publishing %s', name)
+
+        if self.dumpdir:
+            filename = os.path.join(self.dumpdir, name + '.json')
+            self._log.debug('dumping to %s', filename)
+            f = codecs.open(filename, 'w', 'utf-8')
+            json.dump(data, f)
+            f.close()
+
+        if self.db:
+            try:
+                self._log.debug('sending')
+                self.db[name] = data
+            except ResourceConflict:
+                self._log.debug('%s already present: update', name)
+                new_data = self.db[name]
+                new_data.update(data)
+                self.db[name] = new_data
+            except Unauthorized, ex:
+                self._log.warning('could not send %s: ', name, ex)
+

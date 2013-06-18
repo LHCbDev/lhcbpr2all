@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Summaries of nightly builds for LHCb</title>
+<link href="images/lhcb_logo_icon.png" rel="icon" type="image/png">
+
+<link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
+
+<link href="https://framework.web.cern.ch/framework/2.0/cern_toolbar/css/toolbar.css" rel="stylesheet" type="text/css" media="screen" />
+
+<link href="https://framework.web.cern.ch/framework/1.0/print.css" rel="stylesheet" type="text/css" media="print" />
+<link href="https://framework.web.cern.ch/framework/1.0/screen.css" rel="stylesheet" type="text/css" media="screen" />
+<link media="only screen and (max-device-width: 480px)" href="https://framework.web.cern.ch/framework/1.0/css/iphone.css" type="text/css" rel="stylesheet" />
+
+<link href="https://lhcb.web.cern.ch/lhcb/lhcb_page/custom.css" rel="stylesheet" type="text/css" media="screen" />
+
+<link href="css/lhcb-theme/jquery-ui-1.10.2.custom.min.css" rel="stylesheet">
+
+<link href="css/dashboard.css" rel="stylesheet">
+
+<script src="js/moment.min.js"></script>
+<script src="js/jquery-1.9.1.min.js"></script>
+<script src="js/jquery-ui-1.10.2.custom.min.js"></script>
+<script src="js/jquery.cookie.js"></script>
+<script src="js/main.js"></script>
+</head>
+<body class="lang-en fluid">
+
+<div id="cern-toolbar">
+  <h1><a href="http://cern.ch" title="CERN">CERN <span>Accelerating science</span></a></h1>
+  <ul>
+<!-- <li class="cern-accountlinks active"><a class="cern-account" href="https://home.web.cern.ch/Shibboleth.sso/?target=https%3A%2F%2Fhome.web.cern.ch%2F%3Fq%3Dshib_login%2Fnode%2F225" title="Sign in to your CERN account">Sign in</a></li> -->
+    <li><a class="cern-directory" href="http://cern.ch/directory" title="Search CERN resources and browse the directory">Directory</a></li>
+  </ul>
+</div><!-- /#cern-toolbar -->
+
+<div id="container" class="clear-block">
+  <div id="banner">
+    <a href="http://lhcb.cern.ch" id="link_lhcb" name="link_lhcb">
+      <img src="images/lhcb_logo.png" alt="LHCb" />
+    </a>
+    <h1>LHCb Nightly Builds</h1>
+  </div>
+
+  <button id="set-filter">Set filtering rules</button>
+
+  <div id="middle" class="clear-block cwf grid-fluid">
+  </div><!-- / middle -->
+
+  <div id="footer">
+    <p>CERN - European Laboratory for Particle Physics, CH-1211, Genève 23, Switzerland</p>
+    <!-- THE CERN_LOGO IS REQUIRED BY THE GRAPHIC CHARTER -->
+    <a id="cern_logo" class="badge_80" href="http://www.cern.ch" name="cern_logo">
+      <span>cern.ch</span>
+    </a>
+  </div><!-- / footer -->
+</div><!-- / container -->
+
+<div id="filter-dialog" title="Filtering rules">
+  <div id="filter-dialog-tabs">
+    <ul>
+      <li><a href="#filter-dialog-days">Days</a></li>
+      <li><a href="#filter-dialog-slots">Slots</a></li>
+      <li><a href="#filter-dialog-projects">Projects</a></li>
+    </ul>
+    <div id="filter-dialog-days">
+      <table>
+      <tr><td><table class="buttons"><tr>
+      <td><button>all</button></td>
+      <td><button>none</button></td>
+      </tr></table></td></tr>
+      <tr><td><input type="checkbox" value="Today">Today</td></tr>
+      <tr><td><input type="checkbox" value="Yesterday">Yesterday</td></tr>
+      <tr><td></td></tr>
+      <tr><td><input type="checkbox" value="Monday">Monday</td></tr>
+      <tr><td><input type="checkbox" value="Tuesday">Tuesday</td></tr>
+      <tr><td><input type="checkbox" value="Wednesday">Wednesday</td></tr>
+      <tr><td><input type="checkbox" value="Thursday">Thursday</td></tr>
+      <tr><td><input type="checkbox" value="Friday">Friday</td></tr>
+      <tr><td><input type="checkbox" value="Saturday">Saturday</td></tr>
+      <tr><td><input type="checkbox" value="Sunday">Sunday</td></tr>
+      </table>
+    </div>
+    <div id="filter-dialog-slots">
+      <img src="images/ajax-loader.gif" title="loading..."/>
+      <table>
+      <tr><td><table class="buttons"><tr>
+      <td><button>all</button></td>
+      <td><button>none</button></td>
+      </tr></table></td></tr>
+      </table>
+    </div>
+    <div id="filter-dialog-projects">
+      <img src="images/ajax-loader.gif" title="loading..."/>
+      <table>
+      <tr><td><table class="buttons"><tr>
+      <td><button>all</button></td>
+      <td><button>none</button></td>
+      </tr></table></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -67,9 +67,9 @@ def _check_build_artifacts(root, info):
                        *[f.format(**info)
                          for f in ['{project}.{version}.{slot}.{today}.{config}.tar.bz2',
                                    'summaries.{config}/{project}/build_log.html',
-                                   'db/{slot}.{build_id}.{config}.start.json',
-                                   'db/{slot}.{build_id}.{config}.completed.json',
-                                   'db/{slot}.{build_id}.{project}.{config}.build.json',
+                                   'db/{slot}.{build_id}.{config}.job-start.json',
+                                   'db/{slot}.{build_id}.{config}.job-end.json',
+                                   'db/{slot}.{build_id}.{project}.{config}.build-result.json',
                                    ]]
                        )
 
@@ -79,7 +79,7 @@ def _check_test_artifacts(root, info):
                        'Project.xml',
                        *[f.format(**info)
                          for f in ['summaries.{config}/{project}/html/index.html',
-                                   'db/{slot}.{build_id}.{project}.{config}.tests.json',
+                                   'db/{slot}.{build_id}.{project}.{config}.tests-result.json',
                                    ]]
                        )
 

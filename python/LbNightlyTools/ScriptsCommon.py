@@ -32,3 +32,26 @@ def addBasicOptions(parser):
 
     parser.set_defaults(build_id='{slot}.{timestamp}',
                         artifacts_dir='artifacts')
+    return parser
+
+
+def addDashboardOptions(parser):
+    '''
+    Add dashboard-related options to the option parser (optparse.OptionParser
+    instance).
+    '''
+    from optparse import OptionGroup
+    group = OptionGroup(parser, "Dashboard Options")
+
+    group.add_option('--submit',
+                     action='store_true',
+                     help='submit the results to Dashboard server')
+
+    group.add_option('--no-submit',
+                     action='store_false', dest='submit',
+                     help='do not submit the results to Dashboard server '
+                          '(default)')
+
+    parser.add_option_group(group)
+    parser.set_defaults(submit=False)
+    return parser

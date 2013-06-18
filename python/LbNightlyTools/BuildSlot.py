@@ -329,29 +329,34 @@ class Script(LbUtils.Script.PlainScript):
                          help='build model: {0} (default: {0[0]}).'
                               .format(models))
 
-        group.add_option('--submit',
+        group.add_option('--cdash-submit',
                          action='store_true',
                          help='submit the results to CDash server')
 
-        group.add_option('--no-submit',
-                         action='store_false', dest='submit',
+        group.add_option('--no-cdash-submit',
+                         action='store_false', dest='cdash_submit',
                          help='do not submit the results to CDash server '
                               '(default)')
 
         self.parser.add_option_group(group)
         self.parser.set_defaults(model=models[0],
-                                 submit=False)
+                                 cdash_submit=False)
 
     def defineOpts(self):
         '''
         Prepare the option parser.
         '''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
+                                                  addDashboardOptions)
+
         addBasicOptions(self.parser)
 
         self.defineBuildOptions()
         self.defineTestOptions()
         self.defineDeploymentOptions()
+
+        addDashboardOptions(self.parser)
+
         self.defineCDashOptions()
 
 
@@ -386,13 +391,19 @@ class Script(LbUtils.Script.PlainScript):
         self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
 
         # ensure that we have the artifacts directory for the sources
-        ensureDirs([self.artifacts_dir, join(self.artifacts_dir, 'db'),
-                    self.build_dir])
+        ensureDirs([self.artifacts_dir, self.build_dir])
 
         # template data to be reported in every JSON file
         self.json_tmpl = {'slot': self.config['slot'],
                           'build_id': int(os.environ.get('slot_build_id', 0)),
                           'platform': self.platform}
+
+        from LbNightlyTools.Utils import Dashboard
+        self.dashboard = Dashboard(credentials=None,
+                                   dumpdir=os.path.join(self.artifacts_dir,
+                                                        'db'),
+                                   submit=opts.submit)
+
 
         self.log.info("Preparing CTest scripts and configurations.")
         # load CTest script templates
@@ -429,7 +440,7 @@ class Script(LbUtils.Script.PlainScript):
             if opts.load_average > 0:
                 cmd.append('-DMAX_LOAD=%g' % opts.load_average)
 
-        if not opts.submit:
+        if not opts.cdash_submit:
             cmd.append('-DNO_SUBMIT=TRUE')
 
         if self.config.get(u'USE_CMT'):
@@ -448,24 +459,15 @@ class Script(LbUtils.Script.PlainScript):
             self.test_cmd.insert(1, '-VV')
 
 
-    def dump_json(self, data, suff):
+    def dump_json(self, data):
         '''
         Write a JSON file into the special artifacts 'db' directory.
 
         @param data: mapping with the data to write
-        @param suff: suffix of the file (added to the standard filename)
         '''
         output_data = dict(self.json_tmpl)
         output_data.update(data)
-        if 'project' in output_data:
-            fmt = '{slot}.{build_id}.{project}.{platform}.' + suff + '.json'
-        else:
-            fmt = '{slot}.{build_id}.{platform}.' + suff + '.json'
-        filename = os.path.join(self.artifacts_dir, 'db',
-                                fmt.format(**output_data))
-        f = codecs.open(filename, 'w', 'utf-8')
-        json.dump(output_data, f)
-        f.close()
+        self.dashboard.publish(output_data)
 
     def write(self, path, data):
         '''
@@ -701,7 +703,7 @@ class Script(LbUtils.Script.PlainScript):
         reporter = BuildReporter(proj.summary_dir, proj, self.platform,
                                  self.config, proj.old_build_id)
         self.deployReports(reporter.genOldSummaries())
-        self.dump_json(reporter.json(), 'build')
+        self.dump_json(reporter.json())
 
         self.log.info('packing %s', proj.dir)
 
@@ -782,7 +784,7 @@ class Script(LbUtils.Script.PlainScript):
         self.dump_json({'type': 'job-start',
                         'host': gethostname(),
                         'build_number': os.environ.get('BUILD_NUMBER', 0),
-                        'started': self.starttime.isoformat()}, 'start')
+                        'started': self.starttime.isoformat()})
 
         self._prepareBuildDir()
 
@@ -854,8 +856,7 @@ class Script(LbUtils.Script.PlainScript):
                                        "project": self.project.name,
                                        "started": self.started.isoformat(),
                                        "completed": self.completed.isoformat(),
-                                       "results": self.getTestSummary()},
-                                      'tests')
+                                       "results": self.getTestSummary()})
                 # Find the .new files in the project directory and copy them to
                 # the artifacts directory.
                 self.script.log.debug('looking for .new files')
@@ -983,8 +984,7 @@ class Script(LbUtils.Script.PlainScript):
         self.completetime = datetime.now()
 
         self.dump_json({'type': 'job-end',
-                        'completed': self.completetime.isoformat()},
-                       'completed')
+                        'completed': self.completetime.isoformat()})
 
         self.log.info('build completed in %s',
                       self.completetime - self.starttime)

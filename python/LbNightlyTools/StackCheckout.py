@@ -293,8 +293,10 @@ class Script(LbUtils.Script.PlainScript):
 
     def defineOpts(self):
         """ User options -- has to be overridden """
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
+                                                  addDashboardOptions)
         addBasicOptions(self.parser)
+        addDashboardOptions(self.parser)
 
     def packname(self, proj):
         '''
@@ -310,8 +312,7 @@ class Script(LbUtils.Script.PlainScript):
     def main(self):
         """ User code place holder """
         from os.path import join
-        import json
-        import codecs
+        from LbNightlyTools.Utils import Dashboard
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -346,11 +347,9 @@ class Script(LbUtils.Script.PlainScript):
         cfg['type'] = 'slot-config'
         cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
         cfg['date'] = timestamp
-        f = codecs.open(join(artifacts_dir, 'db',
-                             '{slot}.{build_id}.json'.format(**cfg)),
-                        'w', 'utf-8')
-        json.dump(cfg, f)
-        f.close()
+        Dashboard(credentials=None,
+                  dumpdir=join(artifacts_dir, 'db'),
+                  submit=self.options.submit).publish(cfg)
 
         slot.checkout(build_dir)
 
