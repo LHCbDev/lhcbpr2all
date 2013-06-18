@@ -22,7 +22,7 @@ else
   config_file=configs/configuration.xml#${slot}
 fi
 
-lbn-checkout --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
+lbn-checkout --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --submit ${config_file}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting

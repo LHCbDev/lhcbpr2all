@@ -70,7 +70,7 @@ else
   deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
 fi
 
-time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --with-tests --submit ${deploy_opt} ${coverity_opt} ${config_file}
+time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --with-tests --submit --cdash-submit ${deploy_opt} ${coverity_opt} ${config_file}
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   rm -f $stamp
