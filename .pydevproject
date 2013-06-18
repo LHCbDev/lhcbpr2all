@@ -5,5 +5,9 @@
 <pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
 <path>/LbNightlyTools/python</path>
 <path>/LbNightlyTools/scripts</path>
+<path>/LbNightlyTools/python/LbNightlyTools/contrib</path>
+</pydev_pathproperty>
+<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
+<path>/home/marco/Devel/LHCb/workspace/LbScripts/LbUtils/python</path>
 </pydev_pathproperty>
 </pydev_project>
