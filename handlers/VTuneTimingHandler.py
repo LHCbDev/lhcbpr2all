@@ -17,13 +17,13 @@ class VTuneTimingHandler(BaseHandler):
 
         # Now saving all the nodes
         for node in tp.getAllSorted():
-            self.saveFloat(node.name, node.value, "Produced by VTune", "VTuneTiming")
-            self.saveInt(node.name + "_count", node.entries, "Produced by VTune", "VTuneTimingCount")
-            self.saveInt(node.name + "_rank", node.rank, "Produced by VTune", "VTuneTimingRank")
+            self.saveFloat(node.name, node.value, "Produced by VTune", "Timing")
+            self.saveInt(node.name + "_count", node.entries, "Produced by VTune", "TimingCount")
+            self.saveInt(node.name + "_rank", node.rank, "Produced by VTune", "TimingRank")
             if node.parent != None:
-                self.saveString(node.name + "_parent", node.parent.name, "Produced by VTune", "VTuneTimingTree")
+                self.saveString(node.name + "_parent", node.parent.name, "Produced by VTune", "TimingTree")
             else:
-                self.saveString(node.name + "_parent", "None", "Produced by VTune", "VTuneTimingTree")
-            self.saveInt(node.name + "_id", node.id, "Produced by VTune", "VTuneTimingID")
+                self.saveString(node.name + "_parent", "None", "Produced by VTune", "TimingTree")
+            self.saveInt(node.name + "_id", node.id, "Produced by VTune", "TimingID")
 
 
