@@ -19,3 +19,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'contrib'))
 del sys
 del os
+
+# Make the Dashboard class visible from the top level for convenience.
+from LbNightlyTools.Utils import Dashboard
