@@ -181,7 +181,7 @@ class Dashboard(object):
 
         The id of the document is derived from the data dictionary.
         '''
-        from couchdb import ResourceConflict, Unauthorized
+        from couchdb import ResourceConflict, Unauthorized, ServerError
 
         name = genDocId(data)
         self._log.debug('publishing %s', name)
@@ -202,7 +202,7 @@ class Dashboard(object):
                 new_data = self.db[name]
                 new_data.update(data)
                 self.db[name] = new_data
-            except Unauthorized, ex:
+            except (Unauthorized, ServerError), ex:
                 self._log.warning('could not send %s: ', name, ex)
 
     def dropBuild(self, slot, build_id):
