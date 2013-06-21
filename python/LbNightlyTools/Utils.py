@@ -129,6 +129,8 @@ class Dashboard(object):
     '''
     COUCHDB_SERVER = 'https://lbtestbuild.cern.ch/nightlies/'
     COUCHDB_DB = '_db'
+    CRED_FILE = os.path.expanduser(os.path.join('~', 'private',
+                                                'couchdb-admin'))
     def __init__(self, credentials=None, dumpdir=None, submit=True):
         '''
         @param credentials: pair with (username, password) of a valid account on
@@ -139,8 +141,18 @@ class Dashboard(object):
         '''
         import couchdb
         import socket
+
         self._log = logging.getLogger('Dashboard')
         self._log.debug('preparing connection to dashboard')
+
+        if submit and credentials is None:
+            if os.path.exists(self.CRED_FILE):
+                # make a tuple with the first two lines of the file
+                credentials = tuple([l.strip()
+                                     for l in open(self.CRED_FILE)][:2])
+            else:
+                self._log.debug('no couchdb credentials found')
+
         self.submit = submit
         if submit:
             self.server = couchdb.Server(self.COUCHDB_SERVER)
