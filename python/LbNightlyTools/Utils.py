@@ -147,7 +147,11 @@ class Dashboard(object):
             self.server.resource.credentials = credentials
             try:
                 self.db = self.server[self.COUCHDB_DB]
-            except (couchdb.ResourceNotFound, socket.error):
+            except (couchdb.ResourceNotFound,
+                    couchdb.ServerError,
+                    socket.error):
+                self._log.warning('failed to access %s%s',
+                                  self.COUCHDB_SERVER, self.COUCHDB_DB)
                 # ignore connection failures
                 self.db = None
         else:
