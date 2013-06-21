@@ -193,3 +193,16 @@ class Dashboard(object):
             except Unauthorized, ex:
                 self._log.warning('could not send %s: ', name, ex)
 
+    def dropBuild(self, slot, build_id):
+        '''
+        Remove all the documents in the DB that belongs to the given build of
+        the given slot.
+
+        @param slot: name of the slot
+        @param build_id: numeric id of the build to remove
+        '''
+        view = self.db.view('dashboard/docsBySlotBuild', key=[slot, build_id])
+        for row in view:
+            self._log.info('removing %s', row.id)
+            del self.db[row.id]
+        self._log.info('removed %d documents', len(view))
