@@ -2,6 +2,9 @@
 *.pyc
 /build
 /sources
+/artifacts
+/configs
+/tmp
 *.backup
 *~
 *.aux
