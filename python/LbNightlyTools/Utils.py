@@ -110,6 +110,13 @@ def genDocId(data):
     '''
     Internal function to generate the document id from the data dictionary.
 
+    The data field used to prepare the id are (in order):
+
+         ['slot', 'build_id', 'project', 'platform', 'type']
+
+    unless the special field '_id' is defined, in which case its value is used
+    as id.
+
     >>> genDocId({'slot': 'lhcb-head', 'build_id': 123, 'type': 'config'})
     'lhcb-head.123.config'
     >>> genDocId({'slot': 'lhcb-head', 'build_id': 123,
@@ -119,7 +126,11 @@ def genDocId(data):
     ... 'platform': 'x86_64-slc6-gcc48-opt', 'type': 'tests',
     ... 'project': 'Gaudi'})
     'lhcb-head.123.Gaudi.x86_64-slc6-gcc48-opt.tests'
+    >>> genDocId({'slot': 'lhcb-head', '_id': 'something'})
+    'something'
     '''
+    if '_id' in data:
+        return data['_id']
     fields = ['slot', 'build_id', 'project', 'platform', 'type']
     return '.'.join([str(data[f]) for f in fields if f in data])
 
@@ -175,15 +186,18 @@ class Dashboard(object):
                 os.makedirs(dumpdir)
             self._log.debug('keep JSON back-ups in %s', dumpdir)
 
-    def publish(self, data):
+    def publish(self, data, name=None):
         '''
         Store the given dictionary in the dashboard database.
 
-        The id of the document is derived from the data dictionary.
+        The id of the document is derived from the data dictionary (using the
+        function genDocId), but can be overridden with the optional argument
+        'name'.
         '''
         from couchdb import ResourceConflict, Unauthorized, ServerError
 
-        name = genDocId(data)
+        if name is None:
+            name = genDocId(data)
         self._log.debug('publishing %s', name)
 
         if self.dumpdir:
