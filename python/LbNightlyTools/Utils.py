@@ -138,7 +138,7 @@ class Dashboard(object):
     '''
     Wrapper for the CouchDB-based dashboard.
     '''
-    COUCHDB_SERVER = 'https://lbtestbuild.cern.ch/nightlies/'
+    COUCHDB_SERVER = 'https://buildlhcb.cern.ch/nightlies/'
     COUCHDB_DB = '_db'
     CRED_FILE = os.path.expanduser(os.path.join('~', 'private',
                                                 'couchdb-admin'))
