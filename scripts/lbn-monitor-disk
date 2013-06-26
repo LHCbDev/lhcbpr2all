@@ -17,16 +17,54 @@ on the command line.
 import sys
 import os
 import urllib
-import logging
-
-logging.basicConfig()
 
 from LbNightlyTools.Monitoring import getDirInfos
 from LbNightlyTools.Utils import Dashboard
 
-dash = Dashboard()
-for path in set([os.path.realpath(p) for p in sys.argv[1:]]):
-    name = urllib.quote(path, safe='')
-    data = getDirInfos(path)
-    data['type'] = 'disk-usage'
-    dash.publish(data, name=name)
+from datetime import datetime
+
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Collect disk usage statistics and publish them to the Dashboard.
+    '''
+    __usage__ = '%prog [options] directory'
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('-s', '--slot',
+                               help='name of the slot to add to the JSON data')
+        self.parser.add_option('-b', '--build-id',
+                               help='build id to add to the JSON data')
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+        dash = Dashboard()
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
+
+        # gather infos
+        path = os.path.realpath(self.args[0])
+        data = getDirInfos(path)
+        data['type'] = 'disk-usage'
+        data['updated'] = datetime.now().isoformat()
+
+        # prepare object id
+        if self.options.slot:
+            data['slot'] = self.options.slot
+        if self.options.build_id:
+            data['build_id'] = self.options.build_id
+        if not self.options.slot and not self.options.build_id:
+            data['_id'] = urllib.quote(path, safe='')
+
+        # publish
+        dash.publish(data)
+
+        return 0
+
+if __name__ == '__main__':
+    sys.exit(Script().run())

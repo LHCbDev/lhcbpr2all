@@ -33,5 +33,5 @@ logfile=$LHCBNIGHTLIES/www/logs/install_slots.log
 echo "$(date): checking disk usage ($day)" >> $logfile 2>&1
 cd $LHCBNIGHTLIES
 for slot in $slots_on_afs ; do
-    lbn-monitor-disk $slot/$day >> $logfile 2>&1
+    lbn-monitor-disk --slot $slot --build-id $day $slot/$day >> $logfile 2>&1
 done
