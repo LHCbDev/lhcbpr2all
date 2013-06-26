@@ -62,6 +62,37 @@ function lemonIcon(hostname) {
 			  'title="Lemon stats for ' + hostname + '"/>').tooltip();
 }
 
+// fill an element in side a "div.day" and "div.slot" with
+// an alert button in case the free disk space for that slot.day is < 10%
+jQuery.fn.lbSlotDiskSpace = function() {
+	return this.each(function(){
+		var elem = $(this);
+		var slot = elem.parents('div.slot').attr('slot');
+		var day = elem.parents('div.day').attr('day_id');
+
+		var query = {key: JSON.stringify([slot, day])};
+
+		var jqXHR = $.ajax({dataType: "json",
+			url: '_view/diskSpace',
+			data: query});
+		jqXHR.elem = elem;
+		jqXHR.done(function(data, textStatus, jqXHR) {
+			if (data.rows.length > 0) {
+				var val = data.rows[0].value;
+				if (val.free_ratio < 0.1) {
+					var btn = $('<button>').button({
+						icons: {primary: "ui-icon-alert"},
+						label: "low disk space: " +
+						Math.round(val.free / 1024 / 1024) +
+						"MB (" + Math.round(val.free_ratio * 100) + "%)",
+						text: false}).tooltip();
+					jqXHR.elem.append(btn);
+				}
+			}
+		});
+	});
+}
+
 jQuery.fn.lbSlotTable = function(data) {
 	var tab = $('<table class="summary" border="1"/>');
 	// header
@@ -219,7 +250,8 @@ jQuery.fn.loadButton = function () {
 
 					var slot = $('<div class="slot" slot="' + value.slot
 					+ '" build_id="' + value.build_id + '"/>');
-					slot.append($('<h4/>').append(value.slot + ': ' + value.description));
+					slot.append($('<h4/>').append('<span class="alerts"/> ')
+							.append(value.slot + ': ' + value.description));
 					el.append(slot);
 
 					// do show/load only non-hidden slots
@@ -229,6 +261,7 @@ jQuery.fn.loadButton = function () {
 						slot.hide();
 					} else {
 						slot.lbSlotTable(row);
+						slot.find('.alerts').lbSlotDiskSpace();
 					}
 				});
 			} else {
@@ -449,7 +482,9 @@ $(function(){
 	var today = moment();
 	for(var day = 0; day < 7; day++) {
 		var d = moment(today).subtract('days', day);
-		$('#middle').append('<div class="day" day="' + d.format('YYYY-MM-DD') + '"/>');
+		$('#middle').append('<div class="day" ' +
+				            'day="' + d.format('YYYY-MM-DD') + '"' +
+				            'day_id="' + d.format('ddd') + '"/>');
 	}
 
 	$('.day').lbNightly();

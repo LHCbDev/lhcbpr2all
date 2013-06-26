@@ -4,6 +4,10 @@ body {
 	padding: 0;
 }
 
+h4 {
+	vertical-align: baseline;
+}
+
 table.summary td {
 	padding: 0px;
 	text-align: center;
