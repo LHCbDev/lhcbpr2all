@@ -13,7 +13,7 @@ class VTuneModuleTimingHandler(BaseHandler):
     def collectResults(self,directory):
 
         from timing.VTuneModuleParser import VTuneModuleParser
-        tp = VTuneModuleTimingParser(os.path.join(directory,'module.log'));
+        tp = VTuneModuleParser(os.path.join(directory,'module.log'));
 
         # Now saving all the nodes
         for node in tp.getTimingList():
