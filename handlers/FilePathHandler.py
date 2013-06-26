@@ -21,8 +21,6 @@ class FilePathHandler(BaseHandler):
          
         if os.path.exists(run_path) :
            self.saveString("Results", line, "", "FilePath")
-           print 'Path ' + line
-           print '... stored!' 
         else:
            print 'File or path does not exist (file: ' + run_path + ')'
 
