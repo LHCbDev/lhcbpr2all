@@ -43,9 +43,25 @@
     <h1>LHCb Nightly Builds</h1>
   </div>
 
-  <button id="set-filter">Set filtering rules</button>
-
   <div id="middle" class="clear-block cwf grid-fluid">
+
+    <div id="toolbar" class="box">
+      <div><button id="set-filter">Set filtering rules</button></div>
+    </div>
+
+    <div id="links" class="toolbar" style="text-align: center; padding: 0;">
+      <ul>
+        <li><a href="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/cgi-bin/overview_nightlies.py" target="_blank">Configuration overview</a></li>
+        <li><a href="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/editor.html" target="_blank">Configuration editor</a></li>
+        <li><a href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk/configuration.xml" target="_blank">Configuration SVN</a></li>
+        <li><a href="https://lhcb-coverity.cern.ch:8443" target="_blank">LHCb Coverity</a></li>
+        <li><a href="https://sls.cern.ch/sls/service.php?id=LHCb_Nightlies" target="_blank">System sensors</a></li>
+        <li><a href="https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1" target="_blank">Report a bug</a></li>
+      </ul>
+    </div>
+
+    <div id="summaries"/>
+
   </div><!-- / middle -->
 
   <div id="footer">
@@ -57,7 +73,7 @@
   </div><!-- / footer -->
 </div><!-- / container -->
 
-<div id="filter-dialog" title="Filtering rules">
+<div id="filter-dialog" title="Filtering rules" style="display: none;">
   <div id="filter-dialog-tabs">
     <ul>
       <li><a href="#filter-dialog-days">Days</a></li>

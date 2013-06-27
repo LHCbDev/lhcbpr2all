@@ -8,6 +8,27 @@ h4 {
 	vertical-align: baseline;
 }
 
+#links {
+	text-align: center;
+}
+
+#links li {
+	list-style: none;
+	display: inline;
+}
+
+#links a {
+	color: #666;
+	/*border-bottom: 1px solid;*/
+	padding: 1em;
+}
+
+#toolbar {
+	width: 25ex;
+	text-align: center;
+	float: right;
+}
+
 table.summary td {
 	padding: 0px;
 	text-align: center;
