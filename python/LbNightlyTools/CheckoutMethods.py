@@ -21,16 +21,16 @@ from LbNightlyTools.Utils import retry_call as call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 
-def default(desc, rootdir='.'):
+def getpack(desc, rootdir='.'):
     '''
     Checkout the project described by the ProjectDesc 'desc'.
     '''
     from os.path import normpath, join
-    getpack = ['getpack', '--batch', '--no-config']
+    getpack_cmd = ['getpack', '--batch', '--no-config']
     __log__.debug('checking out %s', desc)
-    cmd = getpack + ['-P',
-                     '-H' if desc.version == 'HEAD' else '-r',
-                     desc.name, desc.version]
+    cmd = getpack_cmd + ['-P',
+                         '-H' if desc.version == 'HEAD' else '-r',
+                         desc.name, desc.version]
     call(cmd, cwd=rootdir, retry=3)
 
     prjroot = normpath(join(rootdir, desc.projectDir))
@@ -40,7 +40,7 @@ def default(desc, rootdir='.'):
         __log__.debug('overriding packages')
         for package, version in overrides.items():
             if version:
-                cmd = getpack + [package, version]
+                cmd = getpack_cmd + [package, version]
                 call(cmd, cwd=prjroot, retry=3)
             else:
                 print 'Removing', package
@@ -74,6 +74,28 @@ def git(desc, rootdir='.'):
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
+    __log__.debug('checkout of %s completed in %s', desc, dest)
+
+def svn(desc, rootdir='.'):
+    '''
+    Checkout from an svn repository.
+
+    This function requires mandatory 'url' field in the 'checkout_opts' of the
+    project description.
+    '''
+    if 'url' not in desc.checkout_opts:
+        raise RuntimeError('mandatory checkout_opts "url" is missing')
+    url = desc.checkout_opts['url']
+    __log__.debug('checking out %s from %s', desc, url)
+    dest = os.path.join(rootdir, desc.projectDir)
+    call(['svn', 'checkout', url, dest])
+    makefile = os.path.join(dest, 'Makefile')
+    if not os.path.exists(makefile):
+        f = open(makefile, 'w')
+        f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
+        f.close()
+    else:
+        __log__.debug('using original Makefile')
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
 def copy(desc, rootdir='.'):
@@ -120,3 +142,8 @@ def untar(desc, rootdir='.'):
         f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
         f.close()
     __log__.debug('unpacking of %s from %s completed', desc, src)
+
+
+
+# set default checkout method
+default = getpack # pylint: disable=C0103

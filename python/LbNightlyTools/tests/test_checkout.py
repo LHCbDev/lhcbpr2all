@@ -230,6 +230,24 @@ def test_checkout():
         assert '* master' in branches
 
 
+        shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
+        svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
+        CheckoutMethods.svn(ProjectDesc('Brunel', 'HEAD',
+                                        checkout_opts={'url': svnurl}),
+                            tmpdir)
+        check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        p = Popen(['svn', 'info'],
+                  stdout=PIPE,
+                  cwd=join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'))
+        infos = p.communicate()[0].splitlines()
+        assert 'URL: http://svn.cern.ch/guest/lhcb/Brunel/trunk' in infos
+
+
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'), ignore_errors=True)
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_HEAD'), ignore_errors=True)
         CheckoutMethods.ignore(ProjectDesc('Gaudi', 'v23r6'), tmpdir)
@@ -239,3 +257,4 @@ def test_checkout():
     finally:
         #print tmpdir
         shutil.rmtree(tmpdir, ignore_errors=True)
+
