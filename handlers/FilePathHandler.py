@@ -11,9 +11,9 @@ class FilePathHandler(BaseHandler):
 
     def collectResults(self,directory):
         logfile = 'run.log'
-        run_path = directory + '/' + logfile
+        run_path = os.path.join(directory, logfile)
 
-        loglines = open(logfile, 'r')
+        loglines = open(run_path, 'r')
         lls = loglines.readlines()
         line = lls[len(lls)-3]
         loglines.close()
