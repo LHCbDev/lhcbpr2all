@@ -14,7 +14,7 @@ h4 {
 
 #links li {
 	list-style: none;
-	display: inline;
+	display: inline-block;
 }
 
 #links a {
