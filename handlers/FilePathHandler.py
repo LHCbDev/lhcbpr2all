@@ -13,7 +13,7 @@ class FilePathHandler(BaseHandler):
         logfile = 'run.log'
         run_path = os.path.join(directory, logfile)
 
-        regxp = ".*(/afs/cern.ch/lhcb/software/profiling/releases/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/[\d_]+[\w\d]+/.*)"
+        regxp = ".*(/afs/cern.ch/lhcb/software/profiling/releases/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/[\d_]+[\w\d]+/.*)'"
         path_line = ""
         try:
            loglines = open(run_path, 'r')
