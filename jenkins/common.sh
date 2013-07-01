@@ -36,6 +36,10 @@ echo ===================================================================
 
 if [ -n "${set_config}" ] ; then
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c ${platform}
+  # FIXME: path to the new gdb should be implicit in the build/run-time
+  #        environment
+  # See https://its.cern.ch/jira/browse/LBCORE-151
+  export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
 else
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh
 fi
