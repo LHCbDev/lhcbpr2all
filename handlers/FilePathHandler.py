@@ -27,11 +27,11 @@ class FilePathHandler(BaseHandler):
         except IOError:
            raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
          
-        #if os.path.exists(run_path) :
-           #self.saveString("Path", path_line, "Results", "JobInfo")
-           #print 'Path ', path_line, ' added.'
-        #else:
-           #print 'File or path does not exist (file: ' + run_path + ')'
+        if os.path.exists(run_path) :
+           self.saveString("Path", path_line, "Results", "JobInfo")
+           print 'Path ', path_line, ' added.'
+        else:
+           print 'File or path does not exist (file: ' + run_path + ')'
 
 if __name__ == "__main__":
     fh = FilePathHandler()
