@@ -13,7 +13,7 @@ class FilePathHandler(BaseHandler):
         logfile = 'run.log'
         run_path = os.path.join(directory, logfile)
 
-        regxp = ".*(/afs/cern.ch/lhcb/software/profiling/releases/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/[\d_]+[\w\d]+/.*)'"
+        regxp = ".*/afs/cern.ch/lhcb/software/profiling/releases(/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/[\d_]+[\w\d]+/.*)'"
         path_line = ""
         try:
            loglines = open(run_path, 'r')
@@ -27,8 +27,9 @@ class FilePathHandler(BaseHandler):
            raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
          
         if os.path.exists(run_path) :
-           self.saveString("Path", path_line, "Results", "JobInfo")
-           print 'Path ', path_line, ' added.'
+           path = "$AFS_PROF" + path_line
+           self.saveString("Path", path, "Results", "JobInfo")
+           print path
         else:
            print 'File or path does not exist (file: ' + run_path + ')'
 
