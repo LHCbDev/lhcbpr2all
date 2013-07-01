@@ -13,17 +13,26 @@ class FilePathHandler(BaseHandler):
         logfile = 'run.log'
         run_path = os.path.join(directory, logfile)
 
-        loglines = open(run_path, 'r')
-        lls = loglines.readlines()
-        line = lls[len(lls)-3]
-        loglines.close()
+        regxp = ".*(/afs/cern.ch/lhcb/software/profiling/releases/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/[\d_]+[\w\d]+/.*)"
+        path_line = ""
+        try:
+           loglines = open(run_path, 'r')
+           for l in loglines.readlines():
+              m = re.match(regxp, l)
+              if m != None:
+                 path_line = m.group(1)
+                 break
+           print 'Path ', path_line, ' added.'
+           loglines.close()
+        except IOError:
+           raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
          
-        if os.path.exists(run_path) :
-           self.saveString("Path", line, "Results", "JobInfo")
-           print 'Path ', line, ' added.'
-        else:
-           print 'File or path does not exist (file: ' + run_path + ')'
+        #if os.path.exists(run_path) :
+           #self.saveString("Path", path_line, "Results", "JobInfo")
+           #print 'Path ', path_line, ' added.'
+        #else:
+           #print 'File or path does not exist (file: ' + run_path + ')'
 
 if __name__ == "__main__":
     fh = FilePathHandler()
-    fh.collectResults('/afs/cern.ch/user/s/slohn')
+    fh.collectResults('./')
