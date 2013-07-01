@@ -22,7 +22,6 @@ class FilePathHandler(BaseHandler):
               if m != None:
                  path_line = m.group(1)
                  break
-           print 'Path ', path_line, ' added.'
            loglines.close()
         except IOError:
            raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
