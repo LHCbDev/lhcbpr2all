@@ -32,18 +32,21 @@ h4 {
 table.summary td {
 	padding: 0px;
 	text-align: center;
+	background-color: #F2F8FB;
 }
 table.summary th {
 	padding: 0.2em 0.5em;
 	text-align: center;
+	background-color: #E3F4FB;
 }
-table.summary tr.disabled {
+table.summary tr.disabled td {
 	color: grey;
-	background-color: lightGrey;
+	background-color: lightgrey;
 }
 table.summary tr.disabled th {
 	color: grey;
 	font-weight: normal;
+	background-color: lightgrey;
 }
 
 table.results {
@@ -55,9 +58,13 @@ table.results td {
 	border: none;
 	border-right: 1px solid #EAEAEA;;
 }
-td.success {background-color: #00F900;}
-td.warning {background-color: #FFB600;}
-td.failure {background-color: #FF1C00;}
+table.summary td.success {background-color: #00F900;}
+table.summary td.warning {background-color: #FFB600;}
+table.summary td.failure {background-color: #FF1C00;}
+
+table.results a {
+	color: black;
+}
 
 div.day {
 	margin-top: 2em;
