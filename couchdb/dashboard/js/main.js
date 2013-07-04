@@ -482,7 +482,7 @@ $(function(){
 	var today = moment();
 	for(var day = 0; day < 7; day++) {
 		var d = moment(today).subtract('days', day);
-		$('#middle').append('<div class="day" ' +
+		$('#summaries').append('<div class="day" ' +
 				            'day="' + d.format('YYYY-MM-DD') + '"' +
 				            'day_id="' + d.format('ddd') + '"/>');
 	}

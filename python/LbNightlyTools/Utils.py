@@ -241,3 +241,36 @@ class Dashboard(object):
             self._log.info('removing %s', row.id)
             del self.db[row.id]
         self._log.info('removed %d documents', len(view))
+
+    def publishFromFiles(self, path):
+        '''
+        Publish the JSON objects from a file of from all the files '*.json' in a
+        directory.
+        '''
+        if os.path.isfile(path):
+            files = [path]
+        else:
+            files = [os.path.join(path, f)
+                     for f in os.listdir(path) if f.endswith('.json')]
+        for f in files:
+            n = os.path.basename(f).replace('.json','')
+            if n not in self.db:
+                print f
+                self.publish(json.load(open(f)))
+
+    def publishFromArtifacts(self, day=None):
+        '''
+        Push the JSON files in /data/artifacts for the given day to the
+        dashboard, if not already present.
+
+        @param day: anything that can be converted to a string in the format
+                    'YYYY-MM-DD' or the weekday abbreviation [default is today].
+        '''
+        if day is None:
+            from datetime import date
+            day = date.today()
+        artifacts_root = os.path.join(os.path.sep, 'data', 'artifacts')
+        for slot in os.listdir(artifacts_root):
+            slot_dir = os.path.join(artifacts_root, slot, str(day), 'db')
+            if os.path.isdir(slot_dir):
+                self.publishFromFiles(slot_dir)
