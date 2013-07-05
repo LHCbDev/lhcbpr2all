@@ -4,6 +4,7 @@
 /sources
 /artifacts
 /configs
+/indexes
 /tmp
 *.backup
 *~
