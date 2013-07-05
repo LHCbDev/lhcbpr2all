@@ -205,11 +205,11 @@ class Script(LbUtils.Script.PlainScript):
             ensureDirs([index_dir])
 
             glimpseindex = Popen(['glimpseindex', '-H', index_dir, '-F'],
-                                  cwd=proj_root,
+                                  cwd=build_dir,
                                   stdin=PIPE,
                                   stdout=glimpse_stdout)
             for f in filesToIndex(proj_root):
-                glimpseindex.stdin.write(f + '\n')
+                glimpseindex.stdin.write(join(proj.dir, f) + '\n')
             glimpseindex.stdin.close()
             glimpseindex.wait()
 
