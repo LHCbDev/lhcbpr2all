@@ -251,7 +251,9 @@ jQuery.fn.loadButton = function () {
 					var slot = $('<div class="slot" slot="' + value.slot
 					+ '" build_id="' + value.build_id + '"/>');
 					slot.append($('<h4/>').append('<span class="alerts"/> ')
-							.append(value.slot + ': ' + value.description));
+							.append('<table><tr><td nowrap>' + value.slot +
+									':</td><td>' + value.description +
+									'</td></tr></table>'));
 					el.append(slot);
 
 					// do show/load only non-hidden slots
