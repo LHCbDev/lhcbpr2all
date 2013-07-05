@@ -55,3 +55,20 @@ def addDashboardOptions(parser):
     parser.add_option_group(group)
     parser.set_defaults(submit=False)
     return parser
+
+def expandTokensInOptions(options, opt_names, **kwargs):
+    '''
+    Given an options instance, the list of option names, and the list of
+    keywords to replace, replace the options with the correct expanded stings.
+
+    >>> from optparse import Values
+    >>> options = Values()
+    >>> options.name = '{token}'
+    >>> expandTokensInOptions(options, ['name'], token='Hello')
+    >>> options.name
+    'Hello'
+    '''
+    for opt_name in opt_names:
+        val = getattr(options, opt_name)
+        if val:
+            setattr(options, opt_name, val.format(**kwargs))

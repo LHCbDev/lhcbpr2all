@@ -313,6 +313,7 @@ class Script(LbUtils.Script.PlainScript):
         """ User code place holder """
         from os.path import join
         from LbNightlyTools.Utils import Dashboard
+        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -326,12 +327,8 @@ class Script(LbUtils.Script.PlainScript):
 
         build_dir = join(os.getcwd(), 'tmp', 'checkout')
 
-        # replace tokens in the options
-        expanded_tokens = {'slot': slot.name, 'timestamp': timestamp}
-        for opt_name in ['build_id', 'artifacts_dir']:
-            val = getattr(self.options, opt_name)
-            if val:
-                setattr(self.options, opt_name, val.format(**expanded_tokens))
+        expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
+                              slot=slot.name, timestamp=timestamp)
 
         artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
 

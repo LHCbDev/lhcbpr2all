@@ -365,6 +365,7 @@ class Script(LbUtils.Script.PlainScript):
         Initialize variables.
         '''
         from os.path import join, dirname, basename
+        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
 
         opts = self.options
 
@@ -379,13 +380,9 @@ class Script(LbUtils.Script.PlainScript):
         self.starttime = datetime.now()
         self.timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
-        # replace tokens in the options
-        expanded_tokens = {'slot': self.config[u'slot'],
-                           'timestamp': self.timestamp}
-        for opt_name in ['build_id', 'artifacts_dir', 'rsync_dest']:
-            val = getattr(opts, opt_name)
-            if val:
-                setattr(opts, opt_name, val.format(**expanded_tokens))
+        expandTokensInOptions(opts, ['build_id', 'artifacts_dir', 'rsync_dest'],
+                              slot=self.config[u'slot'],
+                              timestamp=self.timestamp)
 
         self.build_dir = join(os.getcwd(), 'build')
         self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)

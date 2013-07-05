@@ -253,8 +253,8 @@ class Dashboard(object):
             files = [os.path.join(path, f)
                      for f in os.listdir(path) if f.endswith('.json')]
         for f in files:
-            n = os.path.basename(f).replace('.json','')
-            if n not in self.db:
+            name = os.path.basename(f).replace('.json','')
+            if name not in self.db:
                 print f
                 self.publish(json.load(open(f)))
 

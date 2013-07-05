@@ -13,11 +13,11 @@ Module supporting the script to index the builds using glimpseindex.
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
-import logging
 import shutil
 import os
 import re
-from hashlib import sha1
+import logging
+from hashlib import sha1 # pylint: disable=E0611
 from datetime import date
 from subprocess import Popen, PIPE
 
@@ -156,6 +156,7 @@ class Script(LbUtils.Script.PlainScript):
     def main(self):
         """ User code place holder """
         from os.path import join
+        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -172,12 +173,8 @@ class Script(LbUtils.Script.PlainScript):
         starttime = datetime.now()
         timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
-        # replace tokens in the options
-        expanded_tokens = {'slot': slot, 'timestamp': timestamp}
-        for opt_name in ['build_id', 'artifacts_dir']:
-            val = getattr(self.options, opt_name)
-            if val:
-                setattr(self.options, opt_name, val.format(**expanded_tokens))
+        expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
+                              slot=slot.name, timestamp=timestamp)
 
         artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
 
