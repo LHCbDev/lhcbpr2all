@@ -6,6 +6,8 @@ body {
 
 h4 {
 	vertical-align: baseline;
+	margin-bottom: 0.5em;
+	font-size: 140%;
 }
 
 #links {
@@ -58,9 +60,9 @@ table.results td {
 	border: none;
 	border-right: 1px solid #EAEAEA;;
 }
-table.summary td.success {background-color: #00F900;}
-table.summary td.warning {background-color: #FFB600;}
-table.summary td.failure {background-color: #FF1C00;}
+table.summary td.success {background-color: #66FF66;}
+table.summary td.warning {background-color: #FFCC55;}
+table.summary td.failure {background-color: #FF6666;}
 
 table.results a {
 	color: black;
@@ -109,7 +111,7 @@ div.slots {
 }
 
 .day th.lagging {
-	background-color: red;
+	background-color: #FF6666;
 }
 
 .day-name {
