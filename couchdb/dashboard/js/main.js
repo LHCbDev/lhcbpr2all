@@ -409,7 +409,7 @@ function applyFilters() {
 		}
 	});
 
-	$.cookie("filters", JSON.stringify(filters));
+	$.cookie("filters", JSON.stringify(filters), {expires: 365});
 }
 
 function prepareFilterDialog() {
