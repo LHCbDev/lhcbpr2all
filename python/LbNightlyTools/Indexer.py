@@ -174,7 +174,7 @@ class Script(LbUtils.Script.PlainScript):
         timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
         expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
-                              slot=slot.name, timestamp=timestamp)
+                              slot=slot, timestamp=timestamp)
 
         artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
 
