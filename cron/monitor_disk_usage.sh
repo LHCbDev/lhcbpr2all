@@ -28,7 +28,7 @@ export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
 slots_on_afs=$(svn cat svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/slots_on_afs.txt | grep -v '^ *#')
 #slots_on_afs=$(cat slots_on_afs.txt | grep -v '^ *#')
 
-logfile=$LHCBNIGHTLIES/www/logs/install_slots.log
+logfile=$LHCBNIGHTLIES/www/logs/monitor_disk_usage.log
 # install the slots
 echo "$(date): checking disk usage ($day)" >> $logfile 2>&1
 cd $LHCBNIGHTLIES
