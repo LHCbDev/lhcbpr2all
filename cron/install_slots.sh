@@ -33,5 +33,6 @@ logfile=$LHCBNIGHTLIES/www/logs/install_slots.log
 echo "$(date): installing slots for $day" >> $logfile 2>&1
 cd $LHCBNIGHTLIES
 for slot in $slots_on_afs ; do
+    echo "$(date):   - $slot" >> $logfile 2>&1
     lbn-install $slot $day >> $logfile 2>&1
 done
