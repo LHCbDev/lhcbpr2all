@@ -39,7 +39,10 @@ INCLUSIONS = [r'.*/requirements$', r'.*/scripts/[^.]*$'
 
 EXCLUSIONS = [r'.*_confDb\.py$', r'.*Conf\.py$', r'InstallArea.*\.cmake$',
               r'CTest.*\.cmake', r'SlotConfig\.cmake',
-              r'cache_preload\.cmake']
+              r'cache_preload\.cmake',
+              r'(.*/)?(set|clean)up\.c?sh$',
+              r'.*_dict\.cpp$',
+              r'.*/genConf/.*']
 
 __log__ = logging.getLogger(__name__)
 
