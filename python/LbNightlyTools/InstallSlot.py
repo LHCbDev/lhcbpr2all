@@ -307,6 +307,7 @@ class Script(LbUtils.Script.PlainScript):
                 self.log.info('nothing to install')
 
 
+            index_installed = False
             for f in required_files:
                 if install(url + '/' + f, dest): # 0 or None mean success
                     raise RuntimeError('error installing %s' % f)
@@ -315,8 +316,11 @@ class Script(LbUtils.Script.PlainScript):
                 f = open(history_file, 'w')
                 f.writelines(['%s:%s\n' % i for i in sorted(installed.items())])
                 f.close()
+                if 'index' in f:
+                    index_installed = True
 
-            fixGlimpseIndexes(dest)
+            if index_installed:
+                fixGlimpseIndexes(dest)
 
         except Exception, ex:
             self.log.error('Fatal error: %s' % ex)
