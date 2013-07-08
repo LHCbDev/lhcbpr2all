@@ -180,6 +180,30 @@ def requiredPackages(files, projects=None, platforms=None, skip=None):
                 if filename not in skip:
                     yield filename
 
+def fixGlimpseIndexes(path):
+    '''
+    Look for files called .glimpse_filenames in the specified directory and
+    replace the relative paths with absolute ones.
+    '''
+    log = logging.getLogger('fixGlimpseIndexes')
+    path = os.path.abspath(path)
+    log.debug('Fixing .glimpse_filenames in %s', path)
+    for root, dirs, files in os.walk(path):
+        if '.glimpse_filenames' in files:
+            filename = os.path.join(root, '.glimpse_filenames')
+            log.debug(' - %s', filename)
+            f = open(filename)
+            lines = f.readlines()
+            f.close()
+            # join the current directory on all the lines except the first one
+            # (it's a number)
+            lines = lines[:1] + [os.path.join(root, l) for l in lines[1:]]
+            f = open(filename, 'w')
+            f.writelines(lines)
+            f.close()
+            # do not enter subdirectories (we assume no nested indexes)
+            dirs[:] = []
+
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -291,6 +315,8 @@ class Script(LbUtils.Script.PlainScript):
                 f = open(history_file, 'w')
                 f.writelines(['%s:%s\n' % i for i in sorted(installed.items())])
                 f.close()
+
+            fixGlimpseIndexes(dest)
 
         except Exception, ex:
             self.log.error('Fatal error: %s' % ex)
