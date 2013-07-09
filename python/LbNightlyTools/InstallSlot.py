@@ -313,9 +313,9 @@ class Script(LbUtils.Script.PlainScript):
                     raise RuntimeError('error installing %s' % f)
                 installed[f] = datetime.now().isoformat()
                 # record what has been installed so far
-                f = open(history_file, 'w')
-                f.writelines(['%s:%s\n' % i for i in sorted(installed.items())])
-                f.close()
+                histfile = open(history_file, 'w')
+                histfile.writelines(['%s:%s\n' % i for i in sorted(installed.items())])
+                histfile.close()
                 if 'index' in f:
                     index_installed = True
 
