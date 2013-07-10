@@ -51,13 +51,13 @@ function spinDecrease(day) {
 }
 
 function jenkinsIcon(build_id) {
-	return $('<a href="' + JENKINS_JOB_URL + build_id + '/">')
+	return $('<a href="' + JENKINS_JOB_URL + build_id + '" target="_blank"/>')
 	  .append('<img src="images/jenkins_16.png" alt="Jenkins build" ' +
 			  'title="Jenkins build"/>').tooltip();
 }
 
 function lemonIcon(hostname) {
-	return $('<a href="' + LEMON_SEARCH_PREFIX + hostname + '">')
+	return $('<a href="' + LEMON_SEARCH_PREFIX + hostname + '" target="_blank">')
 	  .append('<img src="images/lemon_16.png" alt="Lemon stats" ' +
 			  'title="Lemon stats for ' + hostname + '"/>').tooltip();
 }
@@ -159,7 +159,7 @@ jQuery.fn.lbSlotTable = function(data) {
 						var b = summ.find('.build');
 						b.html('<a href="'
 								+ buildURL(key[0], key[1], key[2], value.project)
-								+ '">build</a>');
+								+ '" target="_blank">build</a>');
 						if (value.build.errors) {
 							b.addClass('failure').append(' (' + value.build.errors + ')');
 						} else if (value.build.warnings) {
@@ -172,7 +172,7 @@ jQuery.fn.lbSlotTable = function(data) {
 						var t = summ.find('.tests');
 						t.html('<a href="'
 								+ testsURL(key[0], key[1], key[2], value.project)
-								+ '">tests</a>');
+								+ '" target="_blank">tests</a>');
 						if (value.tests.failed) {
 							t.addClass('failure').append(' (' + value.tests.failed + ')');
 						} else if (!value.tests.total) {
