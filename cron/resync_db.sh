@@ -10,7 +10,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# Record disk usage in the dasboard.
+# Ensure that the dasboard's database contains all the summaries from the
+# builds.
 
 # prepare environment
 rootdir=$(dirname $0)/..
@@ -19,19 +20,9 @@ cd $rootdir
 . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --silent
 
 . setup.sh
-day=$(date +%a)
+day=$(date -I)
 
-# hard-coded because it may point to CVMFS
-export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
-
-# get the list of slots
-slots_on_afs=$(svn cat svn+ssh://svn.cern.ch/reps/lhcb/LHCbNightlyConf/trunk/slots_on_afs.txt | grep -v '^ *#')
-#slots_on_afs=$(cat slots_on_afs.txt | grep -v '^ *#')
-
-logfile=$LHCBNIGHTLIES/www/logs/monitor_disk_usage.log
+logfile=$LHCBNIGHTLIES/www/logs/resync_db.log
 # install the slots
-echo "$(date): checking disk usage ($day)" >> $logfile 2>&1
-cd $LHCBNIGHTLIES
-for slot in $slots_on_afs ; do
-    lbn-monitor-disk --slot $slot --build-id $day $slot/$day >> $logfile 2>&1
-done
+echo "$(date): synchronizing dashboard database" >> $logfile 2>&1
+lbn-db-sync $(date -I) >> $logfile 2>&1

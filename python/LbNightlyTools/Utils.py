@@ -142,6 +142,8 @@ class Dashboard(object):
     COUCHDB_DB = '_db'
     CRED_FILE = os.path.expanduser(os.path.join('~', 'private',
                                                 'couchdb-admin'))
+    ARTIFACTS_ROOT = os.path.join(os.path.sep, 'data', 'artifacts')
+
     def __init__(self, credentials=None, dumpdir=None, submit=True):
         '''
         @param credentials: pair with (username, password) of a valid account on
@@ -269,8 +271,7 @@ class Dashboard(object):
         if day is None:
             from datetime import date
             day = date.today()
-        artifacts_root = os.path.join(os.path.sep, 'data', 'artifacts')
-        for slot in os.listdir(artifacts_root):
-            slot_dir = os.path.join(artifacts_root, slot, str(day), 'db')
+        for slot in os.listdir(self.ARTIFACTS_ROOT):
+            slot_dir = os.path.join(self.ARTIFACTS_ROOT, slot, str(day), 'db')
             if os.path.isdir(slot_dir):
                 self.publishFromFiles(slot_dir)
