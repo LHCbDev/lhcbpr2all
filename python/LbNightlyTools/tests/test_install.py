@@ -27,7 +27,12 @@ def test_fixGlimpseIndexes():
     dst = join(tmpd, 'fix_glimpse')
     shutil.copytree(src, dst)
 
-    InstallSlot.fixGlimpseIndexes(dst)
+    untouched = set([join(dst, 'untouched', '.glimpse_filenames')])
+
+    # FIXME: this is equivalent to the code in the script, but we should test
+    #        the real code
+    InstallSlot.fixGlimpseIndexes(f for f in InstallSlot.findGlimpseFilenames(dst)
+                                  if f not in untouched)
 
 
     expected = '''4
@@ -59,5 +64,14 @@ path/file2
 
     found = open(join(dst, 'levelA', 'levelB', '.glimpse_filenames')).read()
     #print 'levelA/levelB'
+    #print found
+    assert found == expected
+
+    expected = '''1
+untouched
+'''
+
+    found = open(join(dst, 'untouched', '.glimpse_filenames')).read()
+    #print 'untouched'
     #print found
     assert found == expected
