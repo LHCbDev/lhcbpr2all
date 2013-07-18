@@ -180,29 +180,39 @@ def requiredPackages(files, projects=None, platforms=None, skip=None):
                 if filename not in skip:
                     yield filename
 
-def fixGlimpseIndexes(path):
+def findGlimpseFilenames(path):
     '''
-    Look for files called .glimpse_filenames in the specified directory and
-    replace the relative paths with absolute ones.
+    Give a top directory, return the iterator over all the .glimpse_filenames
+    files that can be found.
     '''
-    log = logging.getLogger('fixGlimpseIndexes')
+    log = logging.getLogger('findGlimpseFilenames')
     path = os.path.abspath(path)
-    log.debug('Fixing .glimpse_filenames in %s', path)
+    log.debug('Looking for .glimpse_filenames in %s', path)
     for root, dirs, files in os.walk(path):
         if '.glimpse_filenames' in files:
-            filename = os.path.join(root, '.glimpse_filenames')
-            log.debug(' - %s', filename)
-            f = open(filename)
-            lines = f.readlines()
-            f.close()
-            # join the current directory on all the lines except the first one
-            # (it's a number)
-            lines = lines[:1] + [os.path.join(root, l) for l in lines[1:]]
-            f = open(filename, 'w')
-            f.writelines(lines)
-            f.close()
+            yield os.path.join(root, '.glimpse_filenames')
             # do not enter subdirectories (we assume no nested indexes)
             dirs[:] = []
+
+def fixGlimpseIndexes(iterable):
+    '''
+    Give a list of of paths to .glimpse_filenames files, replace the relative
+    paths with absolute ones.
+    '''
+    log = logging.getLogger('fixGlimpseIndexes')
+    log.debug('Fixing .glimpse_filenames')
+    for filename in iterable:
+        log.debug(' - %s', filename)
+        f = open(filename)
+        lines = f.readlines()
+        f.close()
+        root = os.path.dirname(filename)
+        # join the file directory on all the lines except the first one
+        # (it's a number)
+        lines = lines[:1] + [os.path.join(root, l) for l in lines[1:]]
+        f = open(filename, 'w')
+        f.writelines(lines)
+        f.close()
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -306,6 +316,8 @@ class Script(LbUtils.Script.PlainScript):
             else:
                 self.log.info('nothing to install')
 
+            # search for indexes already present so that we can skip fixing them
+            pre_existing_indexes = set(findGlimpseFilenames(dest))
 
             index_installed = False
             for f in required_files:
@@ -320,7 +332,8 @@ class Script(LbUtils.Script.PlainScript):
                     index_installed = True
 
             if index_installed:
-                fixGlimpseIndexes(dest)
+                fixGlimpseIndexes(f for f in findGlimpseFilenames(dest)
+                                  if f not in pre_existing_indexes)
 
         except Exception, ex:
             self.log.error('Fatal error: %s' % ex)
