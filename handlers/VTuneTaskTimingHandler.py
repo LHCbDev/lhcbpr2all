@@ -17,13 +17,14 @@ class VTuneTaskTimingHandler(BaseHandler):
 
         # Now saving all the nodes
         for node in tp.getAllSorted():
-            self.saveFloat(node.name, node.value, "Produced by VTune", "TaskTiming")
-            self.saveInt(node.name + "_count", node.entries, "Produced by VTune", "TimingCount")
-            self.saveInt(node.name + "_rank", node.rank, "Produced by VTune", "TimingRank")
+            # self.saveFloat(node.name, node.value, "Processing per Event", "TaskTiming")
+            self.saveFloat(node.name, node.total, "Total processing Time", "TaskTiming")
+            self.saveInt(node.name + "_count", node.entries, "Events processed", "TimingCount")
+            self.saveInt(node.name + "_rank", node.rank, "Level of Alg. in call stack", "TimingRank")
             if node.parent != None:
-                self.saveString(node.name + "_parent", node.parent.name, "Produced by VTune", "TimingTree")
+                self.saveString(node.name + "_parent", node.parent.name, "Parent name of Alg.", "TimingTree")
             else:
-                self.saveString(node.name + "_parent", "None", "Produced by VTune", "TimingTree")
-            self.saveInt(node.name + "_id", node.id, "Produced by VTune", "TimingID")
+                self.saveString(node.name + "_parent", "None", "Root", "TimingTree")
+            self.saveInt(node.name + "_id", node.id, "Id in Alg. list", "TimingID")
 
 

@@ -75,7 +75,7 @@ class VTuneTimingParser:
 
                     id = id + 1
                     if nb_of_evts > 0:
-                       node = Node(id, level, names[len(names)-1], float(m.group(2).strip())/nb_of_evts, nb_of_evts, parent)
+                       node = Node(id, level, names[len(names)-1], float(m.group(2).strip()), nb_of_evts, parent)
                     try:
                         lastparent[level] = node
                     except IndexError, e:
