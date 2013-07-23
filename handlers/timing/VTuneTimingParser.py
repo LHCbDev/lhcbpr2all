@@ -70,7 +70,6 @@ class VTuneTimingParser:
                             nb_of_evts = i[1]
                             break
 
-                    print "Names:", names
                     print "N: ", names[len(names)-1], "V: ", float(m.group(2)), "L: ", level, "E: ", nb_of_evts
 
                     id = id + 1
