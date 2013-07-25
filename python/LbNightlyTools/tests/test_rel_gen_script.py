@@ -15,17 +15,10 @@
 from LbNightlyTools import ReleaseConfigGenerator
 
 import os
-import shutil
-import re
 import json
 
 from pprint import pprint
-from subprocess import call
-from tempfile import mkdtemp, mkstemp
-from os.path import normpath, join, isfile
-from LbNightlyTools.Utils import ensureDirs
-
-_testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
+from tempfile import mkstemp
 
 _env_bk = dict(os.environ)
 
