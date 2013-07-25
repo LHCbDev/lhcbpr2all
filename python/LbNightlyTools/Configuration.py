@@ -157,7 +157,13 @@ def save(dest, config):
     '''
     Helper function to dump the current configuration to a file.
     '''
-    import json
     f = open(dest, 'wb')
-    json.dump(config, f, sort_keys=True, indent=2, separators=(',', ': '))
+    f.write(configToString(config))
     f.close()
+
+def configToString(config):
+    '''
+    Convert the configuration to a string.
+    '''
+    import json
+    return json.dumps(config, sort_keys=True, indent=2, separators=(',', ': '))
