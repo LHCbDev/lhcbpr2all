@@ -17,7 +17,7 @@
 lbn-get-configs
 
 if [ "${slot}" = "lhcb-release" ] ; then
-  lbn-gen-release-config -o configs/${slot}.json ${projects_list}
+  lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
 fi
 
 if [ -e configs/${slot}.json ] ; then

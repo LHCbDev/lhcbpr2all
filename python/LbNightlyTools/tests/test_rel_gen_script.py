@@ -166,3 +166,24 @@ def test_stdout():
 
     finally:
         os.remove(tmpname)
+
+def test_with_cmt():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = ReleaseConfigGenerator.Script()
+        s.run(['--cmt', '-o', tmpname, 'LHCb', 'v36r1'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'}]
+        assert output['USE_CMT'] is True
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
