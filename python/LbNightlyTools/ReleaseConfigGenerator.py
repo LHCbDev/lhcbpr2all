@@ -15,6 +15,24 @@ versions.
 '''
 import LbNightlyTools.Configuration
 
+
+ERR_EXCEPT = ["distcc\\[",
+              "::error::",
+              "^ *Error *$"]
+WARN_EXCEPT = [".*/boost/.*",
+               "^--->> genreflex: WARNING:.*",
+               " note:",
+               "distcc\\[",
+               "Warning\\:\\ The\\ tag\\ (use-distcc|no-pyzip|"
+                 "LCG\\_NIGHTLIES\\_BUILD|COVERITY|"
+                 "use\\-dbcompression)\\ is\\ not\\ used.*",
+               ".*#CMT---.*Warning: Structuring style used.*",
+               ".*/Boost/.*warning:.*",
+               ".*/ROOT/.*warning:.*",
+               ".*stl_algo.h:[0-9]+: warning: array subscript is above array "
+                 "bounds"]
+
+
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -62,7 +80,8 @@ class Script(LbUtils.Script.PlainScript):
             # we check out Gaudi from git
             if proj == 'Gaudi':
                 project['checkout'] = 'git'
-                project['checkout_opts'] = {"url": "http://git.cern.ch/pub/gaudi",
+                project['checkout_opts'] = {"url":
+                                              "http://git.cern.ch/pub/gaudi",
                                             "commit": "GAUDI/GAUDI_" + vers}
 
             projects.append(project)
@@ -73,18 +92,8 @@ class Script(LbUtils.Script.PlainScript):
                   'projects': projects,
                   'USE_CMT': self.options.cmt,
                   'no_patch': True,
-                  'error_exceptions': ["distcc\\[",
-                                       "::error::",
-                                       "^ *Error *$"],
-                  'warning_exceptions': [".*/boost/.*",
-                                         "^--->> genreflex: WARNING:.*",
-                                         " note:",
-                                         "distcc\\[",
-                                         "Warning\\:\\ The\\ tag\\ (use-distcc|no-pyzip|LCG\\_NIGHTLIES\\_BUILD|COVERITY|use\\-dbcompression)\\ is\\ not\\ used.*",
-                                         ".*#CMT---.*Warning: Structuring style used.*",
-                                         ".*/Boost/.*warning:.*",
-                                         ".*/ROOT/.*warning:.*",
-                                         ".*stl_algo.h:[0-9]+: warning: array subscript is above array bounds"],
+                  'error_exceptions': ERR_EXCEPT,
+                  'warning_exceptions': WARN_EXCEPT,
                   # FIXME: we need a better way to define the default platforms
                   'default_platforms': ['x86_64-slc5-gcc46-opt',
                                         'x86_64-slc5-gcc46-dbg',
@@ -108,8 +117,8 @@ class Script(LbUtils.Script.PlainScript):
         try:
             # prepare the configuration dictionary
             config = self.genConfig()
-        except RuntimeError, x:
-            self.parser.error(str(x))
+        except RuntimeError, ex:
+            self.parser.error(str(ex))
 
 
         if self.options.output != '-':
