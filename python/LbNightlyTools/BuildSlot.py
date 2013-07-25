@@ -249,6 +249,10 @@ class Script(LbUtils.Script.PlainScript):
                          help='prevent use of distcc (used by default if '
                               'present on the system)')
 
+        group.add_option('--no-unpack',
+                         action='store_true',
+                         help='assume that the sources are already present')
+
         group.add_option('--coverity',
                          action='store_true',
                          help='enable special Coverity static analysis on the '
@@ -545,16 +549,18 @@ class Script(LbUtils.Script.PlainScript):
                 shutil.rmtree(self.build_dir)
                 ensureDirs([self.build_dir])
 
-        self.log.info('Preparing build directory...')
-        for f in os.listdir(self.artifacts_dir):
-            if f.endswith('.tar.bz2'):
-                f = os.path.join(self.artifacts_dir, f)
-                self.log.info('  unpacking %s', f)
-                # do not overwrite existing sources when unpacking
-                # (we must preserve user changes, anyway we have the --clean
-                # option)
-                call(['tar', '-x', '--no-overwrite-dir', '--keep-old-files',
-                      '-f', f], cwd=self.build_dir)
+        if not self.options.no_unpack:
+            self.log.info('Preparing build directory...')
+            for f in os.listdir(self.artifacts_dir):
+                if f.endswith('.tar.bz2'):
+                    f = os.path.join(self.artifacts_dir, f)
+                    self.log.info('  unpacking %s', f)
+                    # do not overwrite existing sources when unpacking
+                    # (we must preserve user changes, anyway we have the
+                    # --clean option)
+                    call(['tar', '-x',
+                          '--no-overwrite-dir', '--keep-old-files',
+                          '-f', f], cwd=self.build_dir)
 
         project_xml = genProjectXml(self.config[u'slot'], self.sorted_projects)
         project_xml_name = os.path.join(self.build_dir, 'Project.xml')
