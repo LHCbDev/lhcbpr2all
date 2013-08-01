@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.10: http://docutils.sourceforge.net/" />
+<title>Nightly Builds Operation Manual</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7514 2012-09-14 14:27:12Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="nightly-builds-operation-manual">
+<h1 class="title">Nightly Builds Operation Manual</h1>
+
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a><ul>
+<li><a class="reference internal" href="#logical-organization" id="id2">Logical organization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration" id="id3">Configuration</a></li>
+<li><a class="reference internal" href="#scheduling" id="id4">Scheduling</a></li>
+<li><a class="reference internal" href="#checkout-build-and-test" id="id5">Checkout, Build and Test</a></li>
+<li><a class="reference internal" href="#dashboard" id="id6">Dashboard</a></li>
+<li><a class="reference internal" href="#common-tasks" id="id7">Common Tasks</a><ul>
+<li><a class="reference internal" href="#create-a-new-slot" id="id8">Create a New Slot</a></li>
+<li><a class="reference internal" href="#stop-a-build" id="id9">Stop a Build</a><ul>
+<li><a class="reference internal" href="#stop-one-platform" id="id10">Stop One Platform</a></li>
+<li><a class="reference internal" href="#stop-the-whole-slot" id="id11">Stop the Whole Slot</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#trigger-a-rebuild" id="id12">Trigger a Rebuild</a><ul>
+<li><a class="reference internal" href="#full-rebuild" id="id13">Full Rebuild</a></li>
+<li><a class="reference internal" href="#no-checkout" id="id14">No Checkout</a></li>
+<li><a class="reference internal" href="#one-platform" id="id15">One Platform</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h1><a class="toc-backref" href="#id1">Introduction</a></h1>
+<p>The LHCb Nightly Build System is based on a few subsystems:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://jenkins-ci.org/">Jenkins</a>, for scheduling</li>
+<li>custom scripts, for checkout, build and test</li>
+<li><a class="reference external" href="http://couchdb.apache.org/">CouchDB</a>, for the dashboard</li>
+</ul>
+<div class="section" id="logical-organization">
+<h2><a class="toc-backref" href="#id2">Logical organization</a></h2>
+<p>The LHCb Nightly builds are organized in <em>slots</em>, <em>projects</em> and <em>platforms</em>.</p>
+<p>A <em>slot</em> is a named set of <em>projects</em> meant to test the build of the software
+under some well defined conditions.  For example, the slot <em>lhcb-head</em> is used
+to build the latest version in the repository of all the LHCb software projects
+on top of a released version version of Gaudi (and the externals), while
+<em>lhcb-cmake</em> is used to test the build with CMake of the projects already
+converted to it.</p>
+<p>A <em>project</em> in a <em>slot</em> is a well defined version of a LHCb software project,
+which could be a <em>tagged</em> version (as it can be released) or the latest version
+in the repository (using the special version tag <cite>HEAD</cite>). A <em>project</em> can also
+be tuned by changing the version used for one (or more) of its packages with
+respect to the one that is implied by the specified version of the project (for
+example use a released version of a package in the <cite>HEAD</cite> version of the project
+or vice versa).</p>
+<p>Each <em>project</em> in each <em>slot</em> is built and tested on one or more <em>platforms</em>,
+i.e. combinations of CPU architecture, Operating System (OS), compiler and
+optimization level.  A <em>platform</em> is identified by a string where the four parts
+of its definition are separated by a <cite>-</cite>, for example <cite>x86_64-slc6-gcc46-opt</cite>
+means Intel/AMD (x86) 64 bits architecture, Scientific Linux CERN 6 (SLC6), gcc
+4.6.x and optimized build.</p>
+</div>
+</div>
+<div class="section" id="configuration">
+<h1><a class="toc-backref" href="#id3">Configuration</a></h1>
+</div>
+<div class="section" id="scheduling">
+<h1><a class="toc-backref" href="#id4">Scheduling</a></h1>
+<p>The scheduling of the nightly builds follows the logical organization, mapped
+into Jenkins jobs.</p>
+<p>Each configured <em>slot</em> must have a corresponding <em>job</em> in Jenkins, this job can be enabled or disabled to trigger or not the build of the slot. Usually the slot jobs are run regularly (using the Jenkins <em>cron trigger</em>) every morning, but they can be triggered by hand at any moment, for example to pick up changes fixing bugs that caused troubles during the night (note that we can have concurrent builds for a slot).</p>
+<p>The slot job triggers the <em>parameterized job</em> <tt class="docutils literal"><span class="pre">nightly-slot</span></tt> passing the job name as argument. <tt class="docutils literal"><span class="pre">nightly-slot</span></tt> coordinates the actual build phases (checkout, build and test) by triggeting other parameterized job (as shown in the figure below):</p>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">nightly-slot-checkout</span></tt>: to check out the sources for the build</li>
+<li><tt class="docutils literal"><span class="pre">nightly-slot-build</span></tt>: to trigger the actual builds and tests</li>
+</ul>
+</blockquote>
+<div class="figure align-center">
+<img alt="images/Jenkins_sequence_diagram.png" src="images/Jenkins_sequence_diagram.png" />
+<p class="caption">Sequence diagram of the jobs controlling the nightly builds in Jenkins.</p>
+</div>
+<p>The parameterized job <tt class="docutils literal"><span class="pre">nightly-slot-build</span></tt> is a Jenkins <em>matrix job</em>, which spawns one sub-job per required platform, which then triggers <tt class="docutils literal"><span class="pre">nightly-slot-build-platform</span></tt> to actually build and test the slot.</p>
+<p>Failures of the jobs infrastructure is propagated from the triggered jobs to the caller ones.  It must be noted that only failures of the Nightly Build System are shown as failures in Jenkins, and failures of the builds or tests are considered succesful run of the Jenkins jobs.</p>
+</div>
+<div class="section" id="checkout-build-and-test">
+<h1><a class="toc-backref" href="#id5">Checkout, Build and Test</a></h1>
+<p><strong>TO-DO</strong></p>
+</div>
+<div class="section" id="dashboard">
+<h1><a class="toc-backref" href="#id6">Dashboard</a></h1>
+<p><strong>TO-DO</strong></p>
+</div>
+<div class="section" id="common-tasks">
+<h1><a class="toc-backref" href="#id7">Common Tasks</a></h1>
+<div class="section" id="create-a-new-slot">
+<h2><a class="toc-backref" href="#id8">Create a New Slot</a></h2>
+<ol class="arabic simple">
+<li>choose the slot configuration style: XML (can use the web-based configuration editor, but not the new features of the build system) or JSON (requires manual editing from a checkout of <a class="reference external" href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk">LHCbNightlyConf</a>)</li>
+<li>prepare the configuration of the slot (it is usually a good idea to clone an existing slot configuration and change it)</li>
+<li>if the build products have to be installed on AFS</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
+<li>create the slot directories and volumes in <tt class="docutils literal">$LHCBNIGHTLIES</tt> (they can be symlinks to other directories, if needed)</li>
+<li>add the slot name to the special file <tt class="docutils literal">slots_on_afs.txt</tt> in <a class="reference external" href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk">LHCbNightlyConf</a></li>
+</ol>
+</blockquote>
+<ol class="arabic simple" start="4">
+<li>create a new <em>slot job</em> in Jenkins</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/">Nightly Builds view</a></li>
+<li>click on <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/newJob">New Job</a> in the menu on the left</li>
+<li>use the exact slot name as name of the job</li>
+<li>select the option <em>Copy existing Job</em> and use <cite>nightly-slot-template</cite> as job to copy from and click on the <em>OK</em> button</li>
+<li>change the description of the job (it's not used at the moment, but it might be used in the future)</li>
+<li>(optionally) enable the slot by un-checking the checkbox <em>Disable Build</em></li>
+<li>(optionally) change when the build is started by editing the field <em>Build periodically/Schedule</em> (starting the job later in the day will mean that it will have to wait for other builds to complete before being executed)</li>
+</ol>
+</blockquote>
+</div>
+<div class="section" id="stop-a-build">
+<h2><a class="toc-backref" href="#id9">Stop a Build</a></h2>
+<p>Sometimes it is necessary to stop a slot before it completes (for example to restart the builds).</p>
+<div class="section" id="stop-one-platform">
+<h3><a class="toc-backref" href="#id10">Stop One Platform</a></h3>
+<p>If there are pathologic problems with the build of a slot on one platform, or before triggering its rebuild, we can stop it following these steps:</p>
+<ol class="arabic simple">
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/nightlies/">Nightly Builds Dashboard</a></li>
+<li>locate on the page the slot/platform to stop</li>
+<li>click on the corresponding Jenkins icon</li>
+<li>click on the small red square icon with an X at the top right, close to the text <em>Progress:</em></li>
+</ol>
+<p>The build will terminate shortly, after some Jenkins internal book keeping operations.</p>
+</div>
+<div class="section" id="stop-the-whole-slot">
+<h3><a class="toc-backref" href="#id11">Stop the Whole Slot</a></h3>
+<p>If the slot is still in the checkout step, stopping the checkout job will be enough:</p>
+<ol class="arabic simple">
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-checkout/buildTimeTrend">checkout status page</a></li>
+<li>identify the running checkout job you want to stop in the list on the left (<em>Build History</em>)</li>
+<li>click on the corresponding red square with an X</li>
+</ol>
+<p>If the checkout was completed, you need to stop all the building platforms and the wrapper build job:</p>
+<ol class="arabic simple">
+<li>got to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build-platform/buildTimeTrend">platform build status page</a></li>
+<li>identify the running build jobs you want to stop in the list on the left (<em>Build History</em>)</li>
+<li>click on the corresponding red square with an X</li>
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build/buildTimeTrend">build wrappers status page</a> and repeat steps 2 and 3 (it may not be needed if the builds were terminated quickly enough and if the job is not waiting for some external conditions)</li>
+</ol>
+</div>
+</div>
+<div class="section" id="trigger-a-rebuild">
+<h2><a class="toc-backref" href="#id12">Trigger a Rebuild</a></h2>
+<p>Re-building can be triggered at different levels:</p>
+<ul class="simple">
+<li>full rebuild: new checkout and new build of every platform</li>
+<li>no checkout: keep the existing checkout and rebuild all the platforms</li>
+<li>one platform: rebuild only one platform</li>
+</ul>
+<div class="section" id="full-rebuild">
+<h3><a class="toc-backref" href="#id13">Full Rebuild</a></h3>
+<p>This is the easiest option and should be preferred to the others if we can afford the time it takes for a checkout (for slots with several projects it may take more than one hour).</p>
+<p>This is also the only option in case we need a fresh checkout.</p>
+<ol class="arabic simple">
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/">Nightly Builds view</a></li>
+<li>click on the schedule icon at the far right corresponding to the slot that need to be triggered</li>
+<li>(optionally) if you want to override the default list of platforms to build, fill the <em>platforms</em> field with a space-separated list of the required platforms</li>
+<li>click on the <em>Build</em> button</li>
+</ol>
+<p>The field <em>os_label</em> allows you to override the system a build is run on. For example to build <em>slc5</em> binaries on a <em>slc6</em> machine or to force the build on a specific host. In most cases it must be left empty.</p>
+</div>
+<div class="section" id="no-checkout">
+<h3><a class="toc-backref" href="#id14">No Checkout</a></h3>
+<p>Useful if the checkout of a slot was correct, but all the builds failed for some reason.</p>
+<ol class="arabic simple">
+<li>stop the build of the whole slot following the instructions above</li>
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build/buildTimeTrend">build wrappers status page</a></li>
+<li>identify the job corresponding to the slot you need to restart and click on its link</li>
+<li>click on <em>Rebuild</em> in the menu on the left</li>
+<li>click on the <em>Rebuild</em> button not modifying the content of the fields</li>
+</ol>
+</div>
+<div class="section" id="one-platform">
+<h3><a class="toc-backref" href="#id15">One Platform</a></h3>
+<p>If, for example, there has been a problem with a machine you can rebuild only one platform:</p>
+<ol class="arabic simple">
+<li>stop the build of the platform following the instructions above (<a class="reference internal" href="#stop-one-platform">Stop One Platform</a>), if needed</li>
+<li>from the job page, click on <em>Rebuild</em> in the menu on the left</li>
+<li>click on the <em>Rebuild</em> button not modifying the content of the fields</li>
+</ol>
+<p>Note that you can access the specific build page from the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build-platform/buildTimeTrend">platform build status page</a> if you cannot find it through the <a class="reference external" href="https://buildlhcb.cern.ch/nightlies/">Nightly Builds Dashboard</a>.</p>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>
