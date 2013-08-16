@@ -34,8 +34,10 @@ class TimingParser:
                     if level > 0:
                         parent = lastparent[level -1]
 
+                    names = m.group(3).strip()
+                    #print "N: ", names, "V: ", float(m.group(4)), "L: ", level, "E: ", m.group(7).strip()
                     id = id + 1
-                    node = Node(id, level, m.group(3).strip(), float(m.group(4).strip()), int(m.group(7).strip()), parent)
+                    node = Node(id, level, names, float(m.group(4).strip()), int(m.group(7).strip()), parent)
                     try:
                         lastparent[level] = node
                     except IndexError, e:
@@ -238,13 +240,6 @@ if __name__ == "__main__":
         filename = sys.argv[1]
         print "Processing %s" % filename
         t = TimingParser(filename)
-
-        for s in ["RecoRICHSeq", "RecoTrSeq" ]:
-            pseq = t.findByName(s)
-            print pseq.name, ":", pseq.perTotal(), "%"
-        #for c in pseq.children:
-        #    print "\t",  c.name, ":", c.perTotal(), "%"
-
 
         for n in t.getTopN(10):
             print n.name, " - ", n.perTotal()

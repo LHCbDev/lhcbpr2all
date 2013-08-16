@@ -29,6 +29,7 @@ class VTuneTimingParser:
                         event_loop = float(m.group(7).strip()) 
                     nb_of_evts_per_alg.append([m.group(3).strip(), float(m.group(7).strip())])
             log.close()
+            nb_of_evts_per_alg[0][0] = re.sub("EVENT LOOP", "EVENT_LOOP", nb_of_evts_per_alg[0][0])
             #print nb_of_evts_per_alg
         except OSError:
             raise Exception(str(self.__class__)+": No result directory, check the given result directory")
@@ -47,11 +48,9 @@ class VTuneTimingParser:
                     full_name = m.group(1).rstrip()
                     if str(full_name) == "[Outside any task]":
                         full_name = "EVENT_LOOP"
-
                     final_digit = re.search('\s{3,}\d+', full_name)
                     if final_digit != None:
                         full_name = full_name[:final_digit.start(0)]
-                            
                     names = full_name.split()
                     if full_name == "EVENT_LOOP":
                        level = 0
@@ -60,21 +59,20 @@ class VTuneTimingParser:
                     parent = None
                     if level > 0:
                        parent = lastparent[level-1]
-
                     nb_of_evts = -1
                     for i in nb_of_evts_per_alg:
-                        if i[0] == names[len(names)-1]:
-                            nb_of_evts = i[1]
+                        search_str = '^' + i[0]
+                        n = re.search(search_str, names[len(names)-1])
+                        if n != None:
+                            nb_of_evts = int(i[1])
                             break
-                        elif i[0] == "EVENT LOOP":
-                            nb_of_evts = i[1]
-                            break
-
-                    print "N: ", names[len(names)-1], "V: ", float(m.group(2)), "L: ", level, "E: ", nb_of_evts
-
+                        else: 
+                            nb_of_evts = -1
                     id = id + 1
                     if nb_of_evts > 0:
-                       node = Node(id, level, names[len(names)-1], float(m.group(2).strip()), nb_of_evts, parent)
+                       node = Node(id, level, names[len(names)-1], (float(m.group(2).strip())/nb_of_evts)*1000, nb_of_evts, parent)
+                    else:
+                       node = Node(id, level, names[len(names)-1], float(m.group(2).strip())*1000, nb_of_evts, parent)
                     try:
                         lastparent[level] = node
                     except IndexError, e:
@@ -87,6 +85,8 @@ class VTuneTimingParser:
             
         # Getting the actual root "EVENT LOOP"
         root = lastparent[0]
+        root.finalize()
+        root.printTime()
         # Sorting all the nodes by CPU usage and setting the "rank" attribute
         root.rankChildren()
         self.root = root
@@ -132,26 +132,35 @@ class Node:
     def getActualTimeUsed(cls, o):
         return o.actualTimeUsed()
 
-
     @classmethod
     def getRank(cls, o):
         return o.rank
 
-
     def __init__(self, id, level, name, value, entries, parent=None):
-        """ Constructor """
         self.id = id
         self.level = level
         self.name = name.replace(" ", "_")
         self.rank = 0
         self.value = float(value)
         self.entries = entries
-        self.total = self.value * self.entries
+        self.total = self.value * entries
         self.children = []
         self.parent = parent
         self.eventTotal = None
         if parent != None:
             parent.children.append(self)
+
+    def finalize(self):
+        for n in self.children:
+            if len(n.children) > 0:
+                n.finalize()
+            self.value += n.value
+        self.value = float(self.value)
+
+    def printTime(self):
+        print self.name, ", ", self.value, ", ", self.level, ", ", self.entries
+        for n in self.children:
+            n.printTime()
 
     def findByName(self, name):
         """ Find an algorithm in the subtree related to the Node  """
