@@ -34,8 +34,8 @@ class ValgrindMemcheckHandler(BaseHandler):
          raise Exception("File %s does not exist" % filename)
 
       # Then collect the info
-      collectLeakSummaryResults(directory)
-      collectLogFile(directory)
+      self.collectLeakSummaryResults(directory)
+      self.collectLogFile(directory)
 
       
    def collectLeakSummaryResults(self,directory):
