@@ -113,6 +113,29 @@ TEST_XML = u'''
             <project name="DaVinci" tag="DAVINCI_v26r3p3"/>
         </projects>
     </slot>
+    <slot name="lhcb-headofeverything" description="testing headofeverything override flag" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
+        <paths>
+            <path value="%BUILDROOT%/nightlies/%SLOT%/%DAY%/%CMTCONFIG%" name="builddir"/>
+            <path value="%BUILDROOT%/builders/%SLOT%" name="buildersdir"/>
+            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/%SLOT%/%DAY%" name="releasedir"/>
+            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/www/logs/%SLOT%" name="wwwdir"/>
+        </paths>
+        <cmtprojectpath>
+            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
+            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
+            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
+            <path value="/afs/cern.ch/lhcb/software/releases"/>
+        </cmtprojectpath>
+        <platforms>
+            <platform name="x86_64-slc6-gcc47-opt"/>
+        </platforms>
+        <cmtextratags value="use-distcc,no-pyzip"/>
+        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
+        <projects>
+            <project name="Brunel" tag="BRUNEL_HEAD" headofeverything="false"/>
+            <project name="Moore" tag="MOORE_v10r2p4" headofeverything="true"/>
+        </projects>
+    </slot>
 </configuration>
 '''
 
@@ -242,4 +265,38 @@ def test_loadXML_3():
     #from pprint import pprint
     #pprint(found)
     #pprint(expected)
+    assert found == expected
+
+def test_loadXML_4():
+    'Configuration.load(xml) [with lhcb-headofeverything]'
+
+    expected = {'slot': 'lhcb-headofeverything',
+                'description': "testing headofeverything override flag",
+                'projects': [{'name': 'Brunel',
+                              'version': 'HEAD',
+                              'dependencies': [],
+                              'overrides': {},
+                              'checkout_opts': {'recursive_head': False}},
+                             {'name': 'Moore',
+                              'version': 'v10r2p4',
+                              'dependencies': ['Brunel'],
+                              'overrides': {},
+                              'checkout_opts': {'recursive_head': True}}],
+                'env': ['CMTPROJECTPATH=' +
+                          ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
+                                    '/afs/cern.ch/sw/Gaudi/releases',
+                                    '/afs/cern.ch/sw/lcg/app/releases',
+                                    '/afs/cern.ch/lhcb/software/releases']),
+                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
+                'USE_CMT': True,
+                'default_platforms': ['x86_64-slc6-gcc47-opt'],
+                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
+                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
+                }
+
+    load = lambda path: Configuration.load(path+"#lhcb-headofeverything")
+    found = processFile(TEST_XML, load)
+    from pprint import pprint
+    pprint(found)
+    pprint(expected)
     assert found == expected

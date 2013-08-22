@@ -114,6 +114,14 @@ def loadFromOldXML(source, slot):
                          'dependencies': dependencies}
             if proj.attrib.get('disabled', 'false').lower() != 'false':
                 proj_data['checkout'] = 'ignore'
+            if 'headofeverything' in proj.attrib:
+                recursive_head = proj.attrib.get('headofeverything').lower()
+                recursive_head = recursive_head == 'true'
+                if (version == 'HEAD') != recursive_head:
+                    # HEAD implies recursive_head True, so add the special
+                    # option only if needed
+                    proj_data['checkout_opts'] = {'recursive_head':
+                                                    recursive_head}
 
             projects.append(proj_data)
 

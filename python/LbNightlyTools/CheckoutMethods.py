@@ -24,13 +24,19 @@ __log__ = logging.getLogger(__name__)
 def getpack(desc, rootdir='.'):
     '''
     Checkout the project described by the ProjectDesc 'desc'.
+
+    The optional field 'recursive_head' in the 'checkout_opts' can be used to
+    override the default behavior (i.e. use the head of all the packages for
+    the project HEAD and the tags for an explicit project version).
     '''
     from os.path import normpath, join
     getpack_cmd = ['getpack', '--batch', '--no-config']
-    __log__.debug('checking out %s', desc)
+    recursive_head = desc.checkout_opts.get('recursive_head',
+                                            desc.version == 'HEAD')
     cmd = getpack_cmd + ['-P',
-                         '-H' if desc.version == 'HEAD' else '-r',
+                         '-H' if recursive_head else '-r',
                          desc.name, desc.version]
+    __log__.debug('checking out %s', desc)
     call(cmd, cwd=rootdir, retry=3)
 
     prjroot = normpath(join(rootdir, desc.projectDir))
@@ -122,7 +128,7 @@ def copy(desc, rootdir='.'):
 def untar(desc, rootdir='.'):
     '''
     Unpack a tarball in the rootdir (assuming that the tarball already contains
-    the <PROJECT>/<PROJECT>_<version> directories..
+    the <PROJECT>/<PROJECT>_<version> directories).
 
     Requires a mandatory 'src' field in the 'checkout_opts' of the
     project description.

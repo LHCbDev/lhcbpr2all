@@ -15,6 +15,7 @@ import re
 import shutil
 import nose
 from subprocess import Popen, PIPE
+from xml.etree import ElementTree as ET
 from LbNightlyTools.tests.utils import *
 
 # Uncomment to disable the tests.
@@ -253,6 +254,102 @@ def test_checkout():
         CheckoutMethods.ignore(ProjectDesc('Gaudi', 'v23r6'), tmpdir)
         assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
 
+
+    finally:
+        #print tmpdir
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def test_getpack_recursive_head():
+    'getpack with recursive head (headofeverything)'
+    if not which('getpack') or not which('git'):
+        raise nose.SkipTest
+
+    from os.path import exists, join
+    ProjectDesc = StackCheckout.ProjectDesc
+
+    tmpdir = tempfile.mkdtemp()
+    def check(files):
+        for f in files:
+            assert exists(join(tmpdir, f)), 'Missing %s' % f
+
+    def getPkgVersion(path):
+        req = open(path).read()
+        m = re.search(r'version\s+([vrp0-9]+)', req)
+        return m.group(1) if m else None
+
+    def isFromTrunk(path):
+        p = Popen(['svn', 'info', '--xml', path], stdout=PIPE, stderr=PIPE)
+        out, _ = p.communicate()
+        x = ET.fromstring(out)
+        url = x.find('entry/url')
+        if url is None:
+            url = 'None'
+        else:
+            url = url.text
+        return 'trunk' in url
+
+    try:
+
+        CheckoutMethods.default(ProjectDesc('Brunel', 'v44r1'), tmpdir)
+        check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        req = join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1', 'Rec', 'Brunel', 'cmt', 'requirements')
+        assert not isFromTrunk(req)
+        assert getPkgVersion(req) == 'v44r1'
+        sysreq = join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1', 'BrunelSys', 'cmt', 'requirements')
+        assert not isFromTrunk(sysreq)
+        assert getPkgVersion(sysreq) == 'v44r1'
+
+
+        CheckoutMethods.default(ProjectDesc('Brunel', 'head'), tmpdir)
+        check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        req = join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements')
+        assert isFromTrunk(req)
+        assert getPkgVersion(req) != 'v44r1'
+        sysreq = join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'BrunelSys', 'cmt', 'requirements')
+        assert isFromTrunk(sysreq)
+        assert getPkgVersion(sysreq) != 'v44r1'
+
+        shutil.rmtree(join(tmpdir, 'BRUNEL'), ignore_errors=True)
+        CheckoutMethods.default(ProjectDesc('Brunel', 'v44r1',
+                                            checkout_opts={'recursive_head':
+                                                           True}),
+                                 tmpdir)
+        check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        req = join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1', 'Rec', 'Brunel', 'cmt', 'requirements')
+        assert isFromTrunk(req)
+        sysreq = join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1', 'BrunelSys', 'cmt', 'requirements')
+        assert not isFromTrunk(sysreq)
+
+        CheckoutMethods.default(ProjectDesc('Brunel', 'HEAD',
+                                            checkout_opts={'recursive_head':
+                                                           False}),
+                                 tmpdir)
+        check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        req = join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements')
+        assert not isFromTrunk(req)
+        sysreq = join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'BrunelSys', 'cmt', 'requirements')
+        assert isFromTrunk(sysreq)
 
     finally:
         #print tmpdir
