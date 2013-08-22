@@ -26,7 +26,7 @@ class VTuneTimingParser:
                 m = re.match(regxp, l)
                 if m != None:
                     if "EVENT LOOP" == m.group(3).strip():
-                        event_loop = float(m.group(7).strip()) 
+                        event_loop = float(m.group(7).strip())
                     nb_of_evts_per_alg.append([m.group(3).strip(), float(m.group(7).strip())])
             log.close()
             nb_of_evts_per_alg[0][0] = re.sub("EVENT LOOP", "EVENT_LOOP", nb_of_evts_per_alg[0][0])
@@ -35,7 +35,6 @@ class VTuneTimingParser:
             raise Exception(str(self.__class__)+": No result directory, check the given result directory")
         except IOError:
             raise Exception(str(self.__class__)+": Data file not found, this handler excepts a 'run.log' in the results directory' ")
-            
         parent       = None
         lastparent   = [None]
         id = 0
@@ -60,14 +59,16 @@ class VTuneTimingParser:
                     if level > 0:
                        parent = lastparent[level-1]
                     nb_of_evts = -1
+                    mai        =  0
+                    idx        = -1
                     for i in nb_of_evts_per_alg:
                         search_str = '^' + i[0]
                         n = re.search(search_str, names[len(names)-1])
                         if n != None:
-                            nb_of_evts = int(i[1])
-                            break
-                        else: 
-                            nb_of_evts = -1
+                            if mai < len(n.group(0)):
+                                mai = len(n.group(0))
+                                idx = i
+                    nb_of_evts = int(idx[1])
                     id = id + 1
                     if nb_of_evts > 0:
                        node = Node(id, level, names[len(names)-1], (float(m.group(2).strip())/nb_of_evts)*1000, nb_of_evts, parent)
@@ -288,5 +289,5 @@ if __name__ == "__main__":
         print "Processing ... "
         t = VTuneTimingParser(filename_run, filename_task)
 
-        for n in t.getTopN(10):
-            print n.name, " - ", n.perTotal()
+        #for n in t.getTopN(10):
+            #print n.name, " - ", n.perTotal()
