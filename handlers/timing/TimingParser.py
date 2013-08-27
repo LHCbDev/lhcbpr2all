@@ -32,8 +32,12 @@ class TimingParser:
                     level = len(m.group(3)) - len(m.group(3).lstrip())
                     parent = None
                     if level > 0:
-                        parent = lastparent[level -1]
-
+                        try:
+                            parent = lastparent[level -1]
+                        except IndexError:
+                            # BUG: IN some cases we jump one, to be investigated !
+                            parent =  lastparent[level -2]
+                        
                     names = m.group(3).strip()
                     #print "N: ", names, "V: ", float(m.group(4)), "L: ", level, "E: ", m.group(7).strip()
                     id = id + 1
@@ -241,5 +245,29 @@ if __name__ == "__main__":
         print "Processing %s" % filename
         t = TimingParser(filename)
 
-        for n in t.getTopN(10):
-            print n.name, " - ", n.perTotal()
+        nodelist = []
+        eventLoop = t.getRoot()
+        nodelist.append(eventLoop)
+        
+        dvUserSeq = eventLoop.findByName("DaVinciUserSequence")
+        nodelist.append(dvUserSeq)
+        for c in dvUserSeq.children:
+            nodelist.append(c)
+            
+        stripGlobal = dvUserSeq.findByName("StrippingGlobal")
+        nodelist.append(stripGlobal)
+        for c in stripGlobal.children:
+            nodelist.append(c)
+
+        StrippingProtectedSequenceALL = stripGlobal.findByName("StrippingProtectedSequenceALL")
+        nodelist.append(StrippingProtectedSequenceALL)
+        for c in StrippingProtectedSequenceALL.children:
+            nodelist.append(c)
+
+        for node in nodelist:
+            print node.name
+        
+        
+
+        #for n in t.getTopN(10):
+        #    print n.name, " - ", n.perTotal()
