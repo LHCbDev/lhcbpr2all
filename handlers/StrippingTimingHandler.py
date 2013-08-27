@@ -18,7 +18,7 @@ class StrippingTimingHandler(BaseHandler):
 
         # COlelcting the interesting nodes
         nodelist = []
-        eventLoop = t.getRoot()
+        eventLoop = tp.getRoot()
         nodelist.append(eventLoop)
         
         dvUserSeq = eventLoop.findByName("DaVinciUserSequence")
