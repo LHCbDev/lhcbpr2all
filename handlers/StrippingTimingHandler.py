@@ -36,11 +36,8 @@ class StrippingTimingHandler(BaseHandler):
         for c in StrippingProtectedSequenceALL.children:
             nodelist.append(c)
 
-        for node in nodelist:
-            print node.name
-
         # Now saving the results
-        for node in tp.nodelist:
+        for node in nodelist:
             self.saveFloat(node.name, node.value, group="Timing")
             self.saveInt(node.name + "_count", node.entries, group="TimingCount")
             self.saveInt(node.name + "_rank", node.rank, group="TimingRank")
