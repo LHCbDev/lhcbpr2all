@@ -1111,8 +1111,6 @@ class BuildReporter(object):
         full_log = reportFileName('.log')
         shutil.copy(self.build_log, full_log)
 
-        logfile = codecs.open(self.build_log, 'r', 'utf-8', errors='replace')
-
         # generate the small summary file with the counts of warnings
         f = open(log_summary, 'w')
         f.write(self._oldSummary())
@@ -1133,7 +1131,8 @@ class BuildReporter(object):
         env_block_size = len(env_lines)
         f.writelines(checkout_lines)
         checkout_block_size = 1
-        f.writelines(logfile)
+        f.writelines(codecs.open(self.build_log, 'r', 'utf-8',
+                                 errors='replace'))
         f.close()
 
         # generate HTML summary main page
@@ -1156,6 +1155,7 @@ class BuildReporter(object):
             sections.append([name, begin, 0])
         if sections:
             sections[-1][-1] = self.summary['size']
+        logfile = codecs.open(self.build_log, 'r', 'utf-8', errors='replace')
         offset = 0
         for chunkname, lines in zip(['env'], [env_lines]):
             chunkname = join(chunksdir, chunkname)
