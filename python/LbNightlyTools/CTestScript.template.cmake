@@ -83,6 +83,15 @@ if(USE_CMT)
   endif()
 endif()
 
+# Hack to overcome the slowness of CTest regexp parsing: reduce the lines of the
+# build logs to no more than 1000 chars.
+# See http://public.kitware.com/Bug/view.php?id=12381
+file(WRITE "$${CTEST_BINARY_DIRECTORY}/build_cmd.sh" "#!/bin/sh -x
+$${CTEST_BUILD_COMMAND} | sed -r 's/(.{695}).{5,}(.{300})/\\1[...]\\2/'
+")
+set(CTEST_BUILD_COMMAND "sh $${CTEST_BINARY_DIRECTORY}/build_cmd.sh")
+
+
 ##########################
 # Start the session
 ctest_start(${Model})
