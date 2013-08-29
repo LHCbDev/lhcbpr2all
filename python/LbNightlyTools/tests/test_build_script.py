@@ -16,6 +16,7 @@ import os
 from LbNightlyTools import BuildSlot
 from tempfile import mkdtemp
 import shutil
+import codecs
 
 from datetime import date
 from os.path import exists, normpath, join, dirname, isfile
@@ -62,16 +63,25 @@ def assert_files_exist(root, *files):
 
 def _check_build_artifacts(root, info):
     artifacts_dir = join(root, 'artifacts')
+    chunks_dir = ('summaries.{config}/{project}/'
+                  '{slot}.{weekday}_{PROJECT}_{version}-{config}.log.chunks')
+
     assert_files_exist(artifacts_dir,
                        'Project.xml',
                        *[f.format(**info)
                          for f in ['{project}.{version}.{slot}.{today}.{config}.tar.bz2',
                                    'summaries.{config}/{project}/build_log.html',
+                                   chunks_dir,
                                    'db/{slot}.{build_id}.{config}.job-start.json',
                                    'db/{slot}.{build_id}.{config}.job-end.json',
                                    'db/{slot}.{build_id}.{project}.{config}.build-result.json',
                                    ]]
                        )
+    # check that the build log chunks are not empty
+    chunks_dir = join(artifacts_dir, chunks_dir.format(**info))
+    for f in os.listdir(chunks_dir):
+        f = join(chunks_dir, f)
+        assert codecs.open(f, 'r', 'utf-8').read() != u'<html>\n</html>\n', ('empty file ' + f)
 
 def _check_test_artifacts(root, info):
     artifacts_dir = join(root, 'artifacts')
@@ -92,6 +102,7 @@ def test_simple_build():
         os.chdir(join(tmpd, 'testdata'))
         info = dict(
                     today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
                     config = os.environ['CMTCONFIG'],
                     slot = 'testing-slot',
                     build_id = 0,
@@ -125,6 +136,7 @@ def test_simple_build_w_test():
         os.chdir(join(tmpd, 'testdata'))
         info = dict(
                     today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
                     config = os.environ['CMTCONFIG'],
                     slot = 'testing-slot',
                     build_id = 0,
@@ -178,6 +190,7 @@ def test_lbcore_164():
         os.chdir(join(tmpd, 'testdata'))
         info = dict(
                     today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
                     config = os.environ['CMTCONFIG'],
                     slot = 'testing-slot',
                     build_id = 0,
@@ -224,6 +237,7 @@ def test_simple_build_2():
         os.chdir(join(tmpd, 'testdata'))
         info = dict(
                     today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
                     config = os.environ['CMTCONFIG'],
                     slot = 'testing-slot-2',
                     build_id = 0,

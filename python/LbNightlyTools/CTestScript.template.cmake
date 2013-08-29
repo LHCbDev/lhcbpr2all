@@ -140,7 +140,7 @@ if(NOT STEP STREQUAL TEST)
     # for CMT we need a different way
     # - find the package build logs
     file(GLOB_RECURSE build_logs build.$${config}.log)
-    # - sort them according to the build counter the contain
+    # - sort them according to the build counter they contain
     #    (# Building package ... [n/NN])
     set(sortable_build_logs)
     foreach(bl $${build_logs})
