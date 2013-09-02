@@ -13,69 +13,80 @@ class MemoryParser:
 
    def __init__(self, filename):
       self.root = None
-      self.alg_table = []
-      self.mem_table = [] 
       self.parse(filename)
 
    def parse(self, logfilename):
       """ Parse the log file"""
       # Now iterating on the input and looking for the MemoryAuditor lines
-      regxp = "(after|before)\s([a-zA-Z0-9_]+)\s(Initialize|Execute|Finalize)\s([\d\.]+)\s([\d\.]+)"
+      regxp = "^MemoryAuditor.*\s(after|before)\s([a-zA-Z0-9_]+)\s(Initialize|Execute|Finalize).*\s\=\s([\d\.]+).*\s\=\s([\d\.]+)"
       try:
          logf = open(logfilename, "r")
-         vm_last_after = 0
-         rss_last_after = 0
+         last_vm = -1
+         last_rs = -1
+         last_alg  = ""
          for l in logf.readlines():
             m = re.match(regxp, l)
             if m != None:
-               #print m.group(2), m.group(1), m.group(3), m.group(4), m.group(5)
-               if m.group(1) == "after":
-                  last_elem_idx = len(self.mem_table)-1 
-                  if last_elem_idx >= 0 and self.mem_table[last_elem_idx][0] == m.group(2):
-                     last_elem = self.mem_table.pop()
-                     self.addResult(m.group(2), 1, float(m.group(4))-last_elem[1])
-                     continue;
-                  #idx = self.getIndexReverse(self.mem_table, m.group(2))
-                  #if idx >= 0 and float(m.group(4))-self.mem_table[idx][1] > 0:
-                     #last_elem = self.mem_table.pop(idx)
-                     #self.alg_table.append([m.group(2), float(m.group(4))-last_elem[1]])
-               if m.group(1) == "before":
-                  #idx = self.getIndexReverse(self.mem_table_b, m.group(2))
-                  #if idx >= 0 and float(m.group(4))-self.mem_table_b[idx][1] > 0:
-                  #self.alg_table.append([m.group(2), float(m.group(4))-self.mem_table_b[idx][1]])
-                  #else:
-                  self.mem_table.append([m.group(2), float(m.group(4)), float(m.group(5))])
+               #if m.group(1) == "before" and m.group(3) == "Execute":
+               if m.group(3) == "Execute":
+                  if float(m.group(4))-last_vm > 0 or float(m.group(5))-last_rs > 0:
+                     elem = MemNode(m.group(2), m.group(3), m.group(1), float(m.group(4))-last_vm, float(m.group(5))-last_rs)
+               last_vm = float(m.group(4))
+               last_rs = float(m.group(5))
+               last_alg  = m.group(2)
+
          logf.close()
+         MemNode.printMemory()
       except OSError:
          raise Exception(str(self.__class__)+": No result directory, check the given result directory")
       except IOError:
          raise Exception(str(self.__class__)+": Data file not found, please consider the correct name of the analysed log file.' ")
 
-   def addResult(self, name, position, value):
-      if position < 1 and position > 2:
-         return
-      idx = self.getIndexReverse(self.alg_table, name)
-      if idx >= 0:
-         self.alg_table[idx][position] = float(self.alg_table[idx][position]) + value
-         print "Exist. result replaced ..."
-      elif position == 1:
-         self.alg_table.append([name, value, 0])   
-         print "New result added ..."
-      elif position == 2:
-         self.alg_table.append([name, 0, value])
-         print "New result added ..."
-      return
+class MemNode:
+   NodeList = {}
 
-   def getIndexReverse(self, list, elem):
-      idx = len(list)-1
-      for i in range(idx,-1,-1):
-         if elem == list[i][0]:
-            return i
-      return -1
+   def __init__(self, name, period, ab, vsmem, rsmem):
+      self.name   = name
+      self.period = period
+      self.ab     = ab
+      self.vsmem  = vsmem
+      self.rsmem  = rsmem
+      self.node   = None
+      self.add()
 
-   def getTimingList(self):
-      self.alg_table.sort()
-      return self.alg_table
+   def add(self):
+      try:
+         node_tmp = MemNode.NodeList[self.name]
+         while node_tmp.node != None:
+            node_tmp = node_tmp.node
+         node_tmp.node = self
+      except KeyError:
+         MemNode.NodeList[self.name] = self
+
+   @staticmethod
+   def last(name):
+      try:
+         node_tmp = MemNode.NodeList[name]
+         while node_tmp.node != None:
+            node_tmp = node_tmp.node
+         return node_tmp
+      except KeyError:
+         return None
+
+   @staticmethod
+   def printMemory():
+      for name in MemNode.NodeList:
+         try:
+            node_tmp = MemNode.NodeList[name]
+            memory_re = 0
+            memory_vm = 0
+            while node_tmp != None:
+               memory_re += node_tmp.rsmem
+               memory_vm += node_tmp.vsmem
+               node_tmp = node_tmp.node
+            print name, ", {0}, {1}".format(memory_vm, memory_re)
+         except KeyError:
+            print "Nothing Found!"
 
 #
 # Main
@@ -90,6 +101,3 @@ if __name__ == "__main__":
       filename = sys.argv[1]
       print "Processing %s" % filename
       t = MemoryParser(filename)
-      for node in t.getTimingList():
-         if node[1] > 0:
-            print node[1], ", ", node[0]
