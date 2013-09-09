@@ -64,22 +64,24 @@ if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
 fi
 
-if [ "$JOB_NAME" = "nightly-slot-build-platform" ] ; then
-  deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
-else
-  deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
-fi
-
 if [ "$JENKINS_MOCK" != "true" ] ; then
+  if [ "$JOB_NAME" = "nightly-slot-build-platform" ] ; then
+    deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
+  else
+    deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
+  fi
   submit_opt="--submit --cdash-submit"
+  rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 fi
 
-time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --rsync-dest "buildlhcb.cern.ch:${deploybase}/${slot_build_id}" --with-tests ${submit_opt} ${deploy_opt} ${coverity_opt} ${config_file}
+time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --with-tests ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
 
 # if possible generate glimpse indexes and upload them to buildlhcb
 if which glimpseindex &> /dev/null ; then
     time lbn-index --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
-    rsync --archive --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+    if [ "$JENKINS_MOCK" != "true" ] ; then
+        rsync --archive --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+    fi
 fi
 
 if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
