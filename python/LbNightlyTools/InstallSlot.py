@@ -183,8 +183,11 @@ def requiredPackages(files, projects=None, platforms=None, skip=None):
 def findGlimpseFilenames(path):
     '''
     Give a top directory, return the iterator over all the .glimpse_filenames
-    files that can be found.
+    files that can be found (excluding some special directories).
     '''
+    excluded_dirs = set(['DOC', 'docs', 'scripts', 'scripts.old',
+                         'DBASE', 'PARAM', 'TOOLS',
+                         'XmlEditor'])
     log = logging.getLogger('findGlimpseFilenames')
     path = os.path.abspath(path)
     log.debug('Looking for .glimpse_filenames in %s', path)
@@ -193,6 +196,12 @@ def findGlimpseFilenames(path):
             yield os.path.join(root, '.glimpse_filenames')
             # do not enter subdirectories (we assume no nested indexes)
             dirs[:] = []
+        elif 'Makefile' in files:
+            # do not descend the projects substructure
+            dirs[:] = []
+        else:
+            # do not descend the known special directories
+            dirs[:] = list(set(dirs) - excluded_dirs)
 
 def fixGlimpseIndexes(iterable):
     '''

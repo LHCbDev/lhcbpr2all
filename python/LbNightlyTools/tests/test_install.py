@@ -75,3 +75,9 @@ untouched
     #print 'untouched'
     #print found
     assert found == expected
+
+    # ignored directories
+    found = open(join(dst, 'docs', '.glimpse_filenames')).read()
+    #print 'untouched'
+    #print found
+    assert found == expected
