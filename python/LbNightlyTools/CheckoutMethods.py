@@ -30,7 +30,8 @@ def getpack(desc, rootdir='.'):
     the project HEAD and the tags for an explicit project version).
     '''
     from os.path import normpath, join
-    getpack_cmd = ['getpack', '--batch', '--no-config']
+    getpack_cmd = ['getpack', '--batch', '--no-config',
+                   '--protocol', 'ssh']
     recursive_head = desc.checkout_opts.get('recursive_head',
                                             desc.version == 'HEAD')
     cmd = getpack_cmd + ['-P',
