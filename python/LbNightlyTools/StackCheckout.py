@@ -92,12 +92,16 @@ class StackDesc(object):
         from difflib import context_diff
 
         gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
+        ht_exp = re.compile(r'set\(\s*heptools_version\s+([^)]+)\)')
 
         # cache of the project versions
         proj_versions = dict([(p.name, p.version)
                               for p in self.projects])
         proj_versions_uc = dict([(p.name.upper(), p.version)
                                  for p in self.projects])
+        # FIXME: we will need to handle the _preview/-preview case
+        heptools_version = proj_versions_uc.get('HEPTOOLS',
+                                                proj_versions_uc.get('LCGCMT'))
 
         pfile = open(join(rootdir, patchfile), 'w')
         def write_patch(data, newdata, filename):
@@ -112,10 +116,9 @@ class StackDesc(object):
                                           fromfile=join('a', filename),
                                           tofile=join('b', filename)))
 
-        def fixCMake(proj):
+        def fixCMakeLists(proj):
             '''
-            Fix the CMake configuration of a project, if it exists, and write
-            the changes in 'patchfile'.
+            Fix the 'CMakeLists.txt'.
             '''
             cmakelists = join(proj.projectDir, 'CMakeLists.txt')
 
@@ -160,6 +163,45 @@ class StackDesc(object):
 
                 write_patch(data, newdata, cmakelists)
 
+        def fixCMakeToolchain(proj):
+            '''
+            Fix 'toolchain.cmake'.
+            '''
+            toolchain = join(proj.projectDir, 'toolchain.cmake')
+
+            if exists(join(rootdir, toolchain)):
+                __log__.info('patching %s', toolchain)
+                f = open(join(rootdir, toolchain))
+                data = f.read()
+                f.close()
+                try:
+                    # find the heptools version setting
+                    m = ht_exp.search(data)
+                    if m is None:
+                        __log__.debug('%s does not set heptools_version, '
+                                      'no need to touch', proj)
+                        return
+                    start, end = m.start(1), m.end(1)
+                    newdata = data[:start] + heptools_version + data[end:]
+                except: # pylint: disable=W0702
+                    __log__.error('failed parsing of %s, not patching it',
+                                  toolchain)
+                    return
+
+                f = open(join(rootdir, toolchain), 'w')
+                f.write(newdata)
+                f.close()
+
+                write_patch(data, newdata, toolchain)
+
+        def fixCMake(proj):
+            '''
+            Fix the CMake configuration of a project, if it exists, and write
+            the changes in 'patchfile'.
+            '''
+            fixCMakeLists(proj)
+            if heptools_version:
+                fixCMakeToolchain(proj)
 
         def fixCMT(proj):
             '''
