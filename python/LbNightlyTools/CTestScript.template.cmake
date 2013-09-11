@@ -89,7 +89,7 @@ endif()
 file(WRITE "$${CTEST_BINARY_DIRECTORY}/build_cmd.sh" "#!/bin/sh -x
 $${CTEST_BUILD_COMMAND} | sed -r 's/(.{695}).{5,}(.{300})/\\1[...]\\2/'
 ")
-set(CTEST_BUILD_COMMAND "sh $${CTEST_BINARY_DIRECTORY}/build_cmd.sh")
+set(CTEST_BUILD_COMMAND "sh -x $${CTEST_BINARY_DIRECTORY}/build_cmd.sh")
 
 
 ##########################
