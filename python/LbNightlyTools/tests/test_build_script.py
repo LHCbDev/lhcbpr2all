@@ -29,6 +29,8 @@ _env_bk = dict(os.environ)
 def setup():
     global _env_bk
     _env_bk = dict(os.environ)
+    if 'LBN_LOAD_AVERAGE' in os.environ:
+        del os.environ['LBN_LOAD_AVERAGE']
 
 def teardown():
     global _env_bk
@@ -114,6 +116,113 @@ def test_simple_build():
         script = BuildSlot.Script()
         retcode = script.run(['testing-slot.json'])
         assert retcode == 0
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_simple_build_parallel():
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+
+        script = BuildSlot.Script()
+        retcode = script.run(['-j', '4', 'testing-slot.json'])
+        assert retcode == 0
+        assert script.options.jobs == 4
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_simple_build_load():
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+
+        script = BuildSlot.Script()
+        retcode = script.run(['-j', '4', '-l', '8', 'testing-slot.json'])
+        assert retcode == 0
+        assert script.options.jobs == 4
+        assert script.options.load_average == 8
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_simple_build_load_env():
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+        os.environ['LBN_LOAD_AVERAGE'] = '6.5'
+        script = BuildSlot.Script()
+        retcode = script.run(['-j', '4', 'testing-slot.json'])
+        assert retcode == 0
+        assert script.options.jobs == 4
+        assert script.options.load_average == 6.5
 
         proj_root = join(tmpd, 'testdata', 'build',
                          info['PROJECT'], '{PROJECT}_{version}'.format(**info))

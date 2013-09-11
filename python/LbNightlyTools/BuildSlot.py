@@ -241,7 +241,8 @@ class Script(LbUtils.Script.PlainScript):
         group.add_option('-l', '--load-average',
                          action='store', type='float',
                          help='load average limit for parallel builds, use 0 '
-                              'to remove the limit (default: N of cores x %g)'
+                              'to remove the limit (default: '
+                              '$LBN_LOAD_AVERAGE or N of cores x %g)'
                               % LOAD_AVERAGE_SCALE)
 
         group.add_option('--no-distcc',
@@ -259,9 +260,13 @@ class Script(LbUtils.Script.PlainScript):
                               'build (Coverity commands must be on the PATH)')
 
         self.parser.add_option_group(group)
+        if 'LBN_LOAD_AVERAGE' in os.environ:
+            load_average = float(os.environ['LBN_LOAD_AVERAGE'])
+        else:
+            load_average = cpu_count()*LOAD_AVERAGE_SCALE
         self.parser.set_defaults(clean=False,
                                  jobs=1,
-                                 load_average=cpu_count() * LOAD_AVERAGE_SCALE,
+                                 load_average=load_average,
                                  no_distcc=False,
                                  coverity=False)
 
