@@ -28,7 +28,7 @@ class FilePathHandler(BaseHandler):
          
         if os.path.exists(run_path) :
            path = "$AFS_PROF" + path_line
-           self.saveString("Path", path, "Results", "JobInfo")
+           self.saveString("Path", path, "Results Location", "JobInfo")
            print path
         else:
            print 'File or path does not exist (file: ' + run_path + ')'
