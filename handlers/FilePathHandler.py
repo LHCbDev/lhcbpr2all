@@ -13,7 +13,7 @@ class FilePathHandler(BaseHandler):
         logfile = 'run.log'
         run_path = os.path.join(directory, logfile)
 
-        regxp = ".*/afs/cern.ch/lhcb/software/profiling/releases(/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/[\d_]+[\w\d]+/.*)'"
+        regxp = ".*/afs/cern.ch/lhcb/software/profiling/releases(/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/.*)"
         path_line = ""
         try:
            loglines = open(run_path, 'r')
@@ -28,11 +28,11 @@ class FilePathHandler(BaseHandler):
          
         if os.path.exists(run_path) :
            path = "$AFS_PROF" + path_line
-           self.saveString("Path", path, "Results", "JobInfo")
+           #self.saveString("Path", path, "Results", "JobInfo")
            print path
         else:
            print 'File or path does not exist (file: ' + run_path + ')'
 
 if __name__ == "__main__":
     fh = FilePathHandler()
-    fh.collectResults('./')
+    fh.collectResults('/afs/cern.ch/lhcb/software/profiling/releases/MOORE/MOORE_v20r3p1/x86_64-slc6-gcc46-opt/20130916_1320_vtune_task_module')
