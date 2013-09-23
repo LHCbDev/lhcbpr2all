@@ -28,8 +28,8 @@ class CommentClassHandler(BaseHandler):
         except IOError:
            raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
          
-        self.saveString("Comment", comment, "Comment Results", "JobInfo")
-        self.saveString("Class", cclass, "Classify Results", "JobInfo")
+        self.saveString("Comment", comment, "Comment", "JobInfo")
+        self.saveString("Class", cclass, "Class", "JobInfo")
 
         print comment, cclass
 
