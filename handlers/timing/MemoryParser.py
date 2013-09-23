@@ -10,6 +10,7 @@ import re
 class MemoryParser:
    """ Class responsible for parsing the MemoryAuditor log from the
    Gaudi run log files """
+   Nb_of_events = -1
 
    def __init__(self, filename):
       self.root = None
@@ -19,24 +20,18 @@ class MemoryParser:
       """ Parse the log file"""
       # Now iterating on the input and looking for the MemoryAuditor lines
       regxp = "^MemoryAuditor.*\s(after|before)\s([a-zA-Z0-9_]+)\s(Initialize|Execute|Finalize).*\s\=\s([\d\.]+).*\s\=\s([\d\.]+)"
+      regxp_event_loop = "(TIMER|TimingAuditor).(TIMER|T...)\s+INFO EVENT LOOP\s*\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|([\d\s\.]+?)\|.*"
       try:
          logf = open(logfilename, "r")
-         last_vm = -1
-         last_rs = -1
-         last_alg  = ""
          for l in logf.readlines():
             m = re.match(regxp, l)
             if m != None:
-               #if m.group(1) == "before" and m.group(3) == "Execute":
-               if m.group(3) == "Execute":
-                  if float(m.group(4))-last_vm > 0 or float(m.group(5))-last_rs > 0:
-                     elem = MemNode(m.group(2), m.group(3), m.group(1), float(m.group(4))-last_vm, float(m.group(5))-last_rs)
-               last_vm = float(m.group(4))
-               last_rs = float(m.group(5))
-               last_alg  = m.group(2)
+               elem = MemNode(m.group(2), m.group(3), m.group(1), float(m.group(4)), float(m.group(5)))
+            m = re.match(regxp_event_loop, l)
+            if m != None:
+               MemoryParser.Nb_of_events = int(m.group(6))
 
          logf.close()
-         MemNode.printMemory()
       except OSError:
          raise Exception(str(self.__class__)+": No result directory, check the given result directory")
       except IOError:
@@ -84,9 +79,83 @@ class MemNode:
                memory_re += node_tmp.rsmem
                memory_vm += node_tmp.vsmem
                node_tmp = node_tmp.node
-            print name, ", {0}, {1}".format(memory_vm, memory_re)
+            node_tmp = MemNode.NodeList[name]
+            print "Name: {0}, Period: {1}, AB: {2}, Virt.: {3}, Res.: {4}".format(name, node_tmp.period, node_tmp.ab, memory_vm, memory_re)
          except KeyError:
             print "Nothing Found!"
+
+   @staticmethod
+   def getPeakMemory():
+      max_memory_vm = 0
+      max_memory_re = 0
+      for name in MemNode.NodeList:
+         try:
+            node = MemNode.NodeList[name]
+            if max_memory_re < node.rsmem:
+               max_memory_re = node.rsmem
+            if max_memory_vm < node.vsmem:
+               max_memory_vm = node.vsmem
+         except KeyError:
+            print "Nothing Found!"
+      return max_memory_re, max_memory_vm
+
+   @staticmethod
+   def getInitializationMemory():
+      max_memory_vm = 0
+      max_memory_re = 0
+      for name in MemNode.NodeList:
+         try:
+            node = MemNode.NodeList[name]
+            if node.period != "Initialize":
+               continue
+            if max_memory_re < node.rsmem:
+               max_memory_re = node.rsmem
+            if max_memory_vm < node.vsmem:
+               max_memory_vm = node.vsmem
+         except KeyError:
+            print "Nothing Found!"
+      return max_memory_re, max_memory_vm
+
+   @staticmethod
+   def getExecutionMemory():
+      max_memory_vm = 0
+      max_memory_re = 0
+      max_init_re, max_init_vm = MemNode.getInitializationMemory()
+      for name in MemNode.NodeList:
+         try:
+            node = MemNode.NodeList[name]
+            if node.period != "Execute":
+               continue
+            if max_memory_re < node.rsmem:
+               max_memory_re = node.rsmem
+            if max_memory_vm < node.vsmem:
+               max_memory_vm = node.vsmem
+         except KeyError:
+            print "Nothing Found!"
+      return max_memory_re-max_init_re, max_memory_vm-max_init_vm
+
+   @staticmethod
+   def getFinalizationMemory():
+      max_memory_vm = 0
+      max_memory_re = 0
+      max_init_re, max_init_vm = MemNode.getInitializationMemory()
+      max_exec_re, max_exec_vm = MemNode.getExecutionMemory()
+      for name in MemNode.NodeList:
+         try:
+            node = MemNode.NodeList[name]
+            if node.period != "Finalize":
+               continue
+            if max_memory_re < node.rsmem:
+               max_memory_re = node.rsmem
+            if max_memory_vm < node.vsmem:
+               max_memory_vm = node.vsmem
+         except KeyError:
+            print "Nothing Found!"
+      return max_memory_re-(max_init_re+max_exec_re), max_memory_vm-(max_init_vm+max_exec_vm)
+
+   @staticmethod
+   def getMemPerEvent():
+      return float(MemNode.getExecutionMemory()[0]/MemoryParser.Nb_of_events), float(MemNode.getExecutionMemory()[1]/MemoryParser.Nb_of_events)
 
 #
 # Main
@@ -101,3 +170,8 @@ if __name__ == "__main__":
       filename = sys.argv[1]
       print "Processing %s" % filename
       t = MemoryParser(filename)
+      print MemNode.getPeakMemory()
+      print MemNode.getInitializationMemory()
+      print MemNode.getExecutionMemory()
+      print MemNode.getFinalizationMemory()
+      print MemNode.getMemPerEvent()
