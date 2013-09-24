@@ -11,7 +11,7 @@ class MemoryHandler(BaseHandler):
       self.results = []
 
    def collectResults(self,directory):
-      from timing.MemoryParser import MemoryParser
+      from timing.MemoryParser import MemoryParser, MemNode
       mp = MemoryParser(os.path.join(directory,'run.log'));
 
       # Now saving all the nodes
