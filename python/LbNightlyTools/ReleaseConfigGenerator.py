@@ -99,8 +99,8 @@ class Script(LbUtils.Script.PlainScript):
                                         'x86_64-slc5-gcc46-dbg',
                                         'x86_64-slc6-gcc46-opt',
                                         'x86_64-slc6-gcc46-dbg',
-                                        'x86_64-slc6-gcc47-opt',
-                                        'x86_64-slc6-gcc47-dbg']
+                                        'x86_64-slc6-gcc48-opt',
+                                        'x86_64-slc6-gcc48-dbg']
                   }
 
         return config
