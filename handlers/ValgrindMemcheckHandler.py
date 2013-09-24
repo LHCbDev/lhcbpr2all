@@ -64,7 +64,7 @@ class ValgrindMemcheckHandler(BaseHandler):
             tmp = file.readline()
             m = re.search("%s: ([\d,]+) bytes" % k, tmp)
             tmpval = (m.groups(1)[0]).replace(",", "")
-            self.saveFloat(k, int(tmpval), "ValgrindMemcheck", "Valgrind")
+            self.saveFloat(k, int(tmpval), "ValgrindMemcheck (bytes)", "Valgrind")
 
 
          foundResults = True

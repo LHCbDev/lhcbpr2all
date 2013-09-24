@@ -17,7 +17,7 @@ class TimingHandler(BaseHandler):
 
         # Now saving all the nodes
         for node in tp.getAllSorted():
-            self.saveFloat(node.name, node.value, group="Timing")
+            self.saveFloat(node.name, node.value, "Time per Ev. [ms]", "Timing")
             self.saveInt(node.name + "_count", node.entries, group="TimingCount")
             self.saveInt(node.name + "_rank", node.rank, group="TimingRank")
             if node.parent != None:

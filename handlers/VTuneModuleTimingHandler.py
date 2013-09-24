@@ -17,5 +17,5 @@ class VTuneModuleTimingHandler(BaseHandler):
 
         # Now saving all the nodes
         for node in tp.getTimingList():
-            self.saveFloat(node[0], node[1], "Produced by VTune", "ModuleTiming")
+            self.saveFloat(node[0], node[1], "Time per Module (library) [s]", "ModuleTiming")
 
