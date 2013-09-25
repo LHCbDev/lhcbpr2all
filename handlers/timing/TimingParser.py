@@ -148,7 +148,7 @@ class Node:
     def getMinChildrenRank(self):
         """ Get the lowest rank in all the children """
         m = self.rank
-	     for c in self.children:
+        for c in self.children:
             if c.getMinChildrenRank() < m:
                  m = c.getMinChildrenRank()
         return m
@@ -245,29 +245,22 @@ if __name__ == "__main__":
         print "Processing %s" % filename
         t = TimingParser(filename)
 
-        nodelist = []
-        eventLoop = t.getRoot()
-        nodelist.append(eventLoop)
+        #nodelist.append(eventLoop)
         
-        dvUserSeq = eventLoop.findByName("DaVinciUserSequence")
-        nodelist.append(dvUserSeq)
-        for c in dvUserSeq.children:
-            nodelist.append(c)
+        #dvUserSeq = eventLoop.findByName("DaVinciUserSequence")
+        #nodelist.append(dvUserSeq)
+        #for c in dvUserSeq.children:
+            #nodelist.append(c)
             
-        stripGlobal = dvUserSeq.findByName("StrippingGlobal")
-        nodelist.append(stripGlobal)
-        for c in stripGlobal.children:
-            nodelist.append(c)
+        #stripGlobal = dvUserSeq.findByName("StrippingGlobal")
+        #nodelist.append(stripGlobal)
+        #for c in stripGlobal.children:
+            #nodelist.append(c)
 
-        StrippingProtectedSequenceALL = stripGlobal.findByName("StrippingProtectedSequenceALL")
-        nodelist.append(StrippingProtectedSequenceALL)
-        for c in StrippingProtectedSequenceALL.children:
-            nodelist.append(c)
+        #StrippingProtectedSequenceALL = stripGlobal.findByName("StrippingProtectedSequenceALL")
+        #nodelist.append(StrippingProtectedSequenceALL)
+        #for c in StrippingProtectedSequenceALL.children:
+            #nodelist.append(c)
 
-        for node in nodelist:
-            print node.name
-        
-        
-
-        #for n in t.getTopN(10):
-        #    print n.name, " - ", n.perTotal()
+        for node in t.getTopN(10):
+            print "{0} - {1} - {2}".format(node.name, node.value, node.entries)
