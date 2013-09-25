@@ -1,8 +1,10 @@
 [
-    { "description": "Access to this database" , "from": "_db" , "to"  : "../.." },
-    { "from": "_db/*" , "to"  : "../../*" },
-    { "description": "Access to this design document" , "from": "_ddoc" , "to"  : "" },
-    { "from": "_ddoc/*" , "to"  : "*"},
-    { "from": "/", "to": "index.html"},
-    { "from": "/*", "to": "*"}
+    {"description":"Access to this database","from":"_db","to":"../.."},
+    {"from":"_db/*","to":"../../*"},
+    {"description":"Access to this design document","from":"_ddoc","to":""},
+    {"from":"_ddoc/*","to":"*"},
+    {"description":"RSS feed of build and test results","from":"rss","to":"_list/summariesrss/summariesByDate","query":{"descending":"true"}},
+    {"description":"RSS feed of disk space news","from":"diskspacerss","to":"_list/diskspacerss/diskSpaceByDate","query":{"descending":"true"}},
+    {"from":"/","to":"index.html"},
+    {"from":"/*","to":"*"}
 ]

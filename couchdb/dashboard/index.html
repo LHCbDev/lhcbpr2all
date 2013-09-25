@@ -19,11 +19,17 @@
 
 <link href="css/dashboard.css" rel="stylesheet">
 
+<link rel="stylesheet" type="text/css" href="css/rssform.css"/>
+
 <script src="js/moment.min.js"></script>
 <script src="js/jquery-1.9.1.min.js"></script>
-<script src="js/jquery-ui-1.10.2.custom.min.js"></script>
 <script src="js/jquery.cookie.js"></script>
 <script src="js/main.js"></script>
+
+
+<script src="js/rssform.js"></script>
+<script src="js/jquery-ui-1.10.3.custom.min.js"></script>
+
 </head>
 <body class="lang-en fluid">
 
@@ -46,7 +52,10 @@
   <div id="middle" class="clear-block cwf grid-fluid">
 
     <div id="toolbar" class="box">
-      <div><button id="set-filter">Set filtering rules</button></div>
+      <div>
+      		<button id="set-filter">Set filtering rules</button>
+      		<button id="open-rssform">Custom rss feed</button>
+      </div>
     </div>
 
     <div id="links" class="toolbar" style="text-align: center; padding: 0;">
@@ -101,7 +110,7 @@
       </table>
     </div>
     <div id="filter-dialog-slots">
-      <img src="images/ajax-loader.gif" title="loading..."/>
+      <img src="images/ajax-loader.gif" title="loading..." alt="loading" />
       <table>
       <tr><td><table class="buttons"><tr>
       <td><button>all</button></td>
@@ -110,7 +119,7 @@
       </table>
     </div>
     <div id="filter-dialog-projects">
-      <img src="images/ajax-loader.gif" title="loading..."/>
+      <img src="images/ajax-loader.gif" title="loading..." alt="loading" />
       <table>
       <tr><td><table class="buttons"><tr>
       <td><button>all</button></td>
@@ -119,6 +128,172 @@
       </table>
     </div>
   </div>
+</div>
+
+<!--  Custom rss configurator: -->
+<div id="rssform" >
+
+		<fieldset id="tabs" class="tabs">
+			<legend id="rssConfigurator">Custom rss feed configuration</legend>
+			<ul>
+				<li><a href="#tab-1">Tests and Builds RSS</a></li>
+				<li><a href="#tab-2">Disk Space RSS</a></li>
+			</ul>
+			<div id="tab-1">
+				<section id="high">
+				<div id="left">
+					<div id="advancedoption" class="tabs">
+						<ul>
+							<li><a href="#simple-tab">Simple</a></li>
+							<li><a href="#advanced-tab">Advanced</a></li>
+						</ul>
+						<div id="simple-tab">
+							<div  class="accordion">
+									<h3 id="slot"> Slot </h3>
+									<div  class="tohover">
+										<div>
+											<button class="containeroptions checkall check" value="slot" >check all</button>
+											<button class="containeroptions checkall uncheck" value="slot" >uncheck all</button>
+											Uncheck all options is equivalent to check all.
+										</div>
+										<div>
+											<ul id ="slotcontainer"  class="expandable">
+											</ul>
+										</div>
+									</div>
+									<h3 id="platform"> Platform </h3>
+									<div class="tohover" >
+										<div>
+											<button class="containeroptions checkall check" value="platform" >check all</button>
+											<button class="containeroptions checkall uncheck" value="platform" >uncheck all</button>
+											Uncheck all options is equivalent to check all.
+										</div>
+										<div>
+											<ul id ="platformcontainer"  class="expandable">
+											</ul>
+										</div>
+
+									</div>
+									<h3 id="project"> Project</h3>
+									<div class="tohover" >
+										<div>
+											<button class="containeroptions checkall check" value="project" >check all</button>
+											<button class="containeroptions checkall uncheck" value="project" >uncheck all</button>
+											Uncheck all options is equivalent to check all.
+										</div>
+										<div>
+											<ul id ="projectcontainer"  class="expandable">
+											</ul>
+										</div>
+
+									</div>
+
+							</div>
+						</div>
+
+						<div id="advanced-tab">
+							<div id="slotregexinput" class="regexinputdiv">
+
+								<fieldset>
+									<legend>Slot regular expression </legend>
+									<input id="slotregex" class="regexinput" type="text" name="slotpattern" />
+								</fieldset>
+
+							</div>
+							<div id="platformregexinput" class="regexinputdiv">
+								<fieldset>
+									<legend>Platform regular expression </legend>
+									<input id="platformregex" class="regexinput" type="text" name="platformpattern" />
+								</fieldset>
+							</div>
+							<div id="projectregexinput" class="regexinputdiv">
+								<fieldset>
+									<legend>Project regular expression </legend>
+									<input id="projectregex" class="regexinput" type="text" name="projectpattern" />
+								</fieldset>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div id="right" >
+					<div  id="nature">
+
+						<fieldset class="radiocontainer">
+						<legend><span>Type</span></legend>
+						<span>
+							<input id="build" type="radio" value="build" name="nature"></input>
+							<label for="build" > build </label>
+						</span>
+						<span>
+							<input id="tests" type="radio" value="tests" name="nature"></input>
+							<label for="tests"> test </label>
+						</span>
+						<span>
+							<input id="all" type="radio" value="" name="nature" checked="checked"></input>
+							<label for="all"> all </label>
+						</span>
+						</fieldset>
+					</div>
+					<div class="radiocontainer" id="alertlevel">
+
+						<fieldset>
+						<legend><span>Alert level</span></legend>
+						<span>
+							<input id="error" type="radio" value="2" name="alertlevel"></input>
+							<label for="error"> error </label>
+						</span>
+						<span>
+							<input id="warnings" type="radio" value="1" name="alertlevel"></input>
+							<label for="warnings"> warning </label>
+						</span>
+						<span>
+							<input id="allalertlevel" type="radio" value="" name="alertlevel" checked="checked"></input>
+							<label for="allalertlevel"> all </label>
+						</span>
+						</fieldset>
+					</div>
+
+
+				</div>
+
+				<div class="icondiv">
+					<img src="images/ajax-loader.gif" class="rssicon" title="rss" alt="loading icon"/>
+				</div>
+				</section>
+
+				<section id="bottom">
+					<div id="resultdiv">
+						<a id="result"></a>
+					</div>
+					<div id="selected">
+					<div> Selected </div>
+					</div>
+				</section>
+			</div>
+			<div id="tab-2">
+				<div id="rssicontab2" class="icondiv">
+					<img src="images/ajax-loader.gif" class="rssicon" title="rss" alt="loading icon"/>
+				</div>
+				<div>
+					<h5>Free space threshold :</h5>
+					<p>
+						The disk space RSS feed sends news describing the hard drive state of slots which have less free space than the  threshold in percentage.
+					</p>
+					<input type="number" name="disklevel" min="1" max="100" readonly="readonly" value="1" id="slidervalue"/>%
+
+					<div id="slider">
+
+					</div>
+				</div>
+
+				<div id="diskresultdiv">
+					<a id="diskresult"></a>
+				</div>
+			</div>
+		</fieldset>
+
+
 </div>
 </body>
 </html>

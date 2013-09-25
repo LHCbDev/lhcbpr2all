@@ -475,10 +475,55 @@ function prepareFilterDialog() {
     		fillDialogTab('projects');
        		$("#filter-dialog").dialog("open");
     });
+
 }
 
+function prepareRssForm(){
+	$("#rssform").dialog({
+		autoOpen: false,
+		modal: true,
+		width:0.95*$("#container").width(),
+		buttons: {
+	        Cancel: function() {
+	        	// restore previous settings
+				initFilterCheckboxes('days');
+				initFilterCheckboxes('slots');
+				initFilterCheckboxes('projects');
+	        	$(this).dialog("close");
+	        }
+		}
+	});
+	$("#open-rssform")
+	.button()
+	.click(function() {
+		$("#rssform").dialog("open");
+		refreshAccordion();
+	});
+
+	/*
+	$("#rssform").css("width",0.95*$("#container").width()).hide();
+
+	$("#rss-form-iframe").css("width",$("#container").width()).css("visibility","hidden");//.hide();
+
+
+	$("#open-rssform")
+	.button()
+	.click(function() {
+
+   		$("#rss-form-iframe").css("width",$("#container").width()).show().css("visibility","visible");
+   		var rssformposition = $("#rss-form-iframe").position();
+   		$("#close-rssform").css("top",rssformposition.top).css("left",rssformposition.left+$("#rss-form-iframe").width()-32).show();//.css("display","block");
+	});
+
+	$("#close-rssform").click(function(){
+		$("#rss-form-iframe").hide();
+		$(this).hide();
+	});
+	*/
+}
 $(function(){
 	prepareFilterDialog();
+	prepareRssForm();
 
 	// Prepare day tables
 	var today = moment();
