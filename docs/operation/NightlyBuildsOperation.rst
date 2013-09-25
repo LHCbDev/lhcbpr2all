@@ -17,26 +17,26 @@ Logical organization
 --------------------
 The LHCb Nightly builds are organized in *slots*, *projects* and *platforms*.
 
-A *slot* is a named set of *projects* meant to test the build of the software 
-under some well defined conditions.  For example, the slot *lhcb-head* is used 
-to build the latest version in the repository of all the LHCb software projects 
-on top of a released version version of Gaudi (and the externals), while 
-*lhcb-cmake* is used to test the build with CMake of the projects already 
+A *slot* is a named set of *projects* meant to test the build of the software
+under some well defined conditions.  For example, the slot *lhcb-head* is used
+to build the latest version in the repository of all the LHCb software projects
+on top of a released version version of Gaudi (and the externals), while
+*lhcb-cmake* is used to test the build with CMake of the projects already
 converted to it.
 
-A *project* in a *slot* is a well defined version of a LHCb software project, 
-which could be a *tagged* version (as it can be released) or the latest version 
-in the repository (using the special version tag `HEAD`). A *project* can also 
-be tuned by changing the version used for one (or more) of its packages with 
-respect to the one that is implied by the specified version of the project (for 
-example use a released version of a package in the `HEAD` version of the project 
+A *project* in a *slot* is a well defined version of a LHCb software project,
+which could be a *tagged* version (as it can be released) or the latest version
+in the repository (using the special version tag `HEAD`). A *project* can also
+be tuned by changing the version used for one (or more) of its packages with
+respect to the one that is implied by the specified version of the project (for
+example use a released version of a package in the `HEAD` version of the project
 or vice versa).
 
-Each *project* in each *slot* is built and tested on one or more *platforms*, 
-i.e. combinations of CPU architecture, Operating System (OS), compiler and 
-optimization level.  A *platform* is identified by a string where the four parts 
-of its definition are separated by a `-`, for example `x86_64-slc6-gcc46-opt` 
-means Intel/AMD (x86) 64 bits architecture, Scientific Linux CERN 6 (SLC6), gcc 
+Each *project* in each *slot* is built and tested on one or more *platforms*,
+i.e. combinations of CPU architecture, Operating System (OS), compiler and
+optimization level.  A *platform* is identified by a string where the four parts
+of its definition are separated by a `-`, for example `x86_64-slc6-gcc46-opt`
+means Intel/AMD (x86) 64 bits architecture, Scientific Linux CERN 6 (SLC6), gcc
 4.6.x and optimized build.
 
 Configuration
@@ -46,7 +46,7 @@ Configuration
 Scheduling
 ==========
 
-The scheduling of the nightly builds follows the logical organization, mapped 
+The scheduling of the nightly builds follows the logical organization, mapped
 into Jenkins jobs.
 
 Each configured *slot* must have a corresponding *job* in Jenkins, this job can be enabled or disabled to trigger or not the build of the slot. Usually the slot jobs are run regularly (using the Jenkins *cron trigger*) every morning, but they can be triggered by hand at any moment, for example to pick up changes fixing bugs that caused troubles during the night (note that we can have concurrent builds for a slot).
@@ -176,6 +176,23 @@ If, for example, there has been a problem with a machine you can rebuild only on
 Note that you can access the specific build page from the `platform build status page`_ if you cannot find it through the `Nightly Builds Dashboard`_.
 
 
+Dashboard Database Manipulation
+-------------------------------
+
+Remove a Build
+~~~~~~~~~~~~~~
+In principle there is no need to remove builds from the database, because each new complete build of a slot will be reported in its own table and new partial builds will overwrite the old entries, but sometimes a broken (or aborted) build is just noise in the web page.
+
+1. if you need to remove the current build of the day:
+    1. connect to ``buildlhcb.cern.ch`` as *lhcbsoft*
+    2. remove the symlink ``/data/artifacts/<slot>/<day>``, where ``<day>`` is the current date as yyyy-mm-dd
+2. as *lhcbsoft* set up the environment for the Nightly Build tools
+    1. cd ~/LbNightlyTools
+    2. source setup.csh
+3. start a Python shell and type the following commands (replacing <slot> with the slot name and <build_id> with build numeric id, which can be seen in the URL of the build or tests results)
+    1. from LbNightlyTools.Utils import Dashboard
+    2. d = Dashboard()
+    3. d.dropBuild(<slot>, <build_id>)
 
 
 
