@@ -148,7 +148,7 @@ class Node:
     def getMinChildrenRank(self):
         """ Get the lowest rank in all the children """
         m = self.rank
-	for c in self.children:
+	     for c in self.children:
             if c.getMinChildrenRank() < m:
                  m = c.getMinChildrenRank()
         return m
