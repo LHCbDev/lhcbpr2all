@@ -1,9 +1,10 @@
 // links
-var host = window.location.hostname;
-var path = window.location.pathname.split("/");
-path.pop();
-var resultserverlink = "https://"+host+path.join("/")+"/rss";
-var diskserverlink = "https://"+host+path.join("/")+"/diskspacerss";
+var href = window.location.href.split("/");
+href.pop(0);
+
+//alert(href);
+var resultserverlink = href.join("/")+"/rss";
+var diskserverlink = href.join("/")+"/diskspacerss";
 var slot_name_view = "_view/slotsNames?group=true";
 var platform_name_view = "_view/platformsNames?group=true";
 var project_name_view = "_view/projectsNames?group=true" ;
@@ -248,6 +249,7 @@ $(function(){
             $(this).prev().val(valuemin);
         }
     });
+
 
 
 });

@@ -1,7 +1,7 @@
 function(head, req) {
 
 	var rssServerLocation = "https://"+req["headers"]["Host"]+"nighlies/diskspacerss";
-	var listnumberpattern = new RegExp("(100|[1-9][0-9]|[1-9])");
+	var numberpattern = new RegExp("(^100$|^[1-9][0-9]$|^[1-9]$)");
 	// parsing the http request
     var args = req["query"];
 	var alertlevel = args["minfreespacepercentage"] || "100"; // alert level error only, errors and warnings or all. possible value : ["error","warnings",undefined]
@@ -11,10 +11,10 @@ function(head, req) {
 	var daylimit = daynumber *86400000; // conversion en milisecond
 
     // input protection
-    if(listnumberpattern.test(alertlevel)){
+    if(numberpattern.test(alertlevel)){
     	alertlevel = eval(alertlevel);
     }else{
-    	alertlevel = 100;
+    	throw (['error', 'Bad Request', 'reason : Invalid argument for : minfreespacepercentage']);
     }
 
     row = getRow();

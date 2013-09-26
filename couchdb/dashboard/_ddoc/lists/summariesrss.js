@@ -14,11 +14,11 @@ function(head, req) {
 	// parsing the http request
     var args = req["query"];
 
-    var projectlist = args["projectlist"] || ["all"]; //project name or nothing for all
-    var platformlist = args["platformlist"] || ["all"]; //platform name TODO regexp
+    var projectlist = args["projectlist"] || "('all')"; //project name or nothing for all
+    var platformlist = args["platformlist"] || "('all')"; //platform name TODO regexp
     var nature = args["nature"] || "all"; // build only, test only or all possible value : ["build","tests",undefined]
     var alertlevel = args["alertlevel"] || "0"; // alert level error only, errors and warnings or all. possible value : {2,1,undefined / 0]["error","warnings",undefined]
-    var slotlist = args["slotlist"] || ["all"];
+    var slotlist = args["slotlist"] || "('all')";
     var slotpattern = args["slotpattern"] || 'false';
     var projectpattern = args["projectpattern"] || 'false';
     var platformpattern = args["platformpattern"] || 'false';
@@ -30,7 +30,9 @@ function(head, req) {
 
     // input protection
     //slot
-    if(regexValidPattern.test(slotpattern) && slotpattern != 'false'){
+    if(!regexValidPattern.test(slotpattern)){
+    	throw (['error', 'Bad Request', 'reason : Invalid argument for : slotpattern']);
+    }else if(slotpattern != 'false'){
     	slotregex = new RegExp(slotpattern);
     	slotlist = ["all"];
     }else{
@@ -43,14 +45,17 @@ function(head, req) {
     		}
 
         	slotlist =group;
+
         }else{
-        	slotlist = ["all"];
+        	throw (['error', 'Bad Request', 'reason : Invalid argument for : slotlist']);
 
         }
     }
 
     // project
-    if(regexValidPattern.test(projectpattern) && projectpattern != 'false'){
+    if(!regexValidPattern.test(projectpattern)){
+    	throw (['error', 'Bad Request', 'reason : Invalid argument for : projectpattern']);
+    }else if(projectpattern != 'false'){
     	projectregex = new RegExp(projectpattern);
     	projectlist = ["all"];
     }else{
@@ -63,12 +68,14 @@ function(head, req) {
     		}
     		projectlist =group;
         }else{
-        	projectlist = ["all"];
+        	throw (['error', 'Bad Request', 'reason : Invalid argument for : projectlist']);
         }
 
     }
     //platform
-    if(regexValidPattern.test(platformpattern) && platformpattern != 'false'){
+    if(!regexValidPattern.test(platformpattern)){
+    	throw (['error', 'Bad Request', 'reason : Invalid argument for : platformpattern']);
+    }else if(platformpattern != 'false'){
     	platformregex = new RegExp(platformpattern);
     	platformlist = ["all"];
     }else{
@@ -81,16 +88,17 @@ function(head, req) {
     		}
     		platformlist =group;
         }else{
-        	platformlist = ["all"];
+        	throw (['error', 'Bad Request', 'reason : Invalid argument for : platformlist']);
         }
     }
-    if ( nature != "build" && nature != "tests"){
-    	nature = "all";
+    if ( nature != "build" && nature != "tests" && nature != "all"){
+
+    	throw (['error', 'Bad Request', 'reason : Invalid argument for : nature']);
     }
     if( alertlevel == "0" || alertlevel == "1" || alertlevel == "2"){
     	alertlevel = eval(alertlevel);
     }else{
-    	alertlevel = 0;
+    	throw (['error', 'Bad Request', 'reason : Invalid argument for : alertlevel']);
     }
 
     // initialisation
