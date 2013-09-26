@@ -1,11 +1,10 @@
 function(head, req) {
 	// server url TO UPDATE
-	//var rssServerLocation = "https://lbtestbuild.cern.ch/nightlies/rss", resultServerLocation = 'http://buildlhcb.cern.ch/artifacts/';
-	var rssServerLocation = "https://"+req["headers"]["Host"]+req.path.join("/"), resultServerLocation = 'http://buildlhcb.cern.ch/artifacts/';
+	var rssServerLocation = "https://"+req["headers"]["X-Forwarded-Host"]+"/"+req.path.join("/");
+	var resultServerLocation = 'http://buildlhcb.cern.ch/artifacts/';
 	//protecting regex
-	var listValidPatern=new RegExp("^\\((\'[a-zA-Z0-9\-_]+\',)*(\'[a-zA-Z0-9\-_]+\')\\)$");
+	var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");
 	var regexValidPattern = /^[a-z0-9A-Z\[\]\|\(\)\\_\.\$\^\{\}\?\+\*\-\!\=\.\,(u\[0-9\]+)(o\[0-8\])(x\[0-9a-f\]+)(\\w)(\\W)(\\d)(\\D)(\\s)(\\S)(\\b)(\\B)(\\0)(\\n)(\\f)(\\r)(\\t)(\\v)]+$/ ;
-	var regextogroup = /'[a-z\-_0-9]*'/gi ;
 
 	//number of day considered
 	var daynumber = 1;
@@ -14,11 +13,11 @@ function(head, req) {
 	// parsing the http request
     var args = req["query"];
 
-    var projectlist = args["projectlist"] || "('all')"; //project name or nothing for all
-    var platformlist = args["platformlist"] || "('all')"; //platform name TODO regexp
+    var projectlist = args["projectlist"] || "all"; //project name or nothing for all
+    var platformlist = args["platformlist"] || "all"; //platform name TODO regexp
     var nature = args["nature"] || "all"; // build only, test only or all possible value : ["build","tests",undefined]
     var alertlevel = args["alertlevel"] || "0"; // alert level error only, errors and warnings or all. possible value : {2,1,undefined / 0]["error","warnings",undefined]
-    var slotlist = args["slotlist"] || "('all')";
+    var slotlist = args["slotlist"] || "all";
     var slotpattern = args["slotpattern"] || 'false';
     var projectpattern = args["projectpattern"] || 'false';
     var platformpattern = args["platformpattern"] || 'false';
@@ -38,17 +37,11 @@ function(head, req) {
     }else{
     	slotregex = new RegExp(".*");
     	if(listValidPatern.test(slotlist)){
-    		group = [];
-    		var groupstring = slotlist.match(regextogroup);
-    		for(index in groupstring){
-    			group.push(groupstring[index].substring(1,groupstring[index].length-1));
-    		}
 
-        	slotlist =group;
+    		slotlist = slotlist.split(",");
 
         }else{
         	throw (['error', 'Bad Request', 'reason : Invalid argument for : slotlist']);
-
         }
     }
 
@@ -61,12 +54,9 @@ function(head, req) {
     }else{
     	projectregex = new RegExp(".*") ;
     	if(listValidPatern.test(projectlist)){
-    		group = [];
-    		var groupstring = projectlist.match(regextogroup);
-    		for(index in groupstring){
-    			group.push(groupstring[index].substring(1,groupstring[index].length-1));
-    		}
-    		projectlist =group;
+
+    		projectlist = projectlist.split(",");
+
         }else{
         	throw (['error', 'Bad Request', 'reason : Invalid argument for : projectlist']);
         }
@@ -81,16 +71,14 @@ function(head, req) {
     }else{
     	platformregex = new RegExp(".*") ;
     	if(listValidPatern.test(platformlist)){
-    		group = [];
-    		var groupstring = platformlist.match(regextogroup);
-    		for(index in groupstring){
-    			group.push(groupstring[index].substring(1,groupstring[index].length-1));
-    		}
-    		platformlist =group;
+
+    		platformlist = platformlist.split(",");
+
         }else{
         	throw (['error', 'Bad Request', 'reason : Invalid argument for : platformlist']);
         }
     }
+
     if ( nature != "build" && nature != "tests" && nature != "all"){
 
     	throw (['error', 'Bad Request', 'reason : Invalid argument for : nature']);

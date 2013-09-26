@@ -1,6 +1,6 @@
 function(head, req) {
 
-	var rssServerLocation = "https://"+req["headers"]["Host"]+"nighlies/diskspacerss";
+	var rssServerLocation = "https://"+req["headers"]["X-Forwarded-Host"]+"/"+req.path.join("/")+"/diskspacerss";
 	var numberpattern = new RegExp("(^100$|^[1-9][0-9]$|^[1-9]$)");
 	// parsing the http request
     var args = req["query"];
@@ -21,7 +21,7 @@ function(head, req) {
 
     if (!row){
         send('<?xml version="1.0" encoding="iso-8859-1"?><rss version="2.0"><channel><title>Disk space news</title><description>There is no disk space data in the database. If this problem perist, please contact the webmaster</description><link>');
-        send(encodeURI(rssServerLocation+req.path.join("/")));
+        send(rssServerLocation);
         if(args){
         	send("?");
         	var arglist = [];
@@ -36,7 +36,7 @@ function(head, req) {
         send('<?xml version="1.0" encoding="iso-8859-1"?><rss version="2.0"><channel><title>Disk space news</title><description>Disk space available of the nightlies slots.</description><lastBuildDate>');
         send(row.value["date"]);
         send('</lastBuildDate><link>');
-        send(encodeURI(rssServerLocation+req.path.join("/")));
+        send(rssServerLocation);
         if(args){
         	send("?");
         	var arglist = [] ;
@@ -61,10 +61,9 @@ function(head, req) {
 
 			var btotal = data["blocks"];
 			var bavailable = data["bavail"];
+			var quot = 0;
 			if (btotal !=0){
-				var quot = bavailable*100/btotal;
-			}else{
-				var quot = 0;
+				quot = bavailable*100/btotal;
 			}
 
 	        if (quot > alertlevel ){ continue; }

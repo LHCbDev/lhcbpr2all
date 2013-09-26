@@ -25,14 +25,15 @@ function createlist(liste,type){
 			}
 			return "("+output.join("|")+")";
 		}else{
+
 			var output = [];
 			for (var j = 0; j < liste.length;j++){
-				output.push("'"+liste[j].value+"'");
+				output.push(liste[j].value);
 			}
-			return "("+output.join(",")+")";
+			return output.join(",");
 		}
 	}else{
-		return "('all')";
+		return "all";
 	}
 }
 // method to add a choice button
