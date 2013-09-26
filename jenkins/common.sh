@@ -18,8 +18,11 @@
 env_log=$(basename $0)${platform:+.}${platform}.env
 printenv | sort > ${env_log}
 
-# enforce English language
-export LANG=C
+# enforce C (POSIX) localization
+export LC_ALL=C
+
+# used by some tests to reduce the number of concurrent tests
+export LHCB_NIGHTLY_MAX_THREADS=1
 
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
 mkdir -p ${ARTIFACTS_DIR}
