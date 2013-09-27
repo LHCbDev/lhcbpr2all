@@ -70,13 +70,7 @@ class VTuneTimingParser:
                                 idx = i
                     nb_of_evts = int(idx[1])
                     id = id + 1
-                    if nb_of_evts > 0:
-                       node = Node(id, level, names[len(names)-1], (float(m.group(2).strip())/nb_of_evts)*1000, nb_of_evts, parent)
-                    else:
-                       node = Node(id, level, names[len(names)-1], float(m.group(2).strip())*1000, nb_of_evts, parent)
-                    nb_of_evts = -1
-                    mai        =  0
-                    idx        = -1
+                    node = Node(id, level, names[len(names)-1], float(m.group(2).strip()), int(nb_of_evts), parent)
                     try:
                         lastparent[level] = node
                     except IndexError, e:
@@ -89,8 +83,8 @@ class VTuneTimingParser:
             
         # Getting the actual root "EVENT LOOP"
         root = lastparent[0]
-        root.finalize()
-        # root.printTime()
+        #root.finalize()
+        #root.printTime()
         # Sorting all the nodes by CPU usage and setting the "rank" attribute
         root.rankChildren()
         self.root = root
@@ -145,9 +139,9 @@ class Node:
         self.level = level
         self.name = name.replace(" ", "_")
         self.rank = 0
-        self.value = float(value)
+        self.value = (value/entries)*1000 # in [ms]
         self.entries = entries
-        self.total = self.value*entries
+        self.total = self.value # in [s]
         self.children = []
         self.parent = parent
         self.eventTotal = None
@@ -159,8 +153,7 @@ class Node:
         for n in self.children:
             if len(n.children) > 0:
                 n.finalize()
-            childs_sum += (n.value/self.entries)
-        #self.total = self.value*self.entries
+            childs_sum += n.value
         self.value += childs_sum
 
     def printTime(self):
