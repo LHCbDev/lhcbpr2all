@@ -38,10 +38,10 @@ class TimingParser:
                             # BUG: IN some cases we jump one, to be investigated !
                             parent =  lastparent[level -2]
                         
-                    names = m.group(3).strip()
-                    #print "N: ", names, "V: ", float(m.group(4)), "L: ", level, "E: ", m.group(7).strip()
+                    name = m.group(3).strip()
                     id = id + 1
-                    node = Node(id, level, names, float(m.group(4).strip()), int(m.group(7).strip()), parent)
+                    #print "Id: ", id, "Name: ", name, "Value: ", float(m.group(4)), "Level: ", level, "Entries: ", m.group(7).strip()
+                    node = Node(id, level, name, float(m.group(4).strip()), int(m.group(7).strip()), parent)
                     try:
                         lastparent[level] = node
                     except IndexError, e:
@@ -262,5 +262,6 @@ if __name__ == "__main__":
         #for c in StrippingProtectedSequenceALL.children:
             #nodelist.append(c)
 
-        for node in t.getTopN(10):
-            print "{0} - {1} - {2}".format(node.name, node.value, node.entries)
+        for node in t.getAllSorted():
+            if node.name == 'Hlt2CharmHadD2HHHKsDD':
+                print "{0} - {1} - {2} - {3}".format(node.id, node.name, node.value, node.entries)
