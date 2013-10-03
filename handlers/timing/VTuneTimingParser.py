@@ -38,7 +38,7 @@ class VTuneTimingParser:
         parent       = None
         lastparent   = [None]
         id = 0
-        regxp = "^\s*([\[\]\w_ ]+)\s{5,}([\d\.]+)"
+        regxp = "^\s*([\[\]\w_ ]+)\s{5,}([\d\.]+)\s+([\d\.]+)"
         try:
             logf = open(tfname, "r")
             for l in logf.readlines():
@@ -83,8 +83,9 @@ class VTuneTimingParser:
             
         # Getting the actual root "EVENT LOOP"
         root = lastparent[0]
-        #root.finalize()
-        #root.printTime()
+        root.finalize()
+        root.finalize2()
+        root.printTime()
         # Sorting all the nodes by CPU usage and setting the "rank" attribute
         root.rankChildren()
         self.root = root
@@ -139,9 +140,9 @@ class Node:
         self.level = level
         self.name = name.replace(" ", "_")
         self.rank = 0
-        self.value = (value/entries)*1000 # in [ms]
-        self.entries = entries
-        self.total = self.value # in [s]
+        self.value = float(value) # in [ms]
+        self.entries = int(entries)
+        self.total = float(self.value) # in [s]
         self.children = []
         self.parent = parent
         self.eventTotal = None
@@ -151,10 +152,14 @@ class Node:
     def finalize(self):
         childs_sum = 0
         for n in self.children:
-            if len(n.children) > 0:
-                n.finalize()
+            n.finalize()
             childs_sum += n.value
         self.value += childs_sum
+
+    def finalize2(self):
+        for n in self.children:
+            n.finalize2()
+        self.value = (self.value/self.entries)*1000
 
     def printTime(self):
         print self.name, ", ", self.value, ", ", self.level, ", ", self.total , ", ", self.entries
