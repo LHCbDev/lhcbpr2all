@@ -85,7 +85,7 @@ class VTuneTimingParser:
         root = lastparent[0]
         root.finalize()
         root.finalize2()
-        root.printTime()
+        # root.printTime()
         # Sorting all the nodes by CPU usage and setting the "rank" attribute
         root.rankChildren()
         self.root = root
