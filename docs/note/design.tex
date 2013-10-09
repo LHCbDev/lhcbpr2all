@@ -1,6 +1,6 @@
 \section{Design}
 \label{sec:Design}
-The new Nightly Build System is divided in three main parts to address the concerns: the
+The new Nightly Build System is divided in three main parts to address the different concerns: the
 configuration of Jenkins jobs (for the coordination and distribution of the
 tasks), the core tools (for the actual checkout and build tasks), the dashboard
 (summarized presentation of the results of the builds).
@@ -9,7 +9,7 @@ Although Jenkins allows arbitrary complex scripts in the build steps, it is
 suggested in the documentation to keep the build steps simple, wrapping the
 complexity of the build in tools that are distributed and developed together
 with the project.  The main reasons are that the web interface provides only a
-minimal text field (not suitable for development) and that it is not possible to
+simple text field (not suitable for development) and that it is not possible to
 keep track of the evolution of the code of a configuration with a version
 control system.
 
