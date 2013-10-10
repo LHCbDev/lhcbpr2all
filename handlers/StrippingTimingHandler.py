@@ -16,22 +16,24 @@ class StrippingTimingHandler(BaseHandler):
         from timing.TimingParser import TimingParser
         tp = TimingParser(os.path.join(directory,'run.log'))
 
-        # COlelcting the interesting nodes
+        # Collecting the interesting nodes
         nodelist = []
         eventLoop = tp.getRoot()
         nodelist.append(eventLoop)
-        
-        dvUserSeq = eventLoop.findByName("DaVinciUserSequence")
-        nodelist.append(dvUserSeq)
-        for c in dvUserSeq.children:
-            nodelist.append(c)
-            
-        stripGlobal = dvUserSeq.findByName("StrippingGlobal")
-        nodelist.append(stripGlobal)
-        for c in stripGlobal.children:
-            nodelist.append(c)
 
-        StrippingProtectedSequenceALL = stripGlobal.findByName("StrippingProtectedSequenceALL")
+        sequences = [ "DaVinciEventSeq", 
+                      "FilteredEventSeq",
+                      "DaVinciAnalysisSeq",
+                      "DaVinciUserSequence",
+                      "StrippingGlobal",
+                      "StrippingSequenceStreamALL"]
+        
+        for s in sequences:
+            seq = eventLoop.findByName(s)
+            print s, " ", seq
+            nodelist.append(seq)
+
+        StrippingProtectedSequenceALL = eventLoop.findByName("StrippingProtectedSequenceALL")
         nodelist.append(StrippingProtectedSequenceALL)
         for c in StrippingProtectedSequenceALL.children:
             nodelist.append(c)
