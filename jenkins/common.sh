@@ -40,7 +40,8 @@ echo ===================================================================
 if [ -n "${set_config}" ] ; then
   # FIXME: this is usually set by the "group login" script, but it is not
   #        called on lxbuild (it is needed to get the right ICC environment)
-  export LOGIN_POST_SCRIPT=/afs/cern.ch/group/z5/post/login
+  export GROUP_DIR=/afs/cern.ch/group/z5
+  export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c ${platform}
   # FIXME: path to the new gdb should be implicit in the build/run-time
   #        environment
