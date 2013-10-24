@@ -27,6 +27,7 @@ import shutil
 from subprocess import Popen, PIPE, call
 from tempfile import mkstemp
 from datetime import datetime
+from socket import gethostname
 
 ARTIFACTS_URL = 'https://buildlhcb.cern.ch/artifacts'
 
@@ -299,9 +300,10 @@ class Script(LbUtils.Script.PlainScript):
                 pass
 
         f = open(lock_file, 'w')
-        f.flush() # ensure that the files gets on disk ASAP
-        f.write('{0}:{1}\n'.format(os.getpid(), datetime.now().isoformat()))
+        f.write('{0}@{1}:{2}\n'.format(os.getpid(), gethostname(),
+                                       datetime.now().isoformat()))
         f.close()
+        self.log.debug('created lock file %s', lock_file)
 
         try:
             urllist = listdir(url)
