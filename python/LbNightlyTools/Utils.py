@@ -144,13 +144,16 @@ class Dashboard(object):
                                                 'couchdb-admin'))
     ARTIFACTS_ROOT = os.path.join(os.path.sep, 'data', 'artifacts')
 
-    def __init__(self, credentials=None, dumpdir=None, submit=True):
+    def __init__(self, credentials=None, dumpdir=None, submit=True,
+                 server=None, db=None):
         '''
         @param credentials: pair with (username, password) of a valid account on
                             the server
         @param dumpdir: optional name of a directory where to keep a dump
                         of the data uploaded to the server
         @param submit: if set to False the data is not sent to the server
+        @param server: URL of the server
+        @param db: database name
         '''
         import couchdb
         import socket
@@ -166,17 +169,21 @@ class Dashboard(object):
             else:
                 self._log.debug('no couchdb credentials found')
 
+        if not server:
+            server = self.COUCHDB_SERVER
+        if not db:
+            db = self.COUCHDB_DB
+
         self.submit = submit
         if submit:
-            self.server = couchdb.Server(self.COUCHDB_SERVER)
+            self.server = couchdb.Server(server)
             self.server.resource.credentials = credentials
             try:
-                self.db = self.server[self.COUCHDB_DB]
+                self.db = self.server[db]
             except (couchdb.ResourceNotFound,
                     couchdb.ServerError,
                     socket.error):
-                self._log.warning('failed to access %s%s',
-                                  self.COUCHDB_SERVER, self.COUCHDB_DB)
+                self._log.warning('failed to access %s%s', server, db)
                 # ignore connection failures
                 self.db = None
         else:
@@ -275,3 +282,22 @@ class Dashboard(object):
             slot_dir = os.path.join(self.ARTIFACTS_ROOT, slot, str(day), 'db')
             if os.path.isdir(slot_dir):
                 self.publishFromFiles(slot_dir)
+
+    def slotsByDay(self, start=None, end=None):
+        '''
+        Return a generator over the slot built for each day in the specified
+        range. The objects in the generator are tuples with ("day", "slot", id).
+
+        @param start: first day to consider ("YYYY-MM-DD")
+        @param end: last day to consider ("YYYY-MM-DD")
+        '''
+        viewname = 'dashboard/slotsByDay'
+        opts = {}
+        if start:
+            opts['startkey'] = start
+        if end:
+            opts['endkey'] = end
+        for r in self.db.iterview(viewname, batch=100, **opts):
+            v = r[u'value']
+            yield (r[u'key'], v[u'slot'], v[u'build_id'])
+
