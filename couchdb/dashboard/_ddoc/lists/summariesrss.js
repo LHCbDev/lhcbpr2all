@@ -1,16 +1,16 @@
 function(head, req) {
-	// server url TO UPDATE
-	var rssServerLocation = "https://"+req["headers"]["X-Forwarded-Host"]+"/"+req.path.join("/");
-	var resultServerLocation = 'http://buildlhcb.cern.ch/artifacts/';
-	//protecting regex
-	var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");
-	var regexValidPattern = /^[a-z0-9A-Z\[\]\|\(\)\\_\.\$\^\{\}\?\+\*\-\!\=\.\,(u\[0-9\]+)(o\[0-8\])(x\[0-9a-f\]+)(\\w)(\\W)(\\d)(\\D)(\\s)(\\S)(\\b)(\\B)(\\0)(\\n)(\\f)(\\r)(\\t)(\\v)]+$/ ;
+    // server url TO UPDATE
+    var rssServerLocation = "https://" + req["headers"]["X-Forwarded-Host"] + "/" + req.path.join("/");
+    var resultServerLocation = 'http://buildlhcb.cern.ch/artifacts/';
+    //protecting regex
+    var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");
+    var regexValidPattern = /^[a-z0-9A-Z\[\]\|\(\)\\_\.\$\^\{\}\?\+\*\-\!\=\.\,(u\[0-9\]+)(o\[0-8\])(x\[0-9a-f\]+)(\\w)(\\W)(\\d)(\\D)(\\s)(\\S)(\\b)(\\B)(\\0)(\\n)(\\f)(\\r)(\\t)(\\v)]+$/;
 
-	//number of day considered
-	var daynumber = 1;
-	var daylimit = daynumber *86400000; // conversion en milisecond
+    //number of day considered
+    var daynumber = 1;
+    var daylimit = daynumber * 86400000; // conversion en milisecond
 
-	// parsing the http request
+    // parsing the http request
     var args = req["query"];
 
     var projectlist = args["projectlist"] || "all"; //project name or nothing for all
@@ -29,180 +29,170 @@ function(head, req) {
 
     // input protection
     //slot
-    if(!regexValidPattern.test(slotpattern)){
-    	throw (['error', 'Bad Request', 'reason : Invalid argument for : slotpattern']);
-    }else if(slotpattern != 'false'){
-    	slotregex = new RegExp(slotpattern);
-    	slotlist = ["all"];
-    }else{
-    	slotregex = new RegExp(".*");
-    	if(listValidPatern.test(slotlist)){
+    if (!regexValidPattern.test(slotpattern)) {
+        throw (['error', 'Bad Request', 'reason : Invalid argument for : slotpattern']);
+    } else if (slotpattern != 'false') {
+        slotregex = new RegExp(slotpattern);
+        slotlist = ["all"];
+    } else {
+        slotregex = new RegExp(".*");
+        if (listValidPatern.test(slotlist)) {
 
-    		slotlist = slotlist.split(",");
+            slotlist = slotlist.split(",");
 
-        }else{
-        	throw (['error', 'Bad Request', 'reason : Invalid argument for : slotlist']);
+        } else {
+            throw (['error', 'Bad Request', 'reason : Invalid argument for : slotlist']);
         }
     }
 
     // project
-    if(!regexValidPattern.test(projectpattern)){
-    	throw (['error', 'Bad Request', 'reason : Invalid argument for : projectpattern']);
-    }else if(projectpattern != 'false'){
-    	projectregex = new RegExp(projectpattern);
-    	projectlist = ["all"];
-    }else{
-    	projectregex = new RegExp(".*") ;
-    	if(listValidPatern.test(projectlist)){
+    if (!regexValidPattern.test(projectpattern)) {
+        throw (['error', 'Bad Request', 'reason : Invalid argument for : projectpattern']);
+    } else if (projectpattern != 'false') {
+        projectregex = new RegExp(projectpattern);
+        projectlist = ["all"];
+    } else {
+        projectregex = new RegExp(".*");
+        if (listValidPatern.test(projectlist)) {
 
-    		projectlist = projectlist.split(",");
+            projectlist = projectlist.split(",");
 
-        }else{
-        	throw (['error', 'Bad Request', 'reason : Invalid argument for : projectlist']);
+        } else {
+            throw (['error', 'Bad Request', 'reason : Invalid argument for : projectlist']);
         }
 
     }
     //platform
-    if(!regexValidPattern.test(platformpattern)){
-    	throw (['error', 'Bad Request', 'reason : Invalid argument for : platformpattern']);
-    }else if(platformpattern != 'false'){
-    	platformregex = new RegExp(platformpattern);
-    	platformlist = ["all"];
-    }else{
-    	platformregex = new RegExp(".*") ;
-    	if(listValidPatern.test(platformlist)){
+    if (!regexValidPattern.test(platformpattern)) {
+        throw (['error', 'Bad Request', 'reason : Invalid argument for : platformpattern']);
+    } else if (platformpattern != 'false') {
+        platformregex = new RegExp(platformpattern);
+        platformlist = ["all"];
+    } else {
+        platformregex = new RegExp(".*");
+        if (listValidPatern.test(platformlist)) {
 
-    		platformlist = platformlist.split(",");
+            platformlist = platformlist.split(",");
 
-        }else{
-        	throw (['error', 'Bad Request', 'reason : Invalid argument for : platformlist']);
+        } else {
+            throw (['error', 'Bad Request', 'reason : Invalid argument for : platformlist']);
         }
     }
 
-    if ( nature != "build" && nature != "tests" && nature != "all"){
+    if (nature != "build" && nature != "tests" && nature != "all") {
 
-    	throw (['error', 'Bad Request', 'reason : Invalid argument for : nature']);
+        throw (['error', 'Bad Request', 'reason : Invalid argument for : nature']);
     }
-    if( alertlevel == "0" || alertlevel == "1" || alertlevel == "2"){
-    	alertlevel = eval(alertlevel);
-    }else{
-    	throw (['error', 'Bad Request', 'reason : Invalid argument for : alertlevel']);
+    if (alertlevel == "0" || alertlevel == "1" || alertlevel == "2") {
+        alertlevel = eval(alertlevel);
+    } else {
+        throw (['error', 'Bad Request', 'reason : Invalid argument for : alertlevel']);
     }
 
     // initialisation
     row = getRow();
-    if (!row){
+    if (!row) {
         send('<?xml version="1.0" encoding="iso-8859-1"?><rss version="2.0"><channel><title>Results</title><description>There is no recent activity of this feed</description><link>');
-        send(rssServerLocation );
-        if(args){
-        	send("?");
-        	var arglist = [];
-	        for (var val in req["query"]){
-		        arglist.push(val+"="+args[val]);
-		    }
-        	send(encodeURIComponent(arglist.join(";")));
+        send(rssServerLocation);
+        if (args) {
+            send("?");
+            var arglist = [];
+            for (var val in req["query"]) {
+                arglist.push(val + "=" + args[val]);
+            }
+            send(encodeURIComponent(arglist.join(";")));
 
         }
         send('</link>');
-    }else{
-    	var startDate = new Date(row.value["date"]);
+    } else {
+        var startDate = new Date(row.value["date"]);
         send('<?xml version="1.0" encoding="iso-8859-1"?><rss version="2.0"><channel><title>Results</title><description>Test and Build results of the nightly builds.</description><lastBuildDate>');
         send(row.value["date"]);
         send('</lastBuildDate><link>');
-        send(rssServerLocation );
-        if(args){
-        	send("?");
-        	var arglist = [] ;
-	        for (var val in req["query"]){
-		        arglist.push(val+"="+args[val]);
-		    }
-        	send(encodeURIComponent(arglist.join(";")));
+        send(rssServerLocation);
+        if (args) {
+            send("?");
+            var arglist = [];
+            for (var val in req["query"]) {
+                arglist.push(val + "=" + args[val]);
+            }
+            send(encodeURIComponent(arglist.join(";")));
 
         }
         send('</link>');
 
-	    // add  items
+        // add  items
         do {
-        	// verify the date and breck the loop if there are more than "daynumber" days between the first and this item
-        	var date = new Date(row.value["date"]);
-        	var WNbJours = startDate.getTime() - date.getTime();
-        	if (WNbJours > daylimit){
-        		break;
-        	}
+            // verify the date and breck the loop if there are more than "daynumber" days between the first and this item
+            var date = new Date(row.value["date"]);
+            var WNbJours = startDate.getTime() - date.getTime();
+            if (WNbJours > daylimit) {
+                break;
+            }
 
-        	var data = row.value;
+            var data = row.value;
             var datanature = "tests";
             var datanature2 = "TEST";
-            if (data["build"]){
+            if (data["build"]) {
                 datanature = "build";
                 datanature2 = "BUILD";
             }
 
             var warning = "PASS";
             var alert = 0;
-            if (datanature == "tests" ){
+            if (datanature == "tests") {
                 wrong = data[datanature]["failed"];
-                if (wrong > 0){
+                if (wrong > 0) {
                     warning = "FAIL";
                     alert = 2;
                 }
-            }else if(datanature == "build"){
+            } else if (datanature == "build") {
                 wrong = data[datanature]["errors"];
                 var wrong2 = data[datanature]["warnings"];
-                if (wrong2 >0) {
+                if (wrong2 > 0) {
                     warning = "WARNINGS";
                     alert = 1;
                 }
-                if (wrong > 0){
+                if (wrong > 0) {
                     warning = "ERROR";
                     alert = 2;
                 }
-	        }
+            }
 
             // filter
-	        if (( (slotlist.indexOf(data["slot"]) == -1
-					&& slotlist.indexOf("all") == -1)
-					|| (projectlist.indexOf(data["project"]) == -1
-							&& projectlist.indexOf("all") == -1 )
-					||  (platformlist.indexOf(data["platform"]) == -1
-							&& platformlist.indexOf("all") == -1 )
-					|| (!slotregex.test(data["slot"]))
-					|| (!platformregex.test(data["platform"]))
-					|| (!projectregex.test(data["project"]))
-					|| (datanature !=nature && nature != "all")
-					|| ( alertlevel != 0
-							&& (alert < alertlevel))
-					  )){ continue; }
+            if (((slotlist.indexOf(data["slot"]) == -1 && slotlist.indexOf("all") == -1) || (projectlist.indexOf(data["project"]) == -1 && projectlist.indexOf("all") == -1) || (platformlist.indexOf(data["platform"]) == -1 && platformlist.indexOf("all") == -1) || (!slotregex.test(data["slot"])) || (!platformregex.test(data["platform"])) || (!projectregex.test(data["project"])) || (datanature != nature && nature != "all") || (alertlevel != 0 && (alert < alertlevel)))) {
+                continue;
+            }
 
 
 
-			//process builds and tests docs
+            //process builds and tests docs
 
-			send('<item><title>');
-			send("["+warning+"-"+datanature2+"] "+data["slot"]+"  "+data["project"]+"  "+data["platform"]);
-			send('</title><description>');
-			send(warning);
-			for (var val in data[datanature]){
-				send(" ");
-				send(val);
-				send(" : ");
-				send(data[datanature][val]);
-			}
-			send('</description><pubDate>');
-			send(data["date"]);
-			send('</pubDate><link>');
-			send(encodeURI(resultServerLocation+data["slot"]+"/"+data["build_id"]+"/summaries."+data["platform"]+"/"+data["project"]+"/"));
-			if (datanature == "tests" ){
-				send("html/");
-			}else{
-				send("build_log.html");
-			}
-			send('</link><guid isPermaLink="false">');
-			send(data["slot"]+"_"+data["project"]+"_"+data["platform"]+"_"+datanature+row.key);
-			send('</guid></item>');
+            send('<item><title>');
+            send("[" + warning + "-" + datanature2 + "] " + data["slot"] + "  " + data["project"] + "  " + data["platform"]);
+            send('</title><description>');
+            send(warning);
+            for (var val in data[datanature]) {
+                send(" ");
+                send(val);
+                send(" : ");
+                send(data[datanature][val]);
+            }
+            send('</description><pubDate>');
+            send(data["date"]);
+            send('</pubDate><link>');
+            send(encodeURI(resultServerLocation + data["slot"] + "/" + data["build_id"] + "/summaries." + data["platform"] + "/" + data["project"] + "/"));
+            if (datanature == "tests") {
+                send("html/");
+            } else {
+                send("build_log.html");
+            }
+            send('</link><guid isPermaLink="false">');
+            send(data["slot"] + "_" + data["project"] + "_" + data["platform"] + "_" + datanature + row.key);
+            send('</guid></item>');
 
-			// continue until there is no more row
-        }while (row = getRow()) ;
+            // continue until there is no more row
+        } while (row = getRow());
 
     }
 
