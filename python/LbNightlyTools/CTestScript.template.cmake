@@ -182,6 +182,10 @@ if(NOT STEP STREQUAL BUILD)
     # produce plain text summary of QMTest tests
     execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
                     OUTPUT_FILE ${summary_dir}/QMTestSummary.txt)
+    if(IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/xml_test_results)
+      # this is a build that supports CTest XML test results from QMTest
+      execute_process(COMMAND make HTMLSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
+    endif()
   else()
     # CMT requires special commands for the tests.
     set(ENV{PWD} "$${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt")
@@ -195,8 +199,13 @@ if(NOT STEP STREQUAL BUILD)
   endif()
 
   # copy the QMTest HTML output
-  file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
-       DESTINATION ${summary_dir}/html/.)
+  if(IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/html)
+    file(COPY $${CTEST_BINARY_DIRECTORY}/html/.
+         DESTINATION ${summary_dir}/html/.)
+  else()
+    file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
+         DESTINATION ${summary_dir}/html/.)
+  endif()
 
   # this is the old-style build log names
   set(OLD_BUILD_ID ${old_build_id})
