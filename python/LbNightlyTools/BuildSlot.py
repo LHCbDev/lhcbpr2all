@@ -849,8 +849,11 @@ class Script(LbUtils.Script.PlainScript):
                 Return the JSON object in the file summary.json in the reports, if
                 it exists, otherwise an empty list.
                 '''
-                for rep in self.reports:
-                    rep = os.path.join(rep, 'summary.json')
+                cadidates = [os.path.join(self.project.summary_dir,
+                                          'html', 'summary.json')]
+                cadidates.extend([os.path.join(rep, 'summary.json')
+                                  for rep in self.reports])
+                for rep in cadidates:
                     if os.path.exists(rep):
                         return json.load(codecs.open(rep, 'r', 'utf-8'))
                 return []
