@@ -145,6 +145,33 @@ class Node:
             cdren += c.getAllChildren()
         return cdren
 
+
+    def getNodesMatching(self, namepattern, foundnodes = None):
+        """ Find all children matching a given name """
+        if foundnodes == None:
+            foundnodes = set()
+        
+        if re.match(namepattern, self.name):
+            foundnodes.add(self)
+
+        for c in self.children:
+            foundnodes |= c.getNodesMatching(namepattern, foundnodes)
+        
+        return foundnodes
+
+
+    def getParentNodes(self):
+        """ Find all children matching a given name """
+
+        parents = set()
+        if self.parent != None:
+            parents.add(self.parent)
+            parents |= self.parent.getParentNodes()
+
+        return parents
+
+
+
     def getMinChildrenRank(self):
         """ Get the lowest rank in all the children """
         m = self.rank
@@ -211,6 +238,14 @@ class Node:
             vals.append( cjson)
 
         return tmpl % tuple(vals)
+
+    def printChildrenList(self, maxLevel=-1, thisLevel=0):
+        """ Prints the list of children down to a level """
+
+        #print ">>>> %d\t%s" % (thisLevel, self.name)
+        if thisLevel < maxLevel:
+            for c in self.children:
+                c.printChildrenList(maxLevel, thisLevel +1)
 
 
     def _childrenjson(self):

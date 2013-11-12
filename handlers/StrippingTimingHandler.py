@@ -17,26 +17,21 @@ class StrippingTimingHandler(BaseHandler):
         tp = TimingParser(os.path.join(directory,'run.log'))
 
         # Collecting the interesting nodes
-        nodelist = []
+        nodelist = set()
         eventLoop = tp.getRoot()
-        nodelist.append(eventLoop)
+        nodelist.add(eventLoop)
 
-        sequences = [ "DaVinciEventSeq", 
-                      "FilteredEventSeq",
-                      "DaVinciAnalysisSeq",
-                      "DaVinciUserSequence",
-                      "StrippingGlobal",
-                      "StrippingSequenceStreamALL"]
         
-        for s in sequences:
-            seq = eventLoop.findByName(s)
-            print s, " ", seq
-            nodelist.append(seq)
+        # Looking for all the nodes which name finishes with line
+        foundnodes = eventLoop.getNodesMatching(".*Line$")
 
-        StrippingProtectedSequenceALL = eventLoop.findByName("StrippingProtectedSequenceALL")
-        nodelist.append(StrippingProtectedSequenceALL)
-        for c in StrippingProtectedSequenceALL.children:
-            nodelist.append(c)
+        # Now adding the parents
+        for n in foundnodes:
+            nodelist.add(n)
+            nodelist |= n.getParentNodes()
+        
+
+        #eventLoop.printChildrenList(8)
 
         # Now saving the results
         for node in nodelist:
