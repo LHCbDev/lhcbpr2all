@@ -1,0 +1,112 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/smoothness/jquery-ui.css" />
+    <script type="text/javascript" src="//www.google.com/jsapi"></script>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+
+      // from http://stackoverflow.com/questions/1403888/get-url-parameter-with-javascript-or-jquery
+      function getURLParameter(name) {
+        return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+      }
+
+      // callback function used to draw the chart
+      function drawLineChart(data, textStatus, jqXHR) {
+        var options = { title: 'LHCb Nightly builds load (' + jqXHR.start.toLocaleString() + ' - ' + jqXHR.end.toLocaleString() + ')'
+                      //, hAxis: {format: 'H:mm'}
+                      };
+        // preapare data table
+        var dt = new google.visualization.DataTable();
+        dt.addColumn('datetime', 'Hours');
+        dt.addColumn('number', 'Total');
+        dt.addColumn('number', 'Tests');
+        dt.addColumn('number', 'Builds');
+
+        var partial = {build: 0, tests: 0};
+        var start = jqXHR.start.getTime();
+        var end = jqXHR.end.getTime();
+        var now = (new Date()).getTime();
+
+        // fill data table using steps of 5 min.
+        var step = 5 * 60 * 1000; // 5 min.
+        var i = 0;
+        for(var t = start ; t < end; t += step) {
+          if (t > now) break; // count only up to "now"
+          var count = {started: {build:0, tests:0},
+                       completed: {build:0, tests:0}};
+          while (i < data.rows.length) {
+            var row = data.rows[i];
+            var current = Date.parse(row.key);
+            if (current >= (t+step)) break;
+            ++count[row.value.event][row.value.job];
+            ++i;
+          }
+          partial.build += count.started.build - count.completed.build;
+          partial.tests += count.started.tests - count.completed.tests;
+
+          dt.addRow([new Date(t),
+                     partial.build + partial.tests + (count.completed.build+count.completed.tests)/2,
+                     partial.tests + count.completed.tests/2,
+                     partial.build + count.completed.build/2]);
+        }
+
+        // draw the chart
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        chart.draw(dt, options);
+      }
+
+      function drawChart(date) {
+        var start = null;
+        if (date)
+          start = new Date(date);
+        else
+          start = new Date();
+        start.setHours(0);
+        start.setMinutes(0);
+        start.setSeconds(0);
+        start.setMilliseconds(0);
+
+        var end = new Date(start.getTime() + 24*60*60*1000);
+        var url = '_view/systemLoad?startkey="' + start.toJSON() + '"&endkey="' + end.toJSON() + '"';
+        //alert(url);
+        //url = 'data.json';
+        // $.get(url).done(drawLineChart);
+        var query = $.getJSON(url);
+        query.start = start;
+        query.end = end;
+        query.done(drawLineChart);
+      }
+
+      google.setOnLoadCallback(function(){
+        // get requested date
+        //alert(getURLParameter('time'));
+        var par = getURLParameter('time');
+        var date = new Date();
+        if (par) date = new Date(parseInt(par));
+
+        // initialize datepicker widget
+        $("#datepicker").datepicker({
+          showButtonPanel: true,
+          maxDate: 0
+        }).change(function(){
+          var date = $(this).datepicker('getDate');
+          // alert(date.getTime());
+          if (date) {
+            window.location = window.location.protocol + '//' + window.location.host + window.location.pathname + '?time=' + date.getTime();
+          }
+        });
+        //
+        drawChart(date);
+      });
+
+    </script>
+  </head>
+  <body>
+    <div id="chart_div" style="width: 900px; height: 500px;" style="float: right;">
+      <div><img src="images/ajax-loader.gif"></div>
+    </div>
+    <div>Date: <input id="datepicker"/></div>
+  </body>
+</html>
