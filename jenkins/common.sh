@@ -42,13 +42,13 @@ if [ -n "${set_config}" ] ; then
   #        called on lxbuild (it is needed to get the right ICC environment)
   export GROUP_DIR=/afs/cern.ch/group/z5
   export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh -c ${platform}
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform}
   # FIXME: path to the new gdb should be implicit in the build/run-time
   #        environment
   # See https://its.cern.ch/jira/browse/LBCORE-151
   export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
 else
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
 fi
 
 if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
