@@ -23,6 +23,7 @@ import re
 import logging
 import time
 import shutil
+import json
 
 from subprocess import Popen, PIPE, call
 from tempfile import mkstemp
@@ -158,12 +159,54 @@ def install(url, dest):
         log.info('installing %s', url)
         return getURL(url, os.path.join(dest, url.rsplit('/', 1)[1]))
 
-def requiredPackages(files, projects=None, platforms=None, skip=None):
+
+def getDependencies(projects, slot_configuration):
+    ''' Extract dependencies of a list of projects,
+    using the slot configuration passed '''
+
+    needed_projects = set()
+    log = logging.getLogger('getDependencies')    
+
+    # Iterating over the projects
+    for proj in projects:
+        # First check the configuration
+        proj_lower = proj.lower()
+        pdata = None
+        for cp in slot_configuration['projects']:
+            # Comparing lower case to be sure...
+            if cp['name'].lower() == proj_lower:
+                pdata = cp
+                break
+
+        # If pdata still None, we have a problem...
+        if pdata == None:
+            raise Exception("Project %s not in slot metadata" % proj)
+
+        # Looking up the project/dependency info
+        pdeps = pdata['dependencies']
+
+        # Adding the direct deps to the set
+        for dep in pdeps:
+            log.debug('%s depends on %s' % (proj_lower, dep))
+            needed_projects.add(dep)
+
+        # Now looking for transitive deps and adding dependencies
+        alldeps = getDependencies(pdeps, slot_configuration)
+        needed_projects |= alldeps
+        
+    return needed_projects
+
+
+def requiredPackages(files, projects=None, platforms=None, skip=None,
+                     metadataurl=None,
+                     add_dependencies=True):
     '''
-    Extract from the list of taballs those that need to be installed considering
+    Extract from the list of tarballs those that need to be installed considering
     the list of requested projects (default: all of them), platforms (default:
     all of them) and what to skip (default: nothing).
     '''
+    log = logging.getLogger('requiredpackages')    
+    
     if skip is None:
         skip = set()
     else:
@@ -171,6 +214,25 @@ def requiredPackages(files, projects=None, platforms=None, skip=None):
     if projects:
         # change to lowercase to make the check case-insensitive
         projects = map(str.lower, projects)
+
+    # Checking that we have the right info for the dependencies
+    if add_dependencies and metadataurl == None:
+        raise Exception("Dependency analysis requires slot configuration URL")
+
+    slot_configuration = None
+    # Getting the project metadata
+    if metadataurl != None:
+        response = urllib2.urlopen(metadataurl)
+        slot_configuration = json.load(response)
+
+    # Actually getting the dependencies and merging them with the project list
+    if add_dependencies:
+        allprojects = getDependencies(projects, slot_configuration)
+        for proj in allprojects:
+            if proj not in projects:
+                log.debug("Addding %s to the list of projects" % proj)
+                projects.append(proj.lower())
+
     for filename in files:
         # file names have the format
         #   <project>.<version>.<tag.id>.<platform>.tar.bz2
@@ -252,6 +314,11 @@ class Script(LbUtils.Script.PlainScript):
                           help='directory where to install the artifacts '
                                '[default: <slot-name>/<build-id>]')
 
+        parser.add_option('--nodeps',
+                          action='store_true',
+                          help='Disable the download of dependencies for a project '
+                               '[default: False]',
+                          default=False)
 
         parser.set_defaults(artifacts_root=ARTIFACTS_URL)
 
@@ -276,6 +343,11 @@ class Script(LbUtils.Script.PlainScript):
 
         url = '/'.join([opts.artifacts_root, slot, build_id])
         history_file = os.path.join(dest, '.installed')
+
+        # URL for the slot-config file used to get the dependencies
+        metadataurl = '/'.join([ url, "db",
+                               '.'.join( [ slot, build_id,
+                                           'slot-config.json'] )])
 
         lock_file = os.path.join(dest, '.lock')
         self.log.debug('check for lock file %s', lock_file)
@@ -314,7 +386,9 @@ class Script(LbUtils.Script.PlainScript):
                                   for l in open(history_file)])
             tarfiles = requiredPackages(tarfiles,
                                         opts.projects, opts.platforms,
-                                        installed)
+                                        installed,
+                                        metadataurl,
+                                        add_dependencies=not opts.nodeps)
 
             required_files = list(tarfiles) # tarfiles is a generator (so far)
             # add required non-tar files
