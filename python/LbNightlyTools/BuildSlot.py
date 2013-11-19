@@ -432,6 +432,12 @@ class Script(LbUtils.Script.PlainScript):
         deps = dict([(p.name, p.deps) for p in self.projects.values()])
         self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]
 
+        if opts.projects:
+            opts.projects = set(p.strip().lower()
+                                for p in opts.projects.split(','))
+        else:
+            opts.projects = None
+
         if opts.deploy_dir:
             # ensure that the deployment dir ends with the slot name...
             if basename(opts.deploy_dir) != self.config[u'slot']:
@@ -936,6 +942,9 @@ class Script(LbUtils.Script.PlainScript):
 
         jobs = []
         for proj in self.sorted_projects:
+            # Consider only requested projects (if there was a selection)
+            if opts.projects and proj.name.lower() not in opts.projects:
+                continue # project not requested: skip
 
             self._prepareProject(proj)
 
