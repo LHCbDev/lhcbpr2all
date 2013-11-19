@@ -22,18 +22,20 @@
 
 # Check arguments
 
-if [ $# != 3 ] ; then
-    echo "Usage: $0 <step> <slot> <platform>"
+if [ $# -lt 3 ] ; then
+    echo "Usage: $0 <step> <slot> <platform> [<project>]"
     exit 1
 fi
 
 step=$1
 slot=$2
 platform=$3
+project=$4
 
 # Prepare Jenkins-like environment
 export slot
 export platform
+export project
 export NODE_NAME=$(hostname)
 # variables that can be overridden
 export slot_build_id=${slot_build_id:-999}
