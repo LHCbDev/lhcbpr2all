@@ -13,7 +13,7 @@ class FilePathHandler(BaseHandler):
         logfile = 'run.log'
         run_path = os.path.join(directory, logfile)
 
-        regxp = ".*/afs/cern.ch/lhcb/software/profiling/releases(/[A-Z0-9]+/\w+_[\d\w]+/[\d\w\-]+/.*)"
+        regxp = ".*/afs/cern.ch/lhcb/software/profiling/releases(/[A-Z0-9]+/[A-Z0-9]+_[\w-]+.*)"
         path_line = ""
         try:
            loglines = open(run_path, 'r')
@@ -21,7 +21,7 @@ class FilePathHandler(BaseHandler):
               m = re.match(regxp, l)
               if m != None:
                  path_line = m.group(1)
-                 break
+                 continue
            loglines.close()
         except IOError:
            raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
@@ -35,4 +35,5 @@ class FilePathHandler(BaseHandler):
 
 if __name__ == "__main__":
     fh = FilePathHandler()
-    fh.collectResults('/afs/cern.ch/lhcb/software/profiling/releases/MOORE/MOORE_v20r3p1/x86_64-slc6-gcc46-opt/20130916_1320_vtune_task_module')
+    fh.collectResults('/afs/cern.ch/lhcb/software/profiling/releases/MOORE/MOORE_v14r11/x86_64-slc6-gcc46-opt/20131112_1712_time')
+    fh.collectResults('/afs/cern.ch/lhcb/software/profiling/releases/MOORE/MOORE_lhcb-head-131111/x86_64-slc6-gcc46-opt/20131111_1931_time')
