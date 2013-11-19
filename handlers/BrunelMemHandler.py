@@ -18,8 +18,7 @@ class BrunelMemHandler(BaseHandler):
         f = ROOT.TFile(os.path.join(directory, l[0]))
         b = f.Get("Brunel/MemoryTool/Total Memory [MB]")
 
-        self.saveFloat("TotalMemory", b.GetMean(),
-                       group = "Memory");
+        self.saveFloat("TotalMemory", b.GetMean(), "Memory [MB]", "Memory");
 
     def findHistoFile(self, dir):
         return [f for f in os.listdir(dir) if re.match("Brunel.*histos.root", f)]
