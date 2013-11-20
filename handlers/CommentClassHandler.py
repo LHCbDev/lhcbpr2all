@@ -10,7 +10,7 @@ class CommentClassHandler(BaseHandler):
         self.results  = []
 
     def collectResults(self, directory):
-        logfile = 'profile_info.txt'
+        logfile = '../profile_info.txt'
         run_path = os.path.join(directory, logfile)
 
         regxp = "^comment\s*=\s*\"(.*)\s*/\s*(.*)\""
@@ -26,7 +26,7 @@ class CommentClassHandler(BaseHandler):
                  break
            loglines.close()
         except IOError:
-           raise Exception(str(self.__class__)+": File not found, this handler expects 'run.log' file in the result directory")
+           raise Exception(str(self.__class__)+": File not found, this handler expects 'profile_info.txt' file in the result directory")
          
         self.saveString("Comment", comment, "Comment Results", "JobInfo")
         self.saveString("Class", cclass, "Classify Results", "JobInfo")
