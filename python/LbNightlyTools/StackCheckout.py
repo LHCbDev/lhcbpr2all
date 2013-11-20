@@ -17,6 +17,8 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import json
+import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
@@ -400,6 +402,10 @@ class Script(LbUtils.Script.PlainScript):
         Dashboard(credentials=None,
                   dumpdir=join(artifacts_dir, 'db'),
                   submit=opts.submit).publish(cfg)
+        # Save a copy as metadata for tools like lbn-install
+        with codecs.open(join(artifacts_dir, 'slot-config.json'),
+                         'w', 'utf-8') as config_dump:
+            json.dump(cfg, config_dump, indent=2)
 
         slot.checkout(build_dir, opts.projects)
 
