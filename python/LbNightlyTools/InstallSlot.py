@@ -297,9 +297,9 @@ class Script(LbUtils.Script.PlainScript):
     def defineOpts(self):
         parser = self.parser
         parser.add_option('--artifacts-root',
-                          action='store', metavar='DIR',
-                          help='directory where the build artifacts can be '
-                               'found [default: %default]')
+                          action='store', metavar='URI',
+                          help='URL or directory where the build artifacts can '
+                               'be found [default: %default]')
         parser.add_option('--projects',
                           action='store',
                           help='comma-separated list of projects to install '
