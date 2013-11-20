@@ -165,7 +165,7 @@ def getDependencies(projects, slot_configuration):
     using the slot configuration passed '''
 
     needed_projects = set()
-    log = logging.getLogger('getDependencies')    
+    log = logging.getLogger('getDependencies')
 
     # Iterating over the projects
     for proj in projects:
@@ -183,7 +183,7 @@ def getDependencies(projects, slot_configuration):
             raise Exception("Project %s not in slot metadata" % proj)
 
         # Looking up the project/dependency info
-        pdeps = pdata['dependencies']
+        pdeps = pdata.get('dependencies', [])
 
         # Adding the direct deps to the set
         for dep in pdeps:
@@ -193,7 +193,7 @@ def getDependencies(projects, slot_configuration):
         # Now looking for transitive deps and adding dependencies
         alldeps = getDependencies(pdeps, slot_configuration)
         needed_projects |= alldeps
-        
+
     return needed_projects
 
 
@@ -205,8 +205,8 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
     the list of requested projects (default: all of them), platforms (default:
     all of them) and what to skip (default: nothing).
     '''
-    log = logging.getLogger('requiredpackages')    
-    
+    log = logging.getLogger('requiredPackages')
+
     if skip is None:
         skip = set()
     else:
@@ -230,7 +230,7 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
         allprojects = getDependencies(projects, slot_configuration)
         for proj in allprojects:
             if proj not in projects:
-                log.debug("Addding %s to the list of projects" % proj)
+                log.debug("Adding %s to the list of projects" % proj)
                 projects.append(proj.lower())
 
     for filename in files:
@@ -345,9 +345,7 @@ class Script(LbUtils.Script.PlainScript):
         history_file = os.path.join(dest, '.installed')
 
         # URL for the slot-config file used to get the dependencies
-        metadataurl = '/'.join([ url, "db",
-                               '.'.join( [ slot, build_id,
-                                           'slot-config.json'] )])
+        metadataurl = '/'.join([url, 'slot-config.json'])
 
         lock_file = os.path.join(dest, '.lock')
         self.log.debug('check for lock file %s', lock_file)
@@ -393,7 +391,7 @@ class Script(LbUtils.Script.PlainScript):
             required_files = list(tarfiles) # tarfiles is a generator (so far)
             # add required non-tar files
             other_files = set(['configuration.xml', 'confSummary.py',
-                               'searchPath.cmake'])
+                               'searchPath.cmake', 'slot-config.json'])
             required_files.extend(other_files.intersection(urllist) -
                                  set(installed))
             if required_files:
