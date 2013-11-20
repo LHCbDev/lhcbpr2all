@@ -13,8 +13,10 @@
 # Set common environment
 . $(dirname $0)/common.sh
 
-# Get the slot configuration files from Subversion
-lbn-get-configs
+if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
+  # Get the slot configuration files from Subversion
+  lbn-get-configs
+fi
 
 if [ "${slot}" = "lhcb-release" ] ; then
   lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
