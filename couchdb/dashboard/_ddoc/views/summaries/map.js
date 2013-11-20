@@ -9,7 +9,8 @@ function(doc) {
 			data.tests = {failed: 0, total: doc.results.length}
 			for (var idx in doc.results) {
 				if (doc.results[idx].outcome != 'PASS' &&
-					doc.results[idx].outcome != 'UNTESTED')
+					doc.results[idx].outcome != 'UNTESTED' &&
+                                        doc.results[idx].outcome != 'SKIPPED')
 					data.tests.failed++;
 			}
 		}
