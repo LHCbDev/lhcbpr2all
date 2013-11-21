@@ -207,6 +207,27 @@ class ListDict(dict):
             self[key].append(value)
 
 
+def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
+    '''
+    Generate the binary tarball name for a project.
+
+    >>> genPackageName(ProjDesc('Gaudi', 'HEAD'), 'x86_64-slc6-gcc48-opt')
+    'Gaudi.HEAD.x86_64-slc6-gcc48-opt.tar.bz2'
+    >>> genPackageName(ProjDesc('Gaudi', 'v25r0'), 'x86_64-slc6-gcc48-dbg',
+    ...                build_id='dummy', artifacts_dir='artifacts')
+    'artifacts/Gaudi.v25r0.dummy.x86_64-slc6-gcc48-dbg.tar.bz2'
+    '''
+    packname = [proj.name, proj.version]
+    if build_id:
+        packname.append(build_id)
+    packname.append(platform)
+    packname.append('tar.bz2')
+    packname = '.'.join(packname)
+    if artifacts_dir:
+        packname = os.path.join(artifacts_dir, packname)
+    return packname
+
+
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -627,14 +648,9 @@ class Script(LbUtils.Script.PlainScript):
 
         proj.started = proj.completed = proj.build_retcode = None
 
-        packname = [proj.name, proj.version]
-        if self.options.build_id:
-            packname.append(self.options.build_id)
-        packname.append(self.platform)
-        packname.append('tar.bz2')
-        packname = '.'.join(packname)
-        packname = os.path.join(self.artifacts_dir, packname)
-        proj.packname = packname
+        proj.packname = genPackageName(proj, self.platform,
+                                       build_id=self.options.build_id,
+                                       artifacts_dir=self.artifacts_dir)
 
         if proj.enabled:
             # write files only if the project is enabled

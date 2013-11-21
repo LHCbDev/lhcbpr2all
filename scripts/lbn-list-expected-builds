@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Simple script to extract the list of expected builds.
+
+The output format is JSON, and the expected builds are recorded as a list of
+tuples, each containing:
+
+ - binary tarball name
+ - slot name
+ - slot id
+ - project name
+ - platform
+ - timestamp of the request
+
+'''
+__author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
+
+import os
+import sys
+import time
+import json
+
+from datetime import datetime, date
+
+from LbNightlyTools import Configuration
+from LbNightlyTools.BuildSlot import ProjDesc, genPackageName
+
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Script to print the list of binaries expected from the build.
+    '''
+    __usage__ = '%prog [options] <config.json>'
+    __version__ = ''
+
+    def defineOpts(self):
+        '''Define options.'''
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
+
+        self.parser.add_option('--platforms', action='store',
+                               help='whitespace-separated list of platforms to '
+                                    'consider [default: those specified in the '
+                                    'configuration]')
+        self.parser.add_option('--slot-build-id', action='store', type='int',
+                               help='numeric id of the build [default: '
+                                    'taken from the configuration or -1]')
+        self.parser.add_option('-o', '--output', action='store',
+                               help='output file name '
+                                    '[default: standard output]')
+
+        addBasicOptions(self.parser)
+
+
+    def _setup(self):
+        '''
+        Initialize variables.
+        '''
+        from os.path import join, dirname, basename
+        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
+
+        opts = self.options
+
+        self.config = Configuration.load(self.args[0])
+
+        from LbNightlyTools.Utils import setDayNamesEnv
+        setDayNamesEnv()
+
+        self.starttime = datetime.now()
+        self.timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
+
+        expandTokensInOptions(opts, ['build_id', 'artifacts_dir'],
+                              slot=self.config[u'slot'],
+                              timestamp=self.timestamp)
+
+        if opts.projects:
+            opts.projects = set(p.strip().lower()
+                                for p in opts.projects.split(','))
+        else:
+            opts.projects = None
+
+        if opts.platforms:
+            opts.platforms = set(opts.platforms.split())
+        else:
+            opts.platforms = self.config.get(u'default_platforms', [])
+
+        if opts.slot_build_id is None:
+            opts.slot_build_id = self.config.get(u'build_id', -1)
+
+        self.projects = [p
+                         for p in map(ProjDesc, self.config[u'projects'])
+                         if opts.projects is None or
+                            p.name.lower() in opts.projects
+                        ]
+
+
+    def main(self):
+        '''
+        Main function of the script.
+        '''
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
+
+        opts = self.options
+
+        self._setup()
+
+        now = time.time()
+
+        expected_builds = [ (genPackageName(proj, platform,
+                                            build_id=opts.build_id,
+                                            artifacts_dir=opts.artifacts_dir),
+                             self.config[u'slot'],
+                             opts.slot_build_id,
+                             proj.name,
+                             platform,
+                             now)
+                            for proj in self.projects
+                            for platform in opts.platforms ]
+
+        if opts.output:
+            import codecs
+            json.dump(expected_builds, codecs.open(opts.output, 'w', 'utf-8'),
+                      indent=2)
+        else:
+            print json.dumps(expected_builds, indent=2)
+
+
+# __main__
+sys.exit(Script().run())

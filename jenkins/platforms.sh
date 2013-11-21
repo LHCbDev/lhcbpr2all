@@ -28,3 +28,8 @@ if [ -z "${platforms}" ] ; then
 fi
 
 echo "platforms=${platforms}" > ${ARTIFACTS_DIR}/platforms_list.txt
+
+# Coverity builds to not need to trigger tests
+if [ "${os_label}" != "coverity" ] ; then
+  lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --platforms "${platforms}" -o expected_builds.json ${config_file}
+fi
