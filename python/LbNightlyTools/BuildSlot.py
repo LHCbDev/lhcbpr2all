@@ -211,9 +211,11 @@ def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     '''
     Generate the binary tarball name for a project.
 
-    >>> genPackageName(ProjDesc('Gaudi', 'HEAD'), 'x86_64-slc6-gcc48-opt')
+    >>> genPackageName(ProjDesc({'name': 'Gaudi', 'version': 'HEAD'}),
+    ...                'x86_64-slc6-gcc48-opt')
     'Gaudi.HEAD.x86_64-slc6-gcc48-opt.tar.bz2'
-    >>> genPackageName(ProjDesc('Gaudi', 'v25r0'), 'x86_64-slc6-gcc48-dbg',
+    >>> genPackageName(ProjDesc({'name': 'Gaudi', 'version': 'v25r0'}),
+    ...                'x86_64-slc6-gcc48-dbg',
     ...                build_id='dummy', artifacts_dir='artifacts')
     'artifacts/Gaudi.v25r0.dummy.x86_64-slc6-gcc48-dbg.tar.bz2'
     '''
