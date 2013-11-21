@@ -79,6 +79,8 @@ if __name__ == '__main__':
             pending.append(expected)
 
     # store the still pending builds
+    if not os.path.exists(os.path.dirname(global_file)):
+        os.makedirs(os.path.dirname(global_file))
     with codecs.open(global_file, 'w', 'utf-8') as f:
         json.dump(pending, f, indent=2)
 
