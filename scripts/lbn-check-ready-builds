@@ -29,17 +29,18 @@ import json
 import codecs
 
 if __name__ == '__main__':
-    usage = 'Usage: %s working_directory' % os.path.basename(sys.argv[0])
+    usage = 'Usage: %s working_directory output_file' % os.path.basename(sys.argv[0])
 
     if '-h' in sys.argv or '--help' in sys.argv:
         print usage
         sys.exit(0)
 
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print >>sys.stderr, usage
         sys.exit(1)
 
     work_dir = sys.argv[1]
+    output_file = sys.argv[2]
     global_file = work_dir + '.json'
     data_dir = os.environ.get('DATA_DIR', '/data')
 
@@ -71,10 +72,14 @@ if __name__ == '__main__':
     for expected in expected_builds:
         (filename, slot, build_id, project, platform, timestamp, os_label) = expected
         if timestamp < expired_timestamp:
+            print ' '.join([slot, build_id,
+                            project, platform, 'dropped'])
             continue # request too old, skip
         if os.path.exists(os.path.join(data_dir, filename)):
             ready.append('.'.join([slot, build_id,
                                    project, platform, os_label]))
+            print ' '.join([slot, build_id,
+                            project, platform, 'ready'])
         else:
             pending.append(expected)
 
@@ -84,4 +89,6 @@ if __name__ == '__main__':
     with codecs.open(global_file, 'w', 'utf-8') as f:
         json.dump(pending, f, indent=2)
 
-    print ' '.join(ready)
+    if ready:
+        open(output_file, 'w').write('tests_list=%s\n' % (' '.join(ready)))
+        print output_file, 'written.'

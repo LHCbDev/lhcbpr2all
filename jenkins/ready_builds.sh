@@ -24,4 +24,4 @@ else
   datadir=${JENKINS_HOME}/nightlies/running_builds
 fi
 
-lbn-check-ready-builds $datadir > tests_list.txt
+lbn-check-ready-builds $datadir tests_list.txt
