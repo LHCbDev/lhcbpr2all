@@ -72,14 +72,12 @@ if __name__ == '__main__':
     for expected in expected_builds:
         (filename, slot, build_id, project, platform, timestamp, os_label) = expected
         if timestamp < expired_timestamp:
-            print ' '.join([slot, build_id,
-                            project, platform, 'dropped'])
+            print slot, build_id, project, platform, 'dropped'
             continue # request too old, skip
         if os.path.exists(os.path.join(data_dir, filename)):
-            ready.append('.'.join([slot, build_id,
+            ready.append('.'.join([slot, str(build_id),
                                    project, platform, os_label]))
-            print ' '.join([slot, build_id,
-                            project, platform, 'ready'])
+            print slot, build_id, project, platform, 'ready'
         else:
             pending.append(expected)
 
