@@ -21,6 +21,7 @@ tuples, each containing:
  - project name
  - platform
  - timestamp of the request
+ - OS label
 
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
@@ -115,6 +116,7 @@ class Script(LbUtils.Script.PlainScript):
         self._setup()
 
         now = time.time()
+        os_label = os.environ.get('os_label', '')
 
         expected_builds = [ (genPackageName(proj, platform,
                                             build_id=opts.build_id,
@@ -123,7 +125,8 @@ class Script(LbUtils.Script.PlainScript):
                              opts.slot_build_id,
                              proj.name,
                              platform,
-                             now)
+                             now,
+                             os_label)
                             for proj in self.projects
                             for platform in opts.platforms ]
 
