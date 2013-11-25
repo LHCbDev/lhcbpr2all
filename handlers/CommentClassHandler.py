@@ -10,7 +10,7 @@ class CommentClassHandler(BaseHandler):
         self.results  = []
 
     def collectResults(self, directory):
-        logfile = '../profile_info.txt'
+        logfile = 'profile_info.txt'
         run_path = os.path.join(directory, logfile)
 
         regxp = "^comment\s*=\s*\"(.*)\s*/\s*(.*)\""
