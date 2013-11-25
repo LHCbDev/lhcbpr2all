@@ -207,6 +207,29 @@ class ListDict(dict):
             self[key].append(value)
 
 
+def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
+    '''
+    Generate the binary tarball name for a project.
+
+    >>> genPackageName(ProjDesc({'name': 'Gaudi', 'version': 'HEAD'}),
+    ...                'x86_64-slc6-gcc48-opt')
+    'Gaudi.HEAD.x86_64-slc6-gcc48-opt.tar.bz2'
+    >>> genPackageName(ProjDesc({'name': 'Gaudi', 'version': 'v25r0'}),
+    ...                'x86_64-slc6-gcc48-dbg',
+    ...                build_id='dummy', artifacts_dir='artifacts')
+    'artifacts/Gaudi.v25r0.dummy.x86_64-slc6-gcc48-dbg.tar.bz2'
+    '''
+    packname = [proj.name, proj.version]
+    if build_id:
+        packname.append(build_id)
+    packname.append(platform)
+    packname.append('tar.bz2')
+    packname = '.'.join(packname)
+    if artifacts_dir:
+        packname = os.path.join(artifacts_dir, packname)
+    return packname
+
+
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -432,6 +455,12 @@ class Script(LbUtils.Script.PlainScript):
         deps = dict([(p.name, p.deps) for p in self.projects.values()])
         self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]
 
+        if opts.projects:
+            opts.projects = set(p.strip().lower()
+                                for p in opts.projects.split(','))
+        else:
+            opts.projects = None
+
         if opts.deploy_dir:
             # ensure that the deployment dir ends with the slot name...
             if basename(opts.deploy_dir) != self.config[u'slot']:
@@ -621,14 +650,9 @@ class Script(LbUtils.Script.PlainScript):
 
         proj.started = proj.completed = proj.build_retcode = None
 
-        packname = [proj.name, proj.version]
-        if self.options.build_id:
-            packname.append(self.options.build_id)
-        packname.append(self.platform)
-        packname.append('tar.bz2')
-        packname = '.'.join(packname)
-        packname = os.path.join(self.artifacts_dir, packname)
-        proj.packname = packname
+        proj.packname = genPackageName(proj, self.platform,
+                                       build_id=self.options.build_id,
+                                       artifacts_dir=self.artifacts_dir)
 
         if proj.enabled:
             # write files only if the project is enabled
@@ -936,6 +960,9 @@ class Script(LbUtils.Script.PlainScript):
 
         jobs = []
         for proj in self.sorted_projects:
+            # Consider only requested projects (if there was a selection)
+            if opts.projects and proj.name.lower() not in opts.projects:
+                continue # project not requested: skip
 
             self._prepareProject(proj)
 

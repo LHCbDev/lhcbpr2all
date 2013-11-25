@@ -17,6 +17,8 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import json
+import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
@@ -73,12 +75,15 @@ class StackDesc(object):
         self.name = name
         self.projects = projects or []
 
-    def checkout(self, rootdir='.'):
+    def checkout(self, rootdir='.', requested=None):
         '''
-        Call check out all the projects.
+        Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
         for proj in self.projects:
+            # Consider only requested projects (if there was a selection)
+            if requested and proj.name.lower() not in requested:
+                continue # project not requested: skip
             proj.checkout(rootdir)
         __log__.info('... done.')
 
@@ -360,6 +365,8 @@ class Script(LbUtils.Script.PlainScript):
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
+        opts = self.options
+
         slot = parseConfigFile(self.args[0])
 
         from datetime import datetime
@@ -369,10 +376,16 @@ class Script(LbUtils.Script.PlainScript):
 
         build_dir = join(os.getcwd(), 'tmp', 'checkout')
 
-        expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
+        expandTokensInOptions(opts, ['build_id', 'artifacts_dir'],
                               slot=slot.name, timestamp=timestamp)
 
-        artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
+        artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
+
+        if opts.projects:
+            opts.projects = set(p.strip().lower()
+                                for p in opts.projects.split(','))
+        else:
+            opts.projects = None
 
         self.log.debug('cleaning checkout directory')
         if os.path.exists(build_dir):
@@ -388,15 +401,18 @@ class Script(LbUtils.Script.PlainScript):
         cfg['date'] = timestamp
         Dashboard(credentials=None,
                   dumpdir=join(artifacts_dir, 'db'),
-                  submit=self.options.submit).publish(cfg)
+                  submit=opts.submit).publish(cfg)
+        # Save a copy as metadata for tools like lbn-install
+        with codecs.open(join(artifacts_dir, 'slot-config.json'),
+                         'w', 'utf-8') as config_dump:
+            json.dump(cfg, config_dump, indent=2)
 
-        slot.checkout(build_dir)
+        slot.checkout(build_dir, opts.projects)
 
         if not cfg.get('no_patch'):
             slot.patch(build_dir,
                        join(artifacts_dir,
-                            '.'.join([self.options.build_id or 'slot',
-                                      'patch'])))
+                            '.'.join([opts.build_id or 'slot', 'patch'])))
         else:
             self.log.info('not patching the sources')
 

@@ -10,26 +10,23 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+echo Waiting for ${project} ${platform}...
 
-# Set common environment
-. $(dirname $0)/common.sh
+# 5 minutes between each check
+poll_interval=300
+# number of checks to wait for 12 hours
+countdown=$(( 12 * 60 * 60 / ${poll_interval} ))
 
-export CMTCONFIG=$platform
+while [ ${countdown} -ge 0 ] ; do
+    sleep 300
+    filename=/data/${ARTIFACTS_DIR}/${project}.*.${slot_build_id}.*.${platform}.tar.bz2
+    if [ -e ${filename} ] ; then
+        break
+    fi
+    countdown=$(( ${countdown} - 1 ))
+done
 
-if [ -z "${platforms}" ] ; then
-  platforms=$(lbn-list-platforms ${config_file})
-fi
-
-if [ -z "${platforms}" ] ; then
-  echo "ERROR: list of platforms not specified neither in the configuration nor in the parameters"
-  exit 1
-fi
-
-echo "platforms=${platforms}" > ${ARTIFACTS_DIR}/platforms_list.txt
-
-# Coverity builds to not need to trigger tests
-if [ "${os_label}" != "coverity" ] ; then
-  lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --platforms "${platforms}" -o expected_builds.json ${config_file}
+if [ ! -e ${filename} ] ; then
+    echo "ERROR: the binary tarball did not appear in 12 hours"
+    exit 1
 fi

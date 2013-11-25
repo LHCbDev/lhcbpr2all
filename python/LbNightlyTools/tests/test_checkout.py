@@ -110,6 +110,24 @@ def test_StackDesc():
     assert cb.args == (p,)
     assert cb.kwargs == {'rootdir': '/tmp'}
 
+def test_PartialCheckout():
+    'PartialCheckout'
+    StackDesc = StackCheckout.StackDesc
+    ProjectDesc = StackCheckout.ProjectDesc
+
+    gcb = MockFunc()
+    p1 = ProjectDesc('Gaudi', 'v23r5', checkout=gcb)
+    lcb = MockFunc()
+    p2 = ProjectDesc('LHCb', 'HEAD', checkout=lcb)
+
+    s = StackDesc([p1, p2])
+    s.checkout(requested=set(['gaudi']))
+
+    assert gcb.args == (p1,)
+    assert gcb.kwargs == {'rootdir': '.'}
+    assert lcb.args == None
+    assert lcb.kwargs == None
+
 def test_parseConfigFile():
     'StackCheckout.parseConfigFile()'
 

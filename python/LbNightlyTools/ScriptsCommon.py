@@ -30,6 +30,11 @@ def addBasicOptions(parser):
                       action='store', metavar='DIR',
                       help='directory where to store the artifacts')
 
+    parser.add_option('--projects',
+                      action='store',
+                      help='comma-separated list of projects to consider'
+                           ' [default: all]')
+
     parser.set_defaults(build_id='{slot}.{timestamp}',
                         artifacts_dir='artifacts')
     return parser

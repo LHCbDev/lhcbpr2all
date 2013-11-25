@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Simple script to poll for expected builds and report which of them are ready
+to be tested.
+
+Given an "inbox" directory, retrieve the list of new expected builds, update the
+global list and check which builds are ready, then print a whitespace-separated
+list of build keys, in the format:
+
+    <slot>.<slot_build_id>.<project>.<platform>.<os_label>
+
+'''
+__author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
+
+import os
+import sys
+import time
+import json
+import codecs
+
+if __name__ == '__main__':
+    usage = 'Usage: %s working_directory output_file' % os.path.basename(sys.argv[0])
+
+    if '-h' in sys.argv or '--help' in sys.argv:
+        print usage
+        sys.exit(0)
+
+    if len(sys.argv) != 3:
+        print >>sys.stderr, usage
+        sys.exit(1)
+
+    work_dir = sys.argv[1]
+    output_file = sys.argv[2]
+    global_file = work_dir + '.json'
+    data_dir = os.environ.get('DATA_DIR', '/data')
+
+    try:
+        with codecs.open(global_file, 'r', 'utf-8') as f:
+            expected_builds = json.load(f)
+    except:
+        expected_builds = []
+
+    # timestamp before which we can assume the build will never appear
+    expired_timestamp = time.time() - (18 * 60 * 60) # 18 hours ago
+
+    from os.path import join
+
+    for root, _dirs, files in os.walk(work_dir):
+        for f in files:
+            f = join(root, f)
+            try:
+                expected_builds.extend(json.load(codecs.open(f, 'r', 'utf-8')))
+                os.remove(f)
+            except Exception, x:
+                print "Ignoring '%s': %s" % (f, x)
+        if not os.listdir(root):
+            os.removedirs(root)
+
+    # check for binary tarballs
+    pending = []
+    ready = []
+    for expected in expected_builds:
+        (filename, slot, build_id, project, platform, timestamp, os_label) = expected
+        if timestamp < expired_timestamp:
+            print slot, build_id, project, platform, 'dropped'
+            continue # request too old, skip
+        if os.path.exists(os.path.join(data_dir, filename)):
+            ready.append('.'.join([slot, str(build_id),
+                                   project, platform, os_label]))
+            print slot, build_id, project, platform, 'ready'
+        else:
+            pending.append(expected)
+
+    # store the still pending builds
+    if not os.path.exists(os.path.dirname(global_file)):
+        os.makedirs(os.path.dirname(global_file))
+    with codecs.open(global_file, 'w', 'utf-8') as f:
+        json.dump(pending, f, indent=2)
+
+    if ready:
+        open(output_file, 'w').write('tests_list=%s\n' % (' '.join(ready)))
+        print output_file, 'written.'

@@ -74,15 +74,7 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 fi
 
-if [ "${slot}" != "lhcb-release" ] ; then
-  time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --with-tests ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
-else
-  time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
-  if [ "${os_label}" != "coverity" ] ; then
-    time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean --tests-only ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
-  fi
-fi
-
+time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
 
 # if possible generate glimpse indexes and upload them to buildlhcb
 if which glimpseindex &> /dev/null ; then

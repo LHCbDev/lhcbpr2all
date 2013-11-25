@@ -21,6 +21,7 @@ import codecs
 from datetime import date
 from os.path import exists, normpath, join, dirname, isfile
 from LbNightlyTools.Utils import ensureDirs
+from subprocess import call
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
@@ -365,6 +366,53 @@ def test_simple_build_2():
                            'Makefile',
                            join('InstallArea', info['config'],
                                 'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_explicit_list():
+    # Test the case of explicit project list.
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot-2',
+                    build_id = 0,
+                    project = 'DummyProject',
+                    PROJECT = 'DUMMYPROJECT',
+                    version = 'HEAD'
+                    )
+        # I reuse the TestProject renaming it DummyProject
+        os.makedirs('build')
+        call(['tar', 'xf', join(os.pardir, 'artifacts',
+                                'TestProject.HEAD.testing-slot.src.tar.bz2')],
+             cwd='build')
+        os.rename(join('build', 'TESTPROJECT'), join('build', 'DUMMYPROJECT'))
+        os.rename(join('build', 'DUMMYPROJECT', 'TESTPROJECT_HEAD'),
+                  join('build', 'DUMMYPROJECT', 'DUMMYPROJECT_HEAD'))
+
+        script = BuildSlot.Script()
+        retcode = script.run(['--projects', 'DummyProject', 'testing-slot-2.json'])
+        assert retcode == 0
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+        other_project_build_dir = join(tmpd, 'testdata', 'build',
+                                       'TESTPROJECT', 'TESTPROJECT_HEAD',
+                                       'InstallArea', info['config'])
+        assert not os.path.exists(other_project_build_dir)
 
         _check_build_artifacts(join(tmpd, 'testdata'), info)
 

@@ -10,18 +10,40 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# prepare the environment for testing
-. /cvmfs/lhcb.cern.ch/lib/lhcb/LBSCRIPTS/prod/InstallArea/scripts/LbLogin.sh
-. SetupProject.sh LCGCMT Python pytools
-set -ex
+# Clean LD_LIBRARY_PATH of /gcc/ entries
+# (see comment on issue LBCORE-109 http://cern.ch/go/PLQ7)
+export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
 
-cd $(dirname $0)/..
-. ./setup.sh
+# Set common environment
+set_config=1
+. $(dirname $0)/common.sh
 
-nosetests -v --with-doctest --with-xunit --with-coverage --cover-erase --cover-inclusive --cover-package LbNightlyTools python
-coverage xml --include="python/*"
+day=$(date +%a)
+timestamp=$(date -I)
+deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
-# Added the contrib directory to the Python path (needed by pylint)
-export PYTHONPATH=$PWD/python/LbNightlyTools/contrib:$PYTHONPATH
-# Ignoring pylint return code (to avoid failure of the test).
-pylint --rcfile=docs/pylint.rc LbNightlyTools > pylint.txt || true
+# special hack to get a dev version of the CMake configuration files
+export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH
+
+# hard-coded because it may point to CVMFS
+export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
+
+if [ "$JENKINS_MOCK" = "true" ] ; then
+  prepare_opt="--clean"
+  config_file=${ARTIFACTS_DIR}/slot-config.json
+else
+  if [ "$JOB_NAME" = "nightly-slot-test-project-platform" ] ; then
+    deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
+  else
+    deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
+    artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/testing"
+  fi
+  submit_opt="--submit --cdash-submit"
+  rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+
+  lbn-install --verbose ${artifacts_root_opt} --dest build --projects ${project} --platforms ${platform} ${slot} ${slot_build_id}
+  prepare_opt="--no-unpack"
+  config_file=build/slot-config.json
+fi
+
+time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --tests-only --projects ${project} ${prepare_opt} ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
