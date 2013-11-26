@@ -1030,12 +1030,18 @@ class Script(LbUtils.Script.PlainScript):
 
         if opts.rsync_dest:
             self.log.info('deploying artifacts...')
-            retcode = DeployArtifactsTask(self).wait()
-            if retcode == 0:
-                self.log.info('... artifacts deployed')
-            else:
+            retcode = 1
+            for _ in range(5):
+                retcode = DeployArtifactsTask(self).wait()
+                if retcode == 0:
+                    self.log.info('... artifacts deployed')
+                    break
+                self.log.info('problems deploying artifacts, retrying...')
+                time.sleep(30)
+            else: # this "else" belong to "for count..."
                 self.log.error('artifacts deployment failed')
                 return retcode
+
         return 0
 
 class BuildReporter(object):
