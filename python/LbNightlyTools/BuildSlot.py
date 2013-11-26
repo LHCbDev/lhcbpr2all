@@ -813,10 +813,11 @@ class Script(LbUtils.Script.PlainScript):
 
         self._setup()
 
-        self.dump_json({'type': 'job-start',
-                        'host': gethostname(),
-                        'build_number': os.environ.get('BUILD_NUMBER', 0),
-                        'started': self.starttime.isoformat()})
+        if not opts.tests_only:
+            self.dump_json({'type': 'job-start',
+                            'host': gethostname(),
+                            'build_number': os.environ.get('BUILD_NUMBER', 0),
+                            'started': self.starttime.isoformat()})
 
         self._prepareBuildDir()
 
@@ -972,9 +973,8 @@ class Script(LbUtils.Script.PlainScript):
 
             if not self.options.tests_only:
                 self._buildProject(proj)
-
-            if opts.rsync_dest:
-                jobs.append(DeployArtifactsTask(self))
+                if opts.rsync_dest:
+                    jobs.append(DeployArtifactsTask(self))
 
             if opts.coverity:
                 if proj.build_retcode != 0:
@@ -1021,11 +1021,13 @@ class Script(LbUtils.Script.PlainScript):
 
         self.completetime = datetime.now()
 
-        self.dump_json({'type': 'job-end',
-                        'completed': self.completetime.isoformat()})
+        if not opts.tests_only:
+            self.dump_json({'type': 'job-end',
+                            'completed': self.completetime.isoformat()})
 
         self.log.info('build completed in %s',
                       self.completetime - self.starttime)
+
         if opts.rsync_dest:
             self.log.info('deploying artifacts...')
             retcode = DeployArtifactsTask(self).wait()
