@@ -939,7 +939,7 @@ class Script(LbUtils.Script.PlainScript):
                 else:
                     ensureDirs([self.script.options.rsync_dest])
 
-                cmd = ['rsync', '--archive',
+                cmd = ['rsync', '--archive', '--whole-file',
                        '--partial-dir=.rsync-partial.%s.%d' %
                        (gethostname(), os.getpid()),
                        '--delay-updates', '--rsh=ssh',
