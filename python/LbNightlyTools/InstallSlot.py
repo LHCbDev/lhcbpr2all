@@ -409,7 +409,8 @@ class Script(LbUtils.Script.PlainScript):
                 installed[f] = datetime.now().isoformat()
                 # record what has been installed so far
                 histfile = open(history_file, 'w')
-                histfile.writelines(['%s:%s\n' % i for i in sorted(installed.items())])
+                histfile.writelines(['%s:%s\n' % i
+                                     for i in sorted(installed.items())])
                 histfile.close()
                 if 'index' in f:
                     index_installed = True
@@ -417,6 +418,26 @@ class Script(LbUtils.Script.PlainScript):
             if index_installed:
                 fixGlimpseIndexes(f for f in findGlimpseFilenames(dest)
                                   if f not in pre_existing_indexes)
+
+            if 'confSummary.py' in installed:
+                # generate shell script equivalents
+                data = {}
+                execfile(os.path.join(dest, 'confSummary.py'), data)
+                search_path = data.get('cmtProjectPathList', [])
+                # we need to prepend the installation directory
+                search_path.insert(0, os.path.abspath(dest))
+                # write bash script
+                shell_name = os.path.join(dest, 'setupSearchPath.sh')
+                self.log.info('writing %s', shell_name)
+                with open(shell_name, 'w') as shell_script:
+                    shell_script.write('export CMTPROJECTPATH=%s\n' %
+                                       (':'.join(search_path)))
+                # write tcsh script
+                shell_name = os.path.join(dest, 'setupSearchPath.csh')
+                self.log.info('writing %s', shell_name)
+                with open(shell_name, 'w') as shell_script:
+                    shell_script.write('setenv CMTPROJECTPATH %s\n' %
+                                       (':'.join(search_path)))
 
         except Exception, ex:
             self.log.error('Fatal error: %s' % ex)
