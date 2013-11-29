@@ -56,15 +56,15 @@ else
   config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
 fi
 
-# create moving symlinks in the artifacts deployment directory (ASAP)
-# (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
-ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
-
 if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
 fi
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
+  # create moving symlinks in the artifacts deployment directory (ASAP)
+  # (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
+  ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
+
   if [ "$JOB_NAME" = "nightly-slot-build-platform" ] ; then
     deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
   else
@@ -91,4 +91,9 @@ if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
   echo ${slot}.${slot_build_id} >> $stamp
   echo ${BUILD_URL} >> $stamp
   echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
+fi
+
+if [ "$JENKINS_MOCK" != "true" ] ; then
+  # Clean up
+  rm -rf ${ARTIFACTS_DIR} build
 fi
