@@ -35,21 +35,6 @@ if [ -e /build/coverity/static-analysis/bin ] ; then
   export PATH=/build/coverity/static-analysis/bin:/build/coverity:$PATH
 fi
 
-# hard-coded because it may point to CVMFS
-export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
-
-# remove old summaries
-rm -rf $LHCBNIGHTLIES/www/logs/${slot}.${day}*
-
-# create old-style progress stamp files
-if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
-  stamp=$LHCBNIGHTLIES/${slot}/${day}/isStarted-$platform
-  date +"%a %b %d %H:%M:%S %Y" > $stamp
-  echo ${slot}.${slot_build_id} >> $stamp
-  echo ${BUILD_URL} >> $stamp
-  echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
-fi
-
 if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
   config_file=${ARTIFACTS_DIR}/${slot}.json
 else
@@ -65,16 +50,11 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   # (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
   ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
-  if [ "$JOB_NAME" = "nightly-slot-build-platform" ] ; then
-    deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/logs"
-  else
-    deploy_opt="--deploy-reports-to $LHCBNIGHTLIES/www/test/logs"
-  fi
   submit_opt="--submit --cdash-submit"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 fi
 
-time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${deploy_opt} ${rsync_opt} ${coverity_opt} ${config_file}
+time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
 
 # if possible generate glimpse indexes and upload them to buildlhcb
 if which glimpseindex &> /dev/null ; then
@@ -82,15 +62,6 @@ if which glimpseindex &> /dev/null ; then
     if [ "$JENKINS_MOCK" != "true" ] ; then
         rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
     fi
-fi
-
-if [ -e $LHCBNIGHTLIES/${slot}/${day} ] ; then
-  rm -f $stamp
-  stamp=$LHCBNIGHTLIES/${slot}/${day}/isDone-$platform
-  date +"%a %b %d %H:%M:%S %Y" > $stamp
-  echo ${slot}.${slot_build_id} >> $stamp
-  echo ${BUILD_URL} >> $stamp
-  echo "https://lemon.cern.ch/lemon-web/index.php?target=process_search&fb=${HOST}" >> $stamp
 fi
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
