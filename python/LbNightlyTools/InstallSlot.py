@@ -226,7 +226,7 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
         slot_configuration = json.load(response)
 
     # Actually getting the dependencies and merging them with the project list
-    if add_dependencies:
+    if add_dependencies and projects is not None:
         allprojects = getDependencies(projects, slot_configuration)
         for proj in allprojects:
             if proj not in projects:
