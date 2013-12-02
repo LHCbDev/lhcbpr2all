@@ -43,6 +43,8 @@ fi
 
 if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
+  # Coverity builds to not need to trigger tests
+  with_tests=no
 fi
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
@@ -52,6 +54,18 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
 
   submit_opt="--submit --cdash-submit"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+fi
+
+# Notify the system of the builds that need to be tested.
+if [ "${with_tests}" != "no" ] ; then
+  lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --platforms "${platform}" -o expected_builds.json ${config_file}
+
+  if [ "$JOB_NAME" = "nightly-test-slot-build-platform" ] ; then
+    datadir=${JENKINS_HOME}/nightlies/testing/running_builds
+  else
+    datadir=${JENKINS_HOME}/nightlies/running_builds
+  fi
+  scp expected_builds.json buildlhcb.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
 fi
 
 time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
