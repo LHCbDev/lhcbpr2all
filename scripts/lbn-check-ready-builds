@@ -28,6 +28,8 @@ import time
 import json
 import codecs
 
+from stat import ST_CTIME
+
 if __name__ == '__main__':
     usage = 'Usage: %s working_directory output_file' % os.path.basename(sys.argv[0])
 
@@ -63,18 +65,20 @@ if __name__ == '__main__':
                 os.remove(f)
             except Exception, x:
                 print "Ignoring '%s': %s" % (f, x)
-        if not os.listdir(root):
-            os.removedirs(root)
 
     # check for binary tarballs
     pending = []
     ready = []
     for expected in expected_builds:
-        (filename, slot, build_id, project, platform, timestamp, os_label) = expected
+        (filename, slot, build_id, project, platform, timestamp,
+         os_label) = expected
         if timestamp < expired_timestamp:
             print slot, build_id, project, platform, 'dropped'
             continue # request too old, skip
-        if os.path.exists(os.path.join(data_dir, filename)):
+        # check that the trigger file file exists and it is not older than the
+        # request
+        path = os.path.join(data_dir, filename)
+        if os.path.exists(path) and os.stat(path)[ST_CTIME] >= timestamp:
             ready.append('.'.join([slot, str(build_id),
                                    project, platform, os_label]))
             print slot, build_id, project, platform, 'ready'
