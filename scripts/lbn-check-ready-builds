@@ -65,8 +65,6 @@ if __name__ == '__main__':
                 os.remove(f)
             except Exception, x:
                 print "Ignoring '%s': %s" % (f, x)
-        if not os.listdir(root):
-            os.removedirs(root)
 
     # check for binary tarballs
     pending = []
