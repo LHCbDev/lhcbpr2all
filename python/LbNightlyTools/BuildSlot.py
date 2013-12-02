@@ -1238,7 +1238,7 @@ class BuildReporter(object):
         '''
         from collections import deque
 
-        w_exp = re.compile(r'\bwarning\b', re.IGNORECASE)
+        w_exp = re.compile(r'\bwarning\b|\bSyntaxWarning:', re.IGNORECASE)
         e_exp = re.compile(r'\berror\b', re.IGNORECASE)
         #cExp = re.compile(r'cov-|(Coverity (warning|error|message))',
         #                  re.IGNORECASE)
