@@ -12,9 +12,10 @@
 Utility functions used for testing.
 '''
 import os
+import shutil
 import tempfile
 
-__all__ = ('which', 'MockFunc', 'processFile')
+__all__ = ('which', 'MockFunc', 'processFile', 'processFileWithName')
 
 def which(cmd):
     '''
@@ -52,3 +53,18 @@ def processFile(data, function):
         return function(path)
     finally:
         os.remove(path)
+
+def processFileWithName(data, name, function):
+    '''
+    Process the string data via the function 'function' that accepts a filename
+    as parameter, using the given name for the file.
+    '''
+    path = tempfile.mkdtemp()
+    filepath = os.path.join(path, name)
+    f = open(filepath, 'w')
+    try:
+        f.write(data)
+        f.close()
+        return function(filepath)
+    finally:
+        shutil.rmtree(path, ignore_errors=True)

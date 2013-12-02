@@ -131,7 +131,7 @@ def test_PartialCheckout():
 def test_parseConfigFile():
     'StackCheckout.parseConfigFile()'
 
-    doCall = lambda data: processFile(json.dumps(data), StackCheckout.parseConfigFile)
+    doCall = lambda data: processFileWithName(json.dumps(data), 'dummy.json', StackCheckout.parseConfigFile)
 
     CheckoutMethods.special_test = MockFunc()
 
@@ -143,7 +143,7 @@ def test_parseConfigFile():
                              "overrides": {"GaudiObjDesc": "HEAD",
                                            "GaudiPython": "v12r4",
                                            "Online/RootCnv": None}}]})
-    assert s.name == None
+    assert s.name == 'dummy'
     assert len(s.projects) == 2
     p = s.projects[0]
     assert (p.name, p.version) == ('Gaudi', 'v23r5')

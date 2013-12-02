@@ -159,7 +159,11 @@ def load(path):
         return loadFromOldXML(source, slot)
     except ValueError:
         import json
-        return json.load(open(path, 'rb'))
+        from os.path import splitext, basename
+        data = json.load(open(path, 'rb'))
+        if u'slot' not in data:
+            data[u'slot'] = splitext(basename(path))[0]
+        return data
 
 def save(dest, config):
     '''

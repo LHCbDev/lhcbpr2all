@@ -10,7 +10,7 @@
 ###############################################################################
 import json
 
-from LbNightlyTools.tests.utils import processFile
+from LbNightlyTools.tests.utils import processFile, processFileWithName
 
 # Uncomment to disable the tests.
 #__test__ = False
@@ -28,6 +28,20 @@ def test_loadJSON():
                              "dependencies": ["Gaudi"]}]}
 
     found = processFile(json.dumps(expected), Configuration.load)
+    assert found == expected
+
+def test_loadJSON_2():
+    'Configuration.load(json_with_slot)'
+    expected = {'projects':[{"name": "Gaudi",
+                             "version": "v23r5",
+                             "checkout": "specialCheckoutFunction"},
+                            {"name": "LHCb",
+                             "version": "v32r5",
+                             "dependencies": ["Gaudi"]}]}
+
+
+    found = processFileWithName(json.dumps(expected), 'special-slot.json', Configuration.load)
+    expected['slot'] = 'special-slot'
     assert found == expected
 
 TEST_XML = u'''
