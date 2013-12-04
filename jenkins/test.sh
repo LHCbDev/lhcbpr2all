@@ -19,7 +19,7 @@ set_config=1
 . $(dirname $0)/common.sh
 
 day=$(date +%a)
-timestamp=$(date -I)
+export timestamp=$(date -I)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
 # special hack to get a dev version of the CMake configuration files
@@ -27,20 +27,45 @@ export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtil
 
 if [ "$JENKINS_MOCK" = "true" ] ; then
   prepare_opt="--clean"
-  config_file=${ARTIFACTS_DIR}/slot-config.json
+  export config_file=${ARTIFACTS_DIR}/slot-config.json
 else
-  if [ "$JOB_NAME" = "nightly-test-slot-test-project-platform" ] ; then
-    artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/testing"
+
+  # Selection of the input for the files to be tested
+  # Check if input_flavour or flavour have been defined
+  if [ "$input_flavour" = "" ] ; then
+  	if [ "$flavour" = "" ] ; then
+    	echo "The env variable flavour needs to be defined"
+    else
+    	input_flavour=$flavour
+    fi
   fi
+
+  # Now actually set the source
+  if [ "$input_flavour" != "nightly" ] ; then
+  	artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/${input_flavour}"
+  fi
+
   submit_opt="--submit --cdash-submit"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 
   lbn-install --verbose ${artifacts_root_opt} --dest build --projects ${project} --platforms ${platform} ${slot} ${slot_build_id}
   prepare_opt="--no-unpack"
-  config_file=build/slot-config.json
+  export config_file=build/slot-config.json
 fi
 
-time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --tests-only --projects ${project} ${prepare_opt} ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
+
+# Now checking what to run
+used_test_runner="default"
+if [ "${testrunner}" != "" ] && [ "${testrunner}" != "None"  ] ; then
+	used_test_runner=${testrunner}
+fi
+
+if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
+	export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
+fi
+
+# And run it...
+$(dirname $0)/testrunners/${used_test_runner}.sh ${testgroup} ${testenv}
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
   # Clean up

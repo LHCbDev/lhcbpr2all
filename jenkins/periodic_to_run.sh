@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -10,6 +10,22 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# simple wrapper script to check out the current nightly slots configurations
+PERIOD=${1:-3600}
 
-svn export http://svn.cern.ch/guest/lhcb/LHCbNightlyConf/trunk configs
+# hack because of a bug with non-writable home (this script is run by tomcat)
+export HOME=$PWD
+
+# Set common environment
+. $(dirname $0)/common.sh
+
+export CMTCONFIG=$platform
+
+if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
+  # Get the slot configuration files from Subversion
+  lbn-get-configs
+fi
+
+lbp-check-periodic-tests configs/test_schedule.xml -i $PERIOD -o periodic_tests_list.txt
+
+
+

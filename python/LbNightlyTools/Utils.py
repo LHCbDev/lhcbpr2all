@@ -283,7 +283,7 @@ class Dashboard(object):
             if os.path.isdir(slot_dir):
                 self.publishFromFiles(slot_dir)
 
-    def slotsByDay(self, start=None, end=None):
+    def slotsByDay(self, start=None, end=None, returnAll=False):
         '''
         Return a generator over the slot built for each day in the specified
         range. The objects in the generator are tuples with ("day", "slot", id).
@@ -299,5 +299,111 @@ class Dashboard(object):
             opts['endkey'] = end
         for r in self.db.iterview(viewname, batch=100, **opts):
             v = r[u'value']
-            yield (r[u'key'], v[u'slot'], v[u'build_id'])
+            if returnAll:
+                yield(v)
+            else:
+                yield (r[u'key'], v[u'slot'], v[u'build_id'])
+
+
+
+class JenkinsTest(object):
+    '''
+    Class representing a test ready to be run
+    '''
+
+    SLOT = "slot"
+    SBID = "slot_build_id"
+    PROJECT = "project"
+    PLATFORM = "platform"
+    TESTGROUP = "testgroup"
+    TESTRUNNER = "testrunner"
+    TESTENV = "testenv"
+    LABEL = "os_label"
+    COUNT = "count"
+    JOB_ALLATTRIBUTES  = [ SLOT, SBID, PROJECT, PLATFORM, LABEL,
+                          TESTGROUP, TESTRUNNER, TESTENV, COUNT]
+
+    @classmethod
+    def fromJenkinsString(cls, test_string):
+        ''' Build the obkject from the string passed to Jenkins '''
+        test_list = test_string.split('.')
+        slot = test_list[0]
+        slot_build_id = test_list[1]
+        project = test_list[2]
+        platform = test_list[3]
+        os_label = None
+        testgroup = None
+        testrunner = None
+        testenv = None
+        count = 1
+
+        # Check it the param nb 5 is specified and if it is != None
+        if len(test_list) > 4:
+            if test_list[4].lower() != "none":
+                os_label = test_list[4]
+
+        # If the label is still None, we take it from teh platform
+        if os_label == None:
+            os_label = platform.split('-')[1]
+
+        # Now check for the test group and runner
+        if len(test_list) > 5:
+            testgroup = test_list[5]
+
+        if len(test_list) > 6:
+            testrunner = test_list[6]
+
+        if len(test_list) > 7:
+            testenv = test_list[7]
+
+        if len(test_list) > 8:
+            count = test_list[8]
+
+        return JenkinsTest(slot, slot_build_id, project, platform, os_label,
+                            testgroup, testrunner, testenv, count)
+
+
+    @classmethod
+    def fromScheduledTest(cls, stest):
+        ''' Build the object from a scheduled test object '''
+        return JenkinsTest(stest.slot, stest.build_id, stest.project,
+                           stest.platform, stest.os_label, stest.testgroup,
+                           stest.testrunner, stest.testenv, stest.count)
+
+    def __init__(self, slot, slot_build_id, project, platform, os_label=None,
+                 testgroup=None,testrunner=None, testenv=None, count=1):
+        ''' Basic constructor '''
+        self.slot_build_id = slot_build_id
+        self.slot = slot
+        self.project = project
+        self.platform = platform
+        self.testgroup = testgroup
+        self.testrunner = testrunner
+        self.os_label = os_label
+        self.testenv = testenv
+        self.count = count
+
+    def getParameterLines(self):
+        ''' Returns a list of key=value lines for each parameter '''
+        return (['%s=%s\n' % (x, getattr(self, x))
+                for x in JenkinsTest.JOB_ALLATTRIBUTES])
+
+    def toJenkinsString(self):
+        ''' Generate the job description for Jenkins '''
+        return '.'.join([self.slot,
+                         str(self.slot_build_id),
+                         self.project,
+                         self.platform,
+                         self.os_label if self.os_label else "None",
+                         self.testgroup,
+                         self.testrunner if self.testrunner else "qmtest",
+                         self.testenv if self.testenv else "None",
+                         str(self.count)])
+
+    def __str__(self):
+        '''
+        Convert to string
+        '''
+        return ".".join([ "%s=%s" % (k, getattr(self, k))
+                         for k in JenkinsTest.JOB_ALLATTRIBUTES])
 

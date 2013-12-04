@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env python
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -9,7 +9,15 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
+'''
+Parse the build parameters specified in the test environment variable
+'''
+__author__ = 'Ben Couturier <ben.couturier@cern.ch>'
+import os
+from LbNightlyTools.Utils import JenkinsTest
 
-# simple wrapper script to check out the current nightly slots configurations
-
-svn export http://svn.cern.ch/guest/lhcb/LHCbNightlyConf/trunk configs
+teststr = os.environ['test']
+if teststr and teststr != 'default':
+    test = JenkinsTest.fromJenkinsString(teststr)
+    open('parameters.txt', 'w').writelines(test.getParameterLines())
+    open('os_label.txt', 'w').write('os_label=%s\n' % test.os_label)

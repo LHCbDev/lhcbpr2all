@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -10,6 +10,15 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# simple wrapper script to check out the current nightly slots configurations
+# hack because of a bug with non-writable home (this script is run by tomcat)
+export HOME=$PWD
 
-svn export http://svn.cern.ch/guest/lhcb/LHCbNightlyConf/trunk configs
+# Set common environment
+. $(dirname $0)/common.sh
+
+export CMTCONFIG=$platform
+
+lbn-parse-build-params
+
+
+
