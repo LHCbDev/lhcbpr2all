@@ -392,8 +392,9 @@ class Script(LbUtils.Script.PlainScript):
             # add required non-tar files
             other_files = set(['configuration.xml', 'confSummary.py',
                                'searchPath.cmake', 'slot-config.json'])
+            already_installed = set(installed)
             required_files.extend(other_files.intersection(urllist) -
-                                 set(installed))
+                                  already_installed)
             if required_files:
                 self.log.info('installing %d files', len(required_files))
             else:
@@ -419,7 +420,11 @@ class Script(LbUtils.Script.PlainScript):
                 fixGlimpseIndexes(f for f in findGlimpseFilenames(dest)
                                   if f not in pre_existing_indexes)
 
-            if 'confSummary.py' in installed:
+            # if 'confSummary.py' was just installed and actually exists,
+            # we use it to generate a setup script for the CMTPROJECTPATH.
+            if ('confSummary.py' in installed and
+                'confSummary.py' not in already_installed and
+                os.path.exists('confSummary.py')):
                 # generate shell script equivalents
                 data = {}
                 execfile(os.path.join(dest, 'confSummary.py'), data)
