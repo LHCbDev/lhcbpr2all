@@ -78,7 +78,9 @@ if __name__ == '__main__':
         # check that the trigger file file exists and it is not older than the
         # request
         path = os.path.join(data_dir, filename)
-        if os.path.exists(path) and os.stat(path)[ST_CTIME] >= timestamp:
+        if (len(ready) < 20 and
+            os.path.exists(path) and
+            os.stat(path)[ST_CTIME] >= timestamp):
             ready.append('.'.join([slot, str(build_id),
                                    project, platform, os_label]))
             print slot, build_id, project, platform, 'ready'
@@ -93,4 +95,4 @@ if __name__ == '__main__':
 
     if ready:
         open(output_file, 'w').write('tests_list=%s\n' % (' '.join(ready)))
-        print output_file, 'written.'
+        print output_file, 'written.', len(ready), 'test jobs to start.'
