@@ -22,19 +22,20 @@ from LbNightlyTools.tests.utils import *
 #__test__ = False
 
 from LbNightlyTools import StackCheckout
+from LbNightlyTools import Utils
 from LbNightlyTools import CheckoutMethods
 
 os.environ['LANG'] = 'C'
 
-def test_call():
-    'StackCheckout.call()'
+def test_retry_call():
+    'Utils.retry_call()'
     # standard calls
-    assert StackCheckout.call(['true']) == 0
-    assert StackCheckout.call(['false']) == 1
+    assert Utils.retry_call(['true']) == 0
+    assert Utils.retry_call(['false']) == 1
     # calls with retry
-    assert StackCheckout.call(['true'], retry=3) == 0
+    assert Utils.retry_call(['true'], retry=3) == 0
     try:
-        StackCheckout.call(['false'], retry=3)
+        Utils.retry_call(['false'], retry=3)
     except RuntimeError, x:
         assert str(x) == "the command ['false'] failed 3 times"
 
