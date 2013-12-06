@@ -40,6 +40,45 @@ class MockFunc(object):
         self.args = args
         self.kwargs = kwargs
 
+class TemporaryDir(object):
+    '''
+    Helper class to create a temporary directory and manage its lifetime.
+
+    An instance of this class can be used inside the 'with' statement and
+    returns the path to the temporary directory.
+    '''
+    def __init__(self):
+        '''Constructor.'''
+        self.path = tempfile.mkdtemp()
+    def join(self, *args):
+        '''
+        Equivalent to os.path.join(self.path, *args).
+        '''
+        return os.path.join(self.path, *args)
+    def __str__(self):
+        '''String representation (path to the temporary directory).'''
+        return self.path
+    def remove(self):
+        '''
+        Remove the temporary directory.
+        After a call to this method, the object is not usable anymore.
+        '''
+        if self.path: # allow multiple calls to the remove method
+            shutil.rmtree(self.path, ignore_errors=True)
+            self.path = None
+    def __enter__(self):
+        '''
+        Context Manager protocol 'enter' function.
+        '''
+        return self.path
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        '''
+        Context Manager protocol 'exit' function.
+        Remove the temporary directory and let the exceptions propagate.
+        '''
+        self.remove()
+        return False
+
 def processFile(data, function):
     '''
     Process the string data via the function 'function' that accepts a filename
@@ -59,12 +98,8 @@ def processFileWithName(data, name, function):
     Process the string data via the function 'function' that accepts a filename
     as parameter, using the given name for the file.
     '''
-    path = tempfile.mkdtemp()
-    filepath = os.path.join(path, name)
-    f = open(filepath, 'w')
-    try:
-        f.write(data)
-        f.close()
+    with TemporaryDir() as path:
+        filepath = os.path.join(path, name)
+        with open(filepath, 'w') as f:
+            f.write(data)
         return function(filepath)
-    finally:
-        shutil.rmtree(path, ignore_errors=True)
