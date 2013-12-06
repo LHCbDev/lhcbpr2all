@@ -65,6 +65,33 @@ def test_basic():
         expected_files = set(_getfilelist('indexer', _testdata))
         assert expected_files == found_files
 
+def test_links():
+    'Utils.pack() with symbolic links'
+    with TemporaryDir() as tmpdir:
+        linksdir = os.path.join(tmpdir, 'links')
+        os.makedirs(os.path.join(linksdir, 'dir_a'))
+        with open(os.path.join(linksdir, 'a.txt'), 'w') as f:
+            f.write('test file')
+        os.symlink('a.txt', os.path.join(linksdir, 'b.txt'))
+        os.symlink(os.path.join(os.pardir, 'a.txt'),
+                   os.path.join(linksdir, 'dir_a', 'a.txt'))
+        os.symlink('dir_a', os.path.join(linksdir, 'dir_b'))
+
+        dest = os.path.join(tmpdir, 'links.tar.bz2')
+        Utils.pack('links', dest, cwd=tmpdir, checksum='md5')
+        assert exists(dest)
+        assert exists(dest + '.md5')
+        list_tar = Popen(['tar', '--list', '--file', dest], stdout=PIPE)
+        out, _ = list_tar.communicate()
+        assert list_tar.returncode == 0
+        found_files = set(map(str.strip, out.splitlines()))
+        expected_files = set(_getfilelist('links', tmpdir))
+        assert expected_files == found_files
+        md5sum_check = Popen(['md5sum', '--check',
+                              os.path.basename(dest + '.md5')],
+                             cwd=os.path.dirname(dest))
+        assert md5sum_check.wait() == 0
+
 @contextlib.contextmanager
 def custom_packcmd(newcmd):
     '''Helper context to replace the packing command in Utils.'''

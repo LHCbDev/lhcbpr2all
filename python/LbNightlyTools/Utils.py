@@ -313,7 +313,8 @@ def _packtestcmd(src_, dest, cwd='.'):
     Helper function to call the package test command.
     '''
     from subprocess import call
-    return call(['tar', '--compare', '--file', dest], cwd=cwd)
+    return call(['tar', '--compare', '--dereference', '--bzip2',
+                 '--file', dest], cwd=cwd)
 
 def pack(src, dest, cwd='.', checksum=None):
     '''
