@@ -22,7 +22,7 @@ import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import retry_call as call, ensureDirs
+from LbNightlyTools.Utils import ensureDirs, pack
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -425,8 +425,8 @@ class Script(LbUtils.Script.PlainScript):
 
             self.log.info('packing %s %s...', proj.name, proj.version)
 
-            call(['tar', 'chjf', join(artifacts_dir, self.packname(proj)),
-                  proj.projectDir], cwd=build_dir)
+            pack(proj.projectDir, join(artifacts_dir, self.packname(proj)),
+                 cwd=build_dir, checksum='md5')
 
         self.log.info('sources ready for build (time taken: %s).',
                       datetime.now() - starttime)

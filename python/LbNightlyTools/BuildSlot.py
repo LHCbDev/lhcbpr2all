@@ -25,7 +25,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import timeout_call as call, ensureDirs
+from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack
 
 from string import Template
 from socket import gethostname
@@ -739,8 +739,8 @@ class Script(LbUtils.Script.PlainScript):
 
         self.log.info('packing %s', proj.dir)
 
-        call(['tar', 'chjf', proj.packname,
-              os.path.join(proj.dir, 'InstallArea')], cwd=self.build_dir)
+        pack(os.path.join(proj.dir, 'InstallArea'), proj.packname,
+             cwd=self.build_dir, checksum='md5')
 
         return proj
 
