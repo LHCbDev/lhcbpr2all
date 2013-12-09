@@ -424,7 +424,7 @@ class Script(LbUtils.Script.PlainScript):
             # we use it to generate a setup script for the CMTPROJECTPATH.
             if ('confSummary.py' in installed and
                 'confSummary.py' not in already_installed and
-                os.path.exists('confSummary.py')):
+                os.path.exists(os.path.join(dest, 'confSummary.py'))):
                 # generate shell script equivalents
                 data = {}
                 execfile(os.path.join(dest, 'confSummary.py'), data)
