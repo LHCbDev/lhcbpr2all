@@ -1381,7 +1381,7 @@ class BuildReporter(object):
             logfile_links.append({'id': 'section%d' % begin,
                                   'f': begin,
                                   desc_key: name})
-        logfile_links[-1]['l'] = self.summary['size'] - 1
+        logfile_links[-1]['l'] = offset + self.summary['size'] - 1
 
 
         ignored_counts = []
