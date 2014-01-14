@@ -119,9 +119,11 @@ if(NOT STEP STREQUAL TEST)
     execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake
                     OUTPUT_VARIABLE install_log ERROR_VARIABLE install_log)
     message("$${install_log}")
-    execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
-                    OUTPUT_VARIABLE python_zip_log ERROR_VARIABLE python_zip_log)
-    message("$${python_zip_log}")
+    if(EXISTS $${CTEST_SCRIPT_DIRECTORY}/InstallArea/$${config}/python)
+      execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
+                      OUTPUT_VARIABLE python_zip_log ERROR_VARIABLE python_zip_log)
+      message("$${python_zip_log}")
+    endif()
   endif()
 
   # Copy the build log to the summaries
@@ -135,7 +137,9 @@ if(NOT STEP STREQUAL TEST)
     file(APPEND ${summary_dir}/build.log
          "#### CMake build ####\n# Start: $${build_start}\n$${f}# End: $${build_end}\n")
     file(APPEND ${summary_dir}/build.log "#### CMake install ####\n$${install_log}")
-    file(APPEND ${summary_dir}/build.log "#### CMake python.zip ####\n$${python_zip_log}")
+    if(python_zip_log)
+      file(APPEND ${summary_dir}/build.log "#### CMake python.zip ####\n$${python_zip_log}")
+    endif()
   else()
     # for CMT we need a different way
     # - find the package build logs
