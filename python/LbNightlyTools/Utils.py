@@ -246,9 +246,19 @@ class Dashboard(object):
             view = self.db.view(viewname,
                                 startkey=[slot, build_id],
                                 endkey=[slot, build_id, 'zzz'])
+        delete_data = []
         for row in view:
-            self._log.info('removing %s', row.id)
-            del self.db[row.id]
+            if row.value:
+                delete_data.append({'_id': row.id, '_rev': row.value['_rev'],
+                                    '_deleted': True})
+            else:
+                self._log.info('removing %s', row.id)
+                del self.db[row.id]
+        if delete_data:
+            self._log.info('bulk removing:')
+            for row in delete_data:
+                self._log.info('   %s', row['_id'])
+            self.db.update(delete_data)
         self._log.info('removed %d documents', len(view))
 
     def publishFromFiles(self, path):
