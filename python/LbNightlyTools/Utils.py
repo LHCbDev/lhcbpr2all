@@ -138,22 +138,40 @@ class Dashboard(object):
     '''
     Wrapper for the CouchDB-based dashboard.
     '''
-    COUCHDB_SERVER = 'https://buildlhcb.cern.ch/nightlies/'
-    COUCHDB_DB = '_db'
     CRED_FILE = os.path.expanduser(os.path.join('~', 'private',
                                                 'couchdb-admin'))
-    ARTIFACTS_ROOT = os.path.join(os.path.sep, 'data', 'artifacts')
+    @classmethod
+    def dbInfo(cls, flavour):
+        '''
+        Return server URL and database name for the given flavour.
+        '''
+        if flavour == 'nightly':
+            return ('https://buildlhcb.cern.ch/nightlies/', '_db')
+        else:
+            return ('https://buildlhcb.cern.ch/nightlies-%s/' % flavour, '_db')
+
+    @classmethod
+    def artifactsRoot(cls, flavour):
+        '''
+        Return the path to the artifacts directory for the given flavour.
+        '''
+        root = os.path.join(os.path.sep, 'data', 'artifacts')
+        if flavour == 'nightly':
+            return root
+        else:
+            return os.path.join(root, flavour)
 
     def __init__(self, credentials=None, dumpdir=None, submit=True,
-                 server=None, db=None):
+                 flavour='nightly', db_info=None):
         '''
         @param credentials: pair with (username, password) of a valid account on
                             the server
         @param dumpdir: optional name of a directory where to keep a dump
                         of the data uploaded to the server
         @param submit: if set to False the data is not sent to the server
-        @param server: URL of the server
-        @param db: database name
+        @param flavour: build flavour, used to select the database to use
+        @param db_info: tuple with URL of the server and database name
+                        (overrides flavour)
         '''
         import couchdb
         import socket
@@ -169,10 +187,11 @@ class Dashboard(object):
             else:
                 self._log.debug('no couchdb credentials found')
 
-        if not server:
-            server = self.COUCHDB_SERVER
-        if not db:
-            db = self.COUCHDB_DB
+        self.flavour = flavour
+
+        self.artifacts_root = self.artifactsRoot(flavour)
+
+        server, db = db_info or self.dbInfo(flavour)
 
         self.submit = submit
         if submit:
@@ -288,8 +307,9 @@ class Dashboard(object):
         if day is None:
             from datetime import date
             day = date.today()
-        for slot in os.listdir(self.ARTIFACTS_ROOT):
-            slot_dir = os.path.join(self.ARTIFACTS_ROOT, slot, str(day), 'db')
+        root = self.artifacts_root
+        for slot in os.listdir(root):
+            slot_dir = os.path.join(root, slot, str(day), 'db')
             if os.path.isdir(slot_dir):
                 self.publishFromFiles(slot_dir)
 
