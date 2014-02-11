@@ -14,6 +14,11 @@
 # Common set up for all the Jenkins scripts
 #
 
+# default (backward-compatible) build flavour
+if [ "${flavour}" == "" ] ; then
+  export flavour=nightly
+fi
+
 # initial environment seen by the Jenkins script
 env_log=$(basename $0)${platform:+.}${platform}.env
 printenv | sort > ${env_log}
@@ -24,7 +29,7 @@ export LC_ALL=C
 # used by some tests to reduce the number of concurrent tests
 export LHCB_NIGHTLY_MAX_THREADS=1
 
-export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${slot}/${slot_build_id}}
+export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${flavour}/${slot}/${slot_build_id}}
 mkdir -p ${ARTIFACTS_DIR}
 export TMPDIR=${WORKSPACE}/tmp
 mkdir -p ${TMPDIR}

@@ -29,7 +29,7 @@ else
 fi
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
-  submit_opt="--submit"
+  submit_opt="--submit --flavour ${flavour}"
 fi
 
 lbn-checkout --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${config_file}

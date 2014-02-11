@@ -19,7 +19,7 @@ set_config=1
 . $(dirname $0)/common.sh
 
 day=$(date +%a)
-export timestamp=$(date -I)
+timestamp=$(date -I)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
 # special hack to get a dev version of the CMake configuration files
@@ -27,7 +27,7 @@ export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtil
 
 if [ "$JENKINS_MOCK" = "true" ] ; then
   prepare_opt="--clean"
-  export config_file=${ARTIFACTS_DIR}/slot-config.json
+  config_file=${ARTIFACTS_DIR}/slot-config.json
 else
 
   # Selection of the input for the files to be tested
@@ -41,18 +41,15 @@ else
   fi
 
   # Now actually set the source
-  if [ "$input_flavour" != "nightly" ] ; then
-  	artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/${input_flavour}"
-  fi
+  artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/${input_flavour}"
 
-  submit_opt="--submit --cdash-submit"
+  submit_opt="--submit --cdash-submit --flavour ${flavour}"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 
   lbn-install --verbose ${artifacts_root_opt} --dest build --projects ${project} --platforms ${platform} ${slot} ${slot_build_id}
   prepare_opt="--no-unpack"
-  export config_file=build/slot-config.json
+  config_file=build/slot-config.json
 fi
-
 
 # Now checking what to run
 used_test_runner="default"
@@ -65,6 +62,7 @@ if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
 fi
 
 # And run it...
+export submit_opt rsync_opt prepare_opt config_file timestamp
 $(dirname $0)/testrunners/${used_test_runner}.sh ${testgroup} ${testenv}
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
