@@ -1,7 +1,7 @@
 function(head, req) {
     // server url TO UPDATE
     var rssServerLocation = "https://" + req["headers"]["X-Forwarded-Host"] + "/" + req.path.join("/");
-    var resultServerLocation = 'http://buildlhcb.cern.ch/artifacts/';
+    var resultServerLocation = 'https://buildlhcb.cern.ch/artifacts/';
     //protecting regex
     var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");
     var regexValidPattern = /^[a-z0-9A-Z\[\]\|\(\)\\_\.\$\^\{\}\?\+\*\-\!\=\.\,(u\[0-9\]+)(o\[0-8\])(x\[0-9a-f\]+)(\\w)(\\W)(\\d)(\\D)(\\s)(\\S)(\\b)(\\B)(\\0)(\\n)(\\f)(\\r)(\\t)(\\v)]+$/;

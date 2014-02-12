@@ -1,4 +1,4 @@
-var ARTIFACTS_BASE_URL = 'http://buildlhcb.cern.ch/artifacts/';
+var ARTIFACTS_BASE_URL = 'https://buildlhcb.cern.ch/artifacts/';
 var JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-slot-build-platform/';
 var LEMON_SEARCH_PREFIX = 'https://lemon.cern.ch/lemon-web/index.php?target=process_search&amp;fb=';
 var MAX_BUILD_IDLE_TIME = 180; // minutes
