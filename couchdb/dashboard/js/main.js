@@ -8,6 +8,11 @@ var FILTER_DEFAULT = {
     projects: []
 };
 
+// special artifacts locations
+var flavour = /\/nightlies-([^/]+)\//.exec(window.location);
+if (flavour)
+	ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour[1] + "/";
+
 // variables set from cookies
 if (!$.cookie("filters")) {
     $.cookie("filters", JSON.stringify(FILTER_DEFAULT));
