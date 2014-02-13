@@ -10,35 +10,15 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
+# hack because of a bug with non-writable home (this script is run by tomcat)
+export HOME=$PWD
+
 # Set common environment
 . $(dirname $0)/common.sh
 
-if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
-  # Get the slot configuration files from Subversion
-  lbn-get-configs
-fi
+export CMTCONFIG=$platform
 
-if [ "${slot}" = "lhcb-release" ] ; then
-  lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
-fi
+lbn-parse-build-params
 
-if [ -e configs/${slot}.json ] ; then
-  config_file=configs/${slot}.json
-else
-  config_file=configs/configuration.xml#${slot}
-fi
 
-if [ "$JENKINS_MOCK" != "true" ] ; then
-  submit_opt="--submit --flavour ${flavour}"
-fi
 
-lbn-checkout --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${config_file}
-
-# We need to copy the configuration at the end because
-# StachCkeckout.py cleans the artifacts before starting
-cp ${config_file%%#*} ${ARTIFACTS_DIR}
-cp ${env_log} ${ARTIFACTS_DIR}
-echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
-
-# Cleaning up
-rm -rf tmp

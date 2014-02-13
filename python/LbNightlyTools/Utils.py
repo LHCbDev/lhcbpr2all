@@ -138,22 +138,40 @@ class Dashboard(object):
     '''
     Wrapper for the CouchDB-based dashboard.
     '''
-    COUCHDB_SERVER = 'https://buildlhcb.cern.ch/nightlies/'
-    COUCHDB_DB = '_db'
     CRED_FILE = os.path.expanduser(os.path.join('~', 'private',
                                                 'couchdb-admin'))
-    ARTIFACTS_ROOT = os.path.join(os.path.sep, 'data', 'artifacts')
+    @classmethod
+    def dbInfo(cls, flavour):
+        '''
+        Return server URL and database name for the given flavour.
+        '''
+        if flavour == 'nightly':
+            return ('https://buildlhcb.cern.ch/nightlies/', '_db')
+        else:
+            return ('https://buildlhcb.cern.ch/nightlies-%s/' % flavour, '_db')
+
+    @classmethod
+    def artifactsRoot(cls, flavour):
+        '''
+        Return the path to the artifacts directory for the given flavour.
+        '''
+        root = os.path.join(os.path.sep, 'data', 'artifacts')
+        if flavour == 'nightly':
+            return root
+        else:
+            return os.path.join(root, flavour)
 
     def __init__(self, credentials=None, dumpdir=None, submit=True,
-                 server=None, db=None):
+                 flavour='nightly', db_info=None):
         '''
         @param credentials: pair with (username, password) of a valid account on
                             the server
         @param dumpdir: optional name of a directory where to keep a dump
                         of the data uploaded to the server
         @param submit: if set to False the data is not sent to the server
-        @param server: URL of the server
-        @param db: database name
+        @param flavour: build flavour, used to select the database to use
+        @param db_info: tuple with URL of the server and database name
+                        (overrides flavour)
         '''
         import couchdb
         import socket
@@ -169,10 +187,11 @@ class Dashboard(object):
             else:
                 self._log.debug('no couchdb credentials found')
 
-        if not server:
-            server = self.COUCHDB_SERVER
-        if not db:
-            db = self.COUCHDB_DB
+        self.flavour = flavour
+
+        self.artifacts_root = self.artifactsRoot(flavour)
+
+        server, db = db_info or self.dbInfo(flavour)
 
         self.submit = submit
         if submit:
@@ -246,9 +265,19 @@ class Dashboard(object):
             view = self.db.view(viewname,
                                 startkey=[slot, build_id],
                                 endkey=[slot, build_id, 'zzz'])
+        delete_data = []
         for row in view:
-            self._log.info('removing %s', row.id)
-            del self.db[row.id]
+            if row.value:
+                delete_data.append({'_id': row.id, '_rev': row.value['_rev'],
+                                    '_deleted': True})
+            else:
+                self._log.info('removing %s', row.id)
+                del self.db[row.id]
+        if delete_data:
+            self._log.info('bulk removing:')
+            for row in delete_data:
+                self._log.info('   %s', row['_id'])
+            self.db.update(delete_data)
         self._log.info('removed %d documents', len(view))
 
     def publishFromFiles(self, path):
@@ -278,12 +307,13 @@ class Dashboard(object):
         if day is None:
             from datetime import date
             day = date.today()
-        for slot in os.listdir(self.ARTIFACTS_ROOT):
-            slot_dir = os.path.join(self.ARTIFACTS_ROOT, slot, str(day), 'db')
+        root = self.artifacts_root
+        for slot in os.listdir(root):
+            slot_dir = os.path.join(root, slot, str(day), 'db')
             if os.path.isdir(slot_dir):
                 self.publishFromFiles(slot_dir)
 
-    def slotsByDay(self, start=None, end=None):
+    def slotsByDay(self, start=None, end=None, returnAll=False):
         '''
         Return a generator over the slot built for each day in the specified
         range. The objects in the generator are tuples with ("day", "slot", id).
@@ -299,7 +329,113 @@ class Dashboard(object):
             opts['endkey'] = end
         for r in self.db.iterview(viewname, batch=100, **opts):
             v = r[u'value']
-            yield (r[u'key'], v[u'slot'], v[u'build_id'])
+            if returnAll:
+                yield(v)
+            else:
+                yield (r[u'key'], v[u'slot'], v[u'build_id'])
+
+
+
+class JenkinsTest(object):
+    '''
+    Class representing a test ready to be run
+    '''
+
+    SLOT = "slot"
+    SBID = "slot_build_id"
+    PROJECT = "project"
+    PLATFORM = "platform"
+    TESTGROUP = "testgroup"
+    TESTRUNNER = "testrunner"
+    TESTENV = "testenv"
+    LABEL = "os_label"
+    COUNT = "count"
+    JOB_ALLATTRIBUTES  = [ SLOT, SBID, PROJECT, PLATFORM, LABEL,
+                          TESTGROUP, TESTRUNNER, TESTENV, COUNT]
+
+    @classmethod
+    def fromJenkinsString(cls, test_string):
+        ''' Build the obkject from the string passed to Jenkins '''
+        test_list = test_string.split('.')
+        slot = test_list[0]
+        slot_build_id = test_list[1]
+        project = test_list[2]
+        platform = test_list[3]
+        os_label = None
+        testgroup = None
+        testrunner = None
+        testenv = None
+        count = 1
+
+        # Check it the param nb 5 is specified and if it is != None
+        if len(test_list) > 4:
+            if test_list[4].lower() != "none":
+                os_label = test_list[4]
+
+        # If the label is still None, we take it from teh platform
+        if os_label == None:
+            os_label = platform.split('-')[1]
+
+        # Now check for the test group and runner
+        if len(test_list) > 5:
+            testgroup = test_list[5]
+
+        if len(test_list) > 6:
+            testrunner = test_list[6]
+
+        if len(test_list) > 7:
+            testenv = test_list[7]
+
+        if len(test_list) > 8:
+            count = test_list[8]
+
+        return JenkinsTest(slot, slot_build_id, project, platform, os_label,
+                            testgroup, testrunner, testenv, count)
+
+
+    @classmethod
+    def fromScheduledTest(cls, stest):
+        ''' Build the object from a scheduled test object '''
+        return JenkinsTest(stest.slot, stest.build_id, stest.project,
+                           stest.platform, stest.os_label, stest.testgroup,
+                           stest.testrunner, stest.testenv, stest.count)
+
+    def __init__(self, slot, slot_build_id, project, platform, os_label=None,
+                 testgroup=None,testrunner=None, testenv=None, count=1):
+        ''' Basic constructor '''
+        self.slot_build_id = slot_build_id
+        self.slot = slot
+        self.project = project
+        self.platform = platform
+        self.testgroup = testgroup
+        self.testrunner = testrunner
+        self.os_label = os_label
+        self.testenv = testenv
+        self.count = count
+
+    def getParameterLines(self):
+        ''' Returns a list of key=value lines for each parameter '''
+        return (['%s=%s\n' % (x, getattr(self, x))
+                for x in JenkinsTest.JOB_ALLATTRIBUTES])
+
+    def toJenkinsString(self):
+        ''' Generate the job description for Jenkins '''
+        return '.'.join([self.slot,
+                         str(self.slot_build_id),
+                         self.project,
+                         self.platform,
+                         self.os_label if self.os_label else "None",
+                         self.testgroup,
+                         self.testrunner if self.testrunner else "qmtest",
+                         self.testenv if self.testenv else "None",
+                         str(self.count)])
+
+    def __str__(self):
+        '''
+        Convert to string
+        '''
+        return ".".join([ "%s=%s" % (k, getattr(self, k))
+                         for k in JenkinsTest.JOB_ALLATTRIBUTES])
 
 def _packcmd(src, dest, cwd='.'):
     '''

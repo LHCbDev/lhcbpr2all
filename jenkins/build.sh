@@ -52,20 +52,17 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   # (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
   ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
-  submit_opt="--submit --cdash-submit"
+  submit_opt="--submit --cdash-submit --flavour ${flavour}"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 fi
 
 # Notify the system of the builds that need to be tested.
 if [ "${with_tests}" != "no" ] ; then
   lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --platforms "${platform}" -o expected_builds.json ${config_file}
-
-  if [ "$JOB_NAME" = "nightly-test-slot-build-platform" ] ; then
-    datadir=${JENKINS_HOME}/nightlies/testing/running_builds
-  else
-    datadir=${JENKINS_HOME}/nightlies/running_builds
+  if [ "$JENKINS_MOCK" != "true" ] ; then
+    datadir=${JENKINS_HOME}/nightlies/${flavour}/running_builds
+    scp expected_builds.json buildlhcb.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
   fi
-  scp expected_builds.json buildlhcb.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
 fi
 
 time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}

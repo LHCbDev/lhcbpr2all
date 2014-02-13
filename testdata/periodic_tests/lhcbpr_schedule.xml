@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<periodictests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TestSchedule.xsd">
+  <periodictest>
+    <schedule type="week" time="19:00">Mon,Tue,Wed,Thu,Fri</schedule>
+    <slot>lhcb-head</slot>
+    <project>Brunel</project>
+    <platform>x86_64-slc6-*-opt</platform>
+    <test runner="lhcbpr" group="TEST-COLLISION12-1000" env="UsePRConfig"/>
+    <os_label>perf</os_label>
+  </periodictest>
+</periodictests>

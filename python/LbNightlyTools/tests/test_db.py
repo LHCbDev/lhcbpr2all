@@ -18,7 +18,7 @@ import json
 from tempfile import mkdtemp
 
 from LbNightlyTools.Utils import Dashboard
-Dashboard.COUCHDB_SERVER = 'http://dummyname:9999'
+db_info = ('http://dummyname:9999/', '_db')
 
 def test_instantiation():
     tmpdir = mkdtemp()
@@ -28,8 +28,8 @@ def test_instantiation():
         assert dash.dumpdir is None
 
         # these must not fail, but need a real DB to do something useful
-        Dashboard()
-        Dashboard(credentials=('user', 'password'))
+        Dashboard(db_info=db_info)
+        Dashboard(credentials=('user', 'password'), db_info=db_info)
 
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
@@ -38,7 +38,7 @@ def test_filedump():
     tmpdir = mkdtemp()
     try:
         dumpdir = os.path.join(tmpdir, 'db')
-        dash = Dashboard(dumpdir=dumpdir)
+        dash = Dashboard(dumpdir=dumpdir, db_info=db_info)
         assert dash.dumpdir is dumpdir
         assert os.path.isdir(dumpdir)
 

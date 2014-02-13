@@ -401,7 +401,8 @@ class Script(LbUtils.Script.PlainScript):
         cfg['date'] = timestamp
         Dashboard(credentials=None,
                   dumpdir=join(artifacts_dir, 'db'),
-                  submit=opts.submit).publish(cfg)
+                  submit=opts.submit,
+                  flavour=opts.flavour).publish(cfg)
         # Save a copy as metadata for tools like lbn-install
         with codecs.open(join(artifacts_dir, 'slot-config.json'),
                          'w', 'utf-8') as config_dump:

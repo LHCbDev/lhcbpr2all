@@ -57,8 +57,11 @@ def addDashboardOptions(parser):
                      help='do not submit the results to Dashboard server '
                           '(default)')
 
+    group.add_option('--flavour',
+                     help='which build server to use (build flavour)')
+
     parser.add_option_group(group)
-    parser.set_defaults(submit=False)
+    parser.set_defaults(submit=False, flavour='nightly')
     return parser
 
 def expandTokensInOptions(options, opt_names, **kwargs):

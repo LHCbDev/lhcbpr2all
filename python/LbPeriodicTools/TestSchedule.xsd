@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="periodictests">
+		<xsd:complexType>
+			<xsd:sequence maxOccurs="unbounded" minOccurs="0">
+                <xsd:element name="periodictest" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="schedule"  maxOccurs="1">
+								<xsd:complexType>
+								    <xsd:simpleContent>
+								      <xsd:extension base="xsd:string">
+								       <xsd:attribute name="type" type="xsd:string"/>
+								   	   <xsd:attribute name="time" type="xsd:string"/>
+								    </xsd:extension>
+								  </xsd:simpleContent>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="slot" type="xsd:string" maxOccurs="1" />
+							<xsd:element name="project" type="xsd:string" maxOccurs="1" />
+							<xsd:element name="platform" type="xsd:string" maxOccurs="1" />
+							<xsd:element name="test" minOccurs="1" maxOccurs="1">
+								<xsd:complexType>
+									<xsd:attribute name="group" type="xsd:string" use="required"/>
+									<xsd:attribute name="runner" type="xsd:string" use="optional"/>
+									<xsd:attribute name="env" type="xsd:string" use="optional"/>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="os_label" type="xsd:string" minOccurs="0" maxOccurs="1" />
+							<xsd:element name="count" type="xsd:string" minOccurs="0" maxOccurs="1" />
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+            </xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>

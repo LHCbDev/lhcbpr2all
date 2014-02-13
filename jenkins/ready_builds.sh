@@ -18,10 +18,5 @@ export HOME=$PWD
 
 export CMTCONFIG=$platform
 
-if [ "$JOB_NAME" = "nightly-test-slot-tests-poll" ] ; then
-  datadir=${JENKINS_HOME}/nightlies/testing/running_builds
-else
-  datadir=${JENKINS_HOME}/nightlies/running_builds
-fi
-
+datadir=${JENKINS_HOME}/nightlies/${flavour}/running_builds
 lbn-check-ready-builds $datadir tests_list.txt

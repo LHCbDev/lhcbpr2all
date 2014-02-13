@@ -431,7 +431,8 @@ class Script(LbUtils.Script.PlainScript):
         self.dashboard = Dashboard(credentials=None,
                                    dumpdir=os.path.join(self.artifacts_dir,
                                                         'db'),
-                                   submit=opts.submit)
+                                   submit=opts.submit,
+                                   flavour=opts.flavour)
 
 
         self.log.info("Preparing CTest scripts and configurations.")

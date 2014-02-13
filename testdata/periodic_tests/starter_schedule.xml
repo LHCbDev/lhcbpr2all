@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<periodictests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TestSchedule.xsd">
+  <periodictest>
+    <schedule>Mon,Wed,Fri</schedule>
+    <slot>test-slot</slot>
+    <project>project</project>
+    <platform>plaftorm</platform>
+    <test group="testname"/>
+    <os_label>os_label</os_label>
+  </periodictest>
+  <periodictest>
+    <schedule>Fri</schedule>
+    <slot>lhcb-head</slot>
+    <project>Brunel</project>
+    <platform>x86_64-slc6-gcc46-*</platform>
+    <test group="Weekly"/>
+    <os_label>slc6</os_label>
+  </periodictest>
+  <periodictest>
+  	<schedule type="month" time="13:00">2,11,23</schedule>
+    <slot>lhcb-trigger*</slot>
+    <project>Moo*</project>
+    <platform>x86_64-slc5-gcc*-opt</platform>
+    <test group="MooreTest"/>
+    <os_label>slc5</os_label>
+  </periodictest>
+</periodictests>

@@ -1,0 +1,172 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Run a LHCbPR job
+
+'''
+__author__ = 'Ben Couturier <ben.couturier@cern.ch>'
+
+import LbUtils.Script
+import sys
+from LbPR.LbPRJobManager import JobManager
+from LbNightlyTools import Configuration
+
+
+def getProjectVersionFromConfig(config, project):
+    ''' Look up the project version for SetupProject '''
+    retval = None
+    for proj in config[u'projects']:
+        if proj['name'].lower() == project.lower():
+            retval = proj['version']
+            break
+    return retval
+
+
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Script to create the commands to run a LHCbPR Job
+    '''
+    __usage__ = '%prog  <command> <project> <version> <platform>' \
+                ' <options> <setup-options> <slot config>'
+    __version__ = ''
+
+    def defineOpts(self):
+        '''Define options.'''
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        self.parser.add_option('-s', '--server', action='store',
+                               help='LHCbPR Server')
+        self.parser.add_option('-u', '--url', action='store',
+                               help='URL for the LHCbPR REST service')
+        self.parser.add_option('-o', '--output', action='store',
+                               help='output file name ' \
+                                    '[default: runlhcbpr.sh]')
+        addBasicOptions(self.parser)
+
+
+    def main(self):
+        '''
+        Main function of the script.
+        '''
+
+        # Checking the arguments
+        if len(self.args) != 6:
+            self.parser.error('Please specify <project> <version> <platform> '
+                              '<options> <setup-options> <slot config>')
+            exit(1)
+
+        application = self.args[0]
+        version = self.args[1]
+        platform = self.args[2]
+        options = self.args[3]
+
+        testenv = self.args[4].split("|")
+        setup_options = testenv[0]
+        handlers = "TimingHandler,BrunelMemHandler"
+        if len(testenv) > 1:
+            handlers = testenv[1]
+
+        slot_config = self.args[5]
+
+
+        # Parsing the slot config to extract relevant information
+        self.log.info("Parsing config file %s" % slot_config)
+        config = Configuration.load(slot_config)
+        project_version = getProjectVersionFromConfig(config, application)
+        self.log.info("Using %s %s", application, project_version)
+
+        # Now create the interface with LHCbPR
+        manager = JobManager(self.options.server, self.options.url)
+
+        jobdescription_id = None
+        try:
+            # Now get the job description ID for the job
+            jobdescription_id = manager.getOrCreateJobDescription(application,
+                                                                  version,
+                                                                  options,
+                                                                  setup_options)
+        except Exception, exc:
+            self.log.error("Count not get job description ID from LHCbPR: %s",
+                           str(exc))
+            raise exc
+
+        try:
+            # Get the actual options based on description
+            optionscontent = manager.getJobOptions(options)
+
+            # Get the actual options based on description
+            setupcontent = manager.getSetupOptions(setup_options)
+
+        except Exception, exc:
+            self.log.error("Count not get job description options "
+                           "from LHCbPR: %s",
+                           str(exc))
+            raise exc
+        try:
+            runfilename = "runlhcbpr.sh"
+            if self.options.output != None:
+                runfilename = self.options.output
+
+            self.log.warning("Writing file: %s", runfilename)
+
+
+            with open(runfilename, 'w') as runfile:
+                runfile.write("#!/usr/bin/env sh\n")
+
+                #lblogin_cmd = ". LbLogin.sh -c %s" % platform
+                setup_cmd = ". SetupProject.sh --keep-CMTPROJECTPATH %s %s %s"\
+                                % (application, project_version, setupcontent)
+                run_cmd = "gaudirun.py %s " % optionscontent
+                #setCMTPROJECTPATH=config["env"][0]
+                runfile.write('''
+
+#
+# File generated by lbpr-get-command to run the LHCbPR Job
+#
+
+set -v
+
+# Setting the CMTPROJECTPATH for the software installed locally
+. ./build/setupSearchPath.sh
+
+# Setting the environment and cleanup
+%s
+rm -f start.txt end.txt platform.txt
+echo $CMTCONFIG > platform.txt
+
+# Now running the test itself
+date +"%%Y-%%m-%%d,%%T" > start.txt
+%s | tee run.log
+RETCODE=$?
+date +"%%Y-%%m-%%d,%%T" > end.txt
+
+# Gathering the results with LHCbPR
+if [ "$RETCODE" = "0" ] ; then
+    echo "Run OK now gathering the results"
+    unset $LD_LIBRARY_PATH
+    . LbLogin.sh -c x86_64-slc6-gcc46-opt
+    . SetupProject.sh LHCbDirac ROOT
+    python -c "import os,urllib,zipfile;urllib.urlretrieve('http://lhcbproject.web.cern.ch/lhcbproject/GIT/dist/LHCbPRHandlers/LHCbPRHandlers.zip','LHCbPRHandlers.zip');unzipper=zipfile.ZipFile('LHCbPRHandlers.zip');unzipper.extractall();os.remove('LHCbPRHandlers.zip')"
+    python LHCbPRHandlers/collectRunResults.py -s `cat start.txt` -e `cat end.txt` -p `hostname` -c `cat platform.txt` -j %s -l "%s" -a
+fi
+
+''' % (setup_cmd, run_cmd, jobdescription_id, handlers))
+
+        except Exception, exc:
+            self.log.error("Error generating runfile: %s",
+                           str(exc))
+            raise exc
+
+
+
+
+# __main__
+sys.exit(Script().run())
