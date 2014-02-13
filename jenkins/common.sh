@@ -47,7 +47,9 @@ if [ -n "${set_config}" ] ; then
   #        called on lxbuild (it is needed to get the right ICC environment)
   export GROUP_DIR=/afs/cern.ch/group/z5
   export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform}
+  # FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
+  export CMTCONFIG=${platform}
   # FIXME: path to the new gdb should be implicit in the build/run-time
   #        environment
   # See https://its.cern.ch/jira/browse/LBCORE-151
