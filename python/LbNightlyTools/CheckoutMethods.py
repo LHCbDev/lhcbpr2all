@@ -32,6 +32,7 @@ def getpack(desc, rootdir='.'):
     from os.path import normpath, join
     protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
     getpack_cmd = ['getpack', '--batch', '--no-config',
+                   '--no-eclipse', '--branches',
                    '--protocol', protocol]
     recursive_head = desc.checkout_opts.get('recursive_head',
                                             desc.version == 'HEAD')
