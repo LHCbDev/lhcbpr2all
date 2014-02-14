@@ -3,6 +3,8 @@ from BaseHandler import BaseHandler
 from xml.etree.ElementTree import ElementTree
 from xml.parsers.expat import ExpatError
 
+
+
 #################################################################################
 def grepPattern(P,L):
   result = None
@@ -11,6 +13,8 @@ def grepPattern(P,L):
     result = resultobject.group(1)
   return result
 
+
+#
 #################################################################################
 class GaussLogFile:
   def __init__(self,N):
