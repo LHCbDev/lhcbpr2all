@@ -39,11 +39,11 @@ class Script(LbUtils.Script.PlainScript):
         else:
             days = [None] # use the default day
 
-        if os.path.exists(dash.ARTIFACTS_ROOT):
+        if os.path.exists(dash.artifacts_root):
             for day in days:
                 dash.publishFromArtifacts(day)
         else:
-            self.log.warning('cannot find directory %s', dash.ARTIFACTS_ROOT)
+            self.log.warning('cannot find directory %s', dash.artifacts_root)
 
         return 0
 
