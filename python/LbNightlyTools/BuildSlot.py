@@ -118,6 +118,8 @@ class ProjDesc():
         self.coverity_stream = desc_dict.get(u'coverity_stream',
                                              '{0}_{1}'.format(self.name.lower(),
                                                               cov_version))
+        self.with_shared = desc_dict.get(u'with_shared', False)
+
     def __str__(self):
         return '{0} {1}'.format(self.name, self.version)
 
@@ -740,8 +742,20 @@ class Script(LbUtils.Script.PlainScript):
 
         self.log.info('packing %s', proj.dir)
 
-        pack(os.path.join(proj.dir, 'InstallArea'), proj.packname,
+        pack([os.path.join(proj.dir, 'InstallArea')], proj.packname,
              cwd=self.build_dir, checksum='md5')
+
+        if proj.with_shared:
+            shr_packname = genPackageName(proj, "shared",
+                                          build_id=self.options.build_id,
+                                          artifacts_dir=self.artifacts_dir)
+            to_pack_list = (set(open(join(proj.summary_dir,
+                                          'sources_built.list'))) -
+                            set(open(join(proj.summary_dir,
+                                          'sources.list'))))
+            pack([os.path.relpath(f.strip(), self.build_dir)
+                  for f in sorted(to_pack_list)],
+                 shr_packname, cwd=self.build_dir, checksum='md5')
 
         return proj
 

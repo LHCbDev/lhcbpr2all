@@ -426,7 +426,7 @@ class Script(LbUtils.Script.PlainScript):
 
             self.log.info('packing %s %s...', proj.name, proj.version)
 
-            pack(proj.projectDir, join(artifacts_dir, self.packname(proj)),
+            pack([proj.projectDir], join(artifacts_dir, self.packname(proj)),
                  cwd=build_dir, checksum='md5')
 
         self.log.info('sources ready for build (time taken: %s).',

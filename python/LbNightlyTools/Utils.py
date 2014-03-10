@@ -437,14 +437,14 @@ class JenkinsTest(object):
         return ".".join([ "%s=%s" % (k, getattr(self, k))
                          for k in JenkinsTest.JOB_ALLATTRIBUTES])
 
-def _packcmd(src, dest, cwd='.'):
+def _packcmd(srcs, dest, cwd='.'):
     '''
     Helper function to call the packing command.
     '''
     from subprocess import call
     return call(['tar', '--create', '--dereference', '--bzip2',
-                 '--file', dest, src], cwd=cwd)
-def _packtestcmd(src_, dest, cwd='.'):
+                 '--file', dest] + srcs, cwd=cwd)
+def _packtestcmd(srcs_, dest, cwd='.'):
     '''
     Helper function to call the package test command.
     '''
@@ -452,7 +452,7 @@ def _packtestcmd(src_, dest, cwd='.'):
     return call(['tar', '--compare', '--dereference', '--bzip2',
                  '--file', dest], cwd=cwd)
 
-def pack(src, dest, cwd='.', checksum=None):
+def pack(srcs, dest, cwd='.', checksum=None):
     '''
     Package the directory 'src' into the package (tarball) 'dest' working from
     the directory 'cwd'.
@@ -468,13 +468,13 @@ def pack(src, dest, cwd='.', checksum=None):
     retry = 3
     while (not ok) and (retry >= 0):
         retry -= 1
-        log.debug('packing %s as %s (from %s)', src, dest, cwd)
-        if _packcmd(src, dest, cwd) != 0:
+        log.debug('packing %s as %s (from %s)', srcs, dest, cwd)
+        if _packcmd(srcs, dest, cwd) != 0:
             log.warning('failed to produce %s', dest)
             continue
 
         log.debug('checking %s', dest)
-        if _packtestcmd(src, dest, cwd) != 0:
+        if _packtestcmd(srcs, dest, cwd) != 0:
             log.warning('invalid package %s', dest)
             continue
 
@@ -494,6 +494,6 @@ def pack(src, dest, cwd='.', checksum=None):
         # everything seems correct, stop retrying
         ok = True
     if not ok:
-        log.error("failed to pack %s, I'm ignoring it", src)
+        log.error("failed to pack %s, I'm ignoring it", srcs)
         if os.path.exists(os.path.join(cwd, dest)):
             os.remove(os.path.join(cwd, dest))
