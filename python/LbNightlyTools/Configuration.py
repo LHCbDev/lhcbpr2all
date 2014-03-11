@@ -122,7 +122,9 @@ def loadFromOldXML(source, slot):
                     # option only if needed
                     proj_data['checkout_opts'] = {'recursive_head':
                                                     recursive_head}
-
+            if name == 'Geant4':
+                # By default, created the shared tarball for Geant4
+                proj_data['with_shared'] = True
             projects.append(proj_data)
 
         data['projects'] = projects

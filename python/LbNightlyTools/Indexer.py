@@ -22,7 +22,7 @@ from datetime import date
 from subprocess import Popen, PIPE
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import retry_call as call, ensureDirs
+from LbNightlyTools.Utils import pack, ensureDirs
 from LbNightlyTools.BuildSlot import ProjDesc
 
 ALLOWED_EXTENSIONS = set([# official sources (yes, including Python and options)
@@ -217,8 +217,8 @@ class Script(LbUtils.Script.PlainScript):
             glimpseindex.wait()
 
             self.log.info('packing indexes for %s...', proj)
-            call(['tar', 'chjf', join(artifacts_dir, self.packname(proj)),
-                  proj.dir], cwd=indexes_dir)
+            pack([proj.dir], join(artifacts_dir, self.packname(proj)),
+                 cwd=indexes_dir, checksum='md5')
 
         self.log.info('files indexed (time taken: %s).',
                       datetime.now() - starttime)

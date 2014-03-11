@@ -67,13 +67,15 @@ fi
 
 time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
 
-# if possible generate glimpse indexes and upload them to buildlhcb
-#if which glimpseindex &> /dev/null ; then
-#    time lbn-index --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
-#    if [ "$JENKINS_MOCK" != "true" ] ; then
-#        rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
-#    fi
-#fi
+# if possible and requested, generate glimpse indexes and upload them to buildlhcb
+if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
+    if which glimpseindex &> /dev/null ; then
+	time lbn-index --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
+	if [ "$JENKINS_MOCK" != "true" ] ; then
+            rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+	fi
+    fi
+fi
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
   # Clean up

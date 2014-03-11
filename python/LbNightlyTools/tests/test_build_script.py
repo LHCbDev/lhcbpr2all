@@ -420,3 +420,40 @@ def test_explicit_list():
         os.chdir(oldcwd)
         shutil.rmtree(tmpd, ignore_errors=True)
 
+
+def test_with_shared():
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot-with-shared',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+
+        script = BuildSlot.Script()
+        retcode = script.run(['--debug', 'testing-slot-with-shared.json'])
+        assert retcode == 0
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+        shr_file = '{project}.{version}.{slot}.{today}.shared.tar.bz2'.format(**info)
+        assert_files_exist(join(tmpd, 'testdata', 'artifacts'), shr_file)
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)

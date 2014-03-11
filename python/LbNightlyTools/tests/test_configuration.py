@@ -150,6 +150,23 @@ TEST_XML = u'''
             <project name="Moore" tag="MOORE_v10r2p4" headofeverything="true"/>
         </projects>
     </slot>
+    <slot name="lhcb-sim" description="testing Geant4 special case">
+        <cmtprojectpath>
+            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
+            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
+            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
+            <path value="/afs/cern.ch/lhcb/software/releases"/>
+        </cmtprojectpath>
+        <platforms>
+            <platform name="x86_64-slc6-gcc48-opt"/>
+        </platforms>
+        <cmtextratags value="use-distcc,no-pyzip"/>
+        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
+        <projects>
+            <project name="Geant4" tag="GEANT4_HEAD" />
+            <project name="Gauss" tag="GAUSS_HEAD" />
+        </projects>
+    </slot>
 </configuration>
 '''
 
@@ -309,6 +326,39 @@ def test_loadXML_4():
                 }
 
     load = lambda path: Configuration.load(path+"#lhcb-headofeverything")
+    found = processFile(TEST_XML, load)
+    from pprint import pprint
+    pprint(found)
+    pprint(expected)
+    assert found == expected
+
+def test_loadXML_5():
+    'Configuration.load(xml) [with lhcb-sim]'
+
+    expected = {'slot': 'lhcb-sim',
+                'description': "testing Geant4 special case",
+                'projects': [{'name': 'Geant4',
+                              'version': 'HEAD',
+                              'dependencies': [],
+                              'overrides': {},
+                              'with_shared': True},
+                             {'name': 'Gauss',
+                              'version': 'HEAD',
+                              'dependencies': ['Geant4'],
+                              'overrides': {}}],
+                'env': ['CMTPROJECTPATH=' +
+                          ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
+                                    '/afs/cern.ch/sw/Gaudi/releases',
+                                    '/afs/cern.ch/sw/lcg/app/releases',
+                                    '/afs/cern.ch/lhcb/software/releases']),
+                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
+                'USE_CMT': True,
+                'default_platforms': ['x86_64-slc6-gcc48-opt'],
+                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
+                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
+                }
+
+    load = lambda path: Configuration.load(path+"#lhcb-sim")
     found = processFile(TEST_XML, load)
     from pprint import pprint
     pprint(found)

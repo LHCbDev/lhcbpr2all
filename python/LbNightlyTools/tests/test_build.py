@@ -28,10 +28,17 @@ def test_ProjDesc():
     assert p.deps == [u'MyBase']
     assert p.dir == os.path.join('MYPROJECT', 'MYPROJECT_v1r0')
     assert str(p) == 'MyProject v1r0'
+    assert p.with_shared == False
 
     p = BuildSlot.ProjDesc({u'name': u'MyProject',
                             u'version': u'v1r0'})
     assert p.deps == []
+
+    p = BuildSlot.ProjDesc({u'name': u'MyProject',
+                            u'version': u'v1r0',
+                            u'with_shared': True})
+    assert p.with_shared == True
+
 
 def test_genProjectXml():
     'BuildSlot.genProjectXml()'

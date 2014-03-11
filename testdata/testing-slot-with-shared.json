@@ -1,0 +1,8 @@
+{"slot": "testing-slot-with-shared",
+ "description": "slot used for unit testing of LbNighltyTools",
+ "projects": [{"name": "TestProject",
+               "version": "HEAD",
+               "checkout": "ignore",
+               "with_shared": true}],
+ "USE_CMT": true
+}
