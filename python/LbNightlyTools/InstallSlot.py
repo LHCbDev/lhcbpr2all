@@ -309,8 +309,7 @@ class Script(LbUtils.Script.PlainScript):
                           help='comma-separated list of platforms to install '
                                '(the special platform "src" is always included '
                                'and "shared" is included if "src" is not '
-                               'explicitly specified, e.g. to get only the '
-                               'sources)'
+                               'the only specified platform)'
                                ' [default: all]')
         parser.add_option('--dest',
                           action='store',
@@ -332,7 +331,7 @@ class Script(LbUtils.Script.PlainScript):
             opts.projects = map(str.strip, opts.projects.split(','))
         if opts.platforms:
             opts.platforms = map(str.strip, opts.platforms.split(','))
-            if 'src' not in opts.platforms:
+            if opts.platforms != ['src']:
                 opts.platforms.append('shared') # ensure that 'src' is included
             opts.platforms.append('src') # ensure that 'src' is included
 
