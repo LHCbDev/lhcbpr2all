@@ -39,7 +39,7 @@ def test_basic():
     'Utils.pack() basic functionality'
     with TemporaryDir() as tmpdir:
         dest = os.path.join(tmpdir, 'indexer.tar.bz2')
-        Utils.pack('indexer', dest, cwd=_testdata, checksum='md5')
+        Utils.pack(['indexer'], dest, cwd=_testdata, checksum='md5')
         assert exists(dest)
         assert exists(dest + '.md5')
         list_tar = Popen(['tar', '--list', '--file', dest], stdout=PIPE)
@@ -55,7 +55,7 @@ def test_basic():
 
     with TemporaryDir() as tmpdir:
         dest = os.path.join(tmpdir, 'indexer.tar.bz2')
-        Utils.pack('indexer', dest, cwd=_testdata)
+        Utils.pack(['indexer'], dest, cwd=_testdata)
         assert exists(dest)
         assert not exists(dest + '.md5')
         list_tar = Popen(['tar', '--list', '--file', dest], stdout=PIPE)
@@ -78,7 +78,7 @@ def test_links():
         os.symlink('dir_a', os.path.join(linksdir, 'dir_b'))
 
         dest = os.path.join(tmpdir, 'links.tar.bz2')
-        Utils.pack('links', dest, cwd=tmpdir, checksum='md5')
+        Utils.pack(['links'], dest, cwd=tmpdir, checksum='md5')
         assert exists(dest)
         assert exists(dest + '.md5')
         list_tar = Popen(['tar', '--list', '--file', dest], stdout=PIPE)
@@ -118,7 +118,7 @@ def test_failing_packer():
         # create an empty file to test the removal of corrupted packages
         open(dest, 'wb').close()
         with custom_packcmd(failer_cmd):
-            Utils.pack('indexer', dest, cwd=_testdata, checksum='md5')
+            Utils.pack(['indexer'], dest, cwd=_testdata, checksum='md5')
         assert not exists(dest)
         assert not exists(dest + '.md5')
 
@@ -129,6 +129,6 @@ def test_failing_tester():
         # create an empty file to test the removal of corrupted packages
         open(dest, 'wb').close()
         with custom_packtestcmd(failer_cmd):
-            Utils.pack('indexer', dest, cwd=_testdata, checksum='md5')
+            Utils.pack(['indexer'], dest, cwd=_testdata, checksum='md5')
         assert not exists(dest)
         assert not exists(dest + '.md5')
