@@ -497,25 +497,3 @@ def pack(srcs, dest, cwd='.', checksum=None):
         log.error("failed to pack %s, I'm ignoring it", srcs)
         if os.path.exists(os.path.join(cwd, dest)):
             os.remove(os.path.join(cwd, dest))
-
-def intPrefix(s):
-    '''
-    Extract the numeric (integer) prefix of a string and convert it to an int.
-    Return -1 if the first char of the string is not a number.
-    
-    >>> intPrefix('123abc')
-    123
-    >>> intPrefix(u'98')
-    98
-    >>> intPrefix('hello')
-    -1
-    '''
-    from itertools import takewhile
-    if type(s) is unicode:
-        isdecimal = unicode.isdecimal
-    else:
-        isdecimal = str.isdigit
-    digits = ''.join(takewhile(isdecimal, s))
-    if digits:
-        return int(digits)
-    return -1

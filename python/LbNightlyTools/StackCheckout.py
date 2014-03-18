@@ -22,7 +22,7 @@ import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import ensureDirs, pack, intPrefix
+from LbNightlyTools.Utils import ensureDirs, pack
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -226,21 +226,11 @@ class StackDesc(object):
                     tokens = line.strip().split()
                     if len(tokens) == 3 and tokens[0] == 'use':
                         if tokens[1] in proj_versions_uc:
-                            if tokens[1] != 'LCGCMT':
-                                tokens[2] = (tokens[1] + '_'
-                                             + proj_versions_uc[tokens[1]])
-                            else: # LCGCMT is special
-                                # if the version is 'preview' or the numeric
-                                # prefix is >= 68 the version string is
-                                #   LCGCMT-<version>
-                                # otherwise
-                                #   LCGCMT_<version>
-                                lcg_ver = proj_versions_uc[tokens[1]]
-                                lcg_num_ver = intPrefix(lcg_ver)
-                                if (lcg_ver == 'preview' or lcg_num_ver >= 68):
-                                    tokens[2] = 'LCGCMT-' + lcg_ver
-                                else:
-                                    tokens[2] = 'LCGCMT_' + lcg_ver
+                            tokens[2] = (tokens[1] + '_'
+                                         + proj_versions_uc[tokens[1]])
+                            # special case
+                            if tokens[2] == 'LCGCMT_preview':
+                                tokens[2] = 'LCGCMT-preview'
                             line = ' '.join(tokens) + '\n'
                     newdata.append(line)
 
