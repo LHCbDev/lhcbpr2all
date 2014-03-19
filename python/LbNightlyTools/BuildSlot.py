@@ -26,6 +26,7 @@ import json
 
 from LbNightlyTools import Configuration
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack
+from LbNightlyTools.Utils import Dashboard
 
 from string import Template
 from socket import gethostname
@@ -429,13 +430,11 @@ class Script(LbUtils.Script.PlainScript):
                           'build_id': int(os.environ.get('slot_build_id', 0)),
                           'platform': self.platform}
 
-        from LbNightlyTools.Utils import Dashboard
         self.dashboard = Dashboard(credentials=None,
                                    dumpdir=os.path.join(self.artifacts_dir,
                                                         'db'),
                                    submit=opts.submit,
                                    flavour=opts.flavour)
-
 
         self.log.info("Preparing CTest scripts and configurations.")
         # load CTest script templates
@@ -828,6 +827,14 @@ class Script(LbUtils.Script.PlainScript):
 
         self._setup()
 
+        if opts.submit and not opts.projects and not opts.tests_only:
+            # ensure that results for the current slot/build/platform are
+            # not in the dashboard (useful in case of rebuild), but only
+            # if we need to publish the results and it's not a partial build
+            # or a "test-only" run
+            self.dashboard.dropBuild(slot=self.json_tmpl['slot'],
+                                     build_id=self.json_tmpl['build_id'],
+                                     platform=self.json_tmpl['platform'])
         if not opts.tests_only:
             self.dump_json({'type': 'job-start',
                             'host': gethostname(),
