@@ -32,6 +32,8 @@ WARN_EXCEPT = [".*/boost/.*",
                ".*stl_algo.h:[0-9]+: warning: array subscript is above array "
                  "bounds"]
 
+# FIXME: we need a better way to define the default platforms
+DEFAULT_PLATFORMS = 'x86_64-slc6-gcc48-opt,x86_64-slc6-gcc48-dbg'
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -53,9 +55,13 @@ class Script(LbUtils.Script.PlainScript):
                                     'i.e. standard output]')
         self.parser.add_option('--cmt', action='store_true',
                                help='configure to use CMT for the build')
+        self.parser.add_option('--platforms',
+                               help='space or comma -separated list of '
+                                    'platforms required [default: %default]')
         self.parser.set_defaults(slot='lhcb-release',
                                  cmt=False,
-                                 output='-')
+                                 output='-',
+                                 platforms=DEFAULT_PLATFORMS)
 
     def genConfig(self):
         '''
@@ -86,6 +92,9 @@ class Script(LbUtils.Script.PlainScript):
 
             projects.append(project)
 
+        default_platforms = (self.options.platforms.replace(',', ' ')
+                             .strip().split())
+
         # prepare the configuration dictionary
         config = {'slot': self.options.slot,
                   'description': 'Slot used for releasing projects.',
@@ -94,13 +103,7 @@ class Script(LbUtils.Script.PlainScript):
                   'no_patch': True,
                   'error_exceptions': ERR_EXCEPT,
                   'warning_exceptions': WARN_EXCEPT,
-                  # FIXME: we need a better way to define the default platforms
-                  'default_platforms': ['x86_64-slc5-gcc46-opt',
-                                        'x86_64-slc5-gcc46-dbg',
-                                        'x86_64-slc6-gcc46-opt',
-                                        'x86_64-slc6-gcc46-dbg',
-                                        'x86_64-slc6-gcc48-opt',
-                                        'x86_64-slc6-gcc48-dbg']
+                  'default_platforms': default_platforms
                   }
 
         return config

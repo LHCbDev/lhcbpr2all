@@ -45,7 +45,7 @@ def test_empty_config():
         assert output['projects'] == []
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
-        assert len(output['default_platforms']) == 6
+        assert len(output['default_platforms']) == 2
 
         assert output == s.genConfig()
 
@@ -174,6 +174,30 @@ def test_with_cmt():
         assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'}]
         assert output['USE_CMT'] is True
         assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
+def test_platforms():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = ReleaseConfigGenerator.Script()
+        s.run(['--platforms',
+               ' x86_64-slc6-gcc48-opt x86_64-slc6-gcc48-dbg,'
+               'x86_64-slc6-gcc48-test',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['default_platforms'] == ['x86_64-slc6-gcc48-opt',
+                                               'x86_64-slc6-gcc48-dbg',
+                                               'x86_64-slc6-gcc48-test']
 
         assert output == s.genConfig()
 

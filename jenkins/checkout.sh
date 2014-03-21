@@ -19,7 +19,11 @@ if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
 fi
 
 if [ "${slot}" = "lhcb-release" ] ; then
-  lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
+  if [ -n "${platforms}" ] ; then
+    lbn-gen-release-config --cmt --platforms="${platforms}" -o configs/${slot}.json ${projects_list}
+  else
+    lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
+  fi
 fi
 
 if [ -e configs/${slot}.json ] ; then

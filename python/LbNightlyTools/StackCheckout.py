@@ -399,6 +399,9 @@ class Script(LbUtils.Script.PlainScript):
         cfg['type'] = 'slot-config'
         cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
         cfg['date'] = timestamp
+        platforms = os.environ.get('platforms', '').strip().split()
+        if platforms:
+            cfg['platforms'] = platforms
         Dashboard(credentials=None,
                   dumpdir=join(artifacts_dir, 'db'),
                   submit=opts.submit,
