@@ -58,6 +58,11 @@ else
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
 fi
 
+# FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)
+if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
+  . SetupProject.sh LCGCMT 66 Python pytools
+fi
+
 if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
   config_file=${ARTIFACTS_DIR}/${slot}.json
 else
