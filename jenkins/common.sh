@@ -60,7 +60,7 @@ fi
 
 # FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)
 if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
-  . SetupProject.sh LCGCMT 66 Python pytools
+  . SetupProject.sh LCGCMT 66 Python
 fi
 
 if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
