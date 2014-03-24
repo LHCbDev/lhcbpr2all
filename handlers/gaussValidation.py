@@ -3,8 +3,6 @@ from BaseHandler import BaseHandler
 from xml.etree.ElementTree import ElementTree
 from xml.parsers.expat import ExpatError
 
-
-
 #################################################################################
 def grepPattern(P,L):
   result = None
@@ -13,8 +11,6 @@ def grepPattern(P,L):
     result = resultobject.group(1)
   return result
 
-
-#
 #################################################################################
 class GaussLogFile:
   def __init__(self,N):
@@ -346,73 +342,79 @@ class GaussLogFile:
           print "#MCRichSegment = " , self.MCRichSegment
 
       if ( self.Muon_MCHits == None ):
-        self.Muon_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Muon MCHits"  \|      \d+ \|      *(\d+)' , line )
+        self.Muon_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Muon MCHits"  \|      *\d+ \|      *(\d+)' , line )
         if ( self.Muon_MCHits != None ):
           print "#Muon_MCHits = " , self.Muon_MCHits
 
       if ( self.IT_MCHits == None ):
 #there are two values in the run.log file. In this way the second is collected
-        self.IT_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#TT MCHits"    \|      \d+ \|      *(\d+)' , line )
+        self.IT_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#IT MCHits"    \|      *\d+ \|      *(\d+)' , line )
         if ( self.IT_MCHits != None ):
           print "#IT_MCHits = " , self.IT_MCHits
+
+      if ( self.TT_MCHits == None ):
+#there are two values in the run.log file. In this way the second is collected
+        self.TT_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#TT MCHits"    \|      *\d+ \|      *(\d+)' , line )
+        if ( self.TT_MCHits != None ):
+          print "#TT_MCHits = " , self.TT_MCHits
           
       if ( self.Hcal_MCHits == None ):
-        self.Hcal_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Hcal MCHits"  \|      \d* \|   *(\d+)' , line )
+        self.Hcal_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Hcal MCHits"  \|     *\d+ \|   *(\d+)' , line )
         if ( self.Hcal_MCHits != None ):
           print "#Hcal_MCHits = " , self.Hcal_MCHits
 
       if ( self.OT_MCHits == None ):
-        self.OT_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#OT MCHits"    \|      \d+ \|    *(\d+)' , line )
+        self.OT_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#OT MCHits"    \|      *\d+ \|    *(\d+)' , line )
         if ( self.OT_MCHits != None ):
           print "#OT_MCHits = " , self.OT_MCHits
 
       if ( self.Velo_MCHits == None ):
-        self.Velo_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Velo MCHits"  \|      \d+ \|   *(\d+)' , line )
+        self.Velo_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Velo MCHits"  \|      *\d+ \|   *(\d+)' , line )
         if ( self.Velo_MCHits != None ):
           print "#Velo_MCHits = " , self.Velo_MCHits
 
       if ( self.Rich2_MCHits == None ):
-        self.Rich2_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Rich2 MCHits" \|      \d+ \|   *(\d+)' , line )
+        self.Rich2_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Rich2 MCHits" \|      *\d+ \|   *(\d+)' , line )
         if ( self.Rich2_MCHits != None ):
           print "#Rich2_MCHits = " , self.Rich2_MCHits
 
       if ( self.Spd_MCHits == None ):
-        self.Spd_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Spd MCHits"   \|      \d+ \|    *(\d+)' , line )
+        self.Spd_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Spd MCHits"   \|      *\d+ \|    *(\d+)' , line )
         if ( self.Spd_MCHits != None ):
           print "#Spd_MCHits = " , self.Spd_MCHits
 
       if ( self.Rich1_MCHits == None ):
-        self.Rich1_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Rich1 MCHits" \|      \d+ \|   *(\d+)' , line )
+        self.Rich1_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Rich1 MCHits" \|      *\d+ \|   *(\d+)' , line )
         if ( self.Rich1_MCHits != None ):
           print "#Rich1_MCHits = " , self.Rich1_MCHits
 
       if ( self.MCParticles == None ):
-        self.MCParticles = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#MCParticles"  \|      \d+ \|   *(\d+)' , line )
+        self.MCParticles = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#MCParticles"  \|      *\d+ \|   *(\d+)' , line )
         if ( self.MCParticles != None ):
           print "#MCParticles = " , self.MCParticles
 
       if ( self.MCVertices == None ):
-        self.MCVertices = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#MCVertices"   \|      \d+ \|     *(\d+)' , line )
+        self.MCVertices = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#MCVertices"   \|      *\d+ \|     *(\d+)' , line )
         if ( self.MCVertices != None ):
           print "#MCVertices = " , self.MCVertices
 
       if ( self.Prs_MCHits == None ):
-        self.Prs_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Prs MCHits"   \|      \d+ \|    *(\d+)' , line )
+        self.Prs_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Prs MCHits"   \|      *\d+ \|    *(\d+)' , line )
         if ( self.Prs_MCHits != None ):
           print "#Prs_MCHits = " , self.Prs_MCHits
 
       if ( self.MCRichOpPhoto == None ):
-        self.MCRichOpPhoto = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#MCRichOpPhoto \|      \d+ \|    *(\d+)' , line )
+        self.MCRichOpPhoto = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#MCRichOpPhoto \|      *\d+ \|    *(\d+)' , line )
         if ( self.MCRichOpPhoto != None ):
           print "#MCRichOpPhoto = " , self.MCRichOpPhoto
 
       if ( self.Rich_MCHits == None ):
-        self.Rich_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Rich MCHits"  \|      \d+ \|   *(\d+)' , line )
+        self.Rich_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Rich MCHits"  \|      *\d+ \|   *(\d+)' , line )
         if ( self.Rich_MCHits != None ):
           print "#RichMCHits = " , self.Rich_MCHits
 
       if ( self.Ecal_MCHits == None ):
-        self.Ecal_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Ecal MCHits"  \|      \d+ \|    *(\d+)' , line )
+        self.Ecal_MCHits = grepPattern( '\*\*\*\*\*\*Stat\*\*\*\*\*\*           INFO  "#Ecal MCHits"  \|      *\d+ \|    *(\d+)' , line )
         if ( self.Ecal_MCHits != None ):
           print "#EcalMCHits = " , self.Ecal_MCHits
 
