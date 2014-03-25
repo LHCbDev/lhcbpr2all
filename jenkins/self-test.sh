@@ -14,12 +14,8 @@
 #. /cvmfs/lhcb.cern.ch/lib/lhcb/LBSCRIPTS/prod/InstallArea/scripts/LbLogin.sh
 . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
 
-if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then 
-  # FIXME: On SLC5 the default Python is the system one (with LCG 68)
-  . SetupProject.sh LCGCMT 66 Python pytools
-else
-  . SetupProject.sh LCGCMT Python pytools
-fi 
+# FIXME: We are forced to use LCG 66 because Python coverage does not work in 68
+. SetupProject.sh LCGCMT 66 Python pytools
 
 set -ex
 
