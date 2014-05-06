@@ -115,7 +115,7 @@ class LHCbDataPackageRpmSpec(LHCbBaseRpmSpec):
 %define project ${project}
 %define hat ${hat}
 %define package ${package}
-%define version ${version}
+%define lbversion ${lbversion}
 %define fullname ${fullname}
 %define release ${release}
 %define versiondir ${versiondir}
@@ -148,7 +148,7 @@ Requires(post): LBSCRIPTS
         \n""").substitute(majver = self._majver, minver = self._minver, patchver = self._patchver,
                           buildarea = self._buildarea,
                           project = self._project, projectUp = self._project.upper(),
-                          package = self._package, version = self._version, hat = self._hat,
+                          package = self._package, lbversion = self._version, hat = self._hat,
                           fullname = self._fullname, release = self._release,
                           versiondir = self._versiondir, releasedir = self._releasedir)
 
@@ -198,7 +198,7 @@ fi'''
         trailer = """
 %files
 %defattr(-,root,root)
-%{prefix}/lhcb/%{versiondir}
+%{prefix}/lhcb/%{versiondir}/%{lbversion}
 
 %post
 
@@ -208,16 +208,16 @@ else
   PREFIX=%{prefix}
 fi
 
-if [ -f $PREFIX/lhcb/%{versiondir}/cmt/Update.py ]; then
+if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py ]; then
   echo "Running Update script"
   . $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
-  python $PREFIX/lhcb/%{versiondir}/cmt/Update.py
+  python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py
 fi
 
-if [ -f $PREFIX/lhcb/%{versiondir}/cmt/PostInstall.py ]; then
+if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py ]; then
   echo "Running PostInstall script"
   . $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
-  python $PREFIX/lhcb/%{versiondir}/cmt/PostInstall.py
+  python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py
 fi
 
 %postun
