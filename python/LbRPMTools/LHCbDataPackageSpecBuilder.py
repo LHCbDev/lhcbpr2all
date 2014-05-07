@@ -113,6 +113,7 @@ class LHCbDataPackageRpmSpec(LHCbBaseRpmSpec):
 %define patchver ${patchver}
 %define buildarea ${buildarea}
 %define project ${project}
+%define projectUp ${projectUp}
 %define hat ${hat}
 %define package ${package}
 %define lbversion ${lbversion}
@@ -142,6 +143,7 @@ Provides: %{package} = %{majver}.%{minver}.%{patchver}
 Provides: %{fullname} = %{majver}.%{minver}.%{patchver}
 Provides: %{package}_v%{majver} = %{majver}.%{minver}.%{patchver}
 Provides: %{fullname}_v%{majver} =  %{majver}.%{minver}.%{patchver}
+Requires: %{projectUp}_common
 Requires(post): LBSCRIPTS
 
 
