@@ -127,6 +127,9 @@ class LHCbDataPackageRpmSpec(LHCbBaseRpmSpec):
 %define tmpdir %{buildarea}/tmpbuild
 %define _tmppath %{buildarea}/tmp
 
+
+%define _postshell /bin/bash
+
 Name: %{fullname}
 Version: %{majver}.%{minver}.%{patchver}
 Release: %{release}
@@ -139,12 +142,15 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: %{prefix}
 Provides: /bin/sh
+Provides: /bin/bash
 Provides: %{package} = %{majver}.%{minver}.%{patchver}
 Provides: %{fullname} = %{majver}.%{minver}.%{patchver}
 Provides: %{package}_v%{majver} = %{majver}.%{minver}.%{patchver}
 Provides: %{fullname}_v%{majver} =  %{majver}.%{minver}.%{patchver}
 Requires: %{projectUp}_common
 Requires(post): LBSCRIPTS
+Requires(post): COMPAT
+
 
 
         \n""").substitute(majver = self._majver, minver = self._minver, patchver = self._patchver,
@@ -197,34 +203,58 @@ fi'''
         '''
         Prepare the RPM header
         '''
-        trailer = """
+        trailer = '''
+
+%clean
+
+%post -p /bin/bash
+
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+
+if [ -f $PREFIX/etc/update.d/%{package}_Update.py ]; then
+rm -f $PREFIX/etc/update.d/%{package}_Update.py
+fi
+
+if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py ]; then
+echo "Creating link in update.d"
+mkdir -p -v $PREFIX/etc/update.d
+ln -s $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py $PREFIX/etc/update.d/%{package}_Update.py
+echo "Running Update script"
+. $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
+echo "Now using python:"
+which python
+echo "PYTHONPATH: $PYTHONPATH"
+echo "PATH: $PATH"
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py
+fi
+
+if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py ]; then
+echo "Running PostInstall script"
+. $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
+python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py
+fi
+
+%postun -p /bin/bash
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+echo "In uninstall script"
+if [ -h $PREFIX/etc/update.d/%{package}_Update.py ]; then
+echo "Removing link to update script:  $PREFIX/etc/update.d/%{package}_Update.py"
+rm $PREFIX/etc/update.d/%{package}_Update.py
+fi
+
 %files
 %defattr(-,root,root)
 %{prefix}/lhcb/%{versiondir}/%{lbversion}
 
-%post
-
-if [ "$MYSITEROOT" ]; then
-  PREFIX=$MYSITEROOT
-else
-  PREFIX=%{prefix}
-fi
-
-if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py ]; then
-  echo "Running Update script"
-  . $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
-  python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py
-fi
-
-if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py ]; then
-  echo "Running PostInstall script"
-  . $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
-  python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py
-fi
-
-%postun
-
-%clean
 
 %define date    %(echo `LC_ALL=\"C\" date +\"%a %b %d %Y\"`)
 
@@ -233,7 +263,7 @@ fi
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
 
-        """
+        '''
 
         return trailer
 
