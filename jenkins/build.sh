@@ -65,7 +65,7 @@ if [ "${with_tests}" != "no" ] ; then
   fi
 fi
 
-time lbn-build --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
+time lbn-build --no-distcc --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
 
 # if possible and requested, generate glimpse indexes and upload them to buildlhcb
 if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
