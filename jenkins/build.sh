@@ -52,7 +52,7 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   # (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
   ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
-  submit_opt="--submit --cdash-submit --flavour ${flavour}"
+  submit_opt="--submit --flavour ${flavour}"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 fi
 
