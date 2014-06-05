@@ -35,11 +35,7 @@ if [ -e /build/coverity/static-analysis/bin ] ; then
   export PATH=/build/coverity/static-analysis/bin:/build/coverity:$PATH
 fi
 
-if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
-  config_file=${ARTIFACTS_DIR}/${slot}.json
-else
-  config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
-fi
+config_file=${ARTIFACTS_DIR}/slot-config.json
 
 if [ "${os_label}" = "coverity" ] ; then
   coverity_opt='--coverity'
