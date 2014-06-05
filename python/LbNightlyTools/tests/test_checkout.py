@@ -16,7 +16,11 @@ import shutil
 import nose
 from subprocess import Popen, PIPE
 from xml.etree import ElementTree as ET
+from os.path import normpath, join
 from LbNightlyTools.tests.utils import *
+
+
+_testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
 # Uncomment to disable the tests.
 #__test__ = False
@@ -178,7 +182,7 @@ def test_checkout():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists, join
+    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -284,7 +288,7 @@ def test_getpack_recursive_head():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists, join
+    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -374,3 +378,43 @@ def test_getpack_recursive_head():
         #print tmpdir
         shutil.rmtree(tmpdir, ignore_errors=True)
 
+def test_collectDeps():
+    expected = {'Gaudi': [],
+                'Online': ['Gaudi'],
+                'LHCb': ['Gaudi'],
+                'Lbcom': ['LHCb'],
+                'Rec': ['LHCb'],
+                'Brunel': ['Lbcom', 'Rec']
+                }
+
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    rootdir = join(_testdata, 'collect_deps', 'cmt')
+    slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
+    deps = slot.collectDeps(rootdir)
+    print 'CMT:', deps
+    assert deps == expected
+    assert not mlh.messages['warning']
+
+    rootdir = join(_testdata, 'collect_deps', 'cmake')
+    slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
+    deps = slot.collectDeps(rootdir)
+    print 'CMake:', deps
+    assert deps == expected
+    assert not mlh.messages['warning']
+
+    rootdir = join(_testdata, 'collect_deps', 'broken')
+    slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
+    deps = slot.collectDeps(rootdir)
+    expected = {'Gaudi': [],
+                'BadCMT': [],
+                'BadCMake': [],
+                'Missing': []}
+    print 'Broken:', deps
+    assert deps == expected
+    warnings = mlh.messages['warning']
+    assert filter(re.compile(r'cannot discover dependencies for BadCMT').match, warnings)
+    assert filter(re.compile(r'cannot discover dependencies for BadCMake').match, warnings)
+    assert filter(re.compile(r'cannot discover dependencies for Missing').match, warnings)
+    assert not filter(re.compile(r'cannot discover dependencies for Gaudi').match, warnings)

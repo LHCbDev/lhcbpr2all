@@ -1,0 +1,14 @@
+{"slot": "cmake",
+ "projects": [{"name": "Gaudi",
+               "version": "HEAD"},
+              {"name": "Online",
+               "version": "HEAD"},
+              {"name": "LHCb",
+               "version": "HEAD"},
+              {"name": "Lbcom",
+               "version": "HEAD"},
+              {"name": "Rec",
+               "version": "HEAD"},
+              {"name": "Brunel",
+               "version": "HEAD"}]
+}

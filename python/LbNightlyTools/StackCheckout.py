@@ -17,6 +17,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
+import re
 import json
 import codecs
 from datetime import date
@@ -26,6 +27,10 @@ from LbNightlyTools.Utils import ensureDirs, pack
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
+
+# constants
+GP_EXP = re.compile(r'gaudi_project\(([^)]+)\)')
+HT_EXP = re.compile(r'set\(\s*heptools_version\s+([^)]+)\)')
 
 class ProjectDesc(object):
     '''
@@ -63,6 +68,44 @@ class ProjectDesc(object):
         upcase = self.name.upper()
         return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
 
+    def getDeps(self, rootdir='.'):
+        '''
+        Return the dependencies of a checked out project using the information
+        retrieved from the configuration files.
+        @return: list of used projects (all converted to lowercase)
+        '''
+        proj_root = os.path.join(rootdir, self.projectDir)
+        deps = []
+
+        # try with CMakeLists.txt first
+        try:
+            cmake = os.path.join(proj_root, 'CMakeLists.txt')
+            # arguments to the gaudi_project call
+            args = GP_EXP.search(open(cmake).read()).group(1).split()
+            if 'USE' in args:
+                # look for the indexes of the range 'USE' ... 'DATA'
+                use_idx = args.index('USE') + 1
+                if 'DATA' in args:
+                    data_idx = args.index('DATA')
+                else:
+                    data_idx = len(args)
+                # extract the odds elements (project names) and convert them
+                # to lower case
+                deps = [p.lower() for p in args[use_idx:data_idx:2]]
+        except:
+            # try with CMT
+            try:
+                cmt = os.path.join(proj_root, 'cmt', 'project.cmt')
+                # from all the lines in project.cmt that start with 'use',
+                # we extract the second word (project name) and convert it to
+                # lower case
+                deps = [l.split()[1].lower()
+                        for l in [l.strip() for l in open(cmt)]
+                        if l.startswith('use')]
+            except:
+                __log__.warning('cannot discover dependencies for %s', self)
+        return sorted(deps)
+
     def __str__(self):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
@@ -92,12 +135,8 @@ class StackDesc(object):
         Take all projects/packages in the stack and fix the dependencies to make
         a consistent set.
         '''
-        import re
         from os.path import exists, join
         from difflib import context_diff
-
-        gp_exp = re.compile(r'gaudi_project\(([^)]+)\)')
-        ht_exp = re.compile(r'set\(\s*heptools_version\s+([^)]+)\)')
 
         # cache of the project versions
         proj_versions = dict([(p.name, p.version)
@@ -134,7 +173,7 @@ class StackDesc(object):
                 f.close()
                 try:
                     # find the project declaration call
-                    m = gp_exp.search(data)
+                    m = GP_EXP.search(data)
                     if m is None:
                         __log__.warning('%s does not look like a Gaudi/CMake '
                                         'project, I\'m not touching it', proj)
@@ -181,7 +220,7 @@ class StackDesc(object):
                 f.close()
                 try:
                     # find the heptools version setting
-                    m = ht_exp.search(data)
+                    m = HT_EXP.search(data)
                     if m is None:
                         __log__.debug('%s does not set heptools_version, '
                                       'no need to touch', proj)
@@ -285,6 +324,22 @@ class StackDesc(object):
             fixCMT(proj)
 
         pfile.close()
+
+    def collectDeps(self, rootdir='.'):
+        '''
+        Scan the configuration files of the projects to discover their
+        dependencies.
+        @return: dictionary with project names as keys and list of dep as values
+        '''
+        # helper dict to map case insensitive name to correct project names
+        names = dict((p.name.lower(), p.name) for p in self.projects)
+        deps = {}
+        for p in self.projects:
+            # note that we ignore projects not in the stack
+            deps[p.name] = [names[n]
+                            for n in p.getDeps(rootdir)
+                            if n in names]
+        return deps
 
 def parseConfigFile(path):
     '''
@@ -402,14 +457,13 @@ class Script(LbUtils.Script.PlainScript):
         platforms = os.environ.get('platforms', '').strip().split()
         if platforms:
             cfg['platforms'] = platforms
-        Dashboard(credentials=None,
-                  dumpdir=join(artifacts_dir, 'db'),
-                  submit=opts.submit,
-                  flavour=opts.flavour).publish(cfg)
-        # Save a copy as metadata for tools like lbn-install
-        with codecs.open(join(artifacts_dir, 'slot-config.json'),
-                         'w', 'utf-8') as config_dump:
-            json.dump(cfg, config_dump, indent=2)
+        dashboard = Dashboard(credentials=None,
+                              dumpdir=join(artifacts_dir, 'db'),
+                              submit=opts.submit,
+                              flavour=opts.flavour)
+        # publish the configuration before the checkout
+        # (but we have to update it later)
+        dashboard.publish(cfg)
 
         slot.checkout(build_dir, opts.projects)
 
@@ -419,6 +473,11 @@ class Script(LbUtils.Script.PlainScript):
                             '.'.join([opts.build_id or 'slot', 'patch'])))
         else:
             self.log.info('not patching the sources')
+
+        deps = slot.collectDeps(build_dir)
+        for p in cfg['projects']:
+            p['dependencies'] = sorted(set(p.get('dependencies', []) +
+                                           deps.get(p['name'], [])))
 
         for proj in slot.projects:
             # ignore missing directories
@@ -431,6 +490,14 @@ class Script(LbUtils.Script.PlainScript):
 
             pack([proj.projectDir], join(artifacts_dir, self.packname(proj)),
                  cwd=build_dir, checksum='md5')
+
+        # Save a copy as metadata for tools like lbn-install
+        with codecs.open(join(artifacts_dir, 'slot-config.json'),
+                         'w', 'utf-8') as config_dump:
+            json.dump(cfg, config_dump, indent=2)
+
+        # publish the updated configuration JSON
+        dashboard.publish(cfg)
 
         self.log.info('sources ready for build (time taken: %s).',
                       datetime.now() - starttime)
