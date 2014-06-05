@@ -379,7 +379,8 @@ def test_getpack_recursive_head():
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 def test_collectDeps():
-    expected = {'Gaudi': [],
+    expected = {'LCGCMT': [],
+                'Gaudi': ['LCGCMT'],
                 'Online': ['Gaudi'],
                 'LHCb': ['Gaudi'],
                 'Lbcom': ['LHCb'],
@@ -395,14 +396,16 @@ def test_collectDeps():
     deps = slot.collectDeps(rootdir)
     print 'CMT:', deps
     assert deps == expected
-    assert not mlh.messages['warning']
+    assert len(mlh.messages['warning']) == 1
+    assert 'LCGCMT' in mlh.messages['warning'].pop()
 
     rootdir = join(_testdata, 'collect_deps', 'cmake')
     slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
     deps = slot.collectDeps(rootdir)
     print 'CMake:', deps
     assert deps == expected
-    assert not mlh.messages['warning']
+    assert len(mlh.messages['warning']) == 1
+    assert 'LCGCMT' in mlh.messages['warning'].pop()
 
     rootdir = join(_testdata, 'collect_deps', 'broken')
     slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))

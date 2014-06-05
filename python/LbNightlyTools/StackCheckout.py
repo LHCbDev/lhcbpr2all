@@ -92,6 +92,14 @@ class ProjectDesc(object):
                 # extract the odds elements (project names) and convert them
                 # to lower case
                 deps = [p.lower() for p in args[use_idx:data_idx:2]]
+
+            # artificial dependency on LCGCMT, if needed
+            toolchain = os.path.join(proj_root, 'toolchain.cmake')
+            if (os.path.exists(toolchain) and
+                HT_EXP.search(open(toolchain).read())):
+                # we set explicit the version of heptools,
+                # so we depend on LCGCMT
+                deps.append('lcgcmt')
         except:
             # try with CMT
             try:

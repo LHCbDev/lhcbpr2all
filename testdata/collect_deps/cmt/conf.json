@@ -1,5 +1,7 @@
 {"slot": "cmt",
- "projects": [{"name": "Gaudi",
+ "projects": [{"name": "LCGCMT",
+               "version": "preview"},
+              {"name": "Gaudi",
                "version": "HEAD"},
               {"name": "Online",
                "version": "HEAD"},
