@@ -86,32 +86,28 @@ def loadFromOldXML(source, slot):
                                      if 'name' in p.attrib]
 
         projects = []
+        project_names = set()
         for proj in slot_el.findall('projects/project'):
             name = proj.attrib['name']
             version = extractVersion(proj.attrib['tag'])
             overrides = {}
             for elem in proj.findall('addon') + proj.findall('change'):
                 overrides[elem.attrib['package']] = elem.attrib['value']
-            # since dependencies are declared only to override versions, but the
-            # new config needs them for the ordering, we fake dependencies on
-            # all the projects encountered so far
-            dependencies = [p['name'] for p in projects]
             # check if we have dep overrides
+            project_names.add(name) # keep track of the names found so far
             for elem in proj.findall('dependence'):
                 dep_name = elem.attrib['project']
-                if dep_name not in dependencies:
-                    dependencies.append(dep_name)
+                if dep_name not in project_names:
+                    project_names.add(dep_name)
                     dep_vers = extractVersion(elem.attrib['tag'])
                     projects.append({'name': dep_name,
                                      'version': dep_vers,
                                      'overrides': {},
-                                     'dependencies': [],
                                      'checkout': 'ignore'})
 
             proj_data = {'name': name,
                          'version': version,
-                         'overrides': overrides,
-                         'dependencies': dependencies}
+                         'overrides': overrides}
             if proj.attrib.get('disabled', 'false').lower() != 'false':
                 proj_data['checkout'] = 'ignore'
             if 'headofeverything' in proj.attrib:
