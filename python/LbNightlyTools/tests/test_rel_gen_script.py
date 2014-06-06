@@ -115,8 +115,7 @@ def test_two_projects():
 
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'},
-                                      {'name': 'Lbcom', 'version': 'v14r1',
-                                       'dependencies': ['LHCb']}]
+                                      {'name': 'Lbcom', 'version': 'v14r1'}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 

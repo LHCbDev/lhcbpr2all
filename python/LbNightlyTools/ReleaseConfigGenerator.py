@@ -76,11 +76,6 @@ class Script(LbUtils.Script.PlainScript):
                                    'appear only once' % proj)
             project = {'name': proj, 'version': vers}
 
-            # FIXME: once LBCORE-146 is fixed, we can remove this hack
-            # build the projects in the order they are specified
-            if added:
-                project['dependencies'] = list(added)
-
             added.append(proj)
 
             # we check out Gaudi from git
