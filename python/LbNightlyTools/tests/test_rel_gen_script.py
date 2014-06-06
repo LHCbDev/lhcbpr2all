@@ -124,6 +124,27 @@ def test_two_projects():
     finally:
         os.remove(tmpname)
 
+def test_fixCase():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = ReleaseConfigGenerator.Script()
+        s.run(['-o', tmpname, 'lhcb', 'v36r1', 'dAvinCi', 'v34r0'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'},
+                                      {'name': 'DaVinci', 'version': 'v34r0'}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_dup_projects():
     try:
         s = ReleaseConfigGenerator.Script()

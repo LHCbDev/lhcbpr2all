@@ -35,6 +35,28 @@ WARN_EXCEPT = [".*/boost/.*",
 # FIXME: we need a better way to define the default platforms
 DEFAULT_PLATFORMS = 'x86_64-slc6-gcc48-opt,x86_64-slc6-gcc48-dbg'
 
+# get the correct case for projects
+try:
+    from LbConfiguration.Project import project_names
+except ImportError:
+    # if we cannot find the list of names, we use a minimal hardcoded list
+    project_names = [ "LHCb", "DaVinci" ]
+
+# convert the names to a a conversion dictionary
+project_names = dict((name.lower(), name) for name in project_names)
+def fixProjectCase(name):
+    '''
+    Convert a project name to it's canonical case.
+
+    >>> fixProjectCase('GAUDI')
+    'Gaudi'
+    >>> fixProjectCase('davinci')
+    'DaVinci'
+    >>> fixProjectCase('uNkNoWn')
+    'Unknown'
+    '''
+    return project_names.get(name.lower(), name.capitalize())
+
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -71,6 +93,7 @@ class Script(LbUtils.Script.PlainScript):
         added = []
         # convert from [0, 1, 2, 3, ...] to [(0, 1), (2, 3), ...]
         for proj, vers in zip(self.args[::2], self.args[1::2]):
+            proj = fixProjectCase(proj)
             if proj in added:
                 raise RuntimeError('project %s repeated: each project can '
                                    'appear only once' % proj)
