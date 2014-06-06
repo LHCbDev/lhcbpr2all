@@ -37,13 +37,13 @@ DEFAULT_PLATFORMS = 'x86_64-slc6-gcc48-opt,x86_64-slc6-gcc48-dbg'
 
 # get the correct case for projects
 try:
-    from LbConfiguration.Project import project_names
+    from LbConfiguration.Project import project_names as PROJECT_NAMES
 except ImportError:
     # if we cannot find the list of names, we use a minimal hardcoded list
-    project_names = [ "LHCb", "DaVinci" ]
+    PROJECT_NAMES = [ "LHCb", "DaVinci" ]
 
 # convert the names to a a conversion dictionary
-project_names = dict((name.lower(), name) for name in project_names)
+PROJECT_NAMES = dict((name.lower(), name) for name in PROJECT_NAMES)
 def fixProjectCase(name):
     '''
     Convert a project name to it's canonical case.
@@ -55,7 +55,7 @@ def fixProjectCase(name):
     >>> fixProjectCase('uNkNoWn')
     'Unknown'
     '''
-    return project_names.get(name.lower(), name.capitalize())
+    return PROJECT_NAMES.get(name.lower(), name.capitalize())
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
