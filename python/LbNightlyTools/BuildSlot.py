@@ -31,6 +31,7 @@ from LbNightlyTools.Utils import Dashboard
 from string import Template
 from socket import gethostname
 from datetime import datetime, date
+from collections import defaultdict, OrderedDict
 try:
     from multiprocessing import cpu_count
 except ImportError:
@@ -132,6 +133,14 @@ def sortedByDeps(deps):
 
     >>> sortedByDeps({'4':['2','3'],'3':['1'],'2':['1'],'1':['0'],'0':[]})
     ['0', '1', '3', '2', '4']
+
+    If the argument is an OrderedDict, the returned list preserves the order of
+    the keys (if possible).
+
+    >>> sortedByDeps(dict([('1', []), ('2', ['1']), ('3', ['1'])]))
+    ['1', '3', '2']
+    >>> sortedByDeps(OrderedDict([('1', []), ('2', ['1']), ('3', ['1'])]))
+    ['1', '2', '3']
     '''
     def unique(iterable):
         '''Return only the unique elements in the list l.
@@ -185,30 +194,6 @@ def setenv(definitions):
     for item in definitions:
         name, value = item.split('=', 1)
         os.environ[name] = os.path.expandvars(value)
-
-class ListDict(dict):
-    '''
-    Extension of dict to append to the value associated to a key,
-    creating the list if the key is not found.
-
-    >>> d = ListDict()
-    >>> d.append('foo', 'bar')
-    >>> d
-    {'foo': ['bar']}
-    >>> d.append('foo', 'baz')
-    >>> d
-    {'foo': ['bar', 'baz']}
-    '''
-    def append(self, key, value):
-        '''
-        Append value to the list associated to key.
-        If key is not found, create the list.
-        '''
-        if key not in self:
-            self[key] = [value]
-        else:
-            self[key].append(value)
-
 
 def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     '''
@@ -451,10 +436,11 @@ class Script(LbUtils.Script.PlainScript):
         else:
             self.cache_preload = None
 
-        self.projects = dict([(p.name, p)
-                              for p in map(ProjDesc, self.config[u'projects'])])
+        self.projects = OrderedDict([(p.name, p)
+                                     for p in map(ProjDesc,
+                                                  self.config[u'projects'])])
 
-        deps = dict([(p.name, p.deps) for p in self.projects.values()])
+        deps = OrderedDict([(p.name, p.deps) for p in self.projects.values()])
         self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]
 
         if opts.projects:
@@ -1307,7 +1293,7 @@ class BuildReporter(object):
             #    return 'coverity'
             return None
 
-        summary = dict([(k, ListDict())
+        summary = dict([(k, defaultdict(list))
                         for k in ['error', 'warning', 'coverity']])
         context = deque()
         sections = [] # List of section descriptions: ('name', begin)
@@ -1321,7 +1307,7 @@ class BuildReporter(object):
                 context.popleft()
             linetype = getLineType(line)
             if linetype:
-                summary[linetype].append(line, (i, list(context)))
+                summary[linetype][line].append((i, list(context)))
             if self.config.get('USE_CMT'):
                 if line.startswith('# Building package'):
                     sections.append((line.split()[3], i-1))

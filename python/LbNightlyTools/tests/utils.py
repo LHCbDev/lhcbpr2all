@@ -14,8 +14,10 @@ Utility functions used for testing.
 import os
 import shutil
 import tempfile
+import logging
 
-__all__ = ('which', 'MockFunc', 'processFile', 'processFileWithName')
+__all__ = ('which', 'MockFunc', 'processFile', 'processFileWithName',
+           'MockLoggingHandler')
 
 def which(cmd):
     '''
@@ -103,3 +105,30 @@ def processFileWithName(data, name, function):
         with open(filepath, 'w') as f:
             f.write(data)
         return function(filepath)
+
+# Code taken from http://stackoverflow.com/a/1049375/576333
+class MockLoggingHandler(logging.Handler):
+    """Mock logging handler to check for expected logs.
+    To use it:
+    >>> mlh = MockLoggingHandler()
+    >>> logging.getLogger().addHandler(mlh)
+    >>> logging.debug('hello')
+    >>> mlh.messages['debug']
+    ['hello']
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.reset()
+        logging.Handler.__init__(self, *args, **kwargs)
+
+    def emit(self, record):
+        self.messages[record.levelname.lower()].append(record.getMessage())
+
+    def reset(self):
+        self.messages = {
+            'debug': [],
+            'info': [],
+            'warning': [],
+            'error': [],
+            'critical': [],
+        }

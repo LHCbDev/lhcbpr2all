@@ -177,36 +177,28 @@ def test_loadXML():
                 'projects': [{'name': 'LCGCMT',
                               'version': 'preview',
                               'checkout': 'ignore',
-                              'dependencies': [],
                               'overrides': {}},
                              {'name': 'Gaudi',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT'],
                               'overrides': {}},
                              {'name': 'Online',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT', 'Gaudi'],
                               'overrides': {}},
                              {'name': 'LHCb',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT', 'Gaudi', 'Online'],
                               'overrides': {'Det/DetDescSvc': 'v2r2',
                                             'Tools/EventIndexer': 'HEAD'}},
                              {'name': 'Lbcom',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT', 'Gaudi', 'Online', 'LHCb'],
                               'overrides': {}},
                              {'name': 'Boole',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT', 'Gaudi', 'Online', 'LHCb', 'Lbcom'],
                               'overrides': {}},
                              {'name': 'Rec',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT', 'Gaudi', 'Online', 'LHCb', 'Lbcom', 'Boole'],
                               'overrides': {}},
                              {'name': 'Brunel',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT', 'Gaudi', 'Online', 'LHCb', 'Lbcom', 'Boole', 'Rec'],
                               'overrides': {}}],
                 'env': ['CMTPROJECTPATH=dir1:dir2/${TODAY}:/afs/cern.ch/lhcb/software/releases',
                         'CMTEXTRATAGS=use-distcc,no-pyzip'],
@@ -225,9 +217,9 @@ def test_loadXML():
 
     load = lambda path: Configuration.load(path+"#lhcb-lcg-head")
     found = processFile(TEST_XML, load)
-    #from pprint import pprint
-    #pprint(found)
-    #pprint(expected)
+    from pprint import pprint
+    pprint(found)
+    pprint(expected)
     assert found == expected
 
 def test_loadXML_2():
@@ -238,11 +230,9 @@ def test_loadXML_2():
                 'projects': [{'name': 'LCGCMT',
                               'version': 'preview',
                               'checkout': 'ignore',
-                              'dependencies': [],
                               'overrides': {}},
                              {'name': 'Gaudi',
                               'version': 'HEAD',
-                              'dependencies': ['LCGCMT'],
                               'overrides': {}}],
                 'env': ['CMTPROJECTPATH=dir1:dir2/${TODAY}:/afs/cern.ch/lhcb/software/releases',
                         'CMTEXTRATAGS=use-distcc,no-pyzip'],
@@ -267,15 +257,12 @@ def test_loadXML_3():
                 'description': "testing released software against latest database tags",
                 'projects': [{'name': 'Brunel',
                               'version': 'v37r8p4',
-                              'dependencies': [],
                               'overrides': {}},
                              {'name': 'Moore',
                               'version': 'v10r2p4',
-                              'dependencies': ['Brunel'],
                               'overrides': {}},
                              {'name': 'DaVinci',
                               'version': 'v26r3p3',
-                              'dependencies': ['Brunel', 'Moore'],
                               'overrides': {}}],
                 'env': ['CMTPROJECTPATH=' +
                           ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
@@ -305,12 +292,10 @@ def test_loadXML_4():
                 'description': "testing headofeverything override flag",
                 'projects': [{'name': 'Brunel',
                               'version': 'HEAD',
-                              'dependencies': [],
                               'overrides': {},
                               'checkout_opts': {'recursive_head': False}},
                              {'name': 'Moore',
                               'version': 'v10r2p4',
-                              'dependencies': ['Brunel'],
                               'overrides': {},
                               'checkout_opts': {'recursive_head': True}}],
                 'env': ['CMTPROJECTPATH=' +
@@ -339,12 +324,10 @@ def test_loadXML_5():
                 'description': "testing Geant4 special case",
                 'projects': [{'name': 'Geant4',
                               'version': 'HEAD',
-                              'dependencies': [],
                               'overrides': {},
                               'with_shared': True},
                              {'name': 'Gauss',
                               'version': 'HEAD',
-                              'dependencies': ['Geant4'],
                               'overrides': {}}],
                 'env': ['CMTPROJECTPATH=' +
                           ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
