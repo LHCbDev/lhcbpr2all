@@ -229,3 +229,63 @@ class Poll(LbUtils.Script.PlainScript):
                 os.remove(output_param_file)
 
         return 0
+
+class Trigger(LbUtils.Script.PlainScript):
+    '''
+    Poll a URL for the list of stacks not yet released and return those that
+    need to be built.
+    '''
+    __usage__ = '%prog [options] <stacks JSON file> <index>'
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('--output-param-file', action='store',
+                               help='file where to store the parameter for the '
+                                    'release trigger job in Jenkins. If '
+                                    'there is nothing to build, the file is '
+                                    'removed (for integration with Jenkins).')
+
+        self.parser.set_defaults(output_param_file='params.txt')
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+        if len(self.args) != 2:
+            self.parser.error('wrong number of arguments')
+
+        # URL to poll
+        stacks_file = self.args[0]
+        try:
+            index = int(self.args[1])
+        except:
+            self.parser.error('invalid argument "%s": it should be an int' %
+                              self.args[1])
+
+        if os.path.exists(stacks_file):
+            with codecs.open(stacks_file, 'r', 'utf-8') as state:
+                stacks = json.load(state)
+        else:
+            self.log.error('file %s not found', stacks_file)
+            return 1
+
+        stack = stacks[index]
+
+        projects_list = ' '.join(' '.join(project_version) for project_version in stack.get('projects', []))
+        platforms = ' '.join(stack.get('platforms', []))
+
+        output_param_file = self.options.output_param_file
+        if projects_list and platforms:
+            data = 'projects_list={0}\nplatforms={1}\n'.format(projects_list,
+                                                               platforms)
+            with open(output_param_file, 'w') as output:
+                output.write(data)
+        else:
+            self.log.error('invalid stack configuration')
+            if os.path.exists(output_param_file):
+                os.remove(output_param_file)
+            return 1
+
+        return 0
