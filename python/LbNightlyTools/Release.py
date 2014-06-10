@@ -15,6 +15,10 @@ versions.
 '''
 import LbNightlyTools.Configuration
 
+import os
+import json
+import urllib2
+import codecs
 
 ERR_EXCEPT = ["distcc\\[",
               "::error::",
@@ -58,7 +62,7 @@ def fixProjectCase(name):
     return PROJECT_NAMES.get(name.lower(), name.capitalize())
 
 import LbUtils.Script
-class Script(LbUtils.Script.PlainScript):
+class ConfigGenerator(LbUtils.Script.PlainScript):
     '''
     Given a list of projects and versions, generate a basic configuration file.
     '''
@@ -146,5 +150,142 @@ class Script(LbUtils.Script.PlainScript):
             LbNightlyTools.Configuration.save(self.options.output, config)
         else:
             print LbNightlyTools.Configuration.configToString(config)
+
+        return 0
+
+class Poll(LbUtils.Script.PlainScript):
+    '''
+    Poll a URL for the list of stacks not yet released and return those that
+    need to be built.
+    '''
+    __usage__ = '%prog [options] url'
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('--state-file', action='store',
+                               help='file where to keep the latest state of the'
+                                    ' stacks to be built')
+        self.parser.add_option('--output-param-file', action='store',
+                               help='file where to store the parameter for the '
+                                    'release trigger job in Jenkins. If '
+                                    'there is nothing to build, the file is '
+                                    'removed (for integration with Jenkins).')
+
+        self.parser.set_defaults(state_file='stacks.json',
+                                 output_param_file='params.txt')
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
+
+        # URL to poll
+        url = self.args[0]
+
+        state_file = self.options.state_file
+        output_param_file = self.options.output_param_file
+
+        # get the stacks triggered last time
+        self.log.debug('load previous state')
+        previous = []
+        if os.path.exists(state_file):
+            with codecs.open(state_file, 'r', 'utf-8') as state:
+                previous = json.load(state)
+        self.log.debug('found %d stacks', len(previous))
+
+        # retrieve the list of stacks to build
+        self.log.debug('retrieving %s', url)
+        stacks = json.loads(urllib2.urlopen(url).read())
+        # sort the list for stable behavior
+        for stack in stacks:
+            for k in stack:
+                stack[k].sort()
+        stacks.sort()
+        self.log.debug('found %d stacks', len(stacks))
+
+        # overwrite the last run data for the next poll
+        self.log.debug('write new state')
+        with codecs.open(state_file, 'w', 'utf-8') as output:
+            json.dump(stacks, output)
+
+        # check which entries need to be built
+        indexes = [str(i)
+                   for i, s in enumerate(stacks)
+                   if s not in previous]
+
+        if indexes:
+            self.log.debug('write parameters file')
+            with open(output_param_file, 'w') as output:
+                output.write('indexes=%s\n' % ' '.join(indexes))
+                output.write('stacks=%s\n' % json.dumps(stacks))
+        else:
+            # prevent further triggering
+            self.log.debug('nothing to build')
+            if os.path.exists(output_param_file):
+                os.remove(output_param_file)
+
+        return 0
+
+class Trigger(LbUtils.Script.PlainScript):
+    '''
+    Poll a URL for the list of stacks not yet released and return those that
+    need to be built.
+    '''
+    __usage__ = '%prog [options] <stacks JSON file> <index>'
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('--output-param-file', action='store',
+                               help='file where to store the parameter for the '
+                                    'release trigger job in Jenkins. If '
+                                    'there is nothing to build, the file is '
+                                    'removed (for integration with Jenkins).')
+
+        self.parser.set_defaults(output_param_file='params.txt')
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+        if len(self.args) != 2:
+            self.parser.error('wrong number of arguments')
+
+        # URL to poll
+        stacks_file = self.args[0]
+        try:
+            index = int(self.args[1])
+        except:
+            self.parser.error('invalid argument "%s": it should be an int' %
+                              self.args[1])
+
+        if os.path.exists(stacks_file):
+            with codecs.open(stacks_file, 'r', 'utf-8') as state:
+                stacks = json.load(state)
+        else:
+            self.log.error('file %s not found', stacks_file)
+            return 1
+
+        stack = stacks[index]
+
+        projects_list = ' '.join(' '.join(project_version) for project_version in stack.get('projects', []))
+        platforms = ' '.join(stack.get('platforms', []))
+
+        output_param_file = self.options.output_param_file
+        if projects_list and platforms:
+            data = 'projects_list={0}\nplatforms={1}\n'.format(projects_list,
+                                                               platforms)
+            with open(output_param_file, 'w') as output:
+                output.write(data)
+        else:
+            self.log.error('invalid stack configuration')
+            if os.path.exists(output_param_file):
+                os.remove(output_param_file)
+            return 1
 
         return 0
