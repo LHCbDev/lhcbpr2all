@@ -58,7 +58,7 @@ def fixProjectCase(name):
     return PROJECT_NAMES.get(name.lower(), name.capitalize())
 
 import LbUtils.Script
-class Script(LbUtils.Script.PlainScript):
+class ConfigGenerator(LbUtils.Script.PlainScript):
     '''
     Given a list of projects and versions, generate a basic configuration file.
     '''

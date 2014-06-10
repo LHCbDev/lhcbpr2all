@@ -12,7 +12,7 @@
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import ReleaseConfigGenerator
+from LbNightlyTools import Release
 
 import os
 import json
@@ -35,7 +35,7 @@ def test_empty_config():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['-o', tmpname])
 
         output = json.load(open(tmpname))
@@ -54,7 +54,7 @@ def test_empty_config():
 
 def test_options_error():
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['ProjA'])
         assert False, 'the script did not fail'
     except SystemExit:
@@ -64,7 +64,7 @@ def test_LHCb():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['-o', tmpname, 'LHCb', 'v36r1'])
 
         output = json.load(open(tmpname))
@@ -84,7 +84,7 @@ def test_Gaudi():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['-o', tmpname, 'Gaudi', 'v23r9'])
 
         output = json.load(open(tmpname))
@@ -107,7 +107,7 @@ def test_two_projects():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['-o', tmpname, 'LHCb', 'v36r1', 'Lbcom', 'v14r1'])
 
         output = json.load(open(tmpname))
@@ -128,7 +128,7 @@ def test_fixCase():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['-o', tmpname, 'lhcb', 'v36r1', 'dAvinCi', 'v34r0'])
 
         output = json.load(open(tmpname))
@@ -147,7 +147,7 @@ def test_fixCase():
 
 def test_dup_projects():
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['LHCb', 'v36r1', 'LHCb', 'v36r2'])
         assert False, 'the script did not fail'
     except SystemExit:
@@ -162,7 +162,7 @@ def test_stdout():
         old_stdout = sys.stdout
         sys.stdout = StringIO()
 
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['-o', '-', 'LHCb', 'v36r1'])
 
         output = json.loads(sys.stdout.getvalue())
@@ -184,7 +184,7 @@ def test_with_cmt():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['--cmt', '-o', tmpname, 'LHCb', 'v36r1'])
 
         output = json.load(open(tmpname))
@@ -204,7 +204,7 @@ def test_platforms():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
     try:
-        s = ReleaseConfigGenerator.Script()
+        s = Release.ConfigGenerator()
         s.run(['--platforms',
                ' x86_64-slc6-gcc48-opt x86_64-slc6-gcc48-dbg,'
                'x86_64-slc6-gcc48-test',
