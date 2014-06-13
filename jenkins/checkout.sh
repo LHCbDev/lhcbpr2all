@@ -47,10 +47,6 @@ echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
 
 # Now preparing the RPM with the project source
 time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}.${timestamp}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
-if [ "$JENKINS_MOCK" != "true" ] ; then
-    rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/*.rpm" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
-fi
-
 
 
 # Cleaning up
