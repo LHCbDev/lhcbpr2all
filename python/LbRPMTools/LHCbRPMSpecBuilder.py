@@ -23,6 +23,36 @@ from string import Template
 
 __log__ = logging.getLogger(__name__)
 
+class RpmDirConfig:
+    ''' Placeholder for directory config '''
+    def __init__(self, buildarea, buildname):
+        self.buildarea = buildarea
+        self.buildname = buildname
+        
+        self.topdir = "%s/rpmbuild" % buildarea
+        self.tmpdir = "%s/tmpbuild" % buildarea
+        self.rpmtmp = "%s/tmp" % buildarea
+        self.srcdir = os.path.join(self.topdir, "SOURCES")
+        self.rpmsdir =  os.path.join(self.topdir, "RPMS")
+        self.srpmsdir =  os.path.join(self.topdir, "SRPMS")
+        self.builddir =  os.path.join(self.topdir, "BUILD")
+                
+        # And creating them if needed
+        for d in [self.rpmtmp, self.srcdir, self.rpmsdir, self.srpmsdir, self.builddir]:
+            if not os.path.exists(d):
+                os.makedirs(d)
+
+        self.buildroot = os.path.join(self.tmpdir, "%s-buildroot" % buildname)
+        if not os.path.exists(self.buildroot):
+            os.makedirs(self.buildroot)
+
+    def removeBuildArea(self):
+        ''' Clean up the dirs '''
+        import shutil
+        if os.path.exists(self.buildarea):
+            shutil.rmtree(self.buildarea)
+
+
 #
 # Base class for spec files
 #
@@ -157,8 +187,7 @@ Provides: %{projectUp}_%{lbversion} = %{lhcb_maj_version}.%{lhcb_min_version}.%{
 
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
-
-        """).substitute(buildarea = self._buildarea,
+""").substitute(buildarea = self._buildarea,
                         project = self._project,
                         projectUp = self._project.upper(),
                         version = self._version)
@@ -183,15 +212,38 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         self._buildarea = buildarea
         self._buildlocation = buildlocation
         self._manifest = manifest
+        self._lhcb_maj_version = 1
+        self._lhcb_min_version = 0
+        self._lhcb_patch_version = 0
+        self._lhcb_release_version = 1
+        self._arch = "noarch"
 
+    def getArch(self):
+        ''' Return the architecture, always noarch for our packages'''
+        return self._arch
+
+    def getRPMName(self):
+        ''' Return the architecture, always noarch for our packages'''
+        projname =  "_".join([self._project.upper(),
+                              self._version,
+                              self._cmtconfig.replace('-', '_')])
+        projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
+                                              self._lhcb_min_version,
+                                              self._lhcb_patch_version]])
+        full = "-".join([projname, projver, str(self._lhcb_release_version)])
+        final = ".".join([full, self._arch, "rpm"])
+        return final
+                             
+    
     def _createHeader(self):
         '''
         Prepare the RPM header
         '''
         header = Template("""
-%define lhcb_maj_version 1
-%define lhcb_min_version 0
-%define lhcb_patch_version 0
+%define lhcb_maj_version ${lhcb_maj_version}
+%define lhcb_min_version ${lhcb_min_version}
+%define lhcb_patch_version ${lhcb_patch_version}
+%define lhcb_release_version ${lhcb_release_version}
 %define buildarea ${buildarea}
 %define buildlocation ${buildlocation}
 %define project ${project}
@@ -208,7 +260,7 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
 
 Name: %{projectUp}_%{lbversion}_%{cmtconfigrpm}
 Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
-Release: 1
+Release: %{lhcb_release_version}
 Vendor: LHCb
 Summary: %{project}
 License: GPL
@@ -228,7 +280,12 @@ Requires: %{projectUp}_%{lbversion}
                           version = self._version,
                           config=self._cmtconfig,
                           configrpm=self._cmtconfig.replace('-', '_'),
-                          rpmversion= self._version + "_" + self._cmtconfig.replace('-', '_'))
+                          rpmversion= self._version + "_" + self._cmtconfig.replace('-', '_'),
+                          lhcb_maj_version = self._lhcb_maj_version,
+                          lhcb_min_version = self._lhcb_min_version,
+                          lhcb_patch_version = self._lhcb_patch_version,
+                          lhcb_release_version = self._lhcb_release_version,
+                          )
 
         return header
 
@@ -331,8 +388,7 @@ Requires: %{projectUp}_%{lbversion}
 
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
-
-        """).substitute(buildarea = self._buildarea,
+""").substitute(buildarea = self._buildarea,
                         project = self._project,
                         projectUp = self._project.upper(),
                         version = self._version,
