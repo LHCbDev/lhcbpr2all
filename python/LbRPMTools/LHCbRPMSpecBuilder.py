@@ -84,7 +84,7 @@ class LHCbBaseRpmSpec(object):
 class LHCbSharedRpmSpec(LHCbBaseRpmSpec):
     """ Class representing the Spec file for an RPM containing the shared files for the project """
 
-    def __init__(self, project, version, sharedTar, buildarea, buildlocation, manifest):
+    def __init__(self, project, version, sharedTar, buildarea):
         """ Constructor  """
         super(LHCbSharedRpmSpec, self).__init__(project, version)
         __log__.debug("Creating Shared RPM for %s/%s" % (project, version))
@@ -92,19 +92,35 @@ class LHCbSharedRpmSpec(LHCbBaseRpmSpec):
         self._version = version
         self._sharedTar = sharedTar
         self._buildarea = buildarea
-        self._buildlocation = buildlocation
-        self._manifest = manifest
+        self._lhcb_maj_version = 1
+        self._lhcb_min_version = 0
+        self._lhcb_patch_version = 0
+        self._lhcb_release_version = 1
+        self._arch = "noarch"
 
+    def getArch(self):
+        ''' Return the architecture, always noarch for our packages'''
+        return self._arch
+
+    def getRPMName(self):
+        ''' Return the architecture, always noarch for our packages'''
+        projname =  "_".join([self._project.upper(), self._version])
+        projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
+                                              self._lhcb_min_version,
+                                              self._lhcb_patch_version]])
+        full = "-".join([projname, projver, str(self._lhcb_release_version)])
+        final = ".".join([full, self._arch, "rpm"])
+        return final
     def _createHeader(self):
         '''
         Prepare the RPM header
         '''
         header = Template("""
-%define lhcb_maj_version 1
-%define lhcb_min_version 0
-%define lhcb_patch_version 0
+%define lhcb_maj_version ${lhcb_maj_version}
+%define lhcb_min_version ${lhcb_min_version}
+%define lhcb_patch_version ${lhcb_patch_version}
+%define lhcb_release_version ${lhcb_release_version}
 %define buildarea ${buildarea}
-%define buildlocation ${buildlocation}
 %define project ${project}
 %define projectUp ${projectUp}
 %define lbversion ${version}
@@ -117,7 +133,7 @@ class LHCbSharedRpmSpec(LHCbBaseRpmSpec):
 
 Name: %{projectUp}_%{lbversion}
 Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
-Release: 1
+Release: %{lhcb_release_version}
 Vendor: LHCb
 Summary: %{project}
 License: GPL
@@ -130,10 +146,14 @@ Provides: /bin/sh
 Provides: %{projectUp}_%{lbversion} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 
         \n""").substitute(buildarea = self._buildarea,
-                          buildlocation = self._buildlocation,
                           project = self._project,
                           projectUp = self._project.upper(),
-                          version = self._version)
+                          version = self._version,
+                          lhcb_maj_version = self._lhcb_maj_version,
+                          lhcb_min_version = self._lhcb_min_version,
+                          lhcb_patch_version = self._lhcb_patch_version,
+                          lhcb_release_version = self._lhcb_release_version,
+                          )
 
         return header
 
@@ -159,7 +179,7 @@ Provides: %{projectUp}_%{lbversion} = %{lhcb_maj_version}.%{lhcb_min_version}.%{
         spec += "mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}\n"
         if self._sharedTar != None:
             #spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion} && tar zxf %s" % self._sharedTar
-            spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar zxf %s" % self._sharedTar
+            spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf %s" % self._sharedTar
         else:
             spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && getpack --no-eclipse-config --no-config -P -r % s %s" % (self._project, self._version)
 

@@ -31,9 +31,9 @@ __log__ = logging.getLogger(__name__)
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
-    Script to generate the Spec file for an LHCb project.
+    Script to produce the RPM for a LHCb Nightly slot.
     '''
-    __usage__ = '%prog [options] <manifest.xml>'
+    __usage__ = '%prog [options] <slot_config.json>'
     __version__ = ''
 
     def addRpmOptions(self, parser):
@@ -74,8 +74,11 @@ class Script(LbUtils.Script.PlainScript):
                           help="File name for the generated specfile [default output to stdout]")
         group.add_option('--keep-rpmdir',
                          dest='keeprpmdir',
+                         action= "store_true",
                          default = False,
                          help="Keep the directories used to build the RPMs")
+        
+        parser.add_option_group(group)
         return parser
 
     def defineOpts(self):
@@ -98,6 +101,7 @@ class Script(LbUtils.Script.PlainScript):
 
     def _buildRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
         ''' Build the RPM for the project them and copy them to the target area '''
+
         rpmbuildname = "_".join([project, version, platform])
 
         # Creating the temp directories to prepare the RPMs
@@ -148,13 +152,79 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
             shutil.copy(fullrpmpath, artifactdir)
         
-
         # Remove tmpdirectory
         if not keeprpmdir:
             rpmconf.removeBuildArea()
             self.log.info("Removing: %s " % rpmconf.buildarea)
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+    def _buildSharedRpm(self, project, version, rpmbuildarea, artifactdir, keeprpmdir):
+        ''' Build the RPM for the project them and copy them to the target area '''
+
+        rpmbuildname = "_".join([project, version])
+
+        # Creating the temp directories to prepare the RPMs
+        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        # Looking for archive with sources
+        srcArchive = self._findSrcArchive(project, version, artifactdir)
+        if srcArchive != None:
+            self.log.info("Taking sources from %s" % srcArchive)
+        else:
+            self.log.warning("Doing clean checkout of the sources")
+        
+        # Now generating the spec
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbSharedRpmSpec
+        spec = LHCbSharedRpmSpec(project, version, srcArchive, rpmbuildarea)
+        specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
+        with open(specfilename, "w") as outputfile:
+            outputfile.write(spec.getSpec())
+        
+        # Now calling the rpmbuild command
+        from subprocess import Popen, PIPE
+        process = Popen(["rpmbuild", "-bb", specfilename],
+                        stdout=PIPE, stderr=PIPE)
+        
+        (stdout, stderr) = process.communicate()
+        # XXX Careful we should not be caching the stdout and stderr
+        self.log.info(stdout)
+        self.log.info(stderr)
+        
+        # Checking that the file exists
+        rpmname =  spec.getRPMName()
+        fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
+        if not os.path.exists(fullrpmpath):
+            self.log.error("Cannot find RPM: %s" % fullrpmpath)
+            raise Exception("Cannot find RPM: %s" % fullrpmpath)
+        else:
+            self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
+            shutil.copy(fullrpmpath, artifactdir)
+        
+        # Remove tmpdirectory
+        if not keeprpmdir:
+            rpmconf.removeBuildArea()
+            self.log.info("Removing: %s " % rpmconf.buildarea)
+        else:
+            self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+    def _findSrcArchive(self, project, version, artifactdir):
+        ''' Locate the source RPM '''
+        # Checking if we find the src archive
+        packname = [ project, version ]
+        if self.options.build_id:
+            packname.append(self.options.build_id)
+        packname.append('src')
+        packname.append('tar.bz2')
+        archname =  '.'.join(packname)
+
+        fullarchname = os.path.join(artifactdir, archname)
+        self.log.info("Looking for file: %s" %  fullarchname)
+        if os.path.exists(fullarchname):
+            return os.path.abspath(fullarchname)
+        else:
+            return None
+
             
     def main(self):
         '''
@@ -181,7 +251,7 @@ class Script(LbUtils.Script.PlainScript):
         platform = self.options.platform
         if platform == None:
             platform = os.environ.get("CMTCONFIG", None)
-        if platform == None:
+        if platform == None and not self.options.shared:
             raise Exception("Could not find platform")
 
         # temp area used to build the RPMs
@@ -191,14 +261,21 @@ class Script(LbUtils.Script.PlainScript):
         # Now loading the slot configuration
         from LbNightlyTools import Configuration
         self.config = Configuration.load(self.args[0])
-        print self.config
 
         keeprpmdir = self.options.keeprpmdir
         for p in self.config["projects"]:
             project = p["name"]
+            if self.options.projects and project.name.lower() not in self.options.projects:
+                self.log.warning("Skipping project %s" % project)
+                continue # project not requested: skip
             version = p["version"]
-            self.log.info("Preparing RPM for project %s %s %s" % (project, version, platform))
-            self._buildRpm(project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir)
+
+            if self.options.shared:
+                self.log.info("Preparing RPM for project %s %s %s" % (project, version, "src"))           
+                self._buildSharedRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
+            else:
+                self.log.info("Preparing RPM for project %s %s %s" % (project, version, platform))
+                self._buildRpm(project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir)
             
        
 
