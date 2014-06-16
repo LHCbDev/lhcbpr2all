@@ -346,9 +346,6 @@ cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf /tmp/toto.tar.bz2
                 print "LINE[%d] NEW<%s>" % (i, l)
                 print "LINE[%d] OLD<%s>" % (i, nl[i])
              
-
-
-
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testLoadXML']
