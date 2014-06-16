@@ -213,13 +213,28 @@ class Script(LbUtils.Script.PlainScript):
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
 
-    def _buildGlimpseRpm(self, project, version, rpmbuildarea, artifactdir, keeprpmdir):
+    def _buildGlimpseRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
         ''' Build the RPM for glimpse index and copy them to the target area '''
 
         rpmbuildname = "_".join(["glimpse", project, version])
 
         # Creating the temp directories to prepare the RPMs
         rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        projbuilddir = os.path.join(builddir, project.upper(), project.upper() + "_" + version)
+        manifestxmlfile = os.path.join(projbuilddir, 'InstallArea', platform, 'manifest.xml')
+        if not os.path.exists(manifestxmlfile):
+            self.log.error("Missing manifest.xml file: %s" % manifestxmlfile)
+            raise Exception("Missing manifest.xml file: %s" % manifestxmlfile)
+        else:
+            self.log.info("Using manifest.xml file: %s" % manifestxmlfile)
+
+        # Parsing the manifest.xml file
+        from LbTools.Manifest import Parser
+        
+        manifest = Parser(manifestxmlfile)
+        (tmpproject, tmpversion) =  manifest.getProject()
+        (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
 
         # Looking for archive with sources
         srcArchive = self._findGlimpseArchive(project, version, artifactdir)
@@ -230,7 +245,7 @@ class Script(LbUtils.Script.PlainScript):
         
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbGlimpseRpmSpec
-        spec = LHCbGlimpseRpmSpec(project, version, srcArchive, rpmbuildarea)
+        spec = LHCbGlimpseRpmSpec(project, version, srcArchive, rpmbuildarea, manifest)
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
@@ -330,7 +345,7 @@ class Script(LbUtils.Script.PlainScript):
                 self._buildSharedRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
             elif self.options.glimpse:
                 self.log.info("Preparing Glimpse RPM for project %s %s" % (project, version))           
-                self._buildGlimpseRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
+                self._buildGlimpseRpm(project, version, platform, rpmbuildarea,  builddir, artifactdir, keeprpmdir)
             else:
                 self.log.info("Preparing RPM for project %s %s %s" % (project, version, platform))
                 self._buildRpm(project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir)

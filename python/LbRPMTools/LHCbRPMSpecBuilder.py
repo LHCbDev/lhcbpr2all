@@ -425,7 +425,7 @@ Requires: %{projectUp}_%{lbversion}
 class LHCbGlimpseRpmSpec(LHCbBaseRpmSpec):
     """ Class representing the Spec file for an RPM containing the shared files for the project """
 
-    def __init__(self, project, version, sharedTar, buildarea):
+    def __init__(self, project, version, sharedTar, buildarea, manifest):
         """ Constructor  """
         super(LHCbGlimpseRpmSpec, self).__init__(project, version)
         __log__.debug("Creating Shared RPM for %s/%s" % (project, version))
@@ -437,6 +437,7 @@ class LHCbGlimpseRpmSpec(LHCbBaseRpmSpec):
         self._lhcb_min_version = 0
         self._lhcb_patch_version = 0
         self._lhcb_release_version = 1
+        self._manifest = manifest
         self._arch = "noarch"
 
     def getArch(self):
@@ -502,7 +503,13 @@ Provides: %{projectUp}_%{lbversion}_index = %{lhcb_maj_version}.%{lhcb_min_versi
         '''
         Prepare the Requires section of the RPM
         '''
-        return ""
+        tmp = ""
+
+        # Dependencies to LHCb projects
+        for (dproject, dversion) in self._manifest.getUsedProjects():
+            tmp += "Requires: %s_%s_index\n" %  (dproject.upper(),
+                                                            dversion)
+        return tmp
 
     def _createDescription(self):
         '''
@@ -688,9 +695,9 @@ class Script(LbUtils.Script.PlainScript):
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version + "_" + cmtconfig)
         if self.options.shared:
-            spec = LHCbSharedRpmSpec(project, version, self.options.sharedTar, buildarea, buildlocation, manifest)
-        elif self.options.glinpse:
-            spec = LHCbGlimpseRpmSpec(project, version, self.options.sharedTar, buildarea, buildlocation, manifest)
+            spec = LHCbSharedRpmSpec(project, version, self.options.sharedTar, buildarea)
+        elif self.options.glimpse:
+            spec = LHCbGlimpseRpmSpec(project, version, self.options.sharedTar, buildarea,  manifest)
         else:
             spec = LHCbBinaryRpmSpec(project, version, cmtconfig, buildarea, buildlocation, manifest)
 
