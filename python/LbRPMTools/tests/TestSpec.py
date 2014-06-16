@@ -10,7 +10,7 @@
 ###############################################################################
 '''
 
-Test for the PeriodTest Tools
+Test for the Tools generating Spec files
 
 Created on Dec 3, 2013
 
@@ -23,7 +23,7 @@ import unittest
 from os.path import normpath, join, exists
 
 class Test(unittest.TestCase):
-    ''' Test case of the PeriodicTestStarter class '''
+    ''' Test cases for the RPM Spec builder '''
 
     def setUp(self):
         ''' Setup the test '''
@@ -41,7 +41,7 @@ class Test(unittest.TestCase):
 
     def testRpmDirConfig(self):
         '''
-        Test the RpmDirConfig
+        Test the Rpm build area configuration
         '''
         from LbRPMTools.LHCbRPMSpecBuilder import RpmDirConfig
         from tempfile import mkdtemp
@@ -59,9 +59,9 @@ class Test(unittest.TestCase):
         self.assertFalse(exists(join(mytmp)))
 
 
-    def testSpecBuilder(self):
+    def testBinarySpecBuilder(self):
         '''
-        Test the RpmSpecBuilder
+        Test the binary package Spec Builder
         '''
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbBinaryRpmSpec
 
@@ -161,7 +161,194 @@ rsync -arL %{buildlocation}/%{projectUp}/%{projectUp}_%{lbversion}/InstallArea/%
                 print "LINE[%d] NEW<%s>" % (i, l)
                 print "LINE[%d] OLD<%s>" % (i, nl[i])
              
+
+
+
+    def testSharedSpecBuilder(self):
+        '''
+        Test the shared package Spec Builder
+        '''
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbSharedRpmSpec
+
+        project = "TESTPROJECT"
+        version = "v1r0"
+        platform = "x86_64-slc6-gcc48-opt"
+        rpmbuildarea = "rpmbuildarea"
+        buildlocation = "buildlocation"
+
+        from LbTools.Manifest import Parser
+        manifest = Parser(self._manifestfile)
         
+        spec = LHCbSharedRpmSpec(project, version, "/tmp/toto.tar.gz", rpmbuildarea)
+
+        newspectxt = spec.getSpec()
+        oldspectxt = '''
+%define lhcb_maj_version 1
+%define lhcb_min_version 0
+%define lhcb_patch_version 0
+%define lhcb_release_version 1
+%define buildarea rpmbuildarea
+%define project TESTPROJECT
+%define projectUp TESTPROJECT
+%define lbversion v1r0
+
+%global __os_install_post /usr/lib/rpm/check-buildroot
+
+%define _topdir %{buildarea}/rpmbuild
+%define tmpdir %{buildarea}/tmpbuild
+%define _tmppath %{buildarea}/tmp
+
+Name: %{projectUp}_%{lbversion}
+Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Release: %{lhcb_release_version}
+Vendor: LHCb
+Summary: %{project}
+License: GPL
+Group: LHCb
+BuildRoot: %{tmpdir}/%{name}-buildroot
+BuildArch: noarch
+AutoReqProv: no
+Prefix: /opt/LHCbSoft
+Provides: /bin/sh
+Provides: %{projectUp}_%{lbversion} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+
+        
+%description
+%{project}
+
+%install
+mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf /tmp/toto.tar.gz
+
+
+%post
+
+%postun
+
+%clean
+
+%files
+%defattr(-,root,root)
+/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+
+%define date    %(echo `LC_ALL="C" date +"%a %b %d %Y"`)
+
+%changelog
+
+* %{date} User <ben.couturier..rcern.ch>
+- first Version
+'''    
+
+        
+        import sys
+        nl = newspectxt.splitlines()
+        ol = oldspectxt.splitlines()
+        self.assertEquals(len(nl), len(ol))
+        
+        for i, l in enumerate(ol):
+            self.assertEqual(nl[i], ol[i])
+            if l != nl[i]:
+                print "LINE[%d] NEW<%s>" % (i, l)
+                print "LINE[%d] OLD<%s>" % (i, nl[i])
+
+
+
+    def testGlimpseSpecBuilder(self):
+        '''
+        Test the glimpse package Spec Builder
+        '''
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbGlimpseRpmSpec
+
+        project = "TESTPROJECT"
+        version = "v1r0"
+        platform = "x86_64-slc6-gcc48-opt"
+        rpmbuildarea = "rpmbuildarea"
+        buildlocation = "buildlocation"
+
+        from LbTools.Manifest import Parser
+        manifest = Parser(self._manifestfile)
+        
+        spec = LHCbGlimpseRpmSpec(project, version, '/tmp/toto.tar.bz2',
+                                  rpmbuildarea, manifest)
+
+        newspectxt = spec.getSpec()
+        oldspectxt = '''
+%define lhcb_maj_version 1
+%define lhcb_min_version 0
+%define lhcb_patch_version 0
+%define lhcb_release_version 1
+%define buildarea rpmbuildarea
+%define project TESTPROJECT
+%define projectUp TESTPROJECT
+%define lbversion v1r0
+
+%global __os_install_post /usr/lib/rpm/check-buildroot
+
+%define _topdir %{buildarea}/rpmbuild
+%define tmpdir %{buildarea}/tmpbuild
+%define _tmppath %{buildarea}/tmp
+
+Name: %{projectUp}_%{lbversion}_index
+Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Release: %{lhcb_release_version}
+Vendor: LHCb
+Summary: %{project} glimpse index
+License: GPL
+Group: LHCb
+BuildRoot: %{tmpdir}/%{name}-buildroot
+BuildArch: noarch
+AutoReqProv: no
+Prefix: /opt/LHCbSoft
+Provides: /bin/sh
+Provides: %{projectUp}_%{lbversion}_index = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Requires: %{projectUp}_%{lbversion}
+
+        
+Requires: REC_HEAD_index
+Requires: TOTO_v1r1_index
+%description
+%{project} glimpse indices
+
+%install
+mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf /tmp/toto.tar.bz2
+
+
+%post
+
+%postun
+
+%clean
+
+%files
+%defattr(-,root,root)
+/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+
+%define date    %(echo `LC_ALL="C" date +"%a %b %d %Y"`)
+
+%changelog
+
+* %{date} User <ben.couturier..rcern.ch>
+- first Version
+'''    
+
+        print newspectxt
+        
+        import sys
+        nl = newspectxt.splitlines()
+        ol = oldspectxt.splitlines()
+        self.assertEquals(len(nl), len(ol))
+
+        
+        for i, l in enumerate(ol):
+            self.assertEqual(nl[i], ol[i])
+            if l != nl[i]:
+                print "LINE[%d] NEW<%s>" % (i, l)
+                print "LINE[%d] OLD<%s>" % (i, nl[i])
+             
+
+
+
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testLoadXML']

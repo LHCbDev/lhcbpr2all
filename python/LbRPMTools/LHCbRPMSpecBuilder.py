@@ -486,6 +486,7 @@ AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
 Provides: %{projectUp}_%{lbversion}_index = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Requires: %{projectUp}_%{lbversion}
 
         \n""").substitute(buildarea = self._buildarea,
                           project = self._project,
