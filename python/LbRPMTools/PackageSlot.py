@@ -52,6 +52,11 @@ class Script(LbUtils.Script.PlainScript):
                           default=False,
                           action="store_true",
                           help="Build shared RPM")
+        group.add_option('-g', '--glimpse',
+                          dest="glimpse",
+                          default=False,
+                          action="store_true",
+                          help="Build glimpse RPM")
         group.add_option('--shared-tar',
                           dest="sharedTar",
                           default=None,
@@ -208,13 +213,63 @@ class Script(LbUtils.Script.PlainScript):
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
 
-    def _findSrcArchive(self, project, version, artifactdir):
+    def _buildGlimpseRpm(self, project, version, rpmbuildarea, artifactdir, keeprpmdir):
+        ''' Build the RPM for glimpse index and copy them to the target area '''
+
+        rpmbuildname = "_".join(["glimpse", project, version])
+
+        # Creating the temp directories to prepare the RPMs
+        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        # Looking for archive with sources
+        srcArchive = self._findGlimpseArchive(project, version, artifactdir)
+        if srcArchive != None:
+            self.log.info("Taking sources from %s" % srcArchive)
+        else:
+            self.log.warning("Doing clean checkout of the sources")
+        
+        # Now generating the spec
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbGlimpseRpmSpec
+        spec = LHCbGlimpseRpmSpec(project, version, srcArchive, rpmbuildarea)
+        specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
+        with open(specfilename, "w") as outputfile:
+            outputfile.write(spec.getSpec())
+        
+        # Now calling the rpmbuild command
+        from subprocess import Popen, PIPE
+        process = Popen(["rpmbuild", "-bb", specfilename],
+                        stdout=PIPE, stderr=PIPE)
+        
+        (stdout, stderr) = process.communicate()
+        # XXX Careful we should not be caching the stdout and stderr
+        self.log.info(stdout)
+        self.log.info(stderr)
+        
+        # Checking that the file exists
+        rpmname =  spec.getRPMName()
+        fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
+        if not os.path.exists(fullrpmpath):
+            self.log.error("Cannot find RPM: %s" % fullrpmpath)
+            raise Exception("Cannot find RPM: %s" % fullrpmpath)
+        else:
+            self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
+            shutil.copy(fullrpmpath, artifactdir)
+        
+        # Remove tmpdirectory
+        if not keeprpmdir:
+            rpmconf.removeBuildArea()
+            self.log.info("Removing: %s " % rpmconf.buildarea)
+        else:
+            self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+
+    def _findGlimpseArchive(self, project, version, artifactdir):
         ''' Locate the source RPM '''
         # Checking if we find the src archive
         packname = [ project, version ]
         if self.options.build_id:
             packname.append(self.options.build_id)
-        packname.append('src')
+        packname.append('index')
         packname.append('tar.bz2')
         archname =  '.'.join(packname)
 
@@ -273,6 +328,9 @@ class Script(LbUtils.Script.PlainScript):
             if self.options.shared:
                 self.log.info("Preparing RPM for project %s %s %s" % (project, version, "src"))           
                 self._buildSharedRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
+            elif self.options.glimpse:
+                self.log.info("Preparing Glimpse RPM for project %s %s" % (project, version))           
+                self._buildGlimpseRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
             else:
                 self.log.info("Preparing RPM for project %s %s %s" % (project, version, platform))
                 self._buildRpm(project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir)

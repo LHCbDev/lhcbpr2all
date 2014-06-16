@@ -417,6 +417,143 @@ Requires: %{projectUp}_%{lbversion}
                         rpmversion= self._version + "_" + self._cmtconfig.replace('-', '_'))
 
         return trailer
+
+#
+# Spec for the glimpse RPMs
+#
+###############################################################################
+class LHCbGlimpseRpmSpec(LHCbBaseRpmSpec):
+    """ Class representing the Spec file for an RPM containing the shared files for the project """
+
+    def __init__(self, project, version, sharedTar, buildarea):
+        """ Constructor  """
+        super(LHCbGlimpseRpmSpec, self).__init__(project, version)
+        __log__.debug("Creating Shared RPM for %s/%s" % (project, version))
+        self._project = project
+        self._version = version
+        self._sharedTar = sharedTar
+        self._buildarea = buildarea
+        self._lhcb_maj_version = 1
+        self._lhcb_min_version = 0
+        self._lhcb_patch_version = 0
+        self._lhcb_release_version = 1
+        self._arch = "noarch"
+
+    def getArch(self):
+        ''' Return the architecture, always noarch for our packages'''
+        return self._arch
+
+    def getRPMName(self):
+        ''' Return the architecture, always noarch for our packages'''
+        projname =  "_".join([self._project.upper(), self._version, "index"])
+        projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
+                                              self._lhcb_min_version,
+                                              self._lhcb_patch_version]])
+        full = "-".join([projname, projver, str(self._lhcb_release_version)])
+        final = ".".join([full, self._arch, "rpm"])
+        return final
+    def _createHeader(self):
+        '''
+        Prepare the RPM header
+        '''
+        header = Template("""
+%define lhcb_maj_version ${lhcb_maj_version}
+%define lhcb_min_version ${lhcb_min_version}
+%define lhcb_patch_version ${lhcb_patch_version}
+%define lhcb_release_version ${lhcb_release_version}
+%define buildarea ${buildarea}
+%define project ${project}
+%define projectUp ${projectUp}
+%define lbversion ${version}
+
+%global __os_install_post /usr/lib/rpm/check-buildroot
+
+%define _topdir %{buildarea}/rpmbuild
+%define tmpdir %{buildarea}/tmpbuild
+%define _tmppath %{buildarea}/tmp
+
+Name: %{projectUp}_%{lbversion}_index
+Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Release: %{lhcb_release_version}
+Vendor: LHCb
+Summary: %{project} glimpse index
+License: GPL
+Group: LHCb
+BuildRoot: %{tmpdir}/%{name}-buildroot
+BuildArch: noarch
+AutoReqProv: no
+Prefix: /opt/LHCbSoft
+Provides: /bin/sh
+Provides: %{projectUp}_%{lbversion}_glimpse = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+
+        \n""").substitute(buildarea = self._buildarea,
+                          project = self._project,
+                          projectUp = self._project.upper(),
+                          version = self._version,
+                          lhcb_maj_version = self._lhcb_maj_version,
+                          lhcb_min_version = self._lhcb_min_version,
+                          lhcb_patch_version = self._lhcb_patch_version,
+                          lhcb_release_version = self._lhcb_release_version,
+                          )
+
+        return header
+
+    def _createRequires(self):
+        '''
+        Prepare the Requires section of the RPM
+        '''
+        return ""
+
+    def _createDescription(self):
+        '''
+        Prepare the Requires section of the RPM
+        '''
+        tmp  = "%description\n"
+        tmp += "%{project} glimpse indices\n\n"
+        return tmp
+
+    def _createInstall(self):
+        '''
+        Prepare the Install section of the RPM
+        '''
+        spec = "%install\n"
+        spec += "mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}\n"
+        spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf %s" % self._sharedTar
+
+        spec += "\n\n"
+        return spec
+
+    def _createTrailer(self):
+        '''
+        Prepare the RPM header
+        '''
+        trailer = Template("""
+%post
+
+%postun
+
+%clean
+
+%files
+%defattr(-,root,root)
+/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+
+%define date    %(echo `LC_ALL=\"C\" date +\"%a %b %d %Y\"`)
+
+%changelog
+
+* %{date} User <ben.couturier..rcern.ch>
+- first Version
+""").substitute(buildarea = self._buildarea,
+                        project = self._project,
+                        projectUp = self._project.upper(),
+                        version = self._version)
+
+
+        return trailer
+
+
+
 #
 # Various utilities to extract info about the build
 #
@@ -552,6 +689,8 @@ class Script(LbUtils.Script.PlainScript):
         self.createBuildDirs(buildarea, project + "_" +  version + "_" + cmtconfig)
         if self.options.shared:
             spec = LHCbSharedRpmSpec(project, version, self.options.sharedTar, buildarea, buildlocation, manifest)
+        elif self.options.glinpse:
+            spec = LHCbGlimpseRpmSpec(project, version, self.options.sharedTar, buildarea, buildlocation, manifest)
         else:
             spec = LHCbBinaryRpmSpec(project, version, cmtconfig, buildarea, buildlocation, manifest)
 
