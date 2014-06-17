@@ -82,6 +82,11 @@ class Script(LbUtils.Script.PlainScript):
                          action= "store_true",
                          default = False,
                          help="Keep the directories used to build the RPMs")
+        group.add_option('--dry-run',
+                         dest='dryrun',
+                         action= "store_true",
+                         default = False,
+                         help="Only prepare the spec, not the RPMs")
         
         parser.add_option_group(group)
         return parser
@@ -102,7 +107,32 @@ class Script(LbUtils.Script.PlainScript):
         '''
         from LHCbRPMSpecBuilder import RpmDirConfig
         return RpmDirConfig(buildarea, buildname)
+
+    def _callRpmbuild(self, specfilename, fullrpmpath, artifactdir):
+        ''' Call the rpmbuild command '''
+
+        if self.options.dryrun:
+            self.log.warning("Dry run mode, not calling RPM build for %s" % specfilename)
+            shutil.copy(specfilename, artifactdir)
+            self.log.warning("Dry run mode, spec file copied to %s" % artifactdir)
+            return
         
+        # Now calling the rpmbuild command
+        from subprocess import Popen, PIPE
+        process = Popen(["rpmbuild", "-bb", specfilename],
+                        stdout=PIPE, stderr=PIPE)
+        
+        (stdout, stderr) = process.communicate()
+        # XXX Careful we should not be caching the stdout and stderr
+        self.log.info(stdout)
+        self.log.info(stderr)
+        
+        if not os.path.exists(fullrpmpath):
+            self.log.error("Cannot find RPM: %s" % fullrpmpath)
+            raise Exception("Cannot find RPM: %s" % fullrpmpath)
+        else:
+            self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
+            shutil.copy(fullrpmpath, artifactdir)
 
     def _buildRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
         ''' Build the RPM for the project them and copy them to the target area '''
@@ -136,26 +166,11 @@ class Script(LbUtils.Script.PlainScript):
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
-        
-        # Now calling the rpmbuild command
-        from subprocess import Popen, PIPE
-        process = Popen(["rpmbuild", "-bb", specfilename],
-                        stdout=PIPE, stderr=PIPE)
-        
-        (stdout, stderr) = process.communicate()
-        # XXX Careful we should not be caching the stdout and stderr
-        self.log.info(stdout)
-        self.log.info(stderr)
-        
-        # Checking that the file exists
+
+        # Building the name of the expected RPM
         rpmname =  spec.getRPMName()
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
-        if not os.path.exists(fullrpmpath):
-            self.log.error("Cannot find RPM: %s" % fullrpmpath)
-            raise Exception("Cannot find RPM: %s" % fullrpmpath)
-        else:
-            self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
-            shutil.copy(fullrpmpath, artifactdir)
+        self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
         
         # Remove tmpdirectory
         if not keeprpmdir:
@@ -185,26 +200,11 @@ class Script(LbUtils.Script.PlainScript):
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
-        
-        # Now calling the rpmbuild command
-        from subprocess import Popen, PIPE
-        process = Popen(["rpmbuild", "-bb", specfilename],
-                        stdout=PIPE, stderr=PIPE)
-        
-        (stdout, stderr) = process.communicate()
-        # XXX Careful we should not be caching the stdout and stderr
-        self.log.info(stdout)
-        self.log.info(stderr)
-        
-        # Checking that the file exists
+
+        # Building the name of the expected RPM
         rpmname =  spec.getRPMName()
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
-        if not os.path.exists(fullrpmpath):
-            self.log.error("Cannot find RPM: %s" % fullrpmpath)
-            raise Exception("Cannot find RPM: %s" % fullrpmpath)
-        else:
-            self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
-            shutil.copy(fullrpmpath, artifactdir)
+        self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
         
         # Remove tmpdirectory
         if not keeprpmdir:
@@ -249,26 +249,12 @@ class Script(LbUtils.Script.PlainScript):
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
-        
-        # Now calling the rpmbuild command
-        from subprocess import Popen, PIPE
-        process = Popen(["rpmbuild", "-bb", specfilename],
-                        stdout=PIPE, stderr=PIPE)
-        
-        (stdout, stderr) = process.communicate()
-        # XXX Careful we should not be caching the stdout and stderr
-        self.log.info(stdout)
-        self.log.info(stderr)
-        
-        # Checking that the file exists
+
+
+        # Building the name of the expected RPM
         rpmname =  spec.getRPMName()
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
-        if not os.path.exists(fullrpmpath):
-            self.log.error("Cannot find RPM: %s" % fullrpmpath)
-            raise Exception("Cannot find RPM: %s" % fullrpmpath)
-        else:
-            self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
-            shutil.copy(fullrpmpath, artifactdir)
+        self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
         
         # Remove tmpdirectory
         if not keeprpmdir:
@@ -276,7 +262,6 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info("Removing: %s " % rpmconf.buildarea)
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
-
 
     def _findGlimpseArchive(self, project, version, artifactdir):
         ''' Locate the source RPM '''
@@ -294,7 +279,23 @@ class Script(LbUtils.Script.PlainScript):
             return os.path.abspath(fullarchname)
         else:
             return None
+        
+    def _findSrcArchive(self, project, version, artifactdir):
+        ''' Locate the source RPM '''
+        # Checking if we find the src archive
+        packname = [ project, version ]
+        if self.options.build_id:
+            packname.append(self.options.build_id)
+        packname.append('src')
+        packname.append('tar.bz2')
+        archname =  '.'.join(packname)
 
+        fullarchname = os.path.join(artifactdir, archname)
+        self.log.info("Looking for file: %s" %  fullarchname)
+        if os.path.exists(fullarchname):
+            return os.path.abspath(fullarchname)
+        else:
+            return None
             
     def main(self):
         '''
