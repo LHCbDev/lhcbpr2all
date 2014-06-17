@@ -526,8 +526,9 @@ Requires: %{projectUp}_%{lbversion}
         '''
         spec = "%install\n"
         spec += "mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}\n"
-        spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf %s" % self._sharedTar
-
+        spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf %s \n" % self._sharedTar
+        spec += "mv  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config"
+        
         spec += "\n\n"
         return spec
 
@@ -535,8 +536,19 @@ Requires: %{projectUp}_%{lbversion}
         '''
         Prepare the RPM header
         '''
-        trailer = Template("""
+        ###trailer = Template('''
+        trailer = '''
 %post
+
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+
+echo "Fixing the file: ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config"
+
+sed -e "s|^|${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/|" ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config > ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames
 
 %postun
 
@@ -552,10 +564,11 @@ Requires: %{projectUp}_%{lbversion}
 
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
-""").substitute(buildarea = self._buildarea,
-                        project = self._project,
-                        projectUp = self._project.upper(),
-                        version = self._version)
+'''
+        #).substitute(buildarea = self._buildarea,
+        #                project = self._project,
+        #                projectUp = self._project.upper(),
+        #                version = self._version)
 
 
         return trailer
