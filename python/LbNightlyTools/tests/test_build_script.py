@@ -335,8 +335,7 @@ def test_lbcore_164():
 
     finally:
         os.chdir(oldcwd)
-        #shutil.rmtree(tmpd, ignore_errors=True)
-        print tmpd
+        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_2():
     # Test the case of "disabled" projects.
