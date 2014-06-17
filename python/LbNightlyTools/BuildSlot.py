@@ -593,11 +593,12 @@ class Script(LbUtils.Script.PlainScript):
             '''Create special summary file used by SetupProject.'''
             data = []
             # find the declaration of CMTPROJECTPATH in the configuration
-            for decl in self.config.get(u'env', []):
-                if decl.startswith('CMTPROJECTPATH='):
+            env = dict(decl.split('=', 1)
+                       for decl in self.config.get(u'env', []))
+            for name in ('CMAKE_PREFIX_PATH', 'CMTPROJECTPATH'):
+                if name in env:
                     # dump it as a list in the summary file
-                    data += map(os.path.expandvars,
-                                decl.split('=', 1)[1].split(':'))
+                    data += os.path.expandvars(env[name]).split(':')
             if data:
                 self.write(os.path.join(self.artifacts_dir, 'confSummary.py'),
                            'cmtProjectPathList = %r\n' % data)

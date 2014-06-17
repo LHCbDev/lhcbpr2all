@@ -287,6 +287,54 @@ def test_simple_build_w_test():
         os.chdir(oldcwd)
         shutil.rmtree(tmpd, ignore_errors=True)
 
+def test_simple_build_env_search_path():
+    tmpd = mkdtemp()
+    shutil.copytree(_testdata, join(tmpd, 'testdata'))
+    oldcwd = os.getcwd()
+    try:
+        os.chdir(join(tmpd, 'testdata'))
+        info = dict(
+                    today = str(date.today()),
+                    weekday = date.today().strftime("%a"),
+                    config = os.environ['CMTCONFIG'],
+                    slot = 'testing-slot-env',
+                    build_id = 0,
+                    project = 'TestProject',
+                    PROJECT = 'TESTPROJECT',
+                    version = 'HEAD'
+                    )
+
+        os.environ['CMAKE_PREFIX_PATH'] = '/some/cmake:/another/cmake'
+        os.environ['CMTPROJECTPATH'] = '/some/cmt:/another/cmt'
+
+        script = BuildSlot.Script()
+        retcode = script.run(['testing-slot-env.json'])
+        assert retcode == 0
+
+        proj_root = join(tmpd, 'testdata', 'build',
+                         info['PROJECT'], '{PROJECT}_{version}'.format(**info))
+        assert_files_exist(proj_root,
+                           'Makefile',
+                           join('InstallArea', info['config'],
+                                'bin', 'HelloWorld.exe'))
+        artifacts_dir = join(tmpd, 'testdata', 'artifacts')
+        assert_files_exist(artifacts_dir,
+                           'searchPath.cmake',
+                           'confSummary.py')
+
+        _check_build_artifacts(join(tmpd, 'testdata'), info)
+
+        expected = ['/another/path', '/some/cmake', '/another/cmake',
+                    '/some/path', '/some/cmt', '/another/cmt']
+
+        loc = {}
+        exec open(join(artifacts_dir, 'confSummary.py')).read() in {}, loc
+        assert loc['cmtProjectPathList'] == expected, 'expected %r, found %r' % (expected, loc['cmtProjectPathList'])
+
+    finally:
+        os.chdir(oldcwd)
+        shutil.rmtree(tmpd, ignore_errors=True)
+
 def test_lbcore_164():
     '''https://its.cern.ch/jira/browse/LBCORE-164
 
