@@ -3,8 +3,8 @@
 %define lhcb_min_version 0
 %define lhcb_patch_version 0
 %define lhcb_release_version 1
-%define buildarea /tmp/lben/rpm6n4zFV
-%define buildlocation /afs/cern.ch/work/l/lben/projects/LbNightlyTools/build
+%define buildarea /tmp/lben/rpm3xWw5p
+%define buildlocation None
 %define project Brunel
 %define projectUp BRUNEL
 %define cmtconfig x86_64-slc6-gcc48-opt

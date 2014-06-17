@@ -87,6 +87,11 @@ class Script(LbUtils.Script.PlainScript):
                          action= "store_true",
                          default = False,
                          help="Only prepare the spec, not the RPMs")
+        group.add_option('--manifest',
+                         dest="manifestfile",
+                         default=None,
+                         action="store",
+                         help="Force the manifest file to be used")
         
         parser.add_option_group(group)
         return parser
@@ -109,7 +114,7 @@ class Script(LbUtils.Script.PlainScript):
         return RpmDirConfig(buildarea, buildname)
 
     def _callRpmbuild(self, specfilename, fullrpmpath, artifactdir):
-        ''' Call the rpmbuild command '''
+        ''' Call the rpmbuild command itself '''
 
         if self.options.dryrun:
             self.log.warning("Dry run mode, not calling RPM build for %s" % specfilename)
@@ -134,14 +139,13 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info("Copying %s to %s" % (fullrpmpath, artifactdir))
             shutil.copy(fullrpmpath, artifactdir)
 
-    def _buildRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
-        ''' Build the RPM for the project them and copy them to the target area '''
+    def _getManifestFilename(self, builddir, project, version, platform):
 
-        rpmbuildname = "_".join([project, version, platform])
-
-        # Creating the temp directories to prepare the RPMs
-        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
-
+        # Checking if the file was overriden (needed fro tests)
+        if self.options.manifestfile != None:
+            self.log.info("Using manifest.xml filename overriden to: %s" % self.options.manifestfile)
+            return  self.options.manifestfile
+        
         # Checking for the existence of the manifest.xml file
         projbuilddir = os.path.join(builddir, project.upper(), project.upper() + "_" + version)
         manifestxmlfile = os.path.join(projbuilddir, 'InstallArea', platform, 'manifest.xml')
@@ -150,6 +154,18 @@ class Script(LbUtils.Script.PlainScript):
             raise Exception("Missing manifest.xml file: %s" % manifestxmlfile)
         else:
             self.log.info("Using manifest.xml file: %s" % manifestxmlfile)
+        return manifestxmlfile
+
+    def _buildRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
+        ''' Build the RPM for the project them and copy them to the target area '''
+
+        rpmbuildname = "_".join([project, version, platform])
+
+        # Creating the temp directories to prepare the RPMs
+        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        # Locating the manifest file
+        manifestxmlfile =  self._getManifestFilename(builddir, project, version, platform)
 
         # Parsing the manifest.xml file
         from LbTools.Manifest import Parser
@@ -221,13 +237,8 @@ class Script(LbUtils.Script.PlainScript):
         # Creating the temp directories to prepare the RPMs
         rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
 
-        projbuilddir = os.path.join(builddir, project.upper(), project.upper() + "_" + version)
-        manifestxmlfile = os.path.join(projbuilddir, 'InstallArea', platform, 'manifest.xml')
-        if not os.path.exists(manifestxmlfile):
-            self.log.error("Missing manifest.xml file: %s" % manifestxmlfile)
-            raise Exception("Missing manifest.xml file: %s" % manifestxmlfile)
-        else:
-            self.log.info("Using manifest.xml file: %s" % manifestxmlfile)
+        # Locating the manifest file
+        manifestxmlfile =  self._getManifestFilename(builddir, project, version, platform)
 
         # Parsing the manifest.xml file
         from LbTools.Manifest import Parser

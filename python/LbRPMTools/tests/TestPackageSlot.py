@@ -32,6 +32,9 @@ class Test(unittest.TestCase):
 
         self._slotconfig = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'slot-config.json'])))
+        
+        self._manifestxml = normpath(join(*([__file__] + [os.pardir] * 4
+                                                  + ['testdata', 'rpm', 'manifest.xml'])))
 
         self._binspecname = "Brunel_v46r0_x86_64-slc6-gcc48-opt.spec"
         self._fullbinspecname =  normpath(join(*([__file__] + [os.pardir] * 4
@@ -60,7 +63,7 @@ class Test(unittest.TestCase):
         artifactdir = mkdtemp()
         script = Script()
         script.run(['--dry-run', '--verbose',  '--build-id', 'lhcb-release.999.{timestamp}',
-                             '--artifacts-dir',  artifactdir,
+                             '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml,
                              self._slotconfig, '--platform',  'x86_64-slc6-gcc48-opt' ])
 
 
@@ -97,7 +100,7 @@ class Test(unittest.TestCase):
         artifactdir = mkdtemp()
         script = Script()
         script.run(['--dry-run', '--shared', '--verbose',  '--build-id', 'lhcb-release.999.{timestamp}',
-                             '--artifacts-dir',  artifactdir,
+                             '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml,
                              self._slotconfig ])
 
 
@@ -133,7 +136,7 @@ class Test(unittest.TestCase):
         artifactdir = mkdtemp()
         script = Script()
         script.run(['--dry-run', '--glimpse', '--verbose',  '--build-id', 'lhcb-release.999.{timestamp}',
-                             '--artifacts-dir',  artifactdir,
+                             '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml ,
                              self._slotconfig ])
 
 
