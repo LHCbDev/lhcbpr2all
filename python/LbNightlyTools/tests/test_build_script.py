@@ -21,7 +21,7 @@ import codecs
 from datetime import date
 from os.path import exists, normpath, join, dirname, isfile
 from LbNightlyTools.Utils import ensureDirs
-from subprocess import call
+from subprocess import call, Popen, PIPE
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
@@ -306,6 +306,7 @@ def test_simple_build_env_search_path():
 
         os.environ['CMAKE_PREFIX_PATH'] = '/some/cmake:/another/cmake'
         os.environ['CMTPROJECTPATH'] = '/some/cmt:/another/cmt'
+        os.environ['PWD'] = os.getcwd() # this is usually done by the shell
 
         script = BuildSlot.Script()
         retcode = script.run(['testing-slot-env.json'])
@@ -324,12 +325,28 @@ def test_simple_build_env_search_path():
 
         _check_build_artifacts(join(tmpd, 'testdata'), info)
 
-        expected = ['/another/path', '/some/cmake', '/another/cmake',
+        expected = ['/another/path', '/new/root/inner', '/some/cmake', '/another/cmake',
                     '/some/path', '/some/cmt', '/another/cmt']
 
         loc = {}
-        exec open(join(artifacts_dir, 'confSummary.py')).read() in {}, loc
+        exec open(join(artifacts_dir, 'confSummary.py')).read() in {'__file__': '/new/root/confSummary.py'}, loc
         assert loc['cmtProjectPathList'] == expected, 'expected %r, found %r' % (expected, loc['cmtProjectPathList'])
+
+        os.makedirs(join(tmpd, 'new_loc'))
+        with open(join(tmpd, 'new_loc', 'searchPath.cmake'), 'w') as new_file:
+            new_file.writelines(open(join(artifacts_dir, 'searchPath.cmake')))
+            new_file.write('\nforeach(entry ${CMAKE_PREFIX_PATH})\nmessage(STATUS "${entry}")\nendforeach()\n')
+        print open(join(tmpd, 'new_loc', 'searchPath.cmake')).read()
+        proc = Popen(['cmake', '-P', join(tmpd, 'new_loc', 'searchPath.cmake')], stdout=PIPE)
+        expected_cmake = ['-- %s\n' % s.replace('/new/root', join(tmpd, 'new_loc'))
+                          for s in expected]
+        output = list(proc.stdout)
+        print '--- CMake output ---'
+        print output
+        print '--- CMake expected ---'
+        print expected_cmake
+        assert output == expected_cmake
+        assert proc.wait() == 0
 
     finally:
         os.chdir(oldcwd)

@@ -5,5 +5,5 @@
                "checkout": "ignore"}],
  "USE_CMT": true,
  "env": ["CMTPROJECTPATH=/some/path:${CMTPROJECTPATH}",
-         "CMAKE_PREFIX_PATH=/another/path:${CMAKE_PREFIX_PATH}"]
+         "CMAKE_PREFIX_PATH=/another/path:${PWD}/build/inner:${CMAKE_PREFIX_PATH}"]
 }

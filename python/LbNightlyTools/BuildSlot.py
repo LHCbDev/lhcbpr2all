@@ -600,11 +600,31 @@ class Script(LbUtils.Script.PlainScript):
                     # dump it as a list in the summary file
                     data += os.path.expandvars(env[name]).split(':')
             if data:
+                py_templ = Template(u'''# -*- coding: utf-8 -*-
+cmtProjectPathList = ${path}
+
+# relocate
+try:
+    from os.path import dirname
+    nightlyBuildRoot = ${build_root}
+    newRoot = dirname(__file__)
+    cmtProjectPathList = [s.replace(nightlyBuildRoot, newRoot)
+                          for s in cmtProjectPathList]
+except NameError:
+    pass # __file__ gets defined only with LbScripts > v8r0\n''')
+                values =  {'path': repr(data),
+                           'build_root': repr(self.build_dir)}
                 self.write(os.path.join(self.artifacts_dir, 'confSummary.py'),
-                           'cmtProjectPathList = %r\n' % data)
+                           py_templ.substitute(values))
+                cmake_templ = Template(u'''set(NIGHTLY_BUILD_ROOT ${build_root})
+set(CMAKE_PREFIX_PATH ${path} $${CMAKE_PREFIX_PATH})
+
+string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
+       CMAKE_PREFIX_PATH "$${CMAKE_PREFIX_PATH}")\n''')
+                values = {'path': ' '.join(data),
+                          'build_root': self.build_dir}
                 self.write(os.path.join(self.artifacts_dir, 'searchPath.cmake'),
-                           'set(CMAKE_PREFIX_PATH %s ${CMAKE_PREFIX_PATH})\n' %
-                           ' '.join(data))
+                           cmake_templ.substitute(values))
 
         dumpConfSummary()
 
