@@ -24,10 +24,10 @@ which python
 cd $(dirname $0)/..
 . ./setup.sh
 
-nosetests -v --with-doctest --with-xunit --with-coverage --cover-erase --cover-inclusive --cover-package LbNightlyTools python
+nosetests -v --with-doctest --with-xunit --with-coverage --cover-erase --cover-inclusive --cover-package "$(ls -m python)" python
 coverage xml --include="python/*"
 
 # Added the contrib directory to the Python path (needed by pylint)
 export PYTHONPATH=$PWD/python/LbNightlyTools/contrib:$PYTHONPATH
 # Ignoring pylint return code (to avoid failure of the test).
-pylint --rcfile=docs/pylint.rc LbNightlyTools > pylint.txt || true
+pylint --rcfile=docs/pylint.rc $( ls python ) > pylint.txt || true

@@ -242,6 +242,13 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
 
         (lcgVerTmp, externalsDict) =  get_native_versions(project.upper() + "_" + version, cmtconfig)
         lcgVer = lcgVerTmp.split("_")[1]
+
+        import json
+        with open('externalsDict.json', 'w') as outfile:
+            json.dump(externalsDict, outfile)
+
+        print "%s %s %s %s %s %s" % (project, version, cmtconfig, buildarea, externalsDict, lcgVer)
+        
         spec = LHCbExternalsRpmSpec(project, version, cmtconfig, buildarea, externalsDict, lcgVer)
 
         if self.options.output:
