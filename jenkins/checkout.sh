@@ -45,9 +45,10 @@ cp ${config_file%%#*} ${ARTIFACTS_DIR}
 cp ${env_log} ${ARTIFACTS_DIR}
 echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
 
-# Now preparing the RPM with the project source
-time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}.${timestamp}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
-
+if [ "${flavour}" = "release" ] ; then
+  # Now preparing the RPM with the project source
+  time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}.${timestamp}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+fi
 
 # Cleaning up
 rm -rf tmp
