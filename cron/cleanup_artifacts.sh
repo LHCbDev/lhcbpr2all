@@ -20,9 +20,15 @@ export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
 logfile=$LHCBNIGHTLIES/www/logs/cleanup_artifacts.log
 artifacts_dir=/data/artifacts
 
+flavours=$(ls | grep -v lhcb-)
+start_dirs=
+for f in $flavours ; do
+  start_dirs="$start_dirs ${artifacts_dir}/$f"
+done
+
 # clean up the artifacts directory (if present)
 if [ -e ${artifacts_dir} ] ; then
     echo "$(date): removing old artifacts from ${artifacts_dir}" >> $logfile 2>&1
-    find -L ${artifacts_dir}/testing ${artifacts_dir} -depth -mindepth 1 -maxdepth 2 -daystart -mtime +15 -and -not -name testing -print -exec rm -rf \{} \; >> $logfile 2>&1
+    find -L ${start_dirs} -depth -mindepth 1 -maxdepth 2 -daystart -mtime +15 -and -path '*/lhcb-*' -print -exec rm -rf \{} \; >> $logfile 2>&1
 fi
 echo "$(date): done" >> $logfile 2>&1
