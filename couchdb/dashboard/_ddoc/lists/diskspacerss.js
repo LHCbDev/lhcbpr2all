@@ -1,6 +1,16 @@
 function(head, req) {
+	// server URLs (default values)
+	var baseUrl = 'https://buildlhcb.cern.ch/';
 
-    var rssServerLocation = "https://" + req["headers"]["X-Forwarded-Host"] + "/" + req.path.join("/") + "/diskspacerss";
+    var rssServerLocation;
+
+	var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
+    if (flavour) {
+    	rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
+    } else {
+    	rssServerLocation = baseUrl + 'nightlies/';
+    }
+
     var numberpattern = new RegExp("(^100$|^[1-9][0-9]$|^[1-9]$)");
     // parsing the http request
     var args = req["query"];

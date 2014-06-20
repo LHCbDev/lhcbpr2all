@@ -1,7 +1,19 @@
 function(head, req) {
-    // server url TO UPDATE
-    var rssServerLocation = "https://" + req["headers"]["X-Forwarded-Host"] + "/" + req.path.join("/");
-    var resultServerLocation = 'https://buildlhcb.cern.ch/artifacts/';
+    // server URLs (default values)
+	var baseUrl = 'https://buildlhcb.cern.ch/';
+
+    var rssServerLocation;
+    var resultServerLocation;
+
+    var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
+    if (flavour) {
+    	rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
+        resultServerLocation = baseUrl + 'artifacts/' + flavour[1] + '/';
+    } else {
+    	rssServerLocation = baseUrl + 'nightlies/';
+        resultServerLocation = baseUrl + 'artifacts/';
+    }
+
     //protecting regex
     var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");
     var regexValidPattern = /^[a-z0-9A-Z\[\]\|\(\)\\_\.\$\^\{\}\?\+\*\-\!\=\.\,(u\[0-9\]+)(o\[0-8\])(x\[0-9a-f\]+)(\\w)(\\W)(\\d)(\\D)(\\s)(\\S)(\\b)(\\B)(\\0)(\\n)(\\f)(\\r)(\\t)(\\v)]+$/;
@@ -94,15 +106,6 @@ function(head, req) {
     if (!row) {
         send('<?xml version="1.0" encoding="iso-8859-1"?><rss version="2.0"><channel><title>Results</title><description>There is no recent activity of this feed</description><link>');
         send(rssServerLocation);
-        if (args) {
-            send("?");
-            var arglist = [];
-            for (var val in req["query"]) {
-                arglist.push(val + "=" + args[val]);
-            }
-            send(encodeURIComponent(arglist.join(";")));
-
-        }
         send('</link>');
     } else {
         var startDate = new Date(row.value["date"]);
@@ -110,15 +113,6 @@ function(head, req) {
         send(row.value["date"]);
         send('</lastBuildDate><link>');
         send(rssServerLocation);
-        if (args) {
-            send("?");
-            var arglist = [];
-            for (var val in req["query"]) {
-                arglist.push(val + "=" + args[val]);
-            }
-            send(encodeURIComponent(arglist.join(";")));
-
-        }
         send('</link>');
 
         // add  items
