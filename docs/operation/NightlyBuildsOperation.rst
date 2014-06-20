@@ -194,7 +194,32 @@ In principle there is no need to remove builds from the database, because each n
     2. d = Dashboard()
     3. d.dropBuild(<slot>, <build_id>)
 
+Update the Dashboard CouchApp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To update the dashboard CouchApp avoiding downtime of the web page, we need to use a fallback replica.
 
+1. Replicate the dashboard database to a backup instance
+    1. connect to http://buildlhcb.cern.ch:5984/_utils/replicator.html (only a few machines can do it)
+    2. select the local database ``nightly-builds`` as source and ``nb-backup`` as destination
+    3. click on the *Replicate* button and wait
+2. Ensure that the views' caches of the backup database are up to date
+    1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup
+    2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+3. Repeat step 1 to ensure that the most recent data is replicated to the backup copy
+4. Redirect the dashboard web page traffic to the backup database
+    1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightly-builds`` with ``nb-backup``
+    2. (as root) call ``service httpd reload``
+5. Update/modify the Dashboard CouchApp in the main database
+6. Regenerate the views' caches of the main database
+    1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds
+    2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+7. Replicate new documents from the backup instance to the main one
+    1. same as step 1, but swapping source and target
+    2. check for conflicts
+8. Restore the original web page configuration (see step 4)
+9. Replicate once more from the backup instance to the main one (see step 7)
+
+*Note*: The replication an the view caching may take a lot of time, unless the are performed regularly (less data to copy/cache).
 
 .. _Jenkins: http://jenkins-ci.org/
 .. _CouchDB: http://couchdb.apache.org/

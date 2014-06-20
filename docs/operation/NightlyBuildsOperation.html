@@ -3,13 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.10: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.11: http://docutils.sourceforge.net/" />
 <title>Nightly Builds Operation Manual</title>
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 7514 2012-09-14 14:27:12Z milde $
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -313,6 +313,21 @@ table.docutils th.field-name, table.docinfo th.docinfo-name {
   white-space: nowrap ;
   padding-left: 0 }
 
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
 h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
   font-size: 100% }
@@ -352,6 +367,7 @@ ul.auto-toc {
 </li>
 <li><a class="reference internal" href="#dashboard-database-manipulation" id="id16">Dashboard Database Manipulation</a><ul>
 <li><a class="reference internal" href="#remove-a-build" id="id17">Remove a Build</a></li>
+<li><a class="reference internal" href="#update-the-dashboard-couchapp" id="id18">Update the Dashboard CouchApp</a></li>
 </ul>
 </li>
 </ul>
@@ -558,6 +574,67 @@ into Jenkins jobs.</p>
 </dl>
 </li>
 </ol>
+</div>
+<div class="section" id="update-the-dashboard-couchapp">
+<h3><a class="toc-backref" href="#id18">Update the Dashboard CouchApp</a></h3>
+<p>To update the dashboard CouchApp avoiding downtime of the web page, we need to use a fallback replica.</p>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>Replicate the dashboard database to a backup instance</dt>
+<dd><ol class="first last arabic simple">
+<li>connect to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/replicator.html">http://buildlhcb.cern.ch:5984/_utils/replicator.html</a> (only a few machines can do it)</li>
+<li>select the local database <tt class="docutils literal"><span class="pre">nightly-builds</span></tt> as source and <tt class="docutils literal"><span class="pre">nb-backup</span></tt> as destination</li>
+<li>click on the <em>Replicate</em> button and wait</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Ensure that the views' caches of the backup database are up to date</dt>
+<dd><ol class="first last arabic simple">
+<li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup">http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup</a></li>
+<li>select all the views, one by one, in the dropdown list (each view will take some time to be cached)</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p class="first">Repeat step 1 to ensure that the most recent data is replicated to the backup copy</p>
+</li>
+<li><dl class="first docutils">
+<dt>Redirect the dashboard web page traffic to the backup database</dt>
+<dd><ol class="first last arabic simple">
+<li>edit <tt class="docutils literal">/etc/httpd/conf.d/couchdb.conf</tt> replacing  <tt class="docutils literal"><span class="pre">nightly-builds</span></tt> with <tt class="docutils literal"><span class="pre">nb-backup</span></tt></li>
+<li>(as root) call <tt class="docutils literal">service httpd reload</tt></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p class="first">Update/modify the Dashboard CouchApp in the main database</p>
+</li>
+<li><dl class="first docutils">
+<dt>Regenerate the views' caches of the main database</dt>
+<dd><ol class="first last arabic simple">
+<li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds">http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds</a></li>
+<li>select all the views, one by one, in the dropdown list (each view will take some time to be cached)</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Replicate new documents from the backup instance to the main one</dt>
+<dd><ol class="first last arabic simple">
+<li>same as step 1, but swapping source and target</li>
+<li>check for conflicts</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p class="first">Restore the original web page configuration (see step 4)</p>
+</li>
+<li><p class="first">Replicate once more from the backup instance to the main one (see step 7)</p>
+</li>
+</ol>
+<p><em>Note</em>: The replication an the view caching may take a lot of time, unless the are performed regularly (less data to copy/cache).</p>
 </div>
 </div>
 </div>
