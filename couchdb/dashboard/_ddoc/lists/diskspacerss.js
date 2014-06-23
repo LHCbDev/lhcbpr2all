@@ -1,14 +1,14 @@
 function(head, req) {
-	// server URLs (default values)
-	var baseUrl = 'https://buildlhcb.cern.ch/';
+    // server URLs (default values)
+    var baseUrl = 'https://buildlhcb.cern.ch/';
 
     var rssServerLocation;
 
-	var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
+    var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
     if (flavour) {
-    	rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
+        rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
     } else {
-    	rssServerLocation = baseUrl + 'nightlies/';
+        rssServerLocation = baseUrl + 'nightlies/';
     }
 
     var numberpattern = new RegExp("(^100$|^[1-9][0-9]$|^[1-9]$)");

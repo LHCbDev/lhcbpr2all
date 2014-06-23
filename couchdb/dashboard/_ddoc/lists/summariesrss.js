@@ -7,10 +7,10 @@ function(head, req) {
 
     var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
     if (flavour) {
-    	rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
+        rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
         resultServerLocation = baseUrl + 'artifacts/' + flavour[1] + '/';
     } else {
-    	rssServerLocation = baseUrl + 'nightlies/';
+        rssServerLocation = baseUrl + 'nightlies/';
         resultServerLocation = baseUrl + 'artifacts/';
     }
 
