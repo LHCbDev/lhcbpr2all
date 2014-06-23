@@ -16,6 +16,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import re
 import cgi
 import collections
+import logging
 
 HTML_STYLE = '''
 .xterm-style-0 {}
@@ -85,6 +86,7 @@ class XTerm2HTML(object):
         '''
         self.current_code = ANSIStyle(0, 0, 0)
         self.line = first_line - 1
+        self.log = logging.getLogger(self.__class__.__name__)
 
     def parse_code(self, code):
         '''
@@ -166,24 +168,71 @@ class XTerm2HTML(object):
         '''
         Process a chunk of text and return the corresponding HTML code.
         '''
+        self.log.debug('processing...')
+        
         line_styles = ('even', 'odd')
 
         data = []
         for self.line, line in enumerate(chunk.splitlines(), self.line + 1):
+            old_class = self.current_class
             data.append('<div class="{}" id="l{}">'
                           .format(line_styles[self.line % 2], self.line))
-            data.append('<span class="{}">'.format(self.current_class))
-
+            
+            self.log.debug('line %d: initial class %s', self.line, old_class)
+            
             pos = 0
             m = COLCODE_RE.search(line)
+
             while m:
-                data.append(cgi.escape(line[pos:m.start()], quote=True))
-                if self.set_style(m.group(1)):
-                    data.append('</span><span class="{}">'
-                                  .format(self.current_class))
+                self.log.debug('control at %d', m.start())
+                # is there any text in the current style?
+                if pos != m.start():
+                    # did we had a change of class since the last flush?
+                    new_class = self.current_class
+                    if new_class != old_class:
+                        self.log.debug('class changed to %s', new_class)
+                        if old_class:
+                            data.append('</span>')
+                        if new_class:
+                            data.append('<span class="{}">'.format(new_class))
+                        old_class = new_class
+                    # flush text
+                    data.append(cgi.escape(line[pos:m.start()], quote=True))
+
+                # update current style
+                self.set_style(m.group(1))
+                # and look for the next change
                 pos = m.end()
                 m = COLCODE_RE.search(line, pos)
+            # we didn't find any other control sequence before the eol
             if pos < len(line):
+                self.log.debug('end of line reached')
+                new_class = self.current_class
+                if new_class != old_class:
+                    self.log.debug('class changed to %s', new_class)
+                    if old_class:
+                        data.append('</span>')
+                    if new_class:
+                        data.append('<span class="{}">'.format(new_class))
+                    old_class = new_class
                 data.append(cgi.escape(line[pos:], quote=True))
-            data.append('</span></div>\n')
+            if old_class:
+                data.append('</span>')
+            data.append('</div>\n')
         return ''.join(data)
+
+# tests for special cases
+def test_special_cases():
+    '''Test for Special Cases'''
+    assert XTerm2HTML().parse_code('') == ANSIStyle(None, None, None)
+    expected = ('<div class="odd" id="l1">'
+                '<span class="xterm-style-0 xterm-color-4 '
+                'xterm-bgcolor-0">test</span>'
+                '<span class="xterm-style-0 xterm-color-2 '
+                'xterm-bgcolor-3">blah</span>'
+                'blah</div>\n')
+    actual = XTerm2HTML().process('\x1b[31m\x1b[34mtest'
+                                  '\x1b[34;43m\x1b[32mblah\x1b[0mblah')
+    print 'actual   ->', repr(actual)
+    print 'expected ->', repr(expected)
+    assert actual == expected
