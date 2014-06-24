@@ -16,12 +16,18 @@ body {
 	text-align: center;
 }
 
+
 .rebuild-button{
 	font-size: 110%;
 	padding-bottom:0px;
 	padding-left:2px;
 	padding-right:2px;
 
+}
+
+#rpm{
+	height: 23px;
+	width: 35px;
 }
 
 h4 {
