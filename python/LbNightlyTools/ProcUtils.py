@@ -24,28 +24,28 @@ from threading import Thread
 from select import select
 from Queue import Queue
 
+BUF_SIZE = 512
+
 class _CollectorThread(Thread):
     '''
     Class used to collect the output of a Popen process on a pseudo-terminal
     (pty).
     '''
 
-    BUF_SIZE = 512
-
-    def __init__(self, proc, fd, queue, echo=None):
+    def __init__(self, proc, fdesc, queue, echo=None):
         '''
         Initialize the thread.
 
         @param proc: Popen process that was started with a pty slave as output
         descriptor (either stdout or stderr)
-        @param fd: file descriptor of the pty master
-        @param queue: Queue instance used to collect the chunks read from fd,
-                      recorded as tuples (fd, chunk)
+        @param fdesc: file descriptor of the pty master
+        @param queue: Queue instance used to collect the chunks read from fdesc,
+                      recorded as tuples (fdesc, chunk)
         @param echo: file object where the data can be written while collected
         '''
         super(_CollectorThread, self).__init__()
         self.proc = proc
-        self.fd = fd
+        self.fdesc = fdesc
         self.queue = queue
         self.echo = echo
 
@@ -53,18 +53,17 @@ class _CollectorThread(Thread):
         '''
         Core function of the Thread interface.
         '''
-        proc, fd, queue, echo = self.proc, self.fd, self.queue, self.echo
-        BUF_SIZE = self.BUF_SIZE
+        proc, fdesc, queue, echo = self.proc, self.fdesc, self.queue, self.echo
         while True:
-            if select([fd], [], [], 0.1)[0]:
-                chunk = os.read(fd, BUF_SIZE)
-                while len(chunk) == BUF_SIZE or select([fd], [], [], 0)[0]:
-                    queue.put((fd, chunk))
+            if select([fdesc], [], [], 0.1)[0]:
+                chunk = os.read(fdesc, BUF_SIZE)
+                while len(chunk) == BUF_SIZE or select([fdesc], [], [], 0)[0]:
+                    queue.put((fdesc, chunk))
                     if echo:
                         echo.write(chunk)
-                    chunk = os.read(fd, BUF_SIZE)
+                    chunk = os.read(fdesc, BUF_SIZE)
                 if chunk:
-                    queue.put((fd, chunk))
+                    queue.put((fdesc, chunk))
                     if echo:
                         echo.write(chunk)
             elif proc.poll() is not None:
@@ -73,8 +72,8 @@ class _CollectorThread(Thread):
 
 def _collate_chunks(input_data, newline='\r\n'):
     '''
-    Given an iterable which elements are tuples (fd, chunk), merges the chunks
-    with the same fd such that they always end with a newline ('\\r\\n').
+    Given an iterable which elements are tuples (fdesc, chunk), merges the chunks
+    with the same fdesc such that they always end with a newline ('\\r\\n').
     Returns an iterator over the reorganized chunks.
 
     For example:
@@ -86,15 +85,15 @@ def _collate_chunks(input_data, newline='\r\n'):
     newline_size = len(newline)
     from collections import defaultdict
     buff = defaultdict(str)
-    for fd, chunk in input_data:
-        curr = buff[fd]
+    for fdesc, chunk in input_data:
+        curr = buff[fdesc]
         curr += chunk
         idx = curr.rfind(newline)
         if idx >= 0:
-            yield (fd, curr[:idx + newline_size])
-            buff[fd] = curr[idx + newline_size:]
+            yield (fdesc, curr[:idx + newline_size])
+            buff[fdesc] = curr[idx + newline_size:]
         else:
-            buff[fd] = curr
+            buff[fdesc] = curr
     for item in buff.items():
         if item[1]:
             yield item
@@ -106,8 +105,8 @@ def call_with_pty(*args, **kwargs):
     bound to a pty and buffered.
 
     Return a tuple where the first element is the return code of the process and
-    the second is an iterable of tuples (fd, chunk), with fd being 1 for stdout
-    and 2 for stderr, and chunk is a string that was written on 'fd'.
+    the second is an iterable of tuples (fdesc, chunk), with fdesc being 1 for
+    stdout and 2 for stderr, and chunk is a string that was written on 'fdesc'.
     '''
     out_fds = pty.openpty()
     err_fds = pty.openpty()
@@ -127,17 +126,18 @@ def call_with_pty(*args, **kwargs):
     err.start()
 
     def data_gen():
+        '''Helper generator function to present the queue as an iterable.'''
         fds = {out_fds[0]: 1, err_fds[0]: 2}
         while not queue.empty():
-            fd, chunk = queue.get()
-            yield fds[fd], chunk
+            fdesc, chunk = queue.get()
+            yield fds[fdesc], chunk
 
     retcode = proc.wait()
 
     out.join()
     err.join()
-    for fd in out_fds + err_fds:
-        os.close(fd)
+    for fdesc in out_fds + err_fds:
+        os.close(fdesc)
 
     return retcode, _collate_chunks(data_gen())
 
@@ -156,7 +156,7 @@ def call(*args, **kwargs):
     if htmlout is None:
         return _call(*args, **kwargs)
     else:
-        from HTMLUtils import XTerm2HTML
+        from LbNightlyTools.HTMLUtils import XTerm2HTML
         if htmlout == STDOUT:
             htmlout = sys.stdout
         retcode, data = call_with_pty(*args, **kwargs)
@@ -164,9 +164,9 @@ def call(*args, **kwargs):
         if htmlheader:
             htmlout.write(conv.head(title=' '.join(args[0])))
         style = {1: 'stdout', 2: 'stderr'}
-        for fd, chunk in data:
+        for fdesc, chunk in data:
             htmlout.write('<span class="{}">{}</span>'
-                            .format(style[fd],
+                            .format(style[fdesc],
                                     conv.process(chunk.replace('\r', ''))))
         if htmlheader:
             htmlout.write(conv.tail())

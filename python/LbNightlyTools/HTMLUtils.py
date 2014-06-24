@@ -15,7 +15,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import re
 import cgi
-
+import collections
 
 HTML_STYLE = '''
 .xterm-style-0 {}
@@ -54,6 +54,12 @@ HTML_STYLE = '''
 '''
 
 
+# cached regular expression to find ANSI color codes
+COLCODE_RE = re.compile('\x1b\\[([0-9;]*)m')
+
+ANSIStyle = collections.namedtuple('ANSIStyle', ['style', 'color', 'bgcolor'])
+ANSIStyle.items = lambda self: self._asdict().items()
+    
 class XTerm2HTML(object):
     '''
     Class to translate an ASCII string (containing ANSI color codes), into an
@@ -67,9 +73,6 @@ class XTerm2HTML(object):
     ...                 conv.tail()])
     '''
     
-    # cached regular expression to find ANSI color codes
-    COLCODE_RE = re.compile('\x1b\\[([0-9;]*)m')
-
     def __init__(self, first_line=1):
         '''
         Initialize the conversion instance.
@@ -77,7 +80,7 @@ class XTerm2HTML(object):
         is meant to be concatenated with the output of another call to this
         class.
         '''
-        self.current_code = (0, 0, 0)
+        self.current_code = ANSIStyle(0, 0, 0)
         self.line = first_line - 1
 
     def parse_code(self, code):
@@ -87,27 +90,25 @@ class XTerm2HTML(object):
         
         >>> conv = XTerm2HTML()
         >>> conv.parse_code('0')
-        (0, 0, 0)
+        ANSIStyle(style=0, color=0, bgcolor=0)
         >>> conv.parse_code('1;34')
-        (1, 4, None)
-        >>> conv.parse_code('40')
-        (None, None, 0)
+        ANSIStyle(style=1, color=4, bgcolor=None)
+        >>> conv.parse_code('45')
+        ANSIStyle(style=None, color=None, bgcolor=5)
         '''
         # Constants
-        STYLE_IDX = 0
-        COLOR_IDX = 1
-        BGCOLOR_IDX = 2
-        newcode = [None, None, None]
+        style = color = bgcolor = None
         for subcode in [int(x, 10) for x in code.split(';')]:
             if subcode >= 40:
-                newcode[BGCOLOR_IDX] = subcode - 40
+                bgcolor = subcode - 40
             elif subcode >= 30:
-                newcode[COLOR_IDX] = subcode - 30
+                color = subcode - 30
             else:
-                newcode[STYLE_IDX] = subcode
-        if newcode == [0, None, None]:  # special case
-            newcode = [0, 0, 0]
-        return tuple(newcode)
+                style = subcode
+        
+        if (style, color, bgcolor) == (0, None, None):  # special case
+            color = bgcolor = 0
+        return ANSIStyle(style, color, bgcolor)
 
     def set_style(self, new_style_code):
         '''
@@ -123,21 +124,27 @@ class XTerm2HTML(object):
         True
         '''
         new_style_code = self.parse_code(new_style_code)
-        old = self.current_code
-        self.current_code = [o if n is None else n
-                             for n, o in zip(new_style_code, self.current_code)]
-        return old != self.current_code
+        old_code = self.current_code
+        new_code = [o if n is None else n
+                    for n, o in zip(new_style_code, self.current_code)]
+        self.current_code = ANSIStyle(*new_code)
+        return old_code != self.current_code
 
     @property
     def current_class(self):
         '''
         CSS class(es) for the current text style.
+        
+        >>> conv = XTerm2HTML()
+        >>> conv.set_style('1;32;43')
+        True
+        >>> conv.current_class
+        'xterm-style-1 xterm-color-2 xterm-bgcolor-3'
         '''
-        if self.current_code == (0, 0, 0):
+        if self.current_code == ANSIStyle(0, 0, 0):
             return ''
         return ' '.join('xterm-%s-%d' % x
-                        for x in zip(['style', 'color', 'bgcolor'],
-                                     self.current_code))
+                        for x in self.current_code.items())
 
     def head(self, title=''):
         '''
@@ -156,7 +163,6 @@ class XTerm2HTML(object):
         '''
         Process a chunk of text and return the corresponding HTML code.
         '''
-        colcode = self.COLCODE_RE
         line_styles = ('even', 'odd')
 
         data = []
@@ -166,16 +172,15 @@ class XTerm2HTML(object):
             data.append('<span class="{}">'.format(self.current_class))
 
             pos = 0
-            m = colcode.search(line)
+            m = COLCODE_RE.search(line)
             while m:
                 data.append(cgi.escape(line[pos:m.start()], quote=True))
                 if self.set_style(m.group(1)):
                     data.append('</span><span class="{}">'
                                   .format(self.current_class))
                 pos = m.end()
-                m = colcode.search(line, pos)
+                m = COLCODE_RE.search(line, pos)
             if pos < len(line):
                 data.append(cgi.escape(line[pos:], quote=True))
             data.append('</span></div>\n')
         return ''.join(data)
-
