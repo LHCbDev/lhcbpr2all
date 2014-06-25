@@ -40,17 +40,20 @@ HTML_STYLE = '''
 .xterm-bgcolor-6 {background-color: cyan;}
 .xterm-bgcolor-7 {background-color: white;}
 .even {font-family: monospace; white-space: pre-wrap;
-       margin: 1pt;
+       border: 1pt solid WhiteSmoke;
        background-color: WhiteSmoke;}
 .odd {font-family: monospace; white-space: pre-wrap;
-       margin: 1pt;
+       border: 1pt solid white;
        background-color: white;}
 .stderr {background-color: PapayaWhip; font-style: italic;}
 .stderr .even {font-family: monospace; white-space: pre-wrap;
+               border-color: Bisque;
                background-color: Bisque;}
 .stderr .odd {font-family: monospace; white-space: pre-wrap;
+              border-color: PapayaWhip;
               background-color: PapayaWhip;}
-:target {border: solid; border-width: 1pt; margin: 0pt;}
+:target {border-color: black;}
+.stderr :target {border-color: red;}
 '''
 
 
