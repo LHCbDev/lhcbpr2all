@@ -125,16 +125,13 @@
         </div>
     </div>
 
-    <form id = "rebuild_info" target="_blank" method="POST" action="https://buildlhcb.cern.ch/jenkins/job/nightly-slot/buildWithParameters" style= "display:none">
+    <form id = "rebuild_info" target="_blank" method="POST" action="https://buildlhcb.cern.ch/jenkins/job/lhcb-release/buildWithParameters" style= "display:none">
 	<fieldset>
-	<input type="text" name="flavour"/><br/>
-	<input type="text" name="slot"/><br/>
-        <input type="text" name="slot_build_id"/><br/>
-        <input type="text" name="platforms"/><br/>
-        <input type="text" name="projects_list"/><br/>
-        <input type="hidden" name="delay" value="60sec"/>
-        <input type="submit" value="Submit"/>
-        </fieldset>
+	<input type="text" name="platforms"/><br/>
+	<input type="text" name="projects_list"/><br/>
+	<input type="hidden" name="delay" value="60sec"/>
+	<input type="submit" value="Submit"/>
+	</fieldset>
     </form>
 
     <div id="dialog-confirm" title="Rebuild slot?" style= "display:none">

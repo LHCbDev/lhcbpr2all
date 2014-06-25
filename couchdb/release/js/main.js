@@ -65,11 +65,13 @@ function lemonIcon(hostname) {
             'title="Lemon stats for ' + hostname + '"/>').tooltip();
 }
 
+function DelayTimeOut(data){
+	return alert("Rebuild " + data  + "Started").delay(8);
+}
+
 function prepareRebuildInfo(data){
 
 	//Transform the project and platform data to strings
-	var build_id = (data.build_id).toString();
-	var slot = (data.slot).toString();
 
 	var projects = "";
 	//make string of projects with spacing
@@ -92,9 +94,6 @@ function prepareRebuildInfo(data){
 
 	//fill in the form for the post request
 	var form = $('#rebuild_info');
-	(form.find('input[name="slot"]')).val(slot);
-	(form.find('input[name="slot_build_id"]')).val(build_id);
-	(form.find('input[name="flavour"]')).val(flavour[1]);
 	(form.find('input[name="projects_list"]')).val(projects);
 	(form.find('input[name="platforms"]')).val(platforms);
 
@@ -123,9 +122,15 @@ function prepareRebuildInfo(data){
 
 	//fill in confirmation build info table dialog
 	$('#confirm-build-info > tbody:last').append('<tr><td><b>Would you like to rebuild slot ' +
-					build_id + ' with the following parameters?</b></td></tr>');
+					data.build_id + ' with the following parameters?</b></td></tr>');
+	$('#confirm-build-info > tbody:last').append('<br/>');
 	$('#confirm-build-info > tbody:last').append(tableprojects);
+	$('#confirm-build-info > tbody:last').append('<br/>');
 	$('#confirm-build-info > tbody:last').append(tableplatforms);
+	$('#confirm-build-info > tbody:last').append('<br/>');
+	$('#confirm-build-info > tbody:last').append('<tr><td><img style="width:20px;" alt="!"'+
+				'src="images/exclamation.png"/>'+
+				'<i>rebuild is set to start in 60 secs</i></td></tr>');
 
 
         $('#dialog-confirm').dialog({
@@ -139,12 +144,11 @@ function prepareRebuildInfo(data){
 			Cancel: function() {
 				$('#confirm-build-info > tbody').empty();
 				$( this ).dialog( "close" );
-
 			},
 			//process to rebuild submiting the form
 			"OK": function() {
-                                form.submit();
 				$('#confirm-build-info > tbody').empty();
+				form.submit();
 				$( this ).dialog( "close" );
 			},
 		},
@@ -152,6 +156,7 @@ function prepareRebuildInfo(data){
 			$('#confirm-build-info > tbody').empty();
 		}
 	});
+
 }
 
 //when rebuild button pressed
