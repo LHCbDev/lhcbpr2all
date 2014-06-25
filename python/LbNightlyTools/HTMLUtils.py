@@ -59,20 +59,20 @@ COLCODE_RE = re.compile('\x1b\\[([0-9;]*)m')
 
 ANSIStyle = collections.namedtuple('ANSIStyle', ['style', 'color', 'bgcolor'])
 ANSIStyle.items = lambda self: self._asdict().items()
-    
+
 class XTerm2HTML(object):
     '''
     Class to translate an ASCII string (containing ANSI color codes), into an
     HTML page.
-    
+
     Usage:
-    
+
     >>> input = '\\x1b[31mHello \\x1b[34mcolored \\x1b[32mworld\\x1b[0m!'
     >>> conv = XTerm2HTML()
     >>> html = ''.join([conv.head(title='Hi!'), conv.process(input),
     ...                 conv.tail()])
     '''
-    
+
     def __init__(self, first_line=1):
         '''
         Initialize the conversion instance.
@@ -87,7 +87,7 @@ class XTerm2HTML(object):
         '''
         Convert the ANSI style string into a 3-tuple of text style attributes
         ids (style, color and background).
-        
+
         >>> conv = XTerm2HTML()
         >>> conv.parse_code('0')
         ANSIStyle(style=0, color=0, bgcolor=0)
@@ -96,25 +96,25 @@ class XTerm2HTML(object):
         >>> conv.parse_code('45')
         ANSIStyle(style=None, color=None, bgcolor=5)
         '''
-        # Constants
         style = color = bgcolor = None
-        for subcode in [int(x, 10) for x in code.split(';')]:
-            if subcode >= 40:
-                bgcolor = subcode - 40
-            elif subcode >= 30:
-                color = subcode - 30
-            else:
-                style = subcode
-        
-        if (style, color, bgcolor) == (0, None, None):  # special case
-            color = bgcolor = 0
+        if code:
+            for subcode in [int(x, 10) for x in code.split(';')]:
+                if subcode >= 40:
+                    bgcolor = subcode - 40
+                elif subcode >= 30:
+                    color = subcode - 30
+                else:
+                    style = subcode
+
+            if (style, color, bgcolor) == (0, None, None):  # special case
+                color = bgcolor = 0
         return ANSIStyle(style, color, bgcolor)
 
     def set_style(self, new_style_code):
         '''
         Set the current text style, returning True if there was a change, False
         if the new style is the same as the old one.
-        
+
         >>> conv = XTerm2HTML()
         >>> conv.set_style('1;32;43')
         True
@@ -134,7 +134,7 @@ class XTerm2HTML(object):
     def current_class(self):
         '''
         CSS class(es) for the current text style.
-        
+
         >>> conv = XTerm2HTML()
         >>> conv.set_style('1;32;43')
         True
@@ -152,13 +152,13 @@ class XTerm2HTML(object):
         '''
         return ('<html><head><style>{}</style>'
                 '<title>{}</title></head><body>\n').format(HTML_STYLE, title)
-    
+
     def tail(self):
         '''
         Return a string containing the tail of the HTML page.
         '''
         return '</body></html>\n'
-    
+
     def process(self, chunk):
         '''
         Process a chunk of text and return the corresponding HTML code.
