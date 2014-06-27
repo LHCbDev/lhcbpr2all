@@ -12,7 +12,6 @@
 
 # Set common environment
 . $(dirname $0)/common.sh
-timestamp=$(date -I)
 
 if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
   # Get the slot configuration files from Subversion
@@ -37,7 +36,7 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   submit_opt="--submit --flavour ${flavour}"
 fi
 
-lbn-checkout --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${config_file}
+lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${config_file}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting
@@ -47,7 +46,7 @@ echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
 
 if [ "${flavour}" = "release" ] ; then
   # Now preparing the RPM with the project source
-  time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}.${timestamp}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+  time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
 fi
 
 # Cleaning up

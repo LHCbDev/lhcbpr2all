@@ -72,7 +72,7 @@ def _check_build_artifacts(root, info):
     assert_files_exist(artifacts_dir,
                        'Project.xml',
                        *[f.format(**info)
-                         for f in ['{project}.{version}.{slot}.{today}.{config}.tar.bz2',
+                         for f in ['{project}.{version}.{slot}.{config}.tar.bz2',
                                    'summaries.{config}/{project}/build_log.html',
                                    chunks_dir,
                                    'db/{slot}.{build_id}.{config}.job-start.json',
@@ -515,7 +515,7 @@ def test_with_shared():
 
         _check_build_artifacts(join(tmpd, 'testdata'), info)
 
-        shr_file = '{project}.{version}.{slot}.{today}.shared.tar.bz2'.format(**info)
+        shr_file = '{project}.{version}.{slot}.shared.tar.bz2'.format(**info)
         assert_files_exist(join(tmpd, 'testdata', 'artifacts'), shr_file)
 
     finally:

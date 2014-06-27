@@ -32,7 +32,7 @@ class Test(unittest.TestCase):
 
         self._slotconfig = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'slot-config.json'])))
-        
+
         self._manifestxml = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'manifest.xml'])))
 
@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         self._indexspecname = "glimpse_Brunel_v46r0.spec"
         self._fullindexspecname =  normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', self._indexspecname])))
-        
+
         logging.basicConfig(level=logging.INFO)
 
     def tearDown(self):
@@ -62,7 +62,7 @@ class Test(unittest.TestCase):
         from LbRPMTools.PackageSlot import Script
         artifactdir = mkdtemp()
         script = Script()
-        script.run(['--dry-run', '--verbose',  '--build-id', 'lhcb-release.999.{timestamp}',
+        script.run(['--dry-run', '--verbose',  '--build-id', 'lhcb-release.999',
                              '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml,
                              self._slotconfig, '--platform',  'x86_64-slc6-gcc48-opt' ])
 
@@ -83,13 +83,13 @@ class Test(unittest.TestCase):
         for l in result:
             diffFound = True
             sys.stdout.write(l)
-        
+
         self.assertFalse(diffFound)
 
         import shutil
         shutil.rmtree(artifactdir)
-        
- 
+
+
     def testSharedSpec(self):
         '''
         Test the creation of shared RPMs by the PackageSlot script
@@ -99,7 +99,7 @@ class Test(unittest.TestCase):
         from LbRPMTools.PackageSlot import Script
         artifactdir = mkdtemp()
         script = Script()
-        script.run(['--dry-run', '--shared', '--verbose',  '--build-id', 'lhcb-release.999.{timestamp}',
+        script.run(['--dry-run', '--shared', '--verbose',  '--build-id', 'lhcb-release.999',
                              '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml,
                              self._slotconfig ])
 
@@ -120,12 +120,12 @@ class Test(unittest.TestCase):
         for l in result:
             diffFound = True
             sys.stdout.write(l)
-        
+
         self.assertFalse(diffFound)
 
         import shutil
         shutil.rmtree(artifactdir)
-        
+
     def testGlimpseSpec(self):
         '''
         Test the creation of Glimpse RPMs by the PackageSlot script
@@ -135,7 +135,7 @@ class Test(unittest.TestCase):
         from LbRPMTools.PackageSlot import Script
         artifactdir = mkdtemp()
         script = Script()
-        script.run(['--dry-run', '--glimpse', '--verbose',  '--build-id', 'lhcb-release.999.{timestamp}',
+        script.run(['--dry-run', '--glimpse', '--verbose',  '--build-id', 'lhcb-release.999',
                              '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml ,
                              self._slotconfig ])
 
@@ -156,12 +156,12 @@ class Test(unittest.TestCase):
         for l in result:
             diffFound = True
             sys.stdout.write(l)
-        
+
         self.assertFalse(diffFound)
 
         import shutil
         #shutil.rmtree(artifactdir)
-             
-        
+
+
 if __name__ == "__main__":
     unittest.main()

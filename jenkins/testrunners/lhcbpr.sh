@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-export buildid="${slot}.${slot_build_id}.${timestamp}"
+export buildid="${slot}.${slot_build_id}"
 export artifactsdir="${ARTIFACTS_DIR}"
 
 echo "Build file to run test"

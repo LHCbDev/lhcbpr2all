@@ -22,9 +22,8 @@ def addBasicOptions(parser):
                       action='store',
                       help='string to add to the tarballs of the build to '
                            'distinguish them from others, the string can '
-                           'be a format string using the parameters '
-                           '"timestamp" and "slot" (a separation "." will '
-                           'be added automatically) [default: %default]')
+                           'be a format string using the parameter '
+                           '"slot" [default: %default]')
 
     parser.add_option('--artifacts-dir',
                       action='store', metavar='DIR',
@@ -35,7 +34,7 @@ def addBasicOptions(parser):
                       help='comma-separated list of projects to consider'
                            ' [default: all]')
 
-    parser.set_defaults(build_id='{slot}.{timestamp}',
+    parser.set_defaults(build_id='{slot}',
                         artifacts_dir='artifacts')
     return parser
 
