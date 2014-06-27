@@ -311,10 +311,21 @@ Requires: TOTO_v1r1_index
 
 %install
 mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
-cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf /tmp/toto.tar.bz2
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf /tmp/toto.tar.bz2 
+mv  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config
 
 
 %post
+
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+
+echo "Fixing the file: ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config"
+REALPATH=$(cd $PREFIX/lhcb && /bin/pwd || echo $PREFIX/lhcb)
+sed -e '2,$'"s|^|${REALPATH}/%{projectUp}/%{projectUp}_%{lbversion}/|" ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config > ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames
 
 %postun
 

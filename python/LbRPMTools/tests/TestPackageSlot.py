@@ -149,7 +149,7 @@ class Test(unittest.TestCase):
         from difflib import Differ, unified_diff
         d = Differ()
         #        result = list(d.compare(oldlines, newlines))
-        result = unified_diff(oldlines, newlines, fromfile=self._fullbinspecname,
+        result = unified_diff(oldlines, newlines, fromfile=self._fullindexspecname,
         tofile=newspecfilename, n=0)
         diffFound = False
         import sys
@@ -160,7 +160,7 @@ class Test(unittest.TestCase):
         self.assertFalse(diffFound)
 
         import shutil
-        #shutil.rmtree(artifactdir)
+        shutil.rmtree(artifactdir)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 %define lhcb_min_version 0
 %define lhcb_patch_version 0
 %define lhcb_release_version 1
-%define buildarea /tmp/lben/rpmBz7b8c
+%define buildarea /tmp/lben/rpmdYu1k9
 %define project Brunel
 %define projectUp BRUNEL
 %define lbversion v46r0
@@ -36,10 +36,21 @@ Requires: REC_v16r2_index
 
 %install
 mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
-cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf None
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf None 
+mv  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config
 
 
 %post
+
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+
+echo "Fixing the file: ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config"
+REALPATH=$(cd $PREFIX/lhcb && /bin/pwd || echo $PREFIX/lhcb)
+sed -e '2,$'"s|^|${REALPATH}/%{projectUp}/%{projectUp}_%{lbversion}/|" ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config > ${PREFIX}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames
 
 %postun
 
