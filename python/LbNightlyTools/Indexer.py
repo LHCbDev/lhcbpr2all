@@ -18,7 +18,6 @@ import os
 import re
 import logging
 from hashlib import sha1 # pylint: disable=E0611
-from datetime import date
 from subprocess import Popen, PIPE
 
 from LbNightlyTools import Configuration
@@ -174,10 +173,9 @@ class Script(LbUtils.Script.PlainScript):
         from datetime import datetime
 
         starttime = datetime.now()
-        timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
         expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
-                              slot=slot, timestamp=timestamp)
+                              slot=slot)
 
         artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
 

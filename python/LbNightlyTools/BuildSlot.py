@@ -398,11 +398,9 @@ class Script(LbUtils.Script.PlainScript):
         self.platform = os.environ['CMTCONFIG']
 
         self.starttime = datetime.now()
-        self.timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
         expandTokensInOptions(opts, ['build_id', 'artifacts_dir', 'rsync_dest'],
-                              slot=self.config[u'slot'],
-                              timestamp=self.timestamp)
+                              slot=self.config[u'slot'])
 
         self.build_dir = join(os.getcwd(), 'build')
         self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)

@@ -435,12 +435,11 @@ class Script(LbUtils.Script.PlainScript):
         from datetime import datetime
 
         starttime = datetime.now()
-        timestamp = os.environ.get('TIMESTAMP', date.today().isoformat())
 
         build_dir = join(os.getcwd(), 'tmp', 'checkout')
 
         expandTokensInOptions(opts, ['build_id', 'artifacts_dir'],
-                              slot=slot.name, timestamp=timestamp)
+                              slot=slot.name)
 
         artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
 
@@ -461,7 +460,8 @@ class Script(LbUtils.Script.PlainScript):
         cfg = Configuration.load(self.args[0])
         cfg['type'] = 'slot-config'
         cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
-        cfg['date'] = timestamp
+        cfg['date'] = os.environ.get('DATE', date.today().isoformat())
+        cfg['started'] = starttime.isoformat()
         platforms = os.environ.get('platforms', '').strip().split()
         if platforms:
             cfg['platforms'] = platforms
