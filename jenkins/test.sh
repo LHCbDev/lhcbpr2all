@@ -19,7 +19,6 @@ set_config=1
 . $(dirname $0)/common.sh
 
 day=$(date +%a)
-timestamp=$(date -I)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
 # special hack to get a dev version of the CMake configuration files
@@ -62,7 +61,7 @@ if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
 fi
 
 # And run it...
-export submit_opt rsync_opt prepare_opt config_file timestamp
+export submit_opt rsync_opt prepare_opt config_file
 $(dirname $0)/testrunners/${used_test_runner}.sh ${testgroup} ${testenv}
 
 if [ "$JENKINS_MOCK" != "true" ] ; then

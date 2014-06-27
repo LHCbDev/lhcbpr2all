@@ -54,18 +54,18 @@ fi
 
 # Notify the system of the builds that need to be tested.
 if [ "${with_tests}" != "no" ] ; then
-  lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --platforms "${platform}" -o expected_builds.json ${config_file}
+  lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" --platforms "${platform}" -o expected_builds.json ${config_file}
   if [ "$JENKINS_MOCK" != "true" ] ; then
     datadir=${JENKINS_HOME}/nightlies/${flavour}/running_builds
     scp expected_builds.json buildlhcb.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
   fi
 fi
 
-time lbn-build --no-distcc --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
+time lbn-build --no-distcc --verbose --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
 
 if [ "${flavour}" = "release" ] ; then
   # Prepare the RPMs
-  time lbn-rpm --verbose  --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file} --platform "${platform}"
+  time lbn-rpm --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file} --platform "${platform}"
 fi
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
@@ -75,9 +75,9 @@ fi
 # if possible and requested, generate glimpse indexes and upload them to buildlhcb
 if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
     if which glimpseindex &> /dev/null ; then
-	time lbn-index --verbose --build-id "${slot}.${slot_build_id}.{timestamp}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
+	time lbn-index --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
 	if [ "${flavour}" = "release" ] ; then
-	  time lbn-rpm --glimpse --verbose  --build-id "${slot}.${slot_build_id}.${timestamp}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+	  time lbn-rpm --glimpse --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
 	fi
 	if [ "$JENKINS_MOCK" != "true" ] ; then
             rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
