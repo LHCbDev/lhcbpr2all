@@ -92,7 +92,7 @@ class Script(LbUtils.Script.PlainScript):
                          default=None,
                          action="store",
                          help="Force the manifest file to be used")
-        
+
         parser.add_option_group(group)
         return parser
 
@@ -121,17 +121,17 @@ class Script(LbUtils.Script.PlainScript):
             shutil.copy(specfilename, artifactdir)
             self.log.warning("Dry run mode, spec file copied to %s" % artifactdir)
             return
-        
+
         # Now calling the rpmbuild command
         from subprocess import Popen, PIPE
         process = Popen(["rpmbuild", "-bb", specfilename],
                         stdout=PIPE, stderr=PIPE)
-        
+
         (stdout, stderr) = process.communicate()
         # XXX Careful we should not be caching the stdout and stderr
         self.log.info(stdout)
         self.log.info(stderr)
-        
+
         if not os.path.exists(fullrpmpath):
             self.log.error("Cannot find RPM: %s" % fullrpmpath)
             raise Exception("Cannot find RPM: %s" % fullrpmpath)
@@ -145,7 +145,7 @@ class Script(LbUtils.Script.PlainScript):
         if self.options.manifestfile != None:
             self.log.info("Using manifest.xml filename overriden to: %s" % self.options.manifestfile)
             return  self.options.manifestfile
-        
+
         # Checking for the existence of the manifest.xml file
         projbuilddir = os.path.join(builddir, project.upper(), project.upper() + "_" + version)
         manifestxmlfile = os.path.join(projbuilddir, 'InstallArea', platform, 'manifest.xml')
@@ -169,7 +169,7 @@ class Script(LbUtils.Script.PlainScript):
 
         # Parsing the manifest.xml file
         from LbTools.Manifest import Parser
-        
+
         manifest = Parser(manifestxmlfile)
         (tmpproject, tmpversion) =  manifest.getProject()
         (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
@@ -187,7 +187,7 @@ class Script(LbUtils.Script.PlainScript):
         rpmname =  spec.getRPMName()
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
         self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
-        
+
         # Remove tmpdirectory
         if not keeprpmdir:
             rpmconf.removeBuildArea()
@@ -209,7 +209,7 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info("Taking sources from %s" % srcArchive)
         else:
             self.log.warning("Doing clean checkout of the sources")
-        
+
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbSharedRpmSpec
         spec = LHCbSharedRpmSpec(project, version, srcArchive, rpmbuildarea)
@@ -221,7 +221,7 @@ class Script(LbUtils.Script.PlainScript):
         rpmname =  spec.getRPMName()
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
         self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
-        
+
         # Remove tmpdirectory
         if not keeprpmdir:
             rpmconf.removeBuildArea()
@@ -242,7 +242,7 @@ class Script(LbUtils.Script.PlainScript):
 
         # Parsing the manifest.xml file
         from LbTools.Manifest import Parser
-        
+
         manifest = Parser(manifestxmlfile)
         (tmpproject, tmpversion) =  manifest.getProject()
         (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
@@ -253,7 +253,7 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info("Taking sources from %s" % srcArchive)
         else:
             self.log.warning("Doing clean checkout of the sources")
-        
+
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbGlimpseRpmSpec
         spec = LHCbGlimpseRpmSpec(project, version, srcArchive, rpmbuildarea, manifest)
@@ -266,7 +266,7 @@ class Script(LbUtils.Script.PlainScript):
         rpmname =  spec.getRPMName()
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
         self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
-        
+
         # Remove tmpdirectory
         if not keeprpmdir:
             rpmconf.removeBuildArea()
@@ -290,7 +290,7 @@ class Script(LbUtils.Script.PlainScript):
             return os.path.abspath(fullarchname)
         else:
             return None
-        
+
     def _findSrcArchive(self, project, version, artifactdir):
         ''' Locate the source RPM '''
         # Checking if we find the src archive
@@ -307,11 +307,13 @@ class Script(LbUtils.Script.PlainScript):
             return os.path.abspath(fullarchname)
         else:
             return None
-            
+
     def main(self):
         '''
         Main method for the script
         '''
+        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
+
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
@@ -319,6 +321,9 @@ class Script(LbUtils.Script.PlainScript):
         # Same logic as BuildSlot lo locate the builddir
         import os
         builddir = os.path.join(os.getcwd(), 'build')
+
+        expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
+                              slot=self.config[u'slot'])
 
         # Check the final artifacts dir
         if self.options.artifacts_dir != None:
@@ -353,14 +358,11 @@ class Script(LbUtils.Script.PlainScript):
             version = p["version"]
 
             if self.options.shared:
-                self.log.info("Preparing RPM for project %s %s %s" % (project, version, "src"))           
+                self.log.info("Preparing RPM for project %s %s %s" % (project, version, "src"))
                 self._buildSharedRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
             elif self.options.glimpse:
-                self.log.info("Preparing Glimpse RPM for project %s %s" % (project, version))           
+                self.log.info("Preparing Glimpse RPM for project %s %s" % (project, version))
                 self._buildGlimpseRpm(project, version, platform, rpmbuildarea,  builddir, artifactdir, keeprpmdir)
             else:
                 self.log.info("Preparing RPM for project %s %s %s" % (project, version, platform))
                 self._buildRpm(project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir)
-            
-       
-
