@@ -44,7 +44,8 @@ try:
     from LbConfiguration.Project import project_names as PROJECT_NAMES
 except ImportError:
     # if we cannot find the list of names, we use a minimal hardcoded list
-    PROJECT_NAMES = [ "LHCb", "DaVinci" ]
+    PROJECT_NAMES = ['LHCb', 'DaVinci', 'DecFilesTests', 'MooreOnline',
+                     'LbScripts', 'VanDerMeer']
 
 # convert the names to a a conversion dictionary
 PROJECT_NAMES = dict((name.lower(), name) for name in PROJECT_NAMES)
