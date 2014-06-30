@@ -322,6 +322,10 @@ class Script(LbUtils.Script.PlainScript):
         import os
         builddir = os.path.join(os.getcwd(), 'build')
 
+        # Now loading the slot configuration
+        from LbNightlyTools import Configuration
+        self.config = Configuration.load(self.args[0])
+
         expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
                               slot=self.config[u'slot'])
 
@@ -344,10 +348,6 @@ class Script(LbUtils.Script.PlainScript):
         # temp area used to build the RPMs
         from tempfile import mkdtemp
         rpmbuildarea = mkdtemp(prefix="rpm")
-
-        # Now loading the slot configuration
-        from LbNightlyTools import Configuration
-        self.config = Configuration.load(self.args[0])
 
         keeprpmdir = self.options.keeprpmdir
         for p in self.config["projects"]:
