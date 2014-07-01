@@ -102,16 +102,17 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
             if proj in added:
                 raise RuntimeError('project %s repeated: each project can '
                                    'appear only once' % proj)
-            project = {'name': proj, 'version': vers}
+            project = {'name': proj, 'version': vers,
+                       'checkout_opts': {'export': True}}
 
             added.append(proj)
 
             # we check out Gaudi from git
             if proj == 'Gaudi':
                 project['checkout'] = 'git'
-                project['checkout_opts'] = {"url":
-                                              "http://git.cern.ch/pub/gaudi",
-                                            "commit": "GAUDI/GAUDI_" + vers}
+                extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
+                              'commit': 'GAUDI/GAUDI_' + vers}
+                project['checkout_opts'].update(extra_opts)
 
             projects.append(project)
 

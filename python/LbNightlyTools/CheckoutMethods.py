@@ -17,6 +17,7 @@ import logging
 import shutil
 import os
 
+from subprocess import Popen, PIPE
 from LbNightlyTools.Utils import retry_call as call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
@@ -34,11 +35,17 @@ def getpack(desc, rootdir='.'):
     getpack_cmd = ['getpack', '--batch', '--no-config',
                    '--no-eclipse', '--branches',
                    '--protocol', protocol]
+
     recursive_head = desc.checkout_opts.get('recursive_head',
                                             desc.version == 'HEAD')
+    export = desc.checkout_opts.get('export', False)
+
     cmd = getpack_cmd + ['-P',
-                         '-H' if recursive_head else '-r',
-                         desc.name, desc.version]
+                         '-H' if recursive_head else '-r']
+    if export:
+        cmd.append('--export')
+    cmd.extend([desc.name, desc.version])
+
     __log__.debug('checking out %s', desc)
     call(cmd, cwd=rootdir, retry=3)
 
@@ -76,10 +83,25 @@ def git(desc, rootdir='.'):
         raise RuntimeError('mandatory checkout_opts "url" is missing')
     url = desc.checkout_opts['url']
     commit = desc.checkout_opts.get('commit', 'master')
+    export = desc.checkout_opts.get('export', False)
+
     __log__.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = os.path.join(rootdir, desc.projectDir)
-    call(['git', 'clone', url, dest])
-    call(['git', 'checkout', commit], cwd=dest)
+    __log__.debug('cloning git repository %s', url)
+    call(['git', 'clone', '--no-checkout', url, dest])
+    if not export:
+        __log__.debug('checkout commit %s for %s', commit, desc)
+        call(['git', 'checkout', commit], cwd=dest)
+    else:
+        __log__.debug('export commit %s for %s', commit, desc)
+        p1 = Popen(['git', 'archive', commit],
+                   cwd=dest, stdout=PIPE)
+        p2 = Popen(['tar', '--extract', '--file', '-'],
+                   cwd=dest, stdin=p1.stdout)
+        p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+        if p2.wait() or p1.wait():
+            __log__.warning('problems exporting commit %s for %s', commit, desc)
+        shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
@@ -95,9 +117,11 @@ def svn(desc, rootdir='.'):
     if 'url' not in desc.checkout_opts:
         raise RuntimeError('mandatory checkout_opts "url" is missing')
     url = desc.checkout_opts['url']
+    export = desc.checkout_opts.get('export', False)
+
     __log__.debug('checking out %s from %s', desc, url)
     dest = os.path.join(rootdir, desc.projectDir)
-    call(['svn', 'checkout', url, dest])
+    call(['svn', 'checkout' if not export else 'export', url, dest])
     makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(makefile):
         f = open(makefile, 'w')
