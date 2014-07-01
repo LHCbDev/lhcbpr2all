@@ -71,7 +71,8 @@ def test_LHCb():
         pprint(output)
 
         assert output['slot'] == 'lhcb-release'
-        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'}]
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 
@@ -94,7 +95,8 @@ def test_Gaudi():
         assert output['projects'] == [{'name': 'Gaudi', 'version': 'v23r9',
                                        'checkout': 'git',
                                        'checkout_opts': {'url': 'http://git.cern.ch/pub/gaudi',
-                                                         'commit': 'GAUDI/GAUDI_v23r9'}}]
+                                                         'commit': 'GAUDI/GAUDI_v23r9',
+                                                         'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 
@@ -114,8 +116,10 @@ def test_two_projects():
         pprint(output)
 
         assert output['slot'] == 'lhcb-release'
-        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'},
-                                      {'name': 'Lbcom', 'version': 'v14r1'}]
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'Lbcom', 'version': 'v14r1',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 
@@ -135,8 +139,10 @@ def test_fixCase():
         pprint(output)
 
         assert output['slot'] == 'lhcb-release'
-        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'},
-                                      {'name': 'DaVinci', 'version': 'v34r0'}]
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'DaVinci', 'version': 'v34r0',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 
@@ -171,7 +177,8 @@ def test_stdout():
         pprint(output)
 
         assert output['slot'] == 'lhcb-release'
-        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'}]
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 
@@ -191,7 +198,8 @@ def test_with_cmt():
         pprint(output)
 
         assert output['slot'] == 'lhcb-release'
-        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1'}]
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is True
         assert output['no_patch'] is True
 
