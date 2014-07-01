@@ -325,12 +325,14 @@ def test_simple_build_env_search_path():
 
         _check_build_artifacts(join(tmpd, 'testdata'), info)
 
-        expected = ['/another/path', '/new/root/inner', '/some/cmake', '/another/cmake',
-                    '/some/path', '/some/cmt', '/another/cmt']
+        expected_cmake = ['/another/path', '/new/root/inner', '/some/cmake', '/another/cmake',
+                          '/some/path', '/some/cmt', '/another/cmt']
+        expected_cmt = ['/some/path', '/some/cmt', '/another/cmt',
+                        '/another/path', '/new/root/inner', '/some/cmake', '/another/cmake']
 
         loc = {}
         exec open(join(artifacts_dir, 'confSummary.py')).read() in {'__file__': '/new/root/confSummary.py'}, loc
-        assert loc['cmtProjectPathList'] == expected, 'expected %r, found %r' % (expected, loc['cmtProjectPathList'])
+        assert loc['cmtProjectPathList'] == expected_cmt, 'expected %r, found %r' % (expected_cmt, loc['cmtProjectPathList'])
 
         os.makedirs(join(tmpd, 'new_loc'))
         with open(join(tmpd, 'new_loc', 'searchPath.cmake'), 'w') as new_file:
@@ -339,7 +341,7 @@ def test_simple_build_env_search_path():
         print open(join(tmpd, 'new_loc', 'searchPath.cmake')).read()
         proc = Popen(['cmake', '-P', join(tmpd, 'new_loc', 'searchPath.cmake')], stdout=PIPE)
         expected_cmake = ['-- %s\n' % s.replace('/new/root', join(tmpd, 'new_loc'))
-                          for s in expected]
+                          for s in expected_cmake]
         output = list(proc.stdout)
         print '--- CMake output ---'
         print output
