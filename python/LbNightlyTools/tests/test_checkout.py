@@ -283,6 +283,61 @@ def test_checkout():
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def test_checkout_export():
+    'checkout functions with option "export"'
+    if not which('getpack') or not which('git'):
+        raise nose.SkipTest
+
+    from os.path import exists
+    ProjectDesc = StackCheckout.ProjectDesc
+
+    tmpdir = tempfile.mkdtemp()
+    def check(files):
+        for f in files:
+            assert exists(join(tmpdir, f)), 'Missing %s' % f
+    try:
+        CheckoutMethods.default(ProjectDesc('Brunel', 'v44r1',
+                                            checkout_opts={'export': True}),
+                                tmpdir)
+        check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1',
+                               'BrunelSys', '.svn'))
+
+        CheckoutMethods.git(ProjectDesc('Gaudi', 'v23r6',
+                                        checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
+                                                       'commit': 'GAUDI/GAUDI_v23r6',
+                                                       'export': True}),
+                            tmpdir)
+        check([join('GAUDI', 'GAUDI_v23r6', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('GaudiRelease', 'cmt', 'requirements')]])
+        assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r6', '.git'))
+
+        shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
+        svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
+        CheckoutMethods.svn(ProjectDesc('Brunel', 'HEAD',
+                                        checkout_opts={'url': svnurl,
+                                                       'export': True}),
+                            tmpdir)
+        check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('Rec', 'Brunel', 'cmt', 'requirements'),
+                         ('BrunelSys', 'cmt', 'requirements')]])
+        assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', '.svn'))
+
+    finally:
+        #print tmpdir
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 def test_getpack_recursive_head():
     'getpack with recursive head (headofeverything)'
     if not which('getpack') or not which('git'):
