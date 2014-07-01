@@ -30,7 +30,7 @@ from LbNightlyTools.Utils import Dashboard
 
 from string import Template
 from socket import gethostname
-from datetime import datetime, date
+from datetime import datetime
 from collections import defaultdict, OrderedDict
 try:
     from multiprocessing import cpu_count
@@ -1316,7 +1316,7 @@ class BuildReporter(object):
 
         summary = dict([(k, defaultdict(list))
                         for k in ['error', 'warning', 'coverity']])
-        context = deque()
+        context = deque(maxlen=5)
         sections = [] # List of section descriptions: ('name', begin)
         i = -1
         logfile = codecs.open(self.build_log, 'r', 'utf-8', errors='replace')
@@ -1324,8 +1324,6 @@ class BuildReporter(object):
         build_section_offset = -1
         for i, line in enumerate(logfile):
             context.append(line)
-            if len(context) > 5:
-                context.popleft()
             linetype = getLineType(line)
             if linetype:
                 summary[linetype][line].append((i, list(context)))
