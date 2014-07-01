@@ -589,14 +589,14 @@ class Script(LbUtils.Script.PlainScript):
 
         def dumpConfSummary():
             '''Create special summary file used by SetupProject.'''
-            data = []
-            # find the declaration of CMTPROJECTPATH in the configuration
+            data = defaultdict(list)
             env = dict(decl.split('=', 1)
                        for decl in self.config.get(u'env', []))
-            for name in ('CMAKE_PREFIX_PATH', 'CMTPROJECTPATH'):
+            # collect the expanded values for  CMTPROJECTPATH and
+            # CMAKE_PREFIX_PATH in the local environment
+            for name in ('CMTPROJECTPATH', 'CMAKE_PREFIX_PATH'):
                 if name in env:
-                    # dump it as a list in the summary file
-                    data += os.path.expandvars(env[name]).split(':')
+                    data[name] = os.path.expandvars(env[name]).split(':')
             if data:
                 py_templ = Template(u'''# -*- coding: utf-8 -*-
 cmtProjectPathList = ${path}
@@ -610,7 +610,8 @@ try:
                           for s in cmtProjectPathList]
 except NameError:
     pass # __file__ gets defined only with LbScripts > v8r0\n''')
-                values =  {'path': repr(data),
+                values =  {'path': repr(data['CMTPROJECTPATH'] +
+                                        data['CMAKE_PREFIX_PATH']),
                            'build_root': repr(self.build_dir)}
                 self.write(os.path.join(self.artifacts_dir, 'confSummary.py'),
                            py_templ.substitute(values))
@@ -619,7 +620,8 @@ set(CMAKE_PREFIX_PATH ${path} $${CMAKE_PREFIX_PATH})
 
 string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
        CMAKE_PREFIX_PATH "$${CMAKE_PREFIX_PATH}")\n''')
-                values = {'path': ' '.join(data),
+                values = {'path': ' '.join(data['CMAKE_PREFIX_PATH'] +
+                                           data['CMTPROJECTPATH']),
                           'build_root': self.build_dir}
                 self.write(os.path.join(self.artifacts_dir, 'searchPath.cmake'),
                            cmake_templ.substitute(values))
