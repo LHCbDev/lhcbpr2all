@@ -230,3 +230,11 @@ def test_special_cases():
     print 'actual   ->', repr(actual)
     print 'expected ->', repr(expected)
     assert actual == expected
+
+
+if __name__ == '__main__':
+    import sys
+    conv = XTerm2HTML()
+    sys.stdout.write(conv.head(title='stdin'))
+    sys.stdout.write(conv.process(sys.stdin.read()))
+    sys.stdout.write(conv.tail())
