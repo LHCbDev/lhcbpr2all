@@ -497,3 +497,28 @@ def pack(srcs, dest, cwd='.', checksum=None):
         log.error("failed to pack %s, I'm ignoring it", srcs)
         if os.path.exists(os.path.join(cwd, dest)):
             os.remove(os.path.join(cwd, dest))
+
+def shallow_copytree(src, dst, ignore=None):
+    '''Create a shallow (made of symlinks) copy of a directory tree.
+
+    The destination directory might exist and in that case it will be
+    recursively filled with links pointing to the corresponding entries inside
+    the source directory.
+    If the destination does not exist, then shallow_copytree is equivalent to
+    os.symlink.
+
+    The optional argument `ignore` is a callable with the same semantics of
+    the equivalent argument of shutil.copytree:
+
+       callable(src, names) -> ignored_names
+
+    '''
+    src = os.path.realpath(src)
+    if not os.path.exists(dst):
+        os.symlink(src, dst)
+    elif os.path.isdir(src):
+        names = [name for name in os.listdir(src) if name not in ('.', '..')]
+        ignored_names = set() if ignore is None else set(ignore(src, names))
+        for name in set(names) - ignored_names:
+            shallow_copytree(os.path.join(src, name), os.path.join(dst, name),
+                             ignore)
