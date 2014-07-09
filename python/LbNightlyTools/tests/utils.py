@@ -17,7 +17,7 @@ import tempfile
 import logging
 
 __all__ = ('which', 'MockFunc', 'processFile', 'processFileWithName',
-           'MockLoggingHandler')
+           'MockLoggingHandler', 'TemporaryDir')
 
 def which(cmd):
     '''
@@ -49,9 +49,10 @@ class TemporaryDir(object):
     An instance of this class can be used inside the 'with' statement and
     returns the path to the temporary directory.
     '''
-    def __init__(self, chdir=False):
+    def __init__(self, chdir=False, keep=False):
         '''Constructor.'''
         self.chdir = chdir
+        self.keep = keep
         self.path = tempfile.mkdtemp()
         self.old_dir = None
     def join(self, *args):
@@ -86,7 +87,10 @@ class TemporaryDir(object):
         if self.old_dir:
             os.chdir(self.old_dir)
             self.old_dir = None
-        self.remove()
+        if not self.keep:
+            self.remove()
+        else:
+            print "WARNING: not removing temporary directory", self.path
         return False
 
 def processFile(data, function):
