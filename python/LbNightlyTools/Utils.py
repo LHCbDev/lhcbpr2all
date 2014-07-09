@@ -522,3 +522,20 @@ def shallow_copytree(src, dst, ignore=None):
         for name in set(names) - ignored_names:
             shallow_copytree(os.path.join(src, name), os.path.join(dst, name),
                              ignore)
+
+def setenv(definitions):
+    '''
+    Modify the environment from a list of definitions of the type 'name=value',
+    expanding the variables in 'value'.
+
+    >>> setenv(['foo=bar'])
+    >>> os.environ['foo']
+    'bar'
+    >>> setenv(['baz=some_${foo}'])
+    >>> os.environ['baz']
+    'some_bar'
+    '''
+    for item in definitions:
+        name, value = item.split('=', 1)
+        os.environ[name] = os.path.expandvars(value)
+
