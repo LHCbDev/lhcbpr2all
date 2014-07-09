@@ -23,7 +23,7 @@ import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import ensureDirs, pack
+from LbNightlyTools.Utils import ensureDirs, pack, setenv, shallow_copytree
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -45,7 +45,8 @@ class ProjectDesc(object):
                           versions of the packages in the requested projects
                           version and the ones required in the checkout
         @param checkout: callable that can check out the specified project
-        @param checkout_opts: dictionary with extra options for the
+        @param checkout_opts: dictionary with extra options for the checkout
+                              callable
         '''
         self.name = name
         if version.upper() == 'HEAD':
@@ -118,19 +119,89 @@ class ProjectDesc(object):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
 
+
+class PackageDesc(object):
+    '''
+    Describe a package to be checked out.
+    '''
+    def __init__(self, name, version, **kwargs):
+        '''
+        @param name: name of the package
+        @param version: version of the package as 'vXrY' or 'HEAD'
+        @param container: name of the container project ('DBASE' or 'PARAM')
+        @param checkout: callable that can check out the specified project
+        @param checkout_opts: dictionary with extra options for the checkout
+                              callable
+        '''
+        self.name = name
+        if version.lower() == 'head':
+            version = 'head'
+        self.version = version
+        self.container = kwargs.get('container', 'DBASE')
+        self._checkout = kwargs.get('checkout', CheckoutMethods.default)
+        self.checkout_opts = kwargs.get('checkout_opts', {})
+
+    def checkout(self, rootdir='.'):
+        '''
+        Helper function to call the checkout method.
+        '''
+        __log__.info('checking out %s', self)
+        self._checkout(self, rootdir=rootdir)
+
+    @property
+    def packageDir(self):
+        '''Name of the package directory (relative to the build directory).'''
+        return os.path.join(self.container, self.name, self.version)
+
+    def __str__(self):
+        '''String representation of the project.'''
+        return "{0} {1}".format(self.name, self.version)
+
+
 class StackDesc(object):
     '''
     Class describing a software stack.
     '''
-    def __init__(self, projects=None, name=None):
+    def __init__(self, projects=None, packages=None, name=None):
         self.name = name
         self.projects = projects or []
+        self.packages = packages or []
 
     def checkout(self, rootdir='.', requested=None):
         '''
         Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
+        if self.packages:
+            for pkg in self.packages:
+                pkg.checkout(rootdir)
+            __log__.debug('create shallow clones of DBASE and PARAM')
+            def ignore(src, names):
+                '''
+                Function to exclude from the clone the packages we shall
+                checkout.
+                '''
+                pkgdir = os.path.basename(src)
+                return [pkg.version
+                        for pkg in self.packages
+                        if os.path.basename(pkg.name) == pkgdir]
+            # locate the container projects
+            for container in ('DBASE', 'PARAM'):
+                try:
+                    path = (os.path.join(path, container)
+                            for path in os.environ.get('CMTPROJECTPATH', '')
+                                          .split(os.pathsep) +
+                                        os.environ.get('CMAKE_PREFIX_PATH', '')
+                                          .split(os.pathsep)
+                            if os.path.isdir(os.path.join(path, container))
+                            ).next()
+                    __log__.debug('found %s at %s', container, path)
+                    shallow_copytree(path, os.path.join(rootdir, container),
+                                     ignore)
+                except StopIteration:
+                    __log__.warning('%s not found in the search path',
+                                    container)
+
         for proj in self.projects:
             # Consider only requested projects (if there was a selection)
             if requested and proj.name.lower() not in requested:
@@ -354,11 +425,23 @@ def parseConfigFile(path):
     Load the slot configuration file and translate it in a StackDesc instance.
     '''
     data = Configuration.load(path)
+    packages = []
+    for pkg in data.get(u'packages', []):
+        checkout = pkg.get(u'checkout', 'default')
+        if '.' in checkout:
+            m, f = checkout.rsplit('.', 1)
+            checkout = getattr(__import__(m, fromlist=[f]), f)
+        else:
+            checkout = getattr(CheckoutMethods, checkout)
+        packages.append(PackageDesc(pkg[u'name'], pkg[u'version'],
+                                    checkout=checkout,
+                                    checkout_opts=pkg.get(u'checkout_opts',
+                                                           {})))
     projects = []
     old_checkout_names = {'defaultCheckout': 'default',
                           'gitCheckout': 'git',
                           'noCheckout': 'ignore'}
-    for proj in data[u'projects']:
+    for proj in data.get(u'projects', []):
         checkout = proj.get(u'checkout', 'default')
         # add backward compatibility check for the checkout functions
         if checkout in old_checkout_names:
@@ -376,7 +459,8 @@ def parseConfigFile(path):
                                     checkout=checkout,
                                     checkout_opts=proj.get(u'checkout_opts',
                                                            {})))
-    return StackDesc(projects=projects, name=data.get(u'slot', None))
+    return StackDesc(projects=projects, packages=packages,
+                     name=data.get(u'slot', None))
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -431,6 +515,9 @@ class Script(LbUtils.Script.PlainScript):
         opts = self.options
 
         slot = parseConfigFile(self.args[0])
+
+        # prepare special environment, if needed
+        setenv(slot.get(u'env', []))
 
         from datetime import datetime
 

@@ -16,7 +16,7 @@ import shutil
 import nose
 from subprocess import Popen, PIPE
 from xml.etree import ElementTree as ET
-from os.path import normpath, join
+from os.path import normpath, join, exists, islink
 from LbNightlyTools.tests.utils import *
 
 
@@ -182,7 +182,6 @@ def test_checkout():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -288,7 +287,6 @@ def test_checkout_export():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -343,7 +341,6 @@ def test_getpack_recursive_head():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -476,3 +473,56 @@ def test_collectDeps():
     assert filter(re.compile(r'cannot discover dependencies for BadCMake').match, warnings)
     assert filter(re.compile(r'cannot discover dependencies for Missing').match, warnings)
     assert not filter(re.compile(r'cannot discover dependencies for Gaudi').match, warnings)
+
+def test_checkout_datapkg():
+    '''checkout a single data package (getpack)'''
+    if not which('getpack'):
+        raise nose.SkipTest
+
+    PackageDesc = StackCheckout.PackageDesc
+
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    with TemporaryDir(chdir=True):
+        os.makedirs('build')
+        pkg = PackageDesc(name='AppConfig', version='v3r198')
+        pkg.checkout('build')
+
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
+
+def test_stack_checkout_datapkg():
+    '''checkout a data package within a slot'''
+    if not which('getpack'):
+        raise nose.SkipTest
+
+    PackageDesc = StackCheckout.PackageDesc
+
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    with TemporaryDir(chdir=True):
+        os.makedirs('build')
+        pkgs = [PackageDesc(name='AppConfig', version='v3r198'),
+                PackageDesc(name='Det/SQLDDDB', version='HEAD')]
+        slot = StackCheckout.StackDesc(packages=pkgs)
+        slot.checkout('build')
+
+        for pkg in pkgs:
+            assert exists(join('build', pkg.packageDir)), 'missing %s' % pkg.packageDir
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+        assert not islink(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+
+        assert islink(join('build', 'DBASE', 'AppConfig', 'v3r196'))
+
+        assert islink(join('build', 'DBASE', 'Gen'))
+
+        assert not islink(join('build', 'DBASE', 'Det'))
+        assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB'))
+        assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head'))
+        assert exists(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head', 'cmt'))
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r10'))
+
+        # picked up at random
+        assert exists(join('build', 'PARAM', 'QMTestFiles', 'v1r0'))
+        assert islink(join('build', 'PARAM'))

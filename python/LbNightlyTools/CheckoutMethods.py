@@ -40,21 +40,30 @@ def getpack(desc, rootdir='.'):
                                             desc.version == 'HEAD')
     export = desc.checkout_opts.get('export', False)
 
-    cmd = getpack_cmd + ['-P',
-                         '-H' if recursive_head else '-r']
+    if hasattr(desc, 'projectDir'):
+        # we are checking out a project
+        cmd = getpack_cmd + ['-P',
+                             '-H' if recursive_head else '-r']
+        prjroot = normpath(join(rootdir, desc.projectDir))
+    else:
+        # we are checking out a data package
+        cmd = getpack_cmd + ['-v']
+        prjroot = normpath(join(rootdir, desc.packageDir))
+        rootdir = normpath(join(rootdir, desc.container))
     if export:
         cmd.append('--export')
     cmd.extend([desc.name, desc.version])
 
+    if not os.path.exists(rootdir):
+        __log__.debug('creating %s', rootdir)
+        os.makedirs(rootdir)
+
     __log__.debug('checking out %s', desc)
     call(cmd, cwd=rootdir, retry=3)
 
-    prjroot = normpath(join(rootdir, desc.projectDir))
-
-    overrides = desc.overrides
-    if overrides:
+    if hasattr(desc, 'overrides') and desc.overrides:
         __log__.debug('overriding packages')
-        for package, version in overrides.items():
+        for package, version in desc.overrides.items():
             if version:
                 cmd = getpack_cmd + [package, version]
                 call(cmd, cwd=prjroot, retry=3)
