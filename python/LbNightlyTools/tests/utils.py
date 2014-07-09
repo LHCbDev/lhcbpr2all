@@ -49,9 +49,11 @@ class TemporaryDir(object):
     An instance of this class can be used inside the 'with' statement and
     returns the path to the temporary directory.
     '''
-    def __init__(self):
+    def __init__(self, chdir=False):
         '''Constructor.'''
+        self.chdir = chdir
         self.path = tempfile.mkdtemp()
+        self.old_dir = None
     def join(self, *args):
         '''
         Equivalent to os.path.join(self.path, *args).
@@ -72,12 +74,18 @@ class TemporaryDir(object):
         '''
         Context Manager protocol 'enter' function.
         '''
+        if self.chdir:
+            self.old_dir = os.getcwd()
+            os.chdir(self.path)
         return self.path
     def __exit__(self, exc_type, exc_val, exc_tb):
         '''
         Context Manager protocol 'exit' function.
         Remove the temporary directory and let the exceptions propagate.
         '''
+        if self.old_dir:
+            os.chdir(self.old_dir)
+            self.old_dir = None
         self.remove()
         return False
 
