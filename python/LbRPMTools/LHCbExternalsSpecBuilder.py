@@ -104,7 +104,16 @@ Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_
         tmp = ""
         for k,v in self._externalsDict.items():
             extVer = v[0]
-            tmp += "Requires: LCG_%s_%s_%s_%s\n" % (self._lcgVersion, k, extVer, self._cmtconfig.replace('-', '_'))
+            # Temporary hack: require only -opt packages instead of DBG
+            cmtcfgopt =  v[2].replace('-dbg', '-opt')
+
+            # Exception for Expat, we need to understand this...
+            if k == "Expat":
+                k = "expat"
+            if k == "LCGCMT":
+                tmp += "Requires: %s_%s\n" % (k, extVer.replace('-', '_'))
+            else:
+                tmp += "Requires: LCG_%s_%s_%s_%s\n" % (self._lcgVersion, k, extVer.replace('-', '_'), cmtcfgopt.replace('-', '_'))
             
         
         return tmp
