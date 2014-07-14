@@ -54,8 +54,8 @@ class Test(unittest.TestCase):
         externalsDict = None
         with open(self._externalsDictJSON, 'r') as infile:
             externalsDict = json.load(infile)
-        
-        
+
+
         spec = LHCbExternalsRpmSpec(project, version, platform, rpmbuildarea,
                                     externalsDict, lcgVer)
 
@@ -92,9 +92,9 @@ Prefix: /opt/LHCbSoft
 Provides: /bin/sh
 Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 
-        
+
 Requires: LCG_68_sqlite_3070900_x86_64_slc6_gcc48_opt
-Requires: LCG_68_Expat_2.0.1_x86_64_slc6_gcc48_opt
+Requires: LCG_68_expat_2.0.1_x86_64_slc6_gcc48_opt
 Requires: LCG_68_Frontier_Client_2.8.10_x86_64_slc6_gcc48_opt
 Requires: LCG_68_blas_20110419_x86_64_slc6_gcc48_opt
 Requires: LCG_68_AIDA_3.2.1_x86_64_slc6_gcc48_opt
@@ -154,24 +154,24 @@ Requires: LCG_68_oracle_11.2.0.3.0_x86_64_slc6_gcc48_opt
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
 
-        
-'''    
+
+'''
         print newspectxt
-        
+
         import sys
         nl = newspectxt.splitlines()
         ol = oldspectxt.splitlines()
         self.assertEquals(len(nl), len(ol))
 
-        
+
         for i, l in enumerate(ol):
             self.assertEqual(nl[i], ol[i])
             if l != nl[i]:
                 print "LINE[%d] NEW<%s>" % (i, l)
                 print "LINE[%d] OLD<%s>" % (i, nl[i])
-             
-             
-        
+
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testLoadXML']
     unittest.main()
