@@ -157,6 +157,26 @@ class PackageDesc(object):
         '''Name of the package directory (relative to the build directory).'''
         return os.path.join(self.container, self.name, self.version)
 
+    def build(self, rootdir='.'):
+        '''
+        Build the package and return the return code of the build process.
+        '''
+        from subprocess import Popen
+        base = os.path.join(rootdir, self.baseDir)
+        if os.path.exists(os.path.join(base, 'Makefile')):
+            __log__.info('building %s (make)', self)
+            return Popen(['make'], cwd=base).wait()
+        elif os.path.exists(os.path.join(base, 'cmt', 'requirements')):
+            __log__.info('building %s (cmt make)', self)
+            # CMT is very sensitive to these variables (better to unset them)
+            env = dict((key, value) for key, value in os.environ.items()
+                        if key not in ('PWD', 'CWD', 'CMTSTRUCTURINGSTYLE'))
+            base = os.path.join(base, 'cmt')
+            Popen(['cmt', 'config'], cwd=base, env=env).wait()
+            return Popen(['cmt', 'make'], cwd=base, env=env).wait()
+        __log__.info('%s does not require build', self)
+        return 0
+
     def __str__(self):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
@@ -180,6 +200,8 @@ class StackDesc(object):
         if self.packages:
             for pkg in self.packages:
                 pkg.checkout(rootdir)
+                if pkg.build(rootdir) != 0:
+                    __log__.warning('%s build failed', pkg)
             __log__.debug('create shallow clones of DBASE and PARAM')
             def ignore(src, names):
                 '''
@@ -524,10 +546,6 @@ class Script(LbUtils.Script.PlainScript):
 
         # prepare special environment, if needed
         setenv(slot.env)
-        # CMT is very sensitive to these variables (better to have them unset)
-        for envname in ('PWD', 'CWD'):
-            if envname in os.environ:
-                del os.environ[envname]
 
         from datetime import datetime
 

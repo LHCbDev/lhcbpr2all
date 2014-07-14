@@ -16,7 +16,7 @@ import shutil
 import nose
 from subprocess import Popen, PIPE
 from xml.etree import ElementTree as ET
-from os.path import normpath, join, exists, islink
+from os.path import normpath, join, exists, islink, isdir
 from LbNightlyTools.tests.utils import *
 
 
@@ -512,6 +512,9 @@ def test_stack_checkout_datapkg():
             assert exists(join('build', pkg.baseDir)), 'missing %s' % pkg.baseDir
         assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198'))
         assert not islink(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+        # these are signatures of a build
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt', 'Makefile'))
+        assert isdir(join('build', 'DBASE', 'AppConfig', 'v3r198', os.environ['CMTCONFIG']))
 
         assert islink(join('build', 'DBASE', 'AppConfig', 'v3r196'))
 
