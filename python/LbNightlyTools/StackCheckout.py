@@ -520,14 +520,15 @@ class Script(LbUtils.Script.PlainScript):
         addBasicOptions(self.parser)
         addDashboardOptions(self.parser)
 
-    def packname(self, proj):
+    def packname(self, element):
         '''
         Return the filename of the archive (package) of the given project.
         '''
-        packname = [proj.name, proj.version]
+        packname = [element.name.replace('/', '_'), element.version]
         if self.options.build_id:
             packname.append(self.options.build_id)
-        packname.append('src')
+        if element.isProject:
+            packname.append('src')
         packname.append('tar.bz2')
         return '.'.join(packname)
 
@@ -602,16 +603,16 @@ class Script(LbUtils.Script.PlainScript):
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            deps.get(p['name'], [])))
 
-        for proj in slot.projects:
+        for element in slot.projects + slot.packages:
             # ignore missing directories
             # (the project may not have been checked out)
-            if not os.path.exists(join(build_dir, proj.baseDir)):
-                self.log.warning('no sources for %s, skip packing', proj)
+            if not os.path.exists(join(build_dir, element.baseDir)):
+                self.log.warning('no sources for %s, skip packing', element)
                 continue
 
-            self.log.info('packing %s %s...', proj.name, proj.version)
+            self.log.info('packing %s %s...', element.name, element.version)
 
-            pack([proj.baseDir], join(artifacts_dir, self.packname(proj)),
+            pack([element.baseDir], join(artifacts_dir, self.packname(element)),
                  cwd=build_dir, checksum='md5')
 
         # Save a copy as metadata for tools like lbn-install
