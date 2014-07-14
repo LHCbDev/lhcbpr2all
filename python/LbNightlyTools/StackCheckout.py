@@ -162,10 +162,11 @@ class StackDesc(object):
     '''
     Class describing a software stack.
     '''
-    def __init__(self, projects=None, packages=None, name=None):
+    def __init__(self, projects=None, packages=None, name=None, env=None):
         self.name = name
         self.projects = projects or []
         self.packages = packages or []
+        self.env = env or []
 
     def checkout(self, rootdir='.', requested=None):
         '''
@@ -460,7 +461,8 @@ def parseConfigFile(path):
                                     checkout_opts=proj.get(u'checkout_opts',
                                                            {})))
     return StackDesc(projects=projects, packages=packages,
-                     name=data.get(u'slot', None))
+                     name=data.get(u'slot', None),
+                     env=data.get(u'env', []))
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -517,7 +519,11 @@ class Script(LbUtils.Script.PlainScript):
         slot = parseConfigFile(self.args[0])
 
         # prepare special environment, if needed
-        setenv(slot.get(u'env', []))
+        setenv(slot.env)
+        # CMT is very sensitive to these variables (better to have them unset)
+        for envname in ('PWD', 'CWD'):
+            if envname in os.environ:
+                del os.environ[envname]
 
         from datetime import datetime
 
