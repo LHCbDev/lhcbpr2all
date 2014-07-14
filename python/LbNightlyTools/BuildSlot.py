@@ -26,7 +26,8 @@ import json
 
 from LbNightlyTools import Configuration
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
-from LbNightlyTools.Utils import shallow_copytree
+from LbNightlyTools.Utils import shallow_copytree, find_path
+from LbNightlyTools.Utils import IgnorePackageVersions
 from LbNightlyTools.Utils import Dashboard
 
 from string import Template
@@ -586,36 +587,15 @@ class Script(LbUtils.Script.PlainScript):
                     call(['tar', '-x',
                           '--no-overwrite-dir', '--keep-old-files',
                           '-f', f], cwd=self.build_dir)
-            def ignore(src, names):
-                '''
-                Function to exclude from the clone the packages we shall
-                checkout.
-                '''
-                pkgdir = os.path.basename(src)
-                return [pkg.version
-                        for pkg in self.packages.values()
-                        if os.path.basename(pkg.name) == pkgdir]
-            # locate the container projects
+            ignore = IgnorePackageVersions(self.packages.values())
             for container in ('DBASE', 'PARAM'):
                 if not os.path.exists(os.path.join(self.build_dir, container)):
-                    # only create a shallow clone of the containers we need
                     continue
-                self.log.info('cloning %s', container)
-                try:
-                    path = (os.path.join(path, container)
-                            for path in os.environ.get('CMTPROJECTPATH', '')
-                                          .split(os.pathsep) +
-                                        os.environ.get('CMAKE_PREFIX_PATH', '')
-                                          .split(os.pathsep)
-                            if os.path.isdir(os.path.join(path, container))
-                            ).next()
-                    self.log.debug('found %s at %s', container, path)
+                path = find_path(container)
+                if path:
                     shallow_copytree(path,
                                      os.path.join(self.build_dir, container),
                                      ignore)
-                except StopIteration:
-                    self.log.warning('%s not found in the search path',
-                                     container)
 
         project_xml = genProjectXml(self.config[u'slot'], self.sorted_projects)
         project_xml_name = os.path.join(self.build_dir, 'Project.xml')

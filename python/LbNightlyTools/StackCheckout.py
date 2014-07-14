@@ -24,6 +24,7 @@ from datetime import date
 
 from LbNightlyTools import Configuration
 from LbNightlyTools.Utils import ensureDirs, pack, setenv, shallow_copytree
+from LbNightlyTools.Utils import find_path, IgnorePackageVersions
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -203,31 +204,15 @@ class StackDesc(object):
                 if pkg.build(rootdir) != 0:
                     __log__.warning('%s build failed', pkg)
             __log__.debug('create shallow clones of DBASE and PARAM')
-            def ignore(src, names):
-                '''
-                Function to exclude from the clone the packages we shall
-                checkout.
-                '''
-                pkgdir = os.path.basename(src)
-                return [pkg.version
-                        for pkg in self.packages
-                        if os.path.basename(pkg.name) == pkgdir]
-            # locate the container projects
+            # clone the container projects
+            ignore = IgnorePackageVersions(self.packages)
             for container in ('DBASE', 'PARAM'):
-                try:
-                    path = (os.path.join(path, container)
-                            for path in os.environ.get('CMTPROJECTPATH', '')
-                                          .split(os.pathsep) +
-                                        os.environ.get('CMAKE_PREFIX_PATH', '')
-                                          .split(os.pathsep)
-                            if os.path.isdir(os.path.join(path, container))
-                            ).next()
-                    __log__.debug('found %s at %s', container, path)
+                if not os.path.exists(os.path.join(rootdir, container)):
+                    continue
+                path = find_path(container)
+                if path:
                     shallow_copytree(path, os.path.join(rootdir, container),
                                      ignore)
-                except StopIteration:
-                    __log__.warning('%s not found in the search path',
-                                    container)
 
         for proj in self.projects:
             # Consider only requested projects (if there was a selection)

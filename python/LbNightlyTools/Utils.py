@@ -523,6 +523,52 @@ def shallow_copytree(src, dst, ignore=None):
             shallow_copytree(os.path.join(src, name), os.path.join(dst, name),
                              ignore)
 
+def find_path(name, search_path=None):
+    '''
+    Look for a file or directory in a search path.
+
+    If the search path is not specified, the concatenation of CMTPROJECTPATH and
+    CMAKE_PREFIX_PATH is used.
+
+    >>> os.environ['CMTPROJECTPATH'] = os.environ['PATH']
+    >>> find_path('true')
+    '/bin/true'
+    >>> print find_path('cannot_find_me', [])
+    None
+    '''
+    from os import environ, pathsep
+    from os.path import join, exists
+    if search_path is None:
+        search_path = (environ.get('CMTPROJECTPATH', '').split(pathsep) +
+                       environ.get('CMAKE_PREFIX_PATH', '').split(pathsep))
+
+    try:
+        return (join(path, name)
+                for path in search_path
+                if exists(join(path, name))).next()
+    except StopIteration:
+        logging.warning('%s not found in the search path', name)
+    return None
+
+class IgnorePackageVersions(object):
+    '''
+    Helper class which instances can be used as ignore argument of
+    shallow_copytree to ignore versions of packages when cloning a container
+    project.
+    '''
+    def __init__(self, packages):
+        '''
+        @param packages: list of objects describing packages, which must have a
+                         property 'name' and a property 'version'
+        '''
+        self._exclusions = dict((os.path.basename(pack.name), [pack.version])
+                                for pack in packages)
+    def __call__(self, src, names):
+        '''
+        Implements the semantic of the 'ignore' argument of shallow_copytree.
+        '''
+        return self._exclusions.get(os.path.basename(src), [])
+
 def setenv(definitions):
     '''
     Modify the environment from a list of definitions of the type 'name=value',
@@ -538,4 +584,3 @@ def setenv(definitions):
     for item in definitions:
         name, value = item.split('=', 1)
         os.environ[name] = os.path.expandvars(value)
-
