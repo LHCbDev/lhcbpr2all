@@ -55,6 +55,8 @@ class ProjectDesc(object):
         self.overrides = kwargs.get('overrides', {})
         self._checkout = kwargs.get('checkout', CheckoutMethods.default)
         self.checkout_opts = kwargs.get('checkout_opts', {})
+        self.isProject = True
+        self.isPackage = False
 
     def checkout(self, rootdir='.'):
         '''
@@ -64,7 +66,7 @@ class ProjectDesc(object):
         self._checkout(self, rootdir=rootdir)
 
     @property
-    def projectDir(self):
+    def baseDir(self):
         '''Name of the project directory (relative to the build directory).'''
         upcase = self.name.upper()
         return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
@@ -75,7 +77,7 @@ class ProjectDesc(object):
         retrieved from the configuration files.
         @return: list of used projects (all converted to lowercase)
         '''
-        proj_root = os.path.join(rootdir, self.projectDir)
+        proj_root = os.path.join(rootdir, self.baseDir)
         deps = []
 
         # try with CMakeLists.txt first
@@ -140,6 +142,8 @@ class PackageDesc(object):
         self.container = kwargs.get('container', 'DBASE')
         self._checkout = kwargs.get('checkout', CheckoutMethods.default)
         self.checkout_opts = kwargs.get('checkout_opts', {})
+        self.isProject = False
+        self.isPackage = True
 
     def checkout(self, rootdir='.'):
         '''
@@ -149,7 +153,7 @@ class PackageDesc(object):
         self._checkout(self, rootdir=rootdir)
 
     @property
-    def packageDir(self):
+    def baseDir(self):
         '''Name of the package directory (relative to the build directory).'''
         return os.path.join(self.container, self.name, self.version)
 
@@ -244,7 +248,7 @@ class StackDesc(object):
             '''
             Fix the 'CMakeLists.txt'.
             '''
-            cmakelists = join(proj.projectDir, 'CMakeLists.txt')
+            cmakelists = join(proj.baseDir, 'CMakeLists.txt')
 
             if exists(join(rootdir, cmakelists)):
                 __log__.info('patching %s', cmakelists)
@@ -291,7 +295,7 @@ class StackDesc(object):
             '''
             Fix 'toolchain.cmake'.
             '''
-            toolchain = join(proj.projectDir, 'toolchain.cmake')
+            toolchain = join(proj.baseDir, 'toolchain.cmake')
 
             if exists(join(rootdir, toolchain)):
                 __log__.info('patching %s', toolchain)
@@ -332,7 +336,7 @@ class StackDesc(object):
             Fix the CMT configuration of a project, if it exists, and write
             the changes in 'patchfile'.
             '''
-            project_cmt = join(proj.projectDir, 'cmt', 'project.cmt')
+            project_cmt = join(proj.baseDir, 'cmt', 'project.cmt')
 
             if exists(join(rootdir, project_cmt)):
                 __log__.info('patching %s', project_cmt)
@@ -360,10 +364,10 @@ class StackDesc(object):
                 write_patch(data, newdata, project_cmt)
 
             # find the container package
-            requirements = join(proj.projectDir, proj.name + 'Release',
+            requirements = join(proj.baseDir, proj.name + 'Release',
                                 'cmt', 'requirements')
             if not exists(join(rootdir, requirements)):
-                requirements = join(proj.projectDir, proj.name + 'Sys',
+                requirements = join(proj.baseDir, proj.name + 'Sys',
                                     'cmt', 'requirements')
 
             if exists(join(rootdir, requirements)):
@@ -583,13 +587,13 @@ class Script(LbUtils.Script.PlainScript):
         for proj in slot.projects:
             # ignore missing directories
             # (the project may not have been checked out)
-            if not os.path.exists(join(build_dir, proj.projectDir)):
+            if not os.path.exists(join(build_dir, proj.baseDir)):
                 self.log.warning('no sources for %s, skip packing', proj)
                 continue
 
             self.log.info('packing %s %s...', proj.name, proj.version)
 
-            pack([proj.projectDir], join(artifacts_dir, self.packname(proj)),
+            pack([proj.baseDir], join(artifacts_dir, self.packname(proj)),
                  cwd=build_dir, checksum='md5')
 
         # Save a copy as metadata for tools like lbn-install

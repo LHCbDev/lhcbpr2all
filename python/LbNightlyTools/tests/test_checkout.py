@@ -54,7 +54,7 @@ def test_ProjectDesc():
     assert p.version == 'v23r5'
     assert p.overrides == {}
     assert p._checkout == CheckoutMethods.default
-    assert p.projectDir == 'GAUDI/GAUDI_v23r5'
+    assert p.baseDir == 'GAUDI/GAUDI_v23r5'
     assert str(p) == 'Gaudi v23r5'
 
     p = ProjectDesc('Gaudi', 'head')
@@ -62,7 +62,7 @@ def test_ProjectDesc():
     assert p.version == 'HEAD'
     assert p.overrides == {}
     assert p._checkout == CheckoutMethods.default
-    assert p.projectDir == 'GAUDI/GAUDI_HEAD'
+    assert p.baseDir == 'GAUDI/GAUDI_HEAD'
     assert str(p) == 'Gaudi HEAD'
 
     p = ProjectDesc('Gaudi', 'v23r5', checkout=mockCheckout)
@@ -509,7 +509,7 @@ def test_stack_checkout_datapkg():
         slot.checkout('build')
 
         for pkg in pkgs:
-            assert exists(join('build', pkg.packageDir)), 'missing %s' % pkg.packageDir
+            assert exists(join('build', pkg.baseDir)), 'missing %s' % pkg.baseDir
         assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198'))
         assert not islink(join('build', 'DBASE', 'AppConfig', 'v3r198'))
 

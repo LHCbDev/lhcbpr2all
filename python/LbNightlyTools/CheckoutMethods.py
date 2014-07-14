@@ -40,15 +40,14 @@ def getpack(desc, rootdir='.'):
                                             desc.version == 'HEAD')
     export = desc.checkout_opts.get('export', False)
 
-    if hasattr(desc, 'projectDir'):
+    prjroot = normpath(join(rootdir, desc.baseDir))
+    if desc.isProject:
         # we are checking out a project
         cmd = getpack_cmd + ['-P',
                              '-H' if recursive_head else '-r']
-        prjroot = normpath(join(rootdir, desc.projectDir))
     else:
         # we are checking out a data package
         cmd = getpack_cmd + ['-v']
-        prjroot = normpath(join(rootdir, desc.packageDir))
         rootdir = normpath(join(rootdir, desc.container))
     if export:
         cmd.append('--export')
@@ -95,7 +94,7 @@ def git(desc, rootdir='.'):
     export = desc.checkout_opts.get('export', False)
 
     __log__.debug('checking out %s from %s (%s)', desc, url, commit)
-    dest = os.path.join(rootdir, desc.projectDir)
+    dest = os.path.join(rootdir, desc.baseDir)
     __log__.debug('cloning git repository %s', url)
     call(['git', 'clone', '--no-checkout', url, dest])
     if not export:
@@ -129,7 +128,7 @@ def svn(desc, rootdir='.'):
     export = desc.checkout_opts.get('export', False)
 
     __log__.debug('checking out %s from %s', desc, url)
-    dest = os.path.join(rootdir, desc.projectDir)
+    dest = os.path.join(rootdir, desc.baseDir)
     call(['svn', 'checkout' if not export else 'export', url, dest])
     makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(makefile):
@@ -151,7 +150,7 @@ def copy(desc, rootdir='.'):
         raise RuntimeError('mandatory checkout_opts "src" is missing')
     src = desc.checkout_opts['src']
     __log__.debug('copying %s from %s', desc, src)
-    dest = os.path.join(rootdir, desc.projectDir)
+    dest = os.path.join(rootdir, desc.baseDir)
     ensureDirs([dest])
     shutil.copytree(os.path.join(src, os.curdir), dest)
     top_makefile = os.path.join(dest, 'Makefile')
@@ -174,10 +173,10 @@ def untar(desc, rootdir='.'):
     src = desc.checkout_opts['src']
     __log__.debug('unpacking %s', src)
     call(['tar', '-x', '-C', rootdir, '-f', src])
-    dest = os.path.join(rootdir, desc.projectDir)
+    dest = os.path.join(rootdir, desc.baseDir)
     if not os.path.isdir(dest):
         raise RuntimeError('the tarfile %s does not contain %s',
-                           src, desc.projectDir)
+                           src, desc.baseDir)
     top_makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(top_makefile):
         f = open(top_makefile, 'w')
