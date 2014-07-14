@@ -178,6 +178,25 @@ class PackageDesc(object):
         __log__.info('%s does not require build', self)
         return 0
 
+    def getVersionLinks(self, rootdir='.'):
+        '''
+        Return a list of version aliases for the current package (only if the
+        requested version is head).
+        '''
+        if self.version != 'head':
+            return []
+        base = os.path.join(rootdir, self.baseDir)
+        aliases = ['v999r999']
+        print os.path.exists(os.path.join(base, 'cmt', 'requirements'))
+        if os.path.exists(os.path.join(base, 'cmt', 'requirements')):
+            for l in open(os.path.join(base, 'cmt', 'requirements')):
+                l = l.strip()
+                if l.startswith('version'):
+                    version = l.split()[1]
+                    aliases.append(version[:version.rfind('r')] + 'r999')
+                    break
+        return aliases
+
     def __str__(self):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
@@ -203,6 +222,13 @@ class StackDesc(object):
                 pkg.checkout(rootdir)
                 if pkg.build(rootdir) != 0:
                     __log__.warning('%s build failed', pkg)
+                for link in pkg.getVersionLinks(rootdir):
+                    __log__.debug('creating symlink %s', link)
+                    os.symlink(pkg.version,
+                               os.path.normpath(os.path.join(rootdir,
+                                                             pkg.baseDir,
+                                                             os.pardir,
+                                                             link)))
             __log__.debug('create shallow clones of DBASE and PARAM')
             # clone the container projects
             ignore = IgnorePackageVersions(self.packages)

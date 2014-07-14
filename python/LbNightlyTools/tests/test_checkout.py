@@ -525,7 +525,10 @@ def test_stack_checkout_datapkg():
         assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head'))
         assert exists(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head', 'cmt'))
         assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r10'))
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r999'))
+        assert os.readlink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r999')) == 'head'
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v999r999'))
+        assert os.readlink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v999r999')) == 'head'
 
-        # picked up at random
-        assert exists(join('build', 'PARAM', 'QMTestFiles', 'v1r0'))
-        assert islink(join('build', 'PARAM'))
+        # we do not create PARAM if not requested
+        assert not exists(join('build', 'PARAM'))
