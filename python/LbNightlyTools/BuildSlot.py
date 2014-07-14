@@ -26,8 +26,6 @@ import json
 
 from LbNightlyTools import Configuration
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
-from LbNightlyTools.Utils import shallow_copytree, find_path
-from LbNightlyTools.Utils import IgnorePackageVersions
 from LbNightlyTools.Utils import Dashboard
 
 from string import Template
@@ -126,20 +124,6 @@ class ProjDesc():
 
     def __str__(self):
         return '{0} {1}'.format(self.name, self.version)
-
-
-class PackDesc():
-    '''
-    Descriptions of the package checked out.
-    '''
-    def __init__(self, desc_dict):
-        self.name = desc_dict[u'name']
-        self.version = desc_dict[u'version']
-        self.container = desc_dict.get('container', 'DBASE')
-
-    def __str__(self):
-        return '{0} {1}'.format(self.name, self.version)
-
 
 def sortedByDeps(deps):
     '''
@@ -434,11 +418,6 @@ class Script(LbUtils.Script.PlainScript):
         else:
             self.cache_preload = None
 
-        self.packages = OrderedDict([(p.name, p)
-                                     for p in map(PackDesc,
-                                                  self.config.get(u'packages',
-                                                                  []))])
-
         self.projects = OrderedDict([(p.name, p)
                                      for p in map(ProjDesc,
                                                   self.config.get(u'projects',
@@ -587,15 +566,6 @@ class Script(LbUtils.Script.PlainScript):
                     call(['tar', '-x',
                           '--no-overwrite-dir', '--keep-old-files',
                           '-f', f], cwd=self.build_dir)
-            ignore = IgnorePackageVersions(self.packages.values())
-            for container in ('DBASE', 'PARAM'):
-                if not os.path.exists(os.path.join(self.build_dir, container)):
-                    continue
-                path = find_path(container)
-                if path:
-                    shallow_copytree(path,
-                                     os.path.join(self.build_dir, container),
-                                     ignore)
 
         project_xml = genProjectXml(self.config[u'slot'], self.sorted_projects)
         project_xml_name = os.path.join(self.build_dir, 'Project.xml')

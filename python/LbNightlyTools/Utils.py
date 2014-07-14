@@ -437,22 +437,33 @@ class JenkinsTest(object):
         return ".".join([ "%s=%s" % (k, getattr(self, k))
                          for k in JenkinsTest.JOB_ALLATTRIBUTES])
 
-def _packcmd(srcs, dest, cwd='.'):
+def _packcmd(srcs, dest, cwd='.', dereference=True, exclude=None):
     '''
     Helper function to call the packing command.
     '''
     from subprocess import call
-    return call(['tar', '--create', '--dereference', '--bzip2',
-                 '--file', dest] + srcs, cwd=cwd)
-def _packtestcmd(srcs_, dest, cwd='.'):
+    cmd = ['tar', '--create']
+    if dereference:
+        cmd.append('--dereference')
+    if exclude:
+        cmd.extend(['--exclude=%s' % x for x in exclude])
+    cmd.extend(['--bzip2', '--file', dest])
+    cmd.extend(srcs)
+    return call(cmd, cwd=cwd)
+def _packtestcmd(srcs_, dest, cwd='.', dereference=True, exclude=None):
     '''
     Helper function to call the package test command.
     '''
     from subprocess import call
-    return call(['tar', '--compare', '--dereference', '--bzip2',
-                 '--file', dest], cwd=cwd)
+    cmd = ['tar', '--compare']
+    if dereference:
+        cmd.append('--dereference')
+    if exclude:
+        cmd.extend(['--exclude=%s' % x for x in exclude])
+    cmd.extend(['--bzip2', '--file', dest])
+    return call(cmd, cwd=cwd)
 
-def pack(srcs, dest, cwd='.', checksum=None):
+def pack(srcs, dest, cwd='.', checksum=None, dereference=True, exclude=None):
     '''
     Package the directory 'src' into the package (tarball) 'dest' working from
     the directory 'cwd'.
@@ -469,12 +480,12 @@ def pack(srcs, dest, cwd='.', checksum=None):
     while (not ok) and (retry >= 0):
         retry -= 1
         log.debug('packing %s as %s (from %s)', srcs, dest, cwd)
-        if _packcmd(srcs, dest, cwd) != 0:
+        if _packcmd(srcs, dest, cwd, dereference, exclude) != 0:
             log.warning('failed to produce %s', dest)
             continue
 
         log.debug('checking %s', dest)
-        if _packtestcmd(srcs, dest, cwd) != 0:
+        if _packtestcmd(srcs, dest, cwd, dereference, exclude) != 0:
             log.warning('invalid package %s', dest)
             continue
 

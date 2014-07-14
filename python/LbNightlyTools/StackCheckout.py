@@ -599,6 +599,17 @@ class Script(LbUtils.Script.PlainScript):
 
             pack([element.baseDir], join(artifacts_dir, self.packname(element)),
                  cwd=build_dir, checksum='md5')
+        for container in ('DBASE', 'PARAM'):
+            if not os.path.exists(os.path.join(build_dir, container)):
+                continue
+            self.log.info('packing %s (links)...', container)
+            contname = [container]
+            if self.options.build_id:
+                contname.append(self.options.build_id)
+            contname.append('tar.bz2')
+            pack([container], join(artifacts_dir, '.'.join(contname)),
+                 cwd=build_dir, checksum='md5', dereference=False,
+                 exclude=[p.baseDir for p in slot.packages])
 
         # Save a copy as metadata for tools like lbn-install
         with codecs.open(join(artifacts_dir, 'slot-config.json'),
