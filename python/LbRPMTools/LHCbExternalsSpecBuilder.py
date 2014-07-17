@@ -86,7 +86,7 @@ Prefix: /opt/LHCbSoft
 Provides: /bin/sh
 Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 
-        \n""").substitute(buildarea = self._buildarea,
+\n""").substitute(buildarea = self._buildarea,
                           project = self._project,
                           projectUp = self._project.upper(),
                           version = self._version,
@@ -114,8 +114,8 @@ Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_
                 tmp += "Requires: %s_%s\n" % (k, extVer.replace('-', '_'))
             else:
                 tmp += "Requires: LCG_%s_%s_%s_%s\n" % (self._lcgVersion, k, extVer.replace('-', '_'), cmtcfgopt.replace('-', '_'))
-            
-        
+
+
         return tmp
 
     def _createDescription(self):
@@ -243,7 +243,7 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
         project = self.args[0]
         version = self.args[1]
         cmtconfig = self.args[2]
-        
+
         self.log.warning("Processing externals for %s %s %s" % (project, version, cmtconfig))
 
         buildarea = self.options.buildarea
@@ -257,7 +257,7 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
             json.dump(externalsDict, outfile)
 
         print "%s %s %s %s %s %s" % (project, version, cmtconfig, buildarea, externalsDict, lcgVer)
-        
+
         spec = LHCbExternalsRpmSpec(project, version, cmtconfig, buildarea, externalsDict, lcgVer)
 
         if self.options.output:
@@ -410,12 +410,12 @@ def getLCGBinary(workdir, extname, binary):
     nat_version = CMT(getCMTExtraTags(binary), "show", "macro_value", "%s_native_version" % extname, cwd = workdir)[0][:-1]
     cfg_version = CMT(getCMTExtraTags(binary), "show", "macro_value", "%s_config_version" % extname, cwd = workdir)[0][:-1]
     if nat_version :
-       ext_bin = None
-       ext_bin_list = ext_home[ext_home.find(nat_version):].split(os.sep)
-       if len(ext_bin_list) > 1 :
-           ext_bin = ext_bin_list[1]
-    else :
-       ext_bin = ext_home.split(os.sep)[0]
+        ext_bin = None
+        ext_bin_list = ext_home[ext_home.find(nat_version):].split(os.sep)
+        if len(ext_bin_list) > 1 :
+            ext_bin = ext_bin_list[1]
+    else:
+        ext_bin = ext_home.split(os.sep)[0]
     return nat_version, cfg_version, ext_bin, ext_home
 
 def pkgFilter(NAME, pak, vers, binary):
@@ -438,7 +438,7 @@ def get_native_versions(native_version, binary):
     here = os.getcwd()
     packages_versions = {}
     extra_packages_versions = {}
-    
+
     NAME, version, Name, NameSys, release_area = get_base_project(native_version)
     CMTPATH = get_cmtpath(native_version)
     lcgv = get_lcg_version(CMTPATH)
@@ -471,7 +471,7 @@ def get_native_versions(native_version, binary):
             packages_versions[pack] = list(ext_info)
 
     os.remove(natives)
-    
+
     for pak in packages_versions.keys() :
         if not packages_versions[pak][0] :
             __log__.warning("%s has no version. Removing it from the list" % pak)
