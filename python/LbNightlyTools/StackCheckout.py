@@ -458,6 +458,27 @@ class StackDesc(object):
                             if n in names]
         return deps
 
+    def package(self, name):
+        '''
+        Return the package with the given name.
+        '''
+        name = name.lower()
+        for p in self.packages:
+            if p.name.lower() == name:
+                return p
+        return None
+
+    def project(self, name):
+        '''
+        Return the project with the given name.
+        '''
+        name = name.lower()
+        for p in self.projects:
+            if p.name.lower() == name:
+                return p
+        return None
+
+
 def parseConfigFile(path):
     '''
     Load the slot configuration file and translate it in a StackDesc instance.
@@ -613,6 +634,20 @@ class Script(LbUtils.Script.PlainScript):
         for p in cfg['projects']:
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            deps.get(p['name'], [])))
+        # add dependencies of data packages on the corresponding container
+        containers = set()
+        for p in cfg['packages']:
+            container = slot.package(p['name']).container
+            containers.add(container)
+            p['dependencies'] = sorted(set(p.get('dependencies', []) +
+                                           [container]))
+        for p in containers:
+            # Note that we add the containers only to the configuration and not
+            # to the slot object.
+            if slot.project(p) is None:
+                cfg['projects'].append({'name': p,
+                                        'version': 'None',
+                                        'checkout': 'ignore'})
 
         for element in slot.projects + slot.packages:
             # ignore missing directories
@@ -625,9 +660,7 @@ class Script(LbUtils.Script.PlainScript):
 
             pack([element.baseDir], join(artifacts_dir, self.packname(element)),
                  cwd=build_dir, checksum='md5')
-        for container in ('DBASE', 'PARAM'):
-            if not os.path.exists(os.path.join(build_dir, container)):
-                continue
+        for container in containers:
             self.log.info('packing %s (links)...', container)
             contname = [container]
             if self.options.build_id:
