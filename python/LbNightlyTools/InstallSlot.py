@@ -172,7 +172,8 @@ def getDependencies(projects, slot_configuration):
         # First check the configuration
         proj_lower = proj.lower()
         pdata = None
-        for cp in slot_configuration['projects']:
+        for cp in (slot_configuration.get('projects', []) +
+                   slot_configuration.get('packages', [])) :
             # Comparing lower case to be sure...
             if cp['name'].lower() == proj_lower:
                 pdata = cp
@@ -239,6 +240,11 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
             if proj not in projects:
                 log.debug("Adding %s to the list of projects" % proj)
                 projects.append(proj.lower())
+
+    if projects:
+        # data packages may have '/' in the name, which is converted in '_'
+        # in the tarball filename
+        projects = set(p.replace('/', '_') for p in projects)
 
     for filename in files:
         # file names have the format
