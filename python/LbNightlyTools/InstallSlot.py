@@ -464,6 +464,7 @@ class Script(LbUtils.Script.PlainScript):
 
         finally:
             # this is call even after an exception or a return
+            self.log.debug('removing lock file %s', lock_file)
             os.remove(lock_file)
 
         return 0
