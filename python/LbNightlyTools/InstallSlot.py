@@ -94,7 +94,7 @@ def listdir(url):
 
 def getURL(url, dst):
     '''
-    Generic URL retriever with suppotr for 'http:', 'file:' and 'ssh:'
+    Generic URL retriever with support for 'http:', 'file:' and 'ssh:'
     protocols.
     '''
     protocol = _url_protocol(url)
@@ -222,8 +222,15 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
     slot_configuration = None
     # Getting the project metadata
     if metadataurl != None:
-        response = urllib2.urlopen(metadataurl)
-        slot_configuration = json.load(response)
+        try:
+            tmpfd, tmpname = mkstemp()
+            os.close(tmpfd)
+            log.info('retrieving %s', metadataurl)
+            log.debug('using tempfile %s', tmpname)
+            getURL(metadataurl, tmpname)
+            slot_configuration = json.load(open(tmpname))
+        finally:
+            os.remove(tmpname)
 
     # Actually getting the dependencies and merging them with the project list
     if add_dependencies and projects is not None:
