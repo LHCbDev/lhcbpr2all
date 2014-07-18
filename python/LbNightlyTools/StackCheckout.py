@@ -559,8 +559,7 @@ class Script(LbUtils.Script.PlainScript):
         packname = [element.name.replace('/', '_'), element.version]
         if self.options.build_id:
             packname.append(self.options.build_id)
-        if element.isProject:
-            packname.append('src')
+        packname.append('src')
         packname.append('tar.bz2')
         return '.'.join(packname)
 
@@ -665,7 +664,7 @@ class Script(LbUtils.Script.PlainScript):
             contname = [container]
             if self.options.build_id:
                 contname.append(self.options.build_id)
-            contname.append('tar.bz2')
+            contname.append('src.tar.bz2')
             pack([container], join(artifacts_dir, '.'.join(contname)),
                  cwd=build_dir, checksum='md5', dereference=False,
                  exclude=[p.baseDir for p in slot.packages])
