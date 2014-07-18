@@ -541,8 +541,7 @@ def find_path(name, search_path=None):
     If the search path is not specified, the concatenation of CMTPROJECTPATH and
     CMAKE_PREFIX_PATH is used.
 
-    >>> os.environ['CMTPROJECTPATH'] = os.environ['PATH']
-    >>> find_path('true')
+    >>> find_path('true', ['/usr/local/bin', '/usr/bin', '/bin'])
     '/bin/true'
     >>> print find_path('cannot_find_me', [])
     None
