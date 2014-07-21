@@ -24,7 +24,7 @@ __log__ = logging.getLogger(__name__)
 
 def getpack(desc, rootdir='.'):
     '''
-    Checkout the project described by the ProjectDesc 'desc'.
+    Checkout the project described by the Project instance 'desc'.
 
     The optional field 'recursive_head' in the 'checkout_opts' can be used to
     override the default behavior (i.e. use the head of all the packages for
@@ -41,7 +41,8 @@ def getpack(desc, rootdir='.'):
     export = desc.checkout_opts.get('export', False)
 
     prjroot = normpath(join(rootdir, desc.baseDir))
-    if desc.isProject:
+    from LbNightlyTools.Configuration import Project
+    if isinstance(desc, Project):
         # we are checking out a project
         cmd = getpack_cmd + ['-P',
                              '-H' if recursive_head else '-r']

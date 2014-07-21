@@ -13,7 +13,123 @@ Common functions to deal with the configuration files.
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
+import os
 import re
+import types
+import logging
+
+__log__ = logging.getLogger(__name__)
+
+# constants
+GP_EXP = re.compile(r'gaudi_project\(([^)]+)\)')
+HT_EXP = re.compile(r'set\(\s*heptools_version\s+([^)]+)\)')
+
+class Project(object):
+    '''
+    Describe a project to be checked out, built and tested.
+    '''
+    def __init__(self, name, version, **kwargs):
+        '''
+        @param name: name of the project
+        @param version: version of the project as 'vXrY' or 'HEAD', where 'HEAD'
+                        means the head version of all the packages
+        @param overrides: dictionary describing the differences between the
+                          versions of the packages in the requested projects
+                          version and the ones required in the checkout
+        @param checkout: callable that can check out the specified project
+        @param checkout_opts: dictionary with extra options for the checkout
+                              callable
+        @param disabled: if set to True, the project is taken into account only
+                         for the configuration
+        '''
+        self.name = name
+        self.version = 'HEAD' if version.upper() == 'HEAD' else version
+
+        self.disabled = kwargs.get('disabled', {})
+
+        self.overrides = kwargs.get('overrides', {})
+
+        import CheckoutMethods
+        checkout = kwargs.get('checkout', CheckoutMethods.default)
+        if type(checkout) in types.StringTypes:
+            if '.' in checkout:
+                m, f = checkout.rsplit('.', 1)
+                checkout = getattr(__import__(m, fromlist=[f]), f)
+            else:
+                checkout = getattr(CheckoutMethods, checkout)
+        # note that self.checkout is a method
+        self.checkout = checkout
+
+        self.checkout_opts = kwargs.get('checkout_opts', {})
+
+    def build(self, rootdir='.'):
+        '''
+        Build the project.
+        '''
+
+    @property
+    def baseDir(self):
+        '''Name of the project directory (relative to the build directory).'''
+        upcase = self.name.upper()
+        return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
+
+    def getDeps(self, rootdir='.'):
+        '''
+        Return the dependencies of a checked out project using the information
+        retrieved from the configuration files.
+        @return: list of used projects (all converted to lowercase)
+        '''
+        proj_root = os.path.join(rootdir, self.baseDir)
+        deps = []
+
+        # try with CMakeLists.txt first
+        try:
+            cmake = os.path.join(proj_root, 'CMakeLists.txt')
+            # arguments to the gaudi_project call
+            args = GP_EXP.search(open(cmake).read()).group(1).split()
+            if 'USE' in args:
+                # look for the indexes of the range 'USE' ... 'DATA'
+                use_idx = args.index('USE') + 1
+                if 'DATA' in args:
+                    data_idx = args.index('DATA')
+                else:
+                    data_idx = len(args)
+                # extract the odds elements (project names) and convert them
+                # to lower case
+                deps = [p.lower() for p in args[use_idx:data_idx:2]]
+
+            # artificial dependency on LCGCMT, if needed
+            toolchain = os.path.join(proj_root, 'toolchain.cmake')
+            if (os.path.exists(toolchain) and
+                HT_EXP.search(open(toolchain).read())):
+                # we set explicit the version of heptools,
+                # so we depend on LCGCMT
+                deps.append('lcgcmt')
+        except:
+            # try with CMT
+            try:
+                cmt = os.path.join(proj_root, 'cmt', 'project.cmt')
+                # from all the lines in project.cmt that start with 'use',
+                # we extract the second word (project name) and convert it to
+                # lower case
+                deps = [l.split()[1].lower()
+                        for l in [l.strip() for l in open(cmt)]
+                        if l.startswith('use')]
+            except:
+                __log__.warning('cannot discover dependencies for %s', self)
+        return sorted(deps)
+
+    def __str__(self):
+        '''String representation of the project.'''
+        return "{0} {1}".format(self.name, self.version)
+
+
+class Package(object):
+    pass
+
+class Slot(object):
+    pass
+
 
 def extractVersion(tag):
     '''
