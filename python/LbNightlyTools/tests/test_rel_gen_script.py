@@ -261,7 +261,8 @@ def test_packages():
 
         assert output['slot'] == 'lhcb-release'
         assert output['no_patch'] is True
-        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0'}]
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'checkout_opts': {'export': True}}]
 
         assert output == s.genConfig()
 
@@ -276,8 +277,10 @@ def test_packages():
 
         assert output['slot'] == 'lhcb-release'
         assert output['no_patch'] is True
-        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0'},
-                                      {'name': 'Some/OtherPack', 'version': 'v9r99'}]
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'Some/OtherPack', 'version': 'v9r99',
+                                       'checkout_opts': {'export': True}}]
 
         assert output == s.genConfig()
 
@@ -292,8 +295,10 @@ def test_packages():
 
         assert output['slot'] == 'lhcb-release'
         assert output['no_patch'] is True
-        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0'},
-                                      {'name': 'MyPack', 'version': 'v2r3'}]
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'MyPack', 'version': 'v2r3',
+                                       'checkout_opts': {'export': True}}]
 
         assert output == s.genConfig()
 
