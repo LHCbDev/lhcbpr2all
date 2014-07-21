@@ -23,7 +23,8 @@ import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import ensureDirs, pack
+from LbNightlyTools.Utils import ensureDirs, pack, setenv, shallow_copytree
+from LbNightlyTools.Utils import find_path, IgnorePackageVersions
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -45,7 +46,8 @@ class ProjectDesc(object):
                           versions of the packages in the requested projects
                           version and the ones required in the checkout
         @param checkout: callable that can check out the specified project
-        @param checkout_opts: dictionary with extra options for the
+        @param checkout_opts: dictionary with extra options for the checkout
+                              callable
         '''
         self.name = name
         if version.upper() == 'HEAD':
@@ -54,6 +56,8 @@ class ProjectDesc(object):
         self.overrides = kwargs.get('overrides', {})
         self._checkout = kwargs.get('checkout', CheckoutMethods.default)
         self.checkout_opts = kwargs.get('checkout_opts', {})
+        self.isProject = True
+        self.isPackage = False
 
     def checkout(self, rootdir='.'):
         '''
@@ -63,7 +67,7 @@ class ProjectDesc(object):
         self._checkout(self, rootdir=rootdir)
 
     @property
-    def projectDir(self):
+    def baseDir(self):
         '''Name of the project directory (relative to the build directory).'''
         upcase = self.name.upper()
         return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
@@ -74,7 +78,7 @@ class ProjectDesc(object):
         retrieved from the configuration files.
         @return: list of used projects (all converted to lowercase)
         '''
-        proj_root = os.path.join(rootdir, self.projectDir)
+        proj_root = os.path.join(rootdir, self.baseDir)
         deps = []
 
         # try with CMakeLists.txt first
@@ -118,19 +122,124 @@ class ProjectDesc(object):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
 
+
+class PackageDesc(object):
+    '''
+    Describe a package to be checked out.
+    '''
+    def __init__(self, name, version, **kwargs):
+        '''
+        @param name: name of the package
+        @param version: version of the package as 'vXrY' or 'HEAD'
+        @param container: name of the container project ('DBASE' or 'PARAM')
+        @param checkout: callable that can check out the specified project
+        @param checkout_opts: dictionary with extra options for the checkout
+                              callable
+        '''
+        self.name = name
+        if version.lower() == 'head':
+            version = 'head'
+        self.version = version
+        self.container = kwargs.get('container', 'DBASE')
+        self._checkout = kwargs.get('checkout', CheckoutMethods.default)
+        self.checkout_opts = kwargs.get('checkout_opts', {})
+        self.isProject = False
+        self.isPackage = True
+
+    def checkout(self, rootdir='.'):
+        '''
+        Helper function to call the checkout method.
+        '''
+        __log__.info('checking out %s', self)
+        self._checkout(self, rootdir=rootdir)
+
+    @property
+    def baseDir(self):
+        '''Name of the package directory (relative to the build directory).'''
+        return os.path.join(self.container, self.name, self.version)
+
+    def build(self, rootdir='.'):
+        '''
+        Build the package and return the return code of the build process.
+        '''
+        from subprocess import Popen
+        base = os.path.join(rootdir, self.baseDir)
+        if os.path.exists(os.path.join(base, 'Makefile')):
+            __log__.info('building %s (make)', self)
+            return Popen(['make'], cwd=base).wait()
+        elif os.path.exists(os.path.join(base, 'cmt', 'requirements')):
+            __log__.info('building %s (cmt make)', self)
+            # CMT is very sensitive to these variables (better to unset them)
+            env = dict((key, value) for key, value in os.environ.items()
+                        if key not in ('PWD', 'CWD', 'CMTSTRUCTURINGSTYLE'))
+            base = os.path.join(base, 'cmt')
+            Popen(['cmt', 'config'], cwd=base, env=env).wait()
+            return Popen(['cmt', 'make'], cwd=base, env=env).wait()
+        __log__.info('%s does not require build', self)
+        return 0
+
+    def getVersionLinks(self, rootdir='.'):
+        '''
+        Return a list of version aliases for the current package (only if the
+        requested version is head).
+        '''
+        if self.version != 'head':
+            return []
+        base = os.path.join(rootdir, self.baseDir)
+        aliases = ['v999r999']
+        print os.path.exists(os.path.join(base, 'cmt', 'requirements'))
+        if os.path.exists(os.path.join(base, 'cmt', 'requirements')):
+            for l in open(os.path.join(base, 'cmt', 'requirements')):
+                l = l.strip()
+                if l.startswith('version'):
+                    version = l.split()[1]
+                    aliases.append(version[:version.rfind('r')] + 'r999')
+                    break
+        return aliases
+
+    def __str__(self):
+        '''String representation of the project.'''
+        return "{0} {1}".format(self.name, self.version)
+
+
 class StackDesc(object):
     '''
     Class describing a software stack.
     '''
-    def __init__(self, projects=None, name=None):
+    def __init__(self, projects=None, packages=None, name=None, env=None):
         self.name = name
         self.projects = projects or []
+        self.packages = packages or []
+        self.env = env or []
 
     def checkout(self, rootdir='.', requested=None):
         '''
         Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
+        if self.packages:
+            for pkg in self.packages:
+                pkg.checkout(rootdir)
+                if pkg.build(rootdir) != 0:
+                    __log__.warning('%s build failed', pkg)
+                for link in pkg.getVersionLinks(rootdir):
+                    __log__.debug('creating symlink %s', link)
+                    os.symlink(pkg.version,
+                               os.path.normpath(os.path.join(rootdir,
+                                                             pkg.baseDir,
+                                                             os.pardir,
+                                                             link)))
+            __log__.debug('create shallow clones of DBASE and PARAM')
+            # clone the container projects
+            ignore = IgnorePackageVersions(self.packages)
+            for container in ('DBASE', 'PARAM'):
+                if not os.path.exists(os.path.join(rootdir, container)):
+                    continue
+                path = find_path(container)
+                if path:
+                    shallow_copytree(path, os.path.join(rootdir, container),
+                                     ignore)
+
         for proj in self.projects:
             # Consider only requested projects (if there was a selection)
             if requested and proj.name.lower() not in requested:
@@ -172,7 +281,7 @@ class StackDesc(object):
             '''
             Fix the 'CMakeLists.txt'.
             '''
-            cmakelists = join(proj.projectDir, 'CMakeLists.txt')
+            cmakelists = join(proj.baseDir, 'CMakeLists.txt')
 
             if exists(join(rootdir, cmakelists)):
                 __log__.info('patching %s', cmakelists)
@@ -219,7 +328,7 @@ class StackDesc(object):
             '''
             Fix 'toolchain.cmake'.
             '''
-            toolchain = join(proj.projectDir, 'toolchain.cmake')
+            toolchain = join(proj.baseDir, 'toolchain.cmake')
 
             if exists(join(rootdir, toolchain)):
                 __log__.info('patching %s', toolchain)
@@ -260,7 +369,7 @@ class StackDesc(object):
             Fix the CMT configuration of a project, if it exists, and write
             the changes in 'patchfile'.
             '''
-            project_cmt = join(proj.projectDir, 'cmt', 'project.cmt')
+            project_cmt = join(proj.baseDir, 'cmt', 'project.cmt')
 
             if exists(join(rootdir, project_cmt)):
                 __log__.info('patching %s', project_cmt)
@@ -288,10 +397,10 @@ class StackDesc(object):
                 write_patch(data, newdata, project_cmt)
 
             # find the container package
-            requirements = join(proj.projectDir, proj.name + 'Release',
+            requirements = join(proj.baseDir, proj.name + 'Release',
                                 'cmt', 'requirements')
             if not exists(join(rootdir, requirements)):
-                requirements = join(proj.projectDir, proj.name + 'Sys',
+                requirements = join(proj.baseDir, proj.name + 'Sys',
                                     'cmt', 'requirements')
 
             if exists(join(rootdir, requirements)):
@@ -349,16 +458,49 @@ class StackDesc(object):
                             if n in names]
         return deps
 
+    def package(self, name):
+        '''
+        Return the package with the given name.
+        '''
+        name = name.lower()
+        for p in self.packages:
+            if p.name.lower() == name:
+                return p
+        return None
+
+    def project(self, name):
+        '''
+        Return the project with the given name.
+        '''
+        name = name.lower()
+        for p in self.projects:
+            if p.name.lower() == name:
+                return p
+        return None
+
+
 def parseConfigFile(path):
     '''
     Load the slot configuration file and translate it in a StackDesc instance.
     '''
     data = Configuration.load(path)
+    packages = []
+    for pkg in data.get(u'packages', []):
+        checkout = pkg.get(u'checkout', 'default')
+        if '.' in checkout:
+            m, f = checkout.rsplit('.', 1)
+            checkout = getattr(__import__(m, fromlist=[f]), f)
+        else:
+            checkout = getattr(CheckoutMethods, checkout)
+        packages.append(PackageDesc(pkg[u'name'], pkg[u'version'],
+                                    checkout=checkout,
+                                    checkout_opts=pkg.get(u'checkout_opts',
+                                                           {})))
     projects = []
     old_checkout_names = {'defaultCheckout': 'default',
                           'gitCheckout': 'git',
                           'noCheckout': 'ignore'}
-    for proj in data[u'projects']:
+    for proj in data.get(u'projects', []):
         checkout = proj.get(u'checkout', 'default')
         # add backward compatibility check for the checkout functions
         if checkout in old_checkout_names:
@@ -376,7 +518,9 @@ def parseConfigFile(path):
                                     checkout=checkout,
                                     checkout_opts=proj.get(u'checkout_opts',
                                                            {})))
-    return StackDesc(projects=projects, name=data.get(u'slot', None))
+    return StackDesc(projects=projects, packages=packages,
+                     name=data.get(u'slot', None),
+                     env=data.get(u'env', []))
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -408,11 +552,11 @@ class Script(LbUtils.Script.PlainScript):
         addBasicOptions(self.parser)
         addDashboardOptions(self.parser)
 
-    def packname(self, proj):
+    def packname(self, element):
         '''
         Return the filename of the archive (package) of the given project.
         '''
-        packname = [proj.name, proj.version]
+        packname = [element.name.replace('/', '_'), element.version]
         if self.options.build_id:
             packname.append(self.options.build_id)
         packname.append('src')
@@ -431,6 +575,9 @@ class Script(LbUtils.Script.PlainScript):
         opts = self.options
 
         slot = parseConfigFile(self.args[0])
+
+        # prepare special environment, if needed
+        setenv(slot.env)
 
         from datetime import datetime
 
@@ -486,18 +633,41 @@ class Script(LbUtils.Script.PlainScript):
         for p in cfg['projects']:
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            deps.get(p['name'], [])))
+        # add dependencies of data packages on the corresponding container
+        containers = set()
+        for p in cfg['packages']:
+            container = slot.package(p['name']).container
+            containers.add(container)
+            p['dependencies'] = sorted(set(p.get('dependencies', []) +
+                                           [container]))
+        for p in containers:
+            # Note that we add the containers only to the configuration and not
+            # to the slot object.
+            if slot.project(p) is None:
+                cfg['projects'].append({'name': p,
+                                        'version': 'None',
+                                        'checkout': 'ignore'})
 
-        for proj in slot.projects:
+        for element in slot.projects + slot.packages:
             # ignore missing directories
             # (the project may not have been checked out)
-            if not os.path.exists(join(build_dir, proj.projectDir)):
-                self.log.warning('no sources for %s, skip packing', proj)
+            if not os.path.exists(join(build_dir, element.baseDir)):
+                self.log.warning('no sources for %s, skip packing', element)
                 continue
 
-            self.log.info('packing %s %s...', proj.name, proj.version)
+            self.log.info('packing %s %s...', element.name, element.version)
 
-            pack([proj.projectDir], join(artifacts_dir, self.packname(proj)),
+            pack([element.baseDir], join(artifacts_dir, self.packname(element)),
                  cwd=build_dir, checksum='md5')
+        for container in containers:
+            self.log.info('packing %s (links)...', container)
+            contname = [container]
+            if self.options.build_id:
+                contname.append(self.options.build_id)
+            contname.append('src.tar.bz2')
+            pack([container], join(artifacts_dir, '.'.join(contname)),
+                 cwd=build_dir, checksum='md5', dereference=False,
+                 exclude=[p.baseDir for p in slot.packages])
 
         # Save a copy as metadata for tools like lbn-install
         with codecs.open(join(artifacts_dir, 'slot-config.json'),

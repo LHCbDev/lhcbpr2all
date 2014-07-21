@@ -25,7 +25,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack
+from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
 from LbNightlyTools.Utils import Dashboard
 
 from string import Template
@@ -178,22 +178,6 @@ def listAllFiles(path, excl=None):
             if not excl(f):
                 yield join(root, f)
         dirs[:] = [d for d in dirs if not excl(d)]
-
-def setenv(definitions):
-    '''
-    Modify the environment from a list of definitions of the type 'name=value',
-    expanding the variables in 'value'.
-
-    >>> setenv(['foo=bar'])
-    >>> os.environ['foo']
-    'bar'
-    >>> setenv(['baz=some_${foo}'])
-    >>> os.environ['baz']
-    'some_bar'
-    '''
-    for item in definitions:
-        name, value = item.split('=', 1)
-        os.environ[name] = os.path.expandvars(value)
 
 def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     '''
@@ -436,7 +420,8 @@ class Script(LbUtils.Script.PlainScript):
 
         self.projects = OrderedDict([(p.name, p)
                                      for p in map(ProjDesc,
-                                                  self.config[u'projects'])])
+                                                  self.config.get(u'projects',
+                                                                  []))])
 
         deps = OrderedDict([(p.name, p.deps) for p in self.projects.values()])
         self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]

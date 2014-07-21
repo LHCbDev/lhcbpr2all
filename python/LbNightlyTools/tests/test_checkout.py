@@ -16,7 +16,7 @@ import shutil
 import nose
 from subprocess import Popen, PIPE
 from xml.etree import ElementTree as ET
-from os.path import normpath, join
+from os.path import normpath, join, exists, islink, isdir
 from LbNightlyTools.tests.utils import *
 
 
@@ -54,7 +54,7 @@ def test_ProjectDesc():
     assert p.version == 'v23r5'
     assert p.overrides == {}
     assert p._checkout == CheckoutMethods.default
-    assert p.projectDir == 'GAUDI/GAUDI_v23r5'
+    assert p.baseDir == 'GAUDI/GAUDI_v23r5'
     assert str(p) == 'Gaudi v23r5'
 
     p = ProjectDesc('Gaudi', 'head')
@@ -62,7 +62,7 @@ def test_ProjectDesc():
     assert p.version == 'HEAD'
     assert p.overrides == {}
     assert p._checkout == CheckoutMethods.default
-    assert p.projectDir == 'GAUDI/GAUDI_HEAD'
+    assert p.baseDir == 'GAUDI/GAUDI_HEAD'
     assert str(p) == 'Gaudi HEAD'
 
     p = ProjectDesc('Gaudi', 'v23r5', checkout=mockCheckout)
@@ -182,7 +182,6 @@ def test_checkout():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -288,7 +287,6 @@ def test_checkout_export():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -343,7 +341,6 @@ def test_getpack_recursive_head():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    from os.path import exists
     ProjectDesc = StackCheckout.ProjectDesc
 
     tmpdir = tempfile.mkdtemp()
@@ -476,3 +473,62 @@ def test_collectDeps():
     assert filter(re.compile(r'cannot discover dependencies for BadCMake').match, warnings)
     assert filter(re.compile(r'cannot discover dependencies for Missing').match, warnings)
     assert not filter(re.compile(r'cannot discover dependencies for Gaudi').match, warnings)
+
+def test_checkout_datapkg():
+    '''checkout a single data package (getpack)'''
+    if not which('getpack'):
+        raise nose.SkipTest
+
+    PackageDesc = StackCheckout.PackageDesc
+
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    with TemporaryDir(chdir=True):
+        os.makedirs('build')
+        pkg = PackageDesc(name='AppConfig', version='v3r198')
+        pkg.checkout('build')
+
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
+
+def test_stack_checkout_datapkg():
+    '''checkout a data package within a slot'''
+    if not which('getpack'):
+        raise nose.SkipTest
+
+    PackageDesc = StackCheckout.PackageDesc
+
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    with TemporaryDir(chdir=True):
+        os.makedirs('build')
+        pkgs = [PackageDesc(name='AppConfig', version='v3r198'),
+                PackageDesc(name='Det/SQLDDDB', version='HEAD')]
+        slot = StackCheckout.StackDesc(packages=pkgs)
+        slot.checkout('build')
+
+        for pkg in pkgs:
+            assert exists(join('build', pkg.baseDir)), 'missing %s' % pkg.baseDir
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+        assert not islink(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+        # these are signatures of a build
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt', 'Makefile'))
+        assert isdir(join('build', 'DBASE', 'AppConfig', 'v3r198', os.environ['CMTCONFIG']))
+
+        assert islink(join('build', 'DBASE', 'AppConfig', 'v3r196'))
+
+        assert islink(join('build', 'DBASE', 'Gen'))
+
+        assert not islink(join('build', 'DBASE', 'Det'))
+        assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB'))
+        assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head'))
+        assert exists(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head', 'cmt'))
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r10'))
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r999'))
+        assert os.readlink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r999')) == 'head'
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v999r999'))
+        assert os.readlink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v999r999')) == 'head'
+
+        # we do not create PARAM if not requested
+        assert not exists(join('build', 'PARAM'))

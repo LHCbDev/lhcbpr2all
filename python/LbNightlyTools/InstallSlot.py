@@ -94,7 +94,7 @@ def listdir(url):
 
 def getURL(url, dst):
     '''
-    Generic URL retriever with suppotr for 'http:', 'file:' and 'ssh:'
+    Generic URL retriever with support for 'http:', 'file:' and 'ssh:'
     protocols.
     '''
     protocol = _url_protocol(url)
@@ -172,7 +172,8 @@ def getDependencies(projects, slot_configuration):
         # First check the configuration
         proj_lower = proj.lower()
         pdata = None
-        for cp in slot_configuration['projects']:
+        for cp in (slot_configuration.get('projects', []) +
+                   slot_configuration.get('packages', [])) :
             # Comparing lower case to be sure...
             if cp['name'].lower() == proj_lower:
                 pdata = cp
@@ -222,8 +223,15 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
     slot_configuration = None
     # Getting the project metadata
     if metadataurl != None:
-        response = urllib2.urlopen(metadataurl)
-        slot_configuration = json.load(response)
+        try:
+            tmpfd, tmpname = mkstemp()
+            os.close(tmpfd)
+            log.info('retrieving %s', metadataurl)
+            log.debug('using tempfile %s', tmpname)
+            getURL(metadataurl, tmpname)
+            slot_configuration = json.load(open(tmpname))
+        finally:
+            os.remove(tmpname)
 
     # Actually getting the dependencies and merging them with the project list
     if add_dependencies and projects is not None:
@@ -232,6 +240,11 @@ def requiredPackages(files, projects=None, platforms=None, skip=None,
             if proj not in projects:
                 log.debug("Adding %s to the list of projects" % proj)
                 projects.append(proj.lower())
+
+    if projects:
+        # data packages may have '/' in the name, which is converted in '_'
+        # in the tarball filename
+        projects = set(p.replace('/', '_') for p in projects)
 
     for filename in files:
         # file names have the format
@@ -457,6 +470,7 @@ class Script(LbUtils.Script.PlainScript):
 
         finally:
             # this is call even after an exception or a return
+            self.log.debug('removing lock file %s', lock_file)
             os.remove(lock_file)
 
         return 0

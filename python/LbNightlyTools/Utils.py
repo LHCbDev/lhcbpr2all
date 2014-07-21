@@ -437,22 +437,33 @@ class JenkinsTest(object):
         return ".".join([ "%s=%s" % (k, getattr(self, k))
                          for k in JenkinsTest.JOB_ALLATTRIBUTES])
 
-def _packcmd(srcs, dest, cwd='.'):
+def _packcmd(srcs, dest, cwd='.', dereference=True, exclude=None):
     '''
     Helper function to call the packing command.
     '''
     from subprocess import call
-    return call(['tar', '--create', '--dereference', '--bzip2',
-                 '--file', dest] + srcs, cwd=cwd)
-def _packtestcmd(srcs_, dest, cwd='.'):
+    cmd = ['tar', '--create']
+    if dereference:
+        cmd.append('--dereference')
+    if exclude:
+        cmd.extend(['--exclude=%s' % x for x in exclude])
+    cmd.extend(['--bzip2', '--file', dest])
+    cmd.extend(srcs)
+    return call(cmd, cwd=cwd)
+def _packtestcmd(srcs_, dest, cwd='.', dereference=True, exclude=None):
     '''
     Helper function to call the package test command.
     '''
     from subprocess import call
-    return call(['tar', '--compare', '--dereference', '--bzip2',
-                 '--file', dest], cwd=cwd)
+    cmd = ['tar', '--compare']
+    if dereference:
+        cmd.append('--dereference')
+    if exclude:
+        cmd.extend(['--exclude=%s' % x for x in exclude])
+    cmd.extend(['--bzip2', '--file', dest])
+    return call(cmd, cwd=cwd)
 
-def pack(srcs, dest, cwd='.', checksum=None):
+def pack(srcs, dest, cwd='.', checksum=None, dereference=True, exclude=None):
     '''
     Package the directory 'src' into the package (tarball) 'dest' working from
     the directory 'cwd'.
@@ -469,12 +480,12 @@ def pack(srcs, dest, cwd='.', checksum=None):
     while (not ok) and (retry >= 0):
         retry -= 1
         log.debug('packing %s as %s (from %s)', srcs, dest, cwd)
-        if _packcmd(srcs, dest, cwd) != 0:
+        if _packcmd(srcs, dest, cwd, dereference, exclude) != 0:
             log.warning('failed to produce %s', dest)
             continue
 
         log.debug('checking %s', dest)
-        if _packtestcmd(srcs, dest, cwd) != 0:
+        if _packtestcmd(srcs, dest, cwd, dereference, exclude) != 0:
             log.warning('invalid package %s', dest)
             continue
 
@@ -497,3 +508,89 @@ def pack(srcs, dest, cwd='.', checksum=None):
         log.error("failed to pack %s, I'm ignoring it", srcs)
         if os.path.exists(os.path.join(cwd, dest)):
             os.remove(os.path.join(cwd, dest))
+
+def shallow_copytree(src, dst, ignore=None):
+    '''Create a shallow (made of symlinks) copy of a directory tree.
+
+    The destination directory might exist and in that case it will be
+    recursively filled with links pointing to the corresponding entries inside
+    the source directory.
+    If the destination does not exist, then shallow_copytree is equivalent to
+    os.symlink.
+
+    The optional argument `ignore` is a callable with the same semantics of
+    the equivalent argument of shutil.copytree:
+
+       callable(src, names) -> ignored_names
+
+    '''
+    src = os.path.realpath(src)
+    if not os.path.exists(dst):
+        os.symlink(src, dst)
+    elif os.path.isdir(src):
+        names = [name for name in os.listdir(src) if name not in ('.', '..')]
+        ignored_names = set() if ignore is None else set(ignore(src, names))
+        for name in set(names) - ignored_names:
+            shallow_copytree(os.path.join(src, name), os.path.join(dst, name),
+                             ignore)
+
+def find_path(name, search_path=None):
+    '''
+    Look for a file or directory in a search path.
+
+    If the search path is not specified, the concatenation of CMTPROJECTPATH and
+    CMAKE_PREFIX_PATH is used.
+
+    >>> find_path('true', ['/usr/local/bin', '/usr/bin', '/bin'])
+    '/bin/true'
+    >>> print find_path('cannot_find_me', [])
+    None
+    '''
+    from os import environ, pathsep
+    from os.path import join, exists
+    if search_path is None:
+        search_path = (environ.get('CMTPROJECTPATH', '').split(pathsep) +
+                       environ.get('CMAKE_PREFIX_PATH', '').split(pathsep))
+
+    try:
+        return (join(path, name)
+                for path in search_path
+                if exists(join(path, name))).next()
+    except StopIteration:
+        logging.warning('%s not found in the search path', name)
+    return None
+
+class IgnorePackageVersions(object):
+    '''
+    Helper class which instances can be used as ignore argument of
+    shallow_copytree to ignore versions of packages when cloning a container
+    project.
+    '''
+    def __init__(self, packages):
+        '''
+        @param packages: list of objects describing packages, which must have a
+                         property 'name' and a property 'version'
+        '''
+        self._exclusions = dict((os.path.basename(pack.name), [pack.version])
+                                for pack in packages)
+    def __call__(self, src, names):
+        '''
+        Implements the semantic of the 'ignore' argument of shallow_copytree.
+        '''
+        return self._exclusions.get(os.path.basename(src), [])
+
+def setenv(definitions):
+    '''
+    Modify the environment from a list of definitions of the type 'name=value',
+    expanding the variables in 'value'.
+
+    >>> setenv(['foo=bar'])
+    >>> os.environ['foo']
+    'bar'
+    >>> setenv(['baz=some_${foo}'])
+    >>> os.environ['baz']
+    'some_bar'
+    '''
+    for item in definitions:
+        name, value = item.split('=', 1)
+        os.environ[name] = os.path.expandvars(value)

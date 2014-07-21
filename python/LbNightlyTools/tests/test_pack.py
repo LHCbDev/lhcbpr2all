@@ -108,7 +108,7 @@ def custom_packtestcmd(newcmd):
     yield
     Utils._packtestcmd = old
 
-def failer_cmd(src, dest, cwd='.'):
+def failer_cmd(src, dest, cwd='.', dereference=True, exclude=None):
     return 1
 
 def test_failing_packer():
