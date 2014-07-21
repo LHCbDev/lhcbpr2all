@@ -20,9 +20,9 @@ fi
 
 if [ "${slot}" = "lhcb-release" ] ; then
   if [ -n "${platforms}" ] ; then
-    lbn-gen-release-config --cmt --platforms="${platforms}" -o configs/${slot}.json ${projects_list}
+    lbn-gen-release-config --cmt --platforms="${platforms}" -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
   else
-    lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
+    lbn-gen-release-config --cmt -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
   fi
 fi
 

@@ -232,3 +232,70 @@ def test_platforms():
     finally:
         os.remove(tmpname)
 
+def test_packages():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               '',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == []
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'MyPack v1r0',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0'}]
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'MyPack v1r0 Some/OtherPack v9r99',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0'},
+                                      {'name': 'Some/OtherPack', 'version': 'v9r99'}]
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'MyPack v1r0 MyPack v2r3 MyPack v1r0 ',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0'},
+                                      {'name': 'MyPack', 'version': 'v2r3'}]
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)

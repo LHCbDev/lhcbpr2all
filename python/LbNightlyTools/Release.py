@@ -85,10 +85,14 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         self.parser.add_option('--platforms',
                                help='space or comma -separated list of '
                                     'platforms required [default: %default]')
+        self.parser.add_option('--packages',
+                               help='space-separated list of data packages, '
+                                    'with versions, to add')
         self.parser.set_defaults(slot='lhcb-release',
                                  cmt=False,
                                  output='-',
-                                 platforms=DEFAULT_PLATFORMS)
+                                 platforms=DEFAULT_PLATFORMS,
+                                 packages='')
 
     def genConfig(self):
         '''
@@ -116,6 +120,14 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
 
             projects.append(project)
 
+        packages = []
+        if self.options.packages:
+            packages_opt = self.options.packages.split()
+            for pack, vers in zip(packages_opt[::2], packages_opt[1::2]):
+                package = {'name': pack, 'version': vers}
+                if package not in packages: # ignore duplicates
+                    packages.append(package)
+
         default_platforms = (self.options.platforms.replace(',', ' ')
                              .strip().split())
 
@@ -123,6 +135,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         config = {'slot': self.options.slot,
                   'description': 'Slot used for releasing projects.',
                   'projects': projects,
+                  'packages': packages,
                   'USE_CMT': self.options.cmt,
                   'no_patch': True,
                   'error_exceptions': ERR_EXCEPT,
