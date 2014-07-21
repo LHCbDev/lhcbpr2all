@@ -43,6 +43,33 @@ def test_retry_call():
     except RuntimeError, x:
         assert str(x) == "the command ['false'] failed 3 times"
 
+
+def get_git_branch(path):
+    '''
+    Return the branch currently checked out in a git repository.
+
+    @param path: the path to a directory inside a git repository
+    '''
+    git_version = Popen(['git', '--version'], stdout=PIPE).communicate()[0]
+    # convert the version number into a tuple
+    git_version = map(int, git_version.split()[2].split('.'))
+    if git_version >= (1, 9, 0): # I do not know when the feature was introduced
+        p = Popen(['git', 'status', '--porcelain', '--branch'],
+                  stdout=PIPE, cwd=path)
+        status = p.communicate()[0].splitlines()
+        if status and status[0].startswith('##'):
+            branch = status[0].split()[1]
+            if branch != 'HEAD':
+                return branch
+    else:
+        p = Popen(['git', 'branch'], stdout=PIPE, cwd=path)
+        branches = p.communicate()[0].splitlines()
+        for branch in branches:
+            if branch.startswith('*'):
+                if branch != '* (no branch)':
+                    return branch.split()[1]
+    return None # no branch (detached HEAD)
+
 def test_Project():
     'StackCheckout.Project'
     Project = StackCheckout.Project
@@ -231,11 +258,7 @@ def test_checkout():
                          ('cmt', 'project.cmt'),
                          ('GaudiRelease', 'cmt', 'requirements')]])
         #assert 'v23r6' in open(join(tmpdir, 'GAUDI', 'GAUDI_v23r6', 'CMakeLists.txt')).read()
-        p = Popen(['git', 'status', '--porcelain', '--branch'],
-                  stdout=PIPE,
-                  cwd=join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
-        status = p.communicate()[0].splitlines()
-        assert status[0].startswith('## HEAD (no branch)'), status
+        assert get_git_branch(join(tmpdir, 'GAUDI', 'GAUDI_v23r6')) is None
 
 
         CheckoutMethods.git(Project('Gaudi', 'HEAD',
@@ -246,11 +269,7 @@ def test_checkout():
                          ('CMakeLists.txt',),
                          ('cmt', 'project.cmt'),
                          ('GaudiRelease', 'cmt', 'requirements')]])
-        p = Popen(['git', 'status', '--porcelain', '--branch'],
-                  stdout=PIPE,
-                  cwd=join(tmpdir, 'GAUDI', 'GAUDI_HEAD'))
-        status = p.communicate()[0].splitlines()
-        assert status[0].startswith('## master'), status
+        assert get_git_branch(join(tmpdir, 'GAUDI', 'GAUDI_HEAD')) == 'master'
 
 
         shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
