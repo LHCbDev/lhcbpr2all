@@ -22,6 +22,7 @@ from subprocess import call
 from tempfile import mkdtemp
 from os.path import normpath, join, isfile
 from LbNightlyTools.Utils import ensureDirs
+from LbNightlyTools.tests.utils import TemporaryDir
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
@@ -103,3 +104,9 @@ def test_lbcore_192():
     finally:
         os.chdir(oldcwd)
         shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_empty_conf():
+    with TemporaryDir(chdir=True):
+        with open('test.json', 'w') as cfg:
+            cfg.write('{}')
+        StackCheckout.Script().run(['test.json'])

@@ -630,7 +630,7 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info('not patching the sources')
 
         deps = slot.collectDeps(build_dir)
-        for p in cfg['projects']:
+        for p in cfg.get('projects', []):
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            deps.get(p['name'], [])))
         # add dependencies of data packages on the corresponding container
