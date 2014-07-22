@@ -635,7 +635,7 @@ class Script(LbUtils.Script.PlainScript):
                                            deps.get(p['name'], [])))
         # add dependencies of data packages on the corresponding container
         containers = set()
-        for p in cfg['packages']:
+        for p in cfg.get('packages', []):
             container = slot.package(p['name']).container
             containers.add(container)
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
