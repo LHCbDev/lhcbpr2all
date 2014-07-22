@@ -17,6 +17,7 @@ from LbNightlyTools import StackCheckout
 import os
 import shutil
 import re
+import json
 
 from subprocess import call
 from tempfile import mkdtemp
@@ -109,4 +110,27 @@ def test_empty_conf():
     with TemporaryDir(chdir=True):
         with open('test.json', 'w') as cfg:
             cfg.write('{}')
-        StackCheckout.Script().run(['test.json'])
+        retval = StackCheckout.Script().run(['test.json'])
+        assert retval == 0
+
+def test_only_projects_conf():
+    with TemporaryDir(chdir=True):
+        with open('test.json', 'w') as cfg:
+            conf_data = {'projects': [{'name': 'Gaudi',
+                                       'version': 'HEAD',
+                                       'checkout': 'git',
+                                       'checkout_opts':
+                                        {'url': 'http://git.cern.ch/pub/gaudi'}}
+                                      ]}
+            cfg.write(json.dumps(conf_data))
+        retval = StackCheckout.Script().run(['test.json'])
+        assert retval == 0
+
+def test_only_packages_conf():
+    with TemporaryDir(chdir=True):
+        with open('test.json', 'w') as cfg:
+            conf_data = {'packages': [{'name': 'WG/CharmConfig',
+                                       'version': 'head'}]}
+            cfg.write(json.dumps(conf_data))
+        retval = StackCheckout.Script().run(['test.json'])
+        assert retval == 0

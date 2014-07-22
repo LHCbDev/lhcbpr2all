@@ -640,13 +640,20 @@ class Script(LbUtils.Script.PlainScript):
             containers.add(container)
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            [container]))
-        for p in containers:
+
+        # ensure that we have a project list in the configuration if we need
+        # to add the containers
+        if containers and 'projects' not in cfg:
+            cfg['projects'] = []
+        # I believe it's nicer if the container projects are at the top
+        # of the list in alphabetical order
+        for p in sorted(containers, reverse=True):
             # Note that we add the containers only to the configuration and not
             # to the slot object.
             if slot.project(p) is None:
-                cfg['projects'].append({'name': p,
-                                        'version': 'None',
-                                        'checkout': 'ignore'})
+                cfg['projects'].insert(0,{'name': p,
+                                          'version': 'None',
+                                          'checkout': 'ignore'})
 
         for element in slot.projects + slot.packages:
             # ignore missing directories
