@@ -153,8 +153,7 @@ Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_
 
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
-
-        """).substitute(buildarea = self._buildarea,
+""").substitute(buildarea = self._buildarea,
                         project = self._project,
                         projectUp = self._project.upper(),
                         version = self._version,
