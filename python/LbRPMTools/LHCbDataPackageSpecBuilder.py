@@ -27,7 +27,7 @@ from LbLegacy.Utils import getStatusOutput
 from LbUtils.Temporary import TempDir
 from LbUtils.CMT.Common import CMTCommand as CMT
 
-tmpdir = TempDir(prefix="LHCbExternalsRpmSpec")
+tmpdir = TempDir(prefix="LHCbDatapkgRpmSpec")
 
 __log__ = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ def parseVersion(version):
     return (maj_version, min_version, patch_version)
 
 #
-# Spec for binary RPMs
+# Spec for data package RPM
 #
 ###############################################################################
 class LHCbDataPackageRpmSpec(LHCbBaseRpmSpec):

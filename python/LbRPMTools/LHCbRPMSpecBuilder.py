@@ -23,6 +23,8 @@ from string import Template
 
 __log__ = logging.getLogger(__name__)
 
+PREFIX="/opt/LHCbSoft"
+
 class RpmDirConfig:
     ''' Placeholder for directory config '''
     def __init__(self, buildarea, buildname):
@@ -576,6 +578,205 @@ sed -e '2,$'"s|^|${REALPATH}/%{projectUp}/%{projectUp}_%{lbversion}/|" ${PREFIX}
 
 
 #
+# Spec for Datapackage RPMs
+#
+###############################################################################
+class LHCbDatapkgRpmSpec(LHCbBaseRpmSpec):
+    """ Class representing the Spec file for an RPM containing the shared files for the project """
+
+    def __init__(self, project, fulldatapkg, version, sharedTar, buildarea, release = "1"):
+        """ Constructor  """
+        super(LHCbDatapkgRpmSpec, self).__init__(project, version)
+        __log__.debug("Creating Shared RPM for %s/%s" % (project, version))
+        self._project = project
+        self._fulldatapkg = fulldatapkg
+        if "/" in fulldatapkg:
+            self._package = fulldatapkg.split("/")[-1]
+        else:
+            self._package = fulldatapkg
+        self._normfulldatapkg =  fulldatapkg.replace("/", "_")
+        self._fullname = "_".join([self._project.upper(),  self._normfulldatapkg])
+        self._versiondir = os.path.join(self._project.upper(), self._fulldatapkg)
+        self._version = version
+        self._sharedTar = sharedTar
+        self._buildarea = buildarea
+        (self._lhcb_maj_version, self._lhcb_min_version, self._lhcb_patch_version) = parseVersion(version)
+        self._lhcb_release_version = release
+        self._arch = "noarch"
+
+    def getArch(self):
+        ''' Return the architecture, always noarch for our packages'''
+        return self._arch
+
+    def getRPMName(self):
+        ''' Return the architecture, always noarch for our packages'''
+        projname =  "_".join([self._project.upper(), self._normfulldatapkg])
+        projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
+                                              self._lhcb_min_version,
+                                              self._lhcb_patch_version]])
+        full = "-".join([projname, projver, str(self._lhcb_release_version)])
+        final = ".".join([full, self._arch, "rpm"])
+        return final
+
+    def _createHeader(self):
+        '''
+        Prepare the RPM header
+        '''
+        header = Template("""
+%define lhcb_maj_version ${lhcb_maj_version}
+%define lhcb_min_version ${lhcb_min_version}
+%define lhcb_patch_version ${lhcb_patch_version}
+%define lhcb_release_version ${lhcb_release_version}
+%define buildarea ${buildarea}
+%define project ${project}
+%define projectUp ${projectUp}
+%define normfulldatapkg ${normfulldatapkg}
+%define fulldatapkg ${fulldatapkg}
+%define fullname ${fullname}
+%define package ${package}
+%define lbversion ${version}
+%define _postshell /bin/bash
+%define prefix ${prefix}
+%define versiondir ${versiondir}
+
+%global __os_install_post /usr/lib/rpm/check-buildroot
+
+%define _topdir %{buildarea}/rpmbuild
+%define tmpdir %{buildarea}/tmpbuild
+%define _tmppath %{buildarea}/tmp
+
+Name: %{fullname}
+Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Release: %{lhcb_release_version}
+Vendor: LHCb
+Summary: %{project}
+License: GPL
+Group: LHCb
+BuildRoot: %{tmpdir}/%{name}-buildroot
+BuildArch: noarch
+AutoReqProv: no
+Prefix: %{prefix}
+Provides: /bin/sh
+Provides: /bin/bash
+
+Provides: %{package} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Provides: %{fullname} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Provides: %{package}_v%{lhcb_maj_version} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Provides: %{fullname}_v%{lhcb_maj_version} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Requires: %{projectUp}_common
+Requires(post): LBSCRIPTS
+Requires(post): COMPAT
+        \n""").substitute(buildarea = self._buildarea,
+                          project = self._project,
+                          projectUp = self._project.upper(),
+                          normfulldatapkg = self._normfulldatapkg,
+                          fulldatapkg = self._fulldatapkg,
+                          version = self._version,
+                          lhcb_maj_version = self._lhcb_maj_version,
+                          lhcb_min_version = self._lhcb_min_version,
+                          lhcb_patch_version = self._lhcb_patch_version,
+                          lhcb_release_version = self._lhcb_release_version,
+                          fullname = self._fullname,
+                          versiondir = self._versiondir,
+                          package = self._package,
+                          prefix = PREFIX
+                          )
+
+        return header
+
+    def _createRequires(self):
+        '''
+        Prepare the Requires section of the RPM
+        '''
+        return ""
+
+    def _createDescription(self):
+        '''
+        Prepare the Requires section of the RPM
+        '''
+        tmp  = "%description\n"
+        tmp += "%{fullname} %{version}\n\n"
+        return tmp
+
+    def _createInstall(self):
+        '''
+        Prepare the Install section of the RPM
+        '''
+        spec = "%install\n"
+        spec += "mkdir -p ${RPM_BUILD_ROOT}%{prefix}/lhcb/%{versiondir}\n"
+        spec += "cd  ${RPM_BUILD_ROOT}%%{prefix}/lhcb && tar jxf %s" % self._sharedTar
+        spec += "\n\n"
+        return spec
+
+    def _createTrailer(self):
+        '''
+        Prepare the RPM header
+        '''
+        trailer = '''
+
+%clean
+
+%post -p /bin/bash
+
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+
+if [ -f $PREFIX/etc/update.d/%{package}_Update.py ]; then
+rm -f $PREFIX/etc/update.d/%{package}_Update.py
+fi
+
+if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py ]; then
+echo "Creating link in update.d"
+mkdir -p -v $PREFIX/etc/update.d
+ln -s $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py $PREFIX/etc/update.d/%{package}_Update.py
+echo "Running Update script"
+. $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
+echo "Now using python:"
+which python
+echo "PYTHONPATH: $PYTHONPATH"
+echo "PATH: $PATH"
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py
+fi
+
+if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py ]; then
+echo "Running PostInstall script"
+. $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
+python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py
+fi
+
+%postun -p /bin/bash
+if [ "$MYSITEROOT" ]; then
+PREFIX=$MYSITEROOT
+else
+PREFIX=%{prefix}
+fi
+echo "In uninstall script"
+if [ -h $PREFIX/etc/update.d/%{package}_Update.py ]; then
+echo "Removing link to update script:  $PREFIX/etc/update.d/%{package}_Update.py"
+rm $PREFIX/etc/update.d/%{package}_Update.py
+fi
+
+%files
+%defattr(-,root,root)
+%{prefix}/lhcb/%{versiondir}/%{lbversion}
+
+
+%define date    %(echo `LC_ALL=\"C\" date +\"%a %b %d %Y\"`)
+
+%changelog
+
+* %{date} User <ben.couturier..rcern.ch>
+- first Version
+
+        '''
+
+        return trailer
+
+#
 # Various utilities to extract info about the build
 #
 ###############################################################################
@@ -604,6 +805,30 @@ def getBuildInfo(manifestFileName):
         for i in range(5):
             barea = os.path.dirname(barea)
         return(realFilename, barea , splitPath[-4], splitPath[-2])
+
+def parseVersion(version):
+    '''
+    Parse the version string
+    '''
+    maj_version = 1
+    min_version = 0
+    patch_version = 0
+
+    m = re.match("v([\d]+)r([\d]+)$", version)
+    if m != None:
+        maj_version = m.group(1)
+        min_version = m.group(2)
+    else:
+        # Checking whether the version matches vXrYpZ in that case
+        m = re.match("v([\d]+)r([\d]+)p([\d]+)", version)
+        if m != None:
+            maj_version = m.group(1)
+            min_version = m.group(2)
+            patch_version = m.group(3)
+        else:
+            raise Exception("Version %s does not match format vXrY or vXrYpZ" % version)
+
+    return (maj_version, min_version, patch_version)
 
 
 
