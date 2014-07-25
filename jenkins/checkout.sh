@@ -47,6 +47,9 @@ echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
 if [ "${flavour}" = "release" ] ; then
   # Now preparing the RPM with the project source
   time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+  if [ -n "${packages_list}" ] ; then
+    time lbn-rpm --datapkg --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+  fi
 fi
 
 # Cleaning up
