@@ -56,7 +56,7 @@ class Script(LbUtils.Script.PlainScript):
                           dest="datapkg",
                           default=False,
                           action="store_true",
-                          help="Builds datapackage rpms")        
+                          help="Builds datapackage rpms")
         group.add_option('-g', '--glimpse',
                           dest="glimpse",
                           default=False,
@@ -436,7 +436,9 @@ class Script(LbUtils.Script.PlainScript):
 
         for p in self.config["projects"]:
             project = p["name"]
-            if self.options.projects and project.name.lower() not in self.options.projects:
+            if ((self.options.projects and
+                 project.name.lower() not in self.options.projects) or
+                project.name.lower() in ('dbase', 'param')):
                 self.log.warning("Skipping project %s" % project)
                 continue # project not requested: skip
             version = p["version"]
