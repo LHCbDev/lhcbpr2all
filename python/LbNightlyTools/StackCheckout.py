@@ -220,15 +220,7 @@ class StackDesc(object):
         if self.packages:
             for pkg in self.packages:
                 pkg.checkout(rootdir)
-                if pkg.build(rootdir) != 0:
-                    __log__.warning('%s build failed', pkg)
-                for link in pkg.getVersionLinks(rootdir):
-                    __log__.debug('creating symlink %s', link)
-                    os.symlink(pkg.version,
-                               os.path.normpath(os.path.join(rootdir,
-                                                             pkg.baseDir,
-                                                             os.pardir,
-                                                             link)))
+
             __log__.debug('create shallow clones of DBASE and PARAM')
             # clone the container projects
             ignore = IgnorePackageVersions(self.packages)
@@ -239,6 +231,17 @@ class StackDesc(object):
                 if path:
                     shallow_copytree(path, os.path.join(rootdir, container),
                                      ignore)
+
+            for pkg in self.packages:
+                if pkg.build(rootdir) != 0:
+                    __log__.warning('%s build failed', pkg)
+                for link in pkg.getVersionLinks(rootdir):
+                    __log__.debug('creating symlink %s', link)
+                    os.symlink(pkg.version,
+                               os.path.normpath(os.path.join(rootdir,
+                                                             pkg.baseDir,
+                                                             os.pardir,
+                                                             link)))
 
         for proj in self.projects:
             # Consider only requested projects (if there was a selection)
