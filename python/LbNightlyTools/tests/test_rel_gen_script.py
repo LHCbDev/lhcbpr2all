@@ -45,7 +45,7 @@ def test_empty_config():
         assert output['projects'] == []
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
-        assert output['default_platforms'] == []
+        assert len(output['default_platforms']) == 2
 
         assert output == s.genConfig()
 
@@ -75,7 +75,6 @@ def test_LHCb():
                                        'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
-        assert output['default_platforms'] == Release.DEFAULT_PLATFORMS
 
         assert output == s.genConfig()
 
@@ -217,7 +216,7 @@ def test_platforms():
         s.run(['--platforms',
                ' x86_64-slc6-gcc48-opt x86_64-slc6-gcc48-dbg,'
                'x86_64-slc6-gcc48-test',
-               '-o', tmpname, 'LHCb', 'v36r1'])
+               '-o', tmpname])
 
         output = json.load(open(tmpname))
         pprint(output)
@@ -248,7 +247,6 @@ def test_packages():
         assert output['slot'] == 'lhcb-release'
         assert output['no_patch'] is True
         assert output['packages'] == []
-        assert output['default_platforms'] == []
 
         assert output == s.genConfig()
 
@@ -265,7 +263,6 @@ def test_packages():
         assert output['no_patch'] is True
         assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
                                        'checkout_opts': {'export': True}}]
-        assert output['default_platforms'] == []
 
         assert output == s.genConfig()
 
