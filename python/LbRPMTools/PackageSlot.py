@@ -437,8 +437,8 @@ class Script(LbUtils.Script.PlainScript):
         for p in self.config["projects"]:
             project = p["name"]
             if ((self.options.projects and
-                 project.name.lower() not in self.options.projects) or
-                project.name.lower() in ('dbase', 'param')):
+                 project.lower() not in self.options.projects) or
+                project.lower() in ('dbase', 'param')):
                 self.log.warning("Skipping project %s" % project)
                 continue # project not requested: skip
             version = p["version"]
