@@ -37,7 +37,7 @@ WARN_EXCEPT = [".*/boost/.*",
                  "bounds"]
 
 # FIXME: we need a better way to define the default platforms
-DEFAULT_PLATFORMS = 'x86_64-slc6-gcc48-opt,x86_64-slc6-gcc48-dbg'
+DEFAULT_PLATFORMS = ['x86_64-slc6-gcc48-opt', 'x86_64-slc6-gcc48-dbg']
 
 # get the correct case for projects
 try:
@@ -91,7 +91,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         self.parser.set_defaults(slot='lhcb-release',
                                  cmt=False,
                                  output='-',
-                                 platforms=DEFAULT_PLATFORMS,
+                                 platforms=None,
                                  packages='')
 
     def genConfig(self):
@@ -129,8 +129,16 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 if package not in packages: # ignore duplicates
                     packages.append(package)
 
-        default_platforms = (self.options.platforms.replace(',', ' ')
-                             .strip().split())
+        if projects:
+            # platforms make sense only for projects
+            if self.options.platforms:
+                default_platforms = (self.options.platforms.replace(',', ' ')
+                                     .strip().split())
+            else:
+                default_platforms = DEFAULT_PLATFORMS
+        else:
+            # if there are only packages, we do not need any platform
+            default_platforms = []
 
         # prepare the configuration dictionary
         config = {'slot': self.options.slot,
