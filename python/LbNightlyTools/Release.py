@@ -307,3 +307,73 @@ class Trigger(LbUtils.Script.PlainScript):
             return 1
 
         return 0
+
+_manifest_template = u'''<?xml version='1.0' encoding='UTF-8'?>
+<manifest>
+  <project name="{project}" version="{version}" />
+  <heptools>
+    <version>{heptools}</version>
+    <binary_tag>{platform}</binary_tag>
+    <lcg_system>{system}</lcg_system>
+  </heptools>{used_projects}{used_data_pkgs}
+</manifest>
+'''
+
+def createManifestFile(project, version, platform, build_dir):
+    '''
+    Generate a manifest.xml from the CMT configuration.
+    '''
+    from subprocess import Popen, PIPE
+    import re
+    container_package = ((project + 'Sys')
+                         if project != 'Gaudi'
+                         else 'GaudiRelease')
+    container_dir = os.path.join(build_dir, container_package, 'cmt')
+    env = dict((key, value) for key, value in os.environ.iteritems()
+               if key not in ('PWD', 'CWD'))
+    proc = Popen(['cmt', 'show', 'projects'], cwd=build_dir, env=env,
+                 stdout=PIPE, stderr=PIPE)
+    out, _err = proc.communicate()
+
+    # no check because we must have a dependency on LCGCMT
+    heptools = re.search(r'LCGCMT_([^ ]+)', out).group(1)
+
+    projects = ['    <project name="%s" version="%s" />' %
+                (fixProjectCase(name), version.split('_')[-1])
+                for name, version in [x.split()[0:2]
+                                      for x in out.splitlines()
+                                      if re.match(r'^  [^ ]', x)]
+                if name not in ('DBASE', 'PARAM')]
+    if projects:
+        projects.insert(0, '\n  <used_projects>')
+        projects.append('  </used_projects>')
+
+    data_pkgs = []
+    if 'DBASE' in out or 'PARAM' in out:
+        proc = Popen(['cmt', 'show', 'uses'], cwd=container_dir, env=env,
+                     stdout=PIPE, stderr=PIPE)
+        out, _err = proc.communicate()
+        out = out.splitlines()
+        data_pkgs = [x.replace(' ', ',').split(',')[1:4:2]
+                     for x in out
+                     if re.search(r'DBASE|PARAM', x)]
+        def findVersion(pkg):
+            v = (x.split()[3] for x in out if re.match(r'^#.*%s' % pkg)).next()
+            if v == 'v*':
+                v = '*'
+            return v
+
+        data_pkgs = ['    <package name="%s" version="%s" />' %
+                     (hat + '/' + name if hat else name,
+                      findVersion(name))
+                     for name, hat in data_pkgs]
+        if data_pkgs:
+            data_pkgs.insert(0, '\n  <used_data_pkgs>')
+            data_pkgs.append('  </used_data_pkgs>')
+
+    return _manifest_template.format(project=project, version=version,
+                                     platform=platform,
+                                     system=platform[:platform.rfind('-')],
+                                     heptools=heptools,
+                                     used_projects='\n'.join(projects),
+                                     used_data_pkgs='\n'.join(data_pkgs))
