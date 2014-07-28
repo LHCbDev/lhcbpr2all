@@ -105,6 +105,28 @@ def test_Gaudi():
     finally:
         os.remove(tmpname)
 
+def test_Geant4():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'Geant4', 'v95r2p7'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'Geant4', 'version': 'v95r2p7',
+                                       'with_shared': True,
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_two_projects():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)

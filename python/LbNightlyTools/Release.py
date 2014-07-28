@@ -117,6 +117,8 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
                               'commit': 'GAUDI/GAUDI_' + vers}
                 project['checkout_opts'].update(extra_opts)
+            elif proj == 'Geant4':
+                project['with_shared'] = True
 
             projects.append(project)
 
