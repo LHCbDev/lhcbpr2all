@@ -31,7 +31,15 @@ from LbNightlyTools.Utils import Dashboard
 from string import Template
 from socket import gethostname
 from datetime import datetime
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    # Backward compatibility with older versions of Python
+    # (CMTCONFIG=*-slc6-gcc46-*)
+    OrderedDict = dict
+
 try:
     from multiprocessing import cpu_count
 except ImportError:
