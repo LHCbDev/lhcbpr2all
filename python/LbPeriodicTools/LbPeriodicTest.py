@@ -144,7 +144,7 @@ def _fromXML(etree):
 
     ttime = validateTime(testdict[ASCHEDTIME])
     testdict[AHOUR] = ttime.hour
-    testdict[AMINUTE] = ttime.hour
+    testdict[AMINUTE] = ttime.minute
 
     return testdict
 
