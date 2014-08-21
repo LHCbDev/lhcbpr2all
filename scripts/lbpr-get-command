@@ -151,11 +151,7 @@ date +"%%Y-%%m-%%d,%%T" > end.txt
 # Gathering the results with LHCbPR
 if [ "$RETCODE" = "0" ] ; then
     echo "Run OK now gathering the results"
-    unset $LD_LIBRARY_PATH
-#    . LbLogin.sh -c x86_64-slc6-gcc46-opt
-    . SetupProject.sh LHCbDirac ROOT
-    python -c "import os,urllib,zipfile;urllib.urlretrieve('http://lhcbproject.web.cern.ch/lhcbproject/GIT/dist/LHCbPRHandlers/LHCbPRHandlers.zip','LHCbPRHandlers.zip');unzipper=zipfile.ZipFile('LHCbPRHandlers.zip');unzipper.extractall();os.remove('LHCbPRHandlers.zip')"
-    python LHCbPRHandlers/collectRunResults.py -s `cat start.txt` -e `cat end.txt` -p `hostname` -c `cat platform.txt` -j %s -l "%s" -a
+    lbpr-collect -s `cat start.txt` -e `cat end.txt` -p `hostname` -c `cat platform.txt` -j %s -l "%s" -a
 fi
 
 ''' % (setup_cmd, run_cmd, jobdescription_id, handlers))
