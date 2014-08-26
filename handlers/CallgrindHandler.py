@@ -9,7 +9,7 @@ class CallgrindHandler(BaseHandler):
       super(self.__class__, self).__init__()
       self.finished = False
       self.results = []
-      self.basefilename = 'callgrind.out'
+      self.basefilename = 'valgrindcallgrind.output.log'
       
    def collectResults(self,directory):
       """ Collect un results """
