@@ -16,7 +16,7 @@ class CallgrindHandler(BaseHandler):
       
       # First check that we have the log file...
       filename = os.path.join(directory, self.basefilename)
-      foundfiles = [ f for f in os.listdir(direct) if f.startswith(self.basefilename)]
+      foundfiles = [ f for f in os.listdir(directory) if f.startswith(self.basefilename)]
       if len(foundfiles) == 0:
          raise Exception("Could not find callgrind ouput files")
 
