@@ -32,5 +32,8 @@ class CallgrindHandler(BaseHandler):
       if not os.path.exists(filename):
          raise Exception("File %s does not exist" % filename)
 
-      self.saveFile(self.basefilename, filename, "CallgrindOutput", "Callgrind")
+      fname = "callgrind.out"
+      if len(filename) > len(self.basefilename):
+         fname += filename[len(self.basefilename):]
+      self.saveFile(fname, filename, "Callgrind Output", "Callgrind")
       
