@@ -201,7 +201,10 @@ class PeriodicTest(object):
         '''
         Shorter representation for logs
         '''
-        return "/".join([ self.testrunner, self.testgroup,  self.project,  self.slot   ])
+        testrunner = self.testrunner
+        if testrunner == None:
+            testrunner = "default"
+        return "/".join([ testrunner, self.testgroup,  self.project,  self.slot   ])
 
 
     def isForDate(self, date_start, date_end):
