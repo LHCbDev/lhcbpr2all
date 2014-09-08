@@ -30,6 +30,7 @@ import os
 import sys
 import time
 import json
+import re
 
 from datetime import datetime, date
 
@@ -117,6 +118,8 @@ class Script(LbUtils.Script.PlainScript):
 
         now = time.time()
         os_label = os.environ.get('os_label', '')
+        # remove (optional) suffix '-build' from os_label
+        os_label = re.sub(r'-build$', '', os_label)
 
         expected_builds = [ (genPackageName(proj, platform,
                                             build_id=opts.build_id,
