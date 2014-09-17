@@ -274,8 +274,9 @@ jQuery.fn.loadButton = function() {
 
                         var slot = $('<div class="slot" slot="' + value.slot + '" build_id="' + value.build_id + '"/>');
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
-                            .append('<table><tr><td nowrap>' + value.slot +
-                                ':</td><td>' + value.description +
+                            .append('<table><tr><td nowrap>' + value.slot + ': ' +
+                                '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">¶</a>' +
+                                '</td><td>' + value.description +
                                 '</td></tr></table>'));
                         el.append(slot);
 
@@ -332,6 +333,7 @@ jQuery.fn.lbNightly = function() {
             dayTitle = mday.format('dddd YYYY-MM-DD');
         var btn = $('<button day="' + day + '">show</button>')
             .loadButton();
+        if (REQUESTED_DAY) btn.hide();
 
         var spin = spinInit(day);
 
@@ -340,7 +342,8 @@ jQuery.fn.lbNightly = function() {
             .append($('<tr/>')
                 .append($('<td class="button"/>').append(btn))
                 .append($('<td class="spinner"/>').append(spin))
-                .append('<td class="day-name">' + dayTitle + '</td>')))
+                .append($('<td class="day-name">' + dayTitle + '</td>')
+                          .append(' <a class="permalink" title="Permalink to this day" href="?day=' + day + '">¶</a>'))))
             .append($('<div class="slots"/>').hide());
 
         if (isDayEnabled(dayName))
@@ -553,7 +556,10 @@ function prepareRssForm() {
 
 $(function() {
     if (REQUESTED_DAY || REQUESTED_SLOT || REQUESTED_PROJECT) {
+        // when there is a specific selection we filters do not make sense...
         $("#toolbar").hide();
+        // ... and we need a link to the full page
+        $('#banner > h1').wrapInner('<a href="index.html"/>');
     } else {
         prepareFilterDialog();
         prepareRssForm();
