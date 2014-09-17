@@ -621,12 +621,12 @@ jQuery.fn.loadSlots = function() {
 
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
 				.append('<table><tr><td><a href="' + window.location.origin + window.location.pathname +
-				"?build=" +value.build_id + '"><img src="https://buildlhcb.cern.ch/artifacts/lhcb-cmake/531/summaries.x86_64-slc6-gcc48-opt/Gaudi/html/link.png" title="direct link"></a>'+
+				"?build=" +value.build_id + '"><img src="images/link.png" title="direct link"></a>'+
 				'</td><td nowrap>Release build ' + value.build_id +
                                 '</td><td>(' + day_data.key  +
                                 ')</td><td><button id="'+ value.build_id + '"class="rebuild-button"/>'+
 				'</td><td><a href= https://buildlhcb.cern.ch/artifacts/release/lhcb-release/' + value.build_id +
-				'><img id="rpm" src="http://www.geekpedia.com/Pictures/Icons/graphix-folder_283x283.png" title="artifacts directory"></a>'+
+				'><img id="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>'+
 		                '</td></tr></table>'));
 
 				el.append(slot);
