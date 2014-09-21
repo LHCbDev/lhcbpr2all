@@ -142,6 +142,11 @@ set -v
 rm -f start.txt end.txt platform.txt
 echo $CMTCONFIG > platform.txt
 
+# Add valgrind from AFS to the PATH
+if [ -f /afs/cern.ch/lhcb/group/rich/vol4/jonrob/scripts/new-valgrind.sh ]; then
+source /afs/cern.ch/lhcb/group/rich/vol4/jonrob/scripts/new-valgrind.sh
+fi
+
 # Now running the test itself
 date +"%%Y-%%m-%%d,%%T" > start.txt
 %s | tee run.log
