@@ -274,8 +274,8 @@ jQuery.fn.loadButton = function() {
 
                         var slot = $('<div class="slot" slot="' + value.slot + '" build_id="' + value.build_id + '"/>');
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
-                            .append('<table><tr><td nowrap>' + value.slot + ': ' +
-                                '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">¶</a>' +
+                            .append('<table><tr><td nowrap>' +
+                                '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">' + value.slot + '</a>:' +
                                 '</td><td>' + value.description +
                                 '</td></tr></table>'));
                         el.append(slot);
@@ -342,8 +342,7 @@ jQuery.fn.lbNightly = function() {
             .append($('<tr/>')
                 .append($('<td class="button"/>').append(btn))
                 .append($('<td class="spinner"/>').append(spin))
-                .append($('<td class="day-name">' + dayTitle + '</td>')
-                          .append(' <a class="permalink" title="Permalink to this day" href="?day=' + day + '">¶</a>'))))
+                .append($('<td class="day-name"><a class="permalink" title="Permalink to this day" href="?day=' + day + '">' + dayTitle + '</a></td>'))))
             .append($('<div class="slots"/>').hide());
 
         if (isDayEnabled(dayName))

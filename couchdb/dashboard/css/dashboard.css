@@ -100,15 +100,6 @@ div.slots {
 	text-align: center;
 }
 
-a.permalink {
-	visibility: hidden;
-	text-decoration: none;
-}
-
-tr:hover  a.permalink {
-	visibility: visible;
-}
-
 .day .slot-info {
 	font-weight: normal;
 	font-size: smaller;
