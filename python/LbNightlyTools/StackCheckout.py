@@ -263,7 +263,6 @@ class StackDesc(object):
                               for p in self.projects])
         proj_versions_uc = dict([(p.name.upper(), p.version)
                                  for p in self.projects])
-        # FIXME: we will need to handle the _preview/-preview case
         heptools_version = proj_versions_uc.get('HEPTOOLS',
                                                 proj_versions_uc.get('LCGCMT'))
 
@@ -387,9 +386,6 @@ class StackDesc(object):
                         if tokens[1] in proj_versions_uc:
                             tokens[2] = (tokens[1] + '_'
                                          + proj_versions_uc[tokens[1]])
-                            # special case
-                            if tokens[2] == 'LCGCMT_preview':
-                                tokens[2] = 'LCGCMT-preview'
                             line = ' '.join(tokens) + '\n'
                     newdata.append(line)
 

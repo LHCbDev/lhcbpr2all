@@ -21,13 +21,10 @@ def extractVersion(tag):
 
     >>> extractVersion('GAUDI_v23r8')
     'v23r8'
-    >>> extractVersion('LCGCMT-preview')
+    >>> extractVersion('LCGCMT_preview')
     'preview'
     '''
-    if tag == 'LCGCMT-preview':
-        return 'preview'
-    else:
-        return tag.split('_', 1)[1]
+    return tag.split('_', 1)[1]
 
 def loadFromOldXML(source, slot):
     '''

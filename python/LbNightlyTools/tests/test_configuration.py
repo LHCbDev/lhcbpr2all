@@ -72,7 +72,7 @@ TEST_XML = u'''
         <cmtextratags value="use-distcc,no-pyzip"/>
         <projects>
             <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-                <dependence project="LCGCMT" tag="LCGCMT-preview"/>
+                <dependence project="LCGCMT" tag="LCGCMT_preview"/>
             </project>
             <project name="Online" tag="ONLINE_HEAD" headofeverything="true"/>
             <project name="LHCb" tag="LHCB_HEAD" headofeverything="true">
@@ -97,7 +97,7 @@ TEST_XML = u'''
         </platforms>
         <cmtextratags value="use-distcc,no-pyzip"/>
         <projects>
-            <project name="LCGCMT" tag="LCGCMT-preview" headofeverything="false" disabled="true"/>
+            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
             <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
             </project>
         </projects>
@@ -223,7 +223,7 @@ def test_loadXML():
     assert found == expected
 
 def test_loadXML_2():
-    'Configuration.load(xml) [with LCGCMT-preview]'
+    'Configuration.load(xml) [with LCGCMT_preview]'
 
     expected = {'slot': 'lhcb-lcg-test',
                 'description': "a test",
