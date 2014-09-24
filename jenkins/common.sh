@@ -57,7 +57,6 @@ if [ -n "${set_config}" ] ; then
 
   # FIXME: we need to get the latest compilers wrappers until we release LbScripts
   export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
-  if
 else
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
 fi
