@@ -29,6 +29,6 @@ done
 # clean up the artifacts directory (if present)
 if [ -e ${artifacts_dir} ] ; then
     echo "$(date): removing old artifacts from ${artifacts_dir}" >> $logfile 2>&1
-    find -L ${start_dirs} -depth -mindepth 1 -maxdepth 2 -daystart -mtime +15 -and -path '*/lhcb-*' -print -exec rm -rf \{} \; >> $logfile 2>&1
+    find -L ${start_dirs} -depth -mindepth 1 -maxdepth 2 -daystart -mtime +30 -and -path '*/lhcb-*' -print -exec rm -rf \{} \; >> $logfile 2>&1
 fi
 echo "$(date): done" >> $logfile 2>&1
