@@ -419,12 +419,15 @@ class Script(LbUtils.Script.PlainScript):
 
         self.config_cmake = genSlotConfig(self.config)
 
-        if u'cmake_cache' in self.config:
-            preload_lines = ['set(%s "%s" CACHE STRING "override")' % item
-                             for item in self.config[u'cmake_cache'].items()]
-            self.cache_preload = '\n'.join(preload_lines)
-        else:
-            self.cache_preload = None
+        # prepare the cache to give to CMake: add the launcher rules commands,
+        # followed by what is found in the configuration (if present)
+        launcher_cmd = 'lbn-wrapcmd <CMAKE_CURRENT_BINARY_DIR> <TARGET_NAME>'
+        cache_entries = ([('GAUDI_RULE_LAUNCH_%s' % n, launcher_cmd)
+                          for n in ('COMPILE', 'LINK', 'CUSTOM')] +
+                         self.config.get(u'cmake_cache', {}).items())
+        preload_lines = ['set(%s "%s" CACHE STRING "override")' % item
+                          for item in cache_entries]
+        self.cache_preload = '\n'.join(preload_lines)
 
         self.projects = OrderedDict([(p.name, p)
                                      for p in map(ProjDesc,
