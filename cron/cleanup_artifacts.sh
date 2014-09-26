@@ -20,7 +20,7 @@ export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
 logfile=$LHCBNIGHTLIES/www/logs/cleanup_artifacts.log
 artifacts_dir=/data/artifacts
 
-flavours=$(ls | grep -v lhcb-)
+flavours=$(ls ${artifacts_dir} | grep -v lhcb-)
 start_dirs=
 for f in $flavours ; do
   start_dirs="$start_dirs ${artifacts_dir}/$f"
