@@ -358,7 +358,8 @@ def createManifestFile(project, version, platform, build_dir):
                      for x in out
                      if re.search(r'DBASE|PARAM', x)]
         def findVersion(pkg):
-            v = (x.split()[3] for x in out if re.match(r'^#.*%s' % pkg)).next()
+            v = (x.split()[3] for x in out
+                 if re.match(r'^#.*%s' % pkg, x)).next()
             if v == 'v*':
                 v = '*'
             return v
