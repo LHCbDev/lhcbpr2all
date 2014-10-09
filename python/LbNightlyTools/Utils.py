@@ -594,3 +594,27 @@ def setenv(definitions):
     for item in definitions:
         name, value = item.split('=', 1)
         os.environ[name] = os.path.expandvars(value)
+
+class JobParams(object):
+    '''
+    Helper class to format job parameters.
+
+    >>> print JobParams(b='x', a=1)
+    a=1
+    b=x
+    '''
+    def __init__(self, **kwargs):
+        '''
+        Initialize the instance
+        '''
+        self.__dict__.update(kwargs)
+
+    def __str__(self):
+        '''
+        Convert the instance to parameter file format.
+        '''
+        data = []
+        for k in sorted(self.__dict__):
+            if not k.startswith('_'):
+                data.append('{0}={1}'.format(k, getattr(self, k)))
+        return '\n'.join(data)

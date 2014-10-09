@@ -19,4 +19,4 @@ export HOME=$PWD
 export CMTCONFIG=$platform
 
 datadir=${JENKINS_HOME}/nightlies/${flavour}/running_builds
-lbn-check-ready-builds $datadir tests_list.txt
+lbn-check-ready-builds $datadir 'test-{0}.txt'

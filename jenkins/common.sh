@@ -90,4 +90,4 @@ if klist -5 > /dev/null 2>&1 ; then
 fi
 
 set -xe
-. setup.sh
+. ./setup.sh
