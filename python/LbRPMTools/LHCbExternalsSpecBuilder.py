@@ -104,6 +104,11 @@ Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_
         tmp = ""
         for k,v in self._externalsDict.items():
             extVer = v[0]
+
+            # Ignore packages from the system like uuid
+            if v[3].startswith("/usr"):
+                continue
+
             # Temporary hack: require only -opt packages instead of DBG
             cmtcfgopt =  v[2].replace('-dbg', '-opt')
 
