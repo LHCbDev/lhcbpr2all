@@ -724,7 +724,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         proj.started = datetime.now()
         self.log.debug('cmd: %s', build_cmd)
         proj.build_retcode = call(build_cmd, cwd=proj.build_dir,
-                                  timeout=28800, # timeout of 8 hours
+                                  timeout=4*60*60, # timeout of 4 hours
                                   timeoutmsg='building %s' % proj.name)
         if proj.build_retcode != 0:
             self.log.warning('build exited with code %d', proj.build_retcode)
