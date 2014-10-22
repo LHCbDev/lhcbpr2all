@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -25,4 +25,5 @@ shift 2
 mkdir -p $log_dir
 logfile=$log_dir/$(date +%s%N)-$target-$(echo "$@" | md5sum | cut -c1-32)"-build.log"
 echo ">" "$@" >> "$logfile"
+set -o pipefail
 exec "$@" 2>&1 | tee -a "$logfile"
