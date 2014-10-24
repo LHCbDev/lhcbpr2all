@@ -1,10 +1,10 @@
-#container {padding-top: 0; background: #fff url(bg_body.jpg) 100% -50px no-repeat;}
+#container {padding-top: 0; background: #fff url(../images/bg_body.jpg) 100% -50px no-repeat;}
 body.fluid #container {min-width: 900px;}
 #banner {height: 120px;  position: relative;}
 #banner h1 {margin: 0; position: absolute; bottom: 0; left: 180px; color: #006db6; font-family: georgia, serif; font-size: 2.6em; line-height: 1; vertical-align: bottom; text-shadow: 0 0 2px rgba(255, 255, 255, 1);}
 #banner a#link_lhcb {position: absolute; top: 20px; left: 0px;}
 #banner img {height: 100px;}
-#middle {background: url(bg_content.png) top left repeat; padding-top: 20px;}
+#middle {background: url(../images/bg_content.png) top left repeat; padding-top: 20px;}
 /* FOOTER */
 #footer {height: 80px; margin-top: 20px; padding-top: 0px; text-align: center; position: relative;}
 #footer p {position: absolute; bottom: 0; left: 0; line-height: 1; margin-bottom: 0; color: #999;}
