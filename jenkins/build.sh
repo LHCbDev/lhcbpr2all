@@ -74,8 +74,10 @@ fi
 
 # if possible and requested, generate glimpse indexes and upload them to buildlhcb
 if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
-    if which glimpseindex &> /dev/null ; then
-	time lbn-index --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
+    if which glimpseindex &> /dev/null ; then 
+      # clean up the build dir before indexing
+      lbn-build --verbose --clean --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${config_file}
+	  time lbn-index --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
 	if [ "${flavour}" = "release" ] ; then
 	  time lbn-rpm --glimpse --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
 	fi
