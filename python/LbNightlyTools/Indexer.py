@@ -100,10 +100,10 @@ def filesToIndex(path):
         # ensure that we get a predictable order
         dirs.sort()
         files.sort()
-        # move 'InstallArea' to the end of the list
+        # move 'InstallArea' to the beginning of the list
         if 'InstallArea' in dirs:
             dirs.remove('InstallArea')
-            dirs.append('InstallArea')
+            dirs.insert(0, 'InstallArea')
         # remove directories called 'build.*'
         for build_dir in [d for d in dirs if d.startswith('build.')]:
             dirs.remove(build_dir)
