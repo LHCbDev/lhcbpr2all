@@ -324,5 +324,25 @@ def test_packages():
 
         assert output == s.genConfig()
 
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'DBASE:MyPack v1r0 PARAM:AnotherPack v2r3',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'container': 'DBASE',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'AnotherPack', 'version': 'v2r3',
+                                       'container': 'PARAM',
+                                       'checkout_opts': {'export': True}}]
+
+        assert output == s.genConfig()
+
     finally:
         os.remove(tmpname)

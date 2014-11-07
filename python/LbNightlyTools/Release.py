@@ -126,8 +126,13 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         if self.options.packages:
             packages_opt = self.options.packages.split()
             for pack, vers in zip(packages_opt[::2], packages_opt[1::2]):
-                package = {'name': pack, 'version': vers,
+                package = {'version': vers,
                            'checkout_opts': {'export': True}}
+                # the package name could by just the name or <container>:<name>
+                if ':' not in pack:
+                    package['name'] = pack
+                else:
+                    package['container'], package['name'] = pack.split(':', 1)
                 if package not in packages: # ignore duplicates
                     packages.append(package)
 
