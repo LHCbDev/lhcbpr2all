@@ -492,6 +492,7 @@ def parseConfigFile(path):
         else:
             checkout = getattr(CheckoutMethods, checkout)
         packages.append(PackageDesc(pkg[u'name'], pkg[u'version'],
+                                    container=pkg.get(u'container', 'DBASE'),
                                     checkout=checkout,
                                     checkout_opts=pkg.get(u'checkout_opts',
                                                            {})))
