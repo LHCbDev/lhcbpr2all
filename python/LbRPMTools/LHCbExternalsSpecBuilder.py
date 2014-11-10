@@ -49,7 +49,25 @@ class LHCbExternalsRpmSpec(LHCbBaseRpmSpec):
         self._buildarea = buildarea
         self._externalsDict = externalsDict
         self._lcgVersion = lcgVer
-
+        self._lhcb_maj_version = 1 
+        self._lhcb_min_version = 0
+        self._lhcb_patch_version = 0
+        self._lhcb_release_version = 0
+        
+    def getRPMName(self, norelease=False):
+        ''' Return the architecture, always noarch for our packages'''
+        projname =  "_".join([self._project.upper(),
+                              self._version,
+                              self._cmtconfig.replace('-', '_')])
+        projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
+                                              self._lhcb_min_version,
+                                              self._lhcb_patch_version]])
+        if norelease:
+            return "-".join([projname, projver])
+        full = "-".join([projname, projver, str(self._lhcb_release_version)])
+        final = ".".join([full, self._arch, "rpm"])
+        return final
+                             
     def _createHeader(self):
         '''
         Prepare the RPM header
