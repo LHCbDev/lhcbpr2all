@@ -92,7 +92,7 @@ class LHCbExternalsRpmSpec(LHCbBaseRpmSpec):
 
 Name: %{projectUp}_%{lbversion}_%{cmtconfigrpm}
 Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
-Release: 1
+Release: ${releaseversion}
 Vendor: LHCb
 Summary: %{project}
 License: GPL
@@ -105,13 +105,15 @@ Provides: /bin/sh
 Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 
 \n""").substitute(buildarea = self._buildarea,
-                          project = self._project,
-                          projectUp = self._project.upper(),
-                          version = self._version,
-                          config=self._cmtconfig,
-                          configrpm=self._cmtconfig.replace('-', '_'),
-                          rpmversion= self._version + "_" + self._cmtconfig.replace('-', '_'),
-                          lcgversion=self._lcgVersion)
+                  project = self._project,
+                  projectUp = self._project.upper(),
+                  version = self._version,
+                  config=self._cmtconfig,
+                  configrpm=self._cmtconfig.replace('-', '_'),
+                  rpmversion= self._version + "_" + self._cmtconfig.replace('-', '_'),
+                  lcgversion=self._lcgVersion,
+                  releaseversion=self._lhcb_release_version
+                  )
 
         return header
 
@@ -128,7 +130,9 @@ Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_
                 continue
 
             # Temporary hack: require only -opt packages instead of DBG
-            cmtcfgopt =  v[2].replace('-dbg', '-opt')
+            # 20141010 - Remove hack -> use real config instead...
+            #cmtcfgopt =  v[2].replace('-dbg', '-opt')
+            cmtcfgopt =  v[2]
 
             # Exception for Expat, we need to understand this...
             if k == "Expat":
@@ -268,6 +272,9 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
 
         self.log.warning("Processing externals for %s %s %s" % (project, version, cmtconfig))
 
+        # Setting the environment to the request config
+        os.environ['CMTCONFIG'] = cmtconfig
+
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version + "_" + cmtconfig)
 
@@ -303,7 +310,7 @@ def get_macro_value(cmtdir, macro, extratags):
     if cmtdir != None:
         os.chdir(cmtdir)
     cmd = ["cmt", extratags, "show", "macro_value", macro]
-    __log__.debug("get_macro_value - Running: ", " ".join(cmd))
+    __log__.debug("get_macro_value - Running: " +  " ".join(cmd))
     # Invoking popen to run the command, result is on stdout first line
     p = Popen(" ".join(cmd), stdout=PIPE, stderr=PIPE, shell=True)
     line = p.stdout.readline()[:-1]
