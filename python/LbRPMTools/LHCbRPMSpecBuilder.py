@@ -61,12 +61,22 @@ class RpmDirConfig:
 ###############################################################################
 class LHCbBaseRpmSpec(object):
     """ Class representing a LHCb project"""
-    def __init__(self, project, version):
+    def __init__(self, project, version, prodRPMReleaseDir="/afs/cern.ch/lhcb/distribution/rpm/lhcb"):
         self._project = project
         self._version = version
+        self._lhcb_release_version = 0
+        self._prodRPMReleaseDir = prodRPMReleaseDir
 
     def getSpec(self):
         """ Build the global spec file """
+
+        # First we make sure we have a correct release number for the RPM
+        # It is created at -1 in constructor.
+        # At this point, we can check in the release directory if we need to bump up
+        # the release number or keep the current one....
+        self._setNextReleaseNumberFromRepo()
+
+        # Now returning the spec itself...
         return str(self._createHeader()) \
                + str(self._createRequires()) \
                + str(self._createDescription()) \
@@ -77,6 +87,43 @@ class LHCbBaseRpmSpec(object):
         """ Creates the depedency on the HepTools (LHCbExternals) RPM """
         (hver, hcmtconfig, hsystem) = self._manifest.getHEPTools()
         return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig.replace("-", "_"))
+
+
+    def setRPMReleaseDir(self, rpmRelDir):
+        """ Set the location for the RPM release directory """
+        self._prodRPMReleaseDir = rpmRelDir
+        
+    def _setNextReleaseNumberFromRepo(self):
+        """ Checks the RPM release dir (see constructor for the class) to find the
+        next release number for the package.
+        """
+        if self._lhcb_release_version <= 0:
+            if self._prodRPMReleaseDir != None and os.path.exists( self._prodRPMReleaseDir):
+                __log__.warning("Looking for releases in %s" % self._prodRPMReleaseDir)
+                # Getting the prefix of out RPM
+                prefix = self.getRPMName(norelease = True)
+                # Now getting the list of already released versions
+                allfiles = [ f for f in os.listdir( self._prodRPMReleaseDir) if f.startswith(prefix)]
+                # If the list is empty, release number is "1"...
+                if len(allfiles) == 0:
+                    __log__.warning("Did not find any releases in the directory - Release number is 1")
+                    self._lhcb_release_version = 1
+                else:
+                    __log__.warning("Found %d files matching checking latest release" % len(allfiles) )
+                    allrels = []
+                    import re
+                    # Getting the releae numbers from the files found
+                    for f in allfiles:
+                        m = re.match("-(\d+)\.", f[len(prefix):])
+                        if m != None:
+                            allrels.append(int(m.group(1)))
+                        else:
+                            __log__.warning("Released RPM %s does not abide by naming convention for release" % f)
+                            
+                    # Now checking the latest one and increase number
+                    newrel = sorted(allrels)[-1] + 1
+                    __log__.warning("New release is %d" % newrel)
+                    self._lhcb_release_version = newrel
         
 
 #
@@ -97,22 +144,25 @@ class LHCbSharedRpmSpec(LHCbBaseRpmSpec):
         self._lhcb_maj_version = 1
         self._lhcb_min_version = 0
         self._lhcb_patch_version = 0
-        self._lhcb_release_version = 1
+        self._lhcb_release_version = 0
         self._arch = "noarch"
 
     def getArch(self):
         ''' Return the architecture, always noarch for our packages'''
         return self._arch
 
-    def getRPMName(self):
+    def getRPMName(self, norelease=False):
         ''' Return the architecture, always noarch for our packages'''
         projname =  "_".join([self._project.upper(), self._version])
         projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
                                               self._lhcb_min_version,
                                               self._lhcb_patch_version]])
+        if norelease:
+            return "-".join([projname, projver])
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
+    
     def _createHeader(self):
         '''
         Prepare the RPM header
@@ -237,14 +287,14 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         self._lhcb_maj_version = 1
         self._lhcb_min_version = 0
         self._lhcb_patch_version = 0
-        self._lhcb_release_version = 1
+        self._lhcb_release_version = 0
         self._arch = "noarch"
 
     def getArch(self):
         ''' Return the architecture, always noarch for our packages'''
         return self._arch
 
-    def getRPMName(self):
+    def getRPMName(self, norelease=False):
         ''' Return the architecture, always noarch for our packages'''
         projname =  "_".join([self._project.upper(),
                               self._version,
@@ -252,6 +302,8 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
                                               self._lhcb_min_version,
                                               self._lhcb_patch_version]])
+        if norelease:
+            return "-".join([projname, projver])
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
@@ -438,7 +490,7 @@ class LHCbGlimpseRpmSpec(LHCbBaseRpmSpec):
         self._lhcb_maj_version = 1
         self._lhcb_min_version = 0
         self._lhcb_patch_version = 0
-        self._lhcb_release_version = 1
+        self._lhcb_release_version = 0
         self._manifest = manifest
         self._arch = "noarch"
 
@@ -446,12 +498,14 @@ class LHCbGlimpseRpmSpec(LHCbBaseRpmSpec):
         ''' Return the architecture, always noarch for our packages'''
         return self._arch
 
-    def getRPMName(self):
+    def getRPMName(self, norelease=False):
         ''' Return the architecture, always noarch for our packages'''
         projname =  "_".join([self._project.upper(), self._version, "index"])
         projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
                                               self._lhcb_min_version,
                                               self._lhcb_patch_version]])
+        if norelease:
+            return "-".join([projname, projver])
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
@@ -584,7 +638,7 @@ sed -e '2,$'"s|^|${REALPATH}/%{projectUp}/%{projectUp}_%{lbversion}/|" ${PREFIX}
 class LHCbDatapkgRpmSpec(LHCbBaseRpmSpec):
     """ Class representing the Spec file for an RPM containing the shared files for the project """
 
-    def __init__(self, project, fulldatapkg, version, sharedTar, buildarea, release = "1"):
+    def __init__(self, project, fulldatapkg, version, sharedTar, buildarea, release = 0):
         """ Constructor  """
         super(LHCbDatapkgRpmSpec, self).__init__(project, version)
         __log__.debug("Creating Shared RPM for %s/%s" % (project, version))
@@ -608,12 +662,14 @@ class LHCbDatapkgRpmSpec(LHCbBaseRpmSpec):
         ''' Return the architecture, always noarch for our packages'''
         return self._arch
 
-    def getRPMName(self):
+    def getRPMName(self, norelease=False):
         ''' Return the architecture, always noarch for our packages'''
         projname =  "_".join([self._project.upper(), self._normfulldatapkg])
         projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
                                               self._lhcb_min_version,
                                               self._lhcb_patch_version]])
+        if norelease:
+            return "-".join([projname, projver])
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
