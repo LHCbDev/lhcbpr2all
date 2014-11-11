@@ -212,14 +212,19 @@ class StackDesc(object):
         self.packages = packages or []
         self.env = env or []
 
-    def checkout(self, rootdir='.', requested=None):
+    def checkout(self, rootdir='.', requested=None, ignore_failures=True):
         '''
         Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
         if self.packages:
             for pkg in self.packages:
-                pkg.checkout(rootdir)
+                try:
+                    pkg.checkout(rootdir)
+                except RuntimeError, err:
+                    if not ignore_failures:
+                        raise
+                    __log__.warning(str(err))
 
             __log__.debug('create shallow clones of DBASE and PARAM')
             # clone the container projects
@@ -233,21 +238,30 @@ class StackDesc(object):
                                      ignore)
 
             for pkg in self.packages:
-                if pkg.build(rootdir) != 0:
-                    __log__.warning('%s build failed', pkg)
-                for link in pkg.getVersionLinks(rootdir):
-                    __log__.debug('creating symlink %s', link)
-                    os.symlink(pkg.version,
-                               os.path.normpath(os.path.join(rootdir,
-                                                             pkg.baseDir,
-                                                             os.pardir,
-                                                             link)))
+                if os.path.exists(os.path.join(rootdir, pkg.baseDir)):
+                    if pkg.build(rootdir) != 0:
+                        __log__.warning('%s build failed', pkg)
+                    for link in pkg.getVersionLinks(rootdir):
+                        __log__.debug('creating symlink %s', link)
+                        os.symlink(pkg.version,
+                                   os.path.normpath(os.path.join(rootdir,
+                                                                 pkg.baseDir,
+                                                                 os.pardir,
+                                                                 link)))
+                else:
+                    __log__.warning('package %s not found', pkg)
+
 
         for proj in self.projects:
             # Consider only requested projects (if there was a selection)
             if requested and proj.name.lower() not in requested:
                 continue # project not requested: skip
-            proj.checkout(rootdir)
+            try:
+                proj.checkout(rootdir)
+            except RuntimeError, err:
+                if not ignore_failures:
+                    raise
+                __log__.warning(str(err))
         __log__.info('... done.')
 
     def patch(self, rootdir='.', patchfile='stack.patch'):
@@ -552,6 +566,17 @@ class Script(LbUtils.Script.PlainScript):
         addBasicOptions(self.parser)
         addDashboardOptions(self.parser)
 
+        self.parser.add_option('--ignore-checkout-errors',
+                               action='store_true',
+                               dest='ignore_checkout_errors',
+                               help='continue to checkout if there is a '
+                                    'failure (default)')
+        self.parser.add_option('--no-ignore-checkout-errors',
+                               action='store_false',
+                               dest='ignore_checkout_errors',
+                               help='stop the checkout if there is a failure')
+        self.parser.set_defaults(ignore_checkout_errors=True)
+
     def packname(self, element):
         '''
         Return the filename of the archive (package) of the given project.
@@ -620,7 +645,8 @@ class Script(LbUtils.Script.PlainScript):
         # (but we have to update it later)
         dashboard.publish(cfg)
 
-        slot.checkout(build_dir, opts.projects)
+        slot.checkout(build_dir, opts.projects,
+                      ignore_failures=opts.ignore_checkout_errors)
 
         if not cfg.get('no_patch'):
             slot.patch(build_dir,

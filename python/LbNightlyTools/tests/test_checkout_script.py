@@ -134,3 +134,20 @@ def test_only_packages_conf():
             cfg.write(json.dumps(conf_data))
         retval = StackCheckout.Script().run(['test.json'])
         assert retval == 0
+
+def test_lbcore_664():
+    '''https://its.cern.ch/jira/browse/LBCORE-664
+    '''
+    configfile = join(_testdata, 'testing-slot-lbcore-664.json')
+    with TemporaryDir(chdir=True):
+        StackCheckout.Script().run(['--ignore-checkout-errors',
+                                    configfile])
+    with TemporaryDir(chdir=True):
+        StackCheckout.Script().run([configfile])
+
+    with TemporaryDir(chdir=True):
+        try:
+            StackCheckout.Script().run(['--no-ignore-checkout-errors', configfile])
+            assert False, 'the script should have failed'
+        except:
+            pass
