@@ -124,6 +124,10 @@ class LHCbBaseRpmSpec(object):
                     newrel = sorted(allrels)[-1] + 1
                     __log__.warning("New release is %d" % newrel)
                     self._lhcb_release_version = newrel
+
+            else: 
+                # In the case the directory does not exist, still set it to one...
+                self._lhcb_release_version = 1
         
 
 #

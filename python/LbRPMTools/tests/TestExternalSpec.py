@@ -58,7 +58,7 @@ class Test(unittest.TestCase):
 
         spec = LHCbExternalsRpmSpec(project, version, platform, rpmbuildarea,
                                     externalsDict, lcgVer)
-
+        spec.setRPMReleaseDir("/tmptoto")
         newspectxt = spec.getSpec()
         oldspectxt = '''
 %define lhcb_maj_version 1
