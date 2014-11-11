@@ -36,7 +36,11 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   submit_opt="--submit --flavour ${flavour}"
 fi
 
-lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${config_file}
+if [ "${flavour}" = "release" ] ; then
+  ignore_error_opt=--no-ignore-checkout-errors
+fi
+
+lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${ignore_error_opt} ${config_file}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting
