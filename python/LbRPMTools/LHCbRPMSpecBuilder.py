@@ -30,7 +30,7 @@ class RpmDirConfig:
     def __init__(self, buildarea, buildname):
         self.buildarea = buildarea
         self.buildname = buildname
-        
+
         self.topdir = "%s/rpmbuild" % buildarea
         self.tmpdir = "%s/tmpbuild" % buildarea
         self.rpmtmp = "%s/tmp" % buildarea
@@ -38,7 +38,7 @@ class RpmDirConfig:
         self.rpmsdir =  os.path.join(self.topdir, "RPMS")
         self.srpmsdir =  os.path.join(self.topdir, "SRPMS")
         self.builddir =  os.path.join(self.topdir, "BUILD")
-                
+
         # And creating them if needed
         for d in [self.rpmtmp, self.srcdir, self.rpmsdir, self.srpmsdir, self.builddir]:
             if not os.path.exists(d):
@@ -85,8 +85,12 @@ class LHCbBaseRpmSpec(object):
 
     def _createHEPToolsRequires(self):
         """ Creates the depedency on the HepTools (LHCbExternals) RPM """
-        (hver, hcmtconfig, hsystem) = self._manifest.getHEPTools()
-        return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig.replace("-", "_"))
+        heptools = self._manifest.getHEPTools()
+        if heptools:
+            (hver, hcmtconfig, hsystem) = heptools
+            return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig.replace("-", "_"))
+        else:
+            return ""
 
 
     def setRPMReleaseDir(self, rpmRelDir):
@@ -311,8 +315,8 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
-                             
-    
+
+
     def _createHeader(self):
         '''
         Prepare the RPM header
@@ -388,7 +392,7 @@ Requires: %{projectUp}_%{lbversion}
             if m == None:
                 raise Exception("Version '%s' could not be parsed" % ver)
             (major, minor, patch, gpatch) = m.groups()
-        
+
         if gpatch != None:
             raise Exception("Data package version %s not handled by RPM tools" % ver)
 
@@ -588,7 +592,7 @@ Requires: %{projectUp}_%{lbversion}
         spec += "mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}\n"
         spec += "cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb && tar jxf %s \n" % self._sharedTar
         spec += "mv  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/.glimpse_filenames.config"
-        
+
         spec += "\n\n"
         return spec
 

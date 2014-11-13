@@ -181,8 +181,6 @@ class Script(LbUtils.Script.PlainScript):
         from LbTools.Manifest import Parser
 
         manifest = Parser(manifestxmlfile)
-        (tmpproject, tmpversion) =  manifest.getProject()
-        (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
 
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import getBuildInfo
@@ -310,8 +308,6 @@ class Script(LbUtils.Script.PlainScript):
         from LbTools.Manifest import Parser
 
         manifest = Parser(manifestxmlfile)
-        (tmpproject, tmpversion) =  manifest.getProject()
-        (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
 
         # Looking for archive with sources
         srcArchive = self._findGlimpseArchive(project, version, artifactdir)

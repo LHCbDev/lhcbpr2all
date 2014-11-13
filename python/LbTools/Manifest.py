@@ -44,7 +44,12 @@ class Parser(object):
         return (projectNode.attrib["name"], projectNode.attrib["version"])
 
     def getHEPTools(self):
-        ''' Returns the triplet (lcgversion, CMTCONFIG, lcgsystem) '''
+        ''' Returns the triplet (lcgversion, CMTCONFIG, lcgsystem) or None
+        if there is no heptools tag.'''
+        # check if there is a dependency on heptools
+        node = self._tree.find('./heptools')
+        if node is None:
+            return None
 
         tags = ["./heptools/version",
                 "./heptools/binary_tag",

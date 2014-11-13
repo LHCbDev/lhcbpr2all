@@ -66,6 +66,16 @@ class Test(unittest.TestCase):
         used = parser.getUsedDataPackages()
         self.assertEqual(len(used), 5, "Number of used data packages")
 
+    def testMinimalManifest(self):
+        ''' test parsing of minimal manifest '''
+        parser = Parser(join(self._data_dir, "mini_manifest.xml"))
+        self.assertEqual(parser.getHEPTools(), None, "Dependency on LCG")
+        usedProjects = parser.getUsedProjects()
+        self.assertEqual(len(usedProjects), 0, "Number of used projects")
+        used = parser.getUsedDataPackages()
+        self.assertEqual(len(used), 0, "Number of used data packages")
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testLoadXML']
     unittest.main()
