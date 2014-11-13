@@ -19,6 +19,7 @@ Created on Feb 27, 2014
 
 import os
 import re
+import sys
 import logging
 from string import Template
 from subprocess import Popen, PIPE
@@ -117,31 +118,57 @@ Provides: %{project}_%{lcgversion}_%{cmtconfigrpm} = %{lhcb_maj_version}.%{lhcb_
 
         return header
 
+
+
+    def _createRequireForExt(self, extName, extItems):
+        '''
+        Prepare the Ext line for a specific external
+        '''
+        # Extend list if incomplete (that unfortunately happens)
+        extItems += [None] * (4 - len(extItems))
+        extVer      = extItems[0]
+        extVerNoLCG = extItems[1]
+        cmtcfgopt   = extItems[2]
+        extpath     = extItems[3]
+
+        # Exception for Expat, we need to understand this...
+        if extName == "Expat":
+            extName = "expat"
+
+        # LCGCMT is outside of LCG anyway, we deal with it in a special way
+        if extName == "LCGCMT":
+            return  "Requires: %s_%s\n" % (extName, extVer.replace('-', '_'))
+
+        requireline = None
+        # Now we need to deal with LCG and non LCG externals...
+        if  "LCG_%s" % self._lcgVersion in extpath:
+            # We have a LCG external !
+            requireline = "Requires: LCG_%s_%s_%s_%s\n" % (self._lcgVersion,
+                                                           extName,
+                                                           extVer.replace('-', '_'),
+                                                           cmtcfgopt.replace('-', '_'))
+        else:
+            # We have an old type external
+            requireline = "Requires: %s_%s_%s\n" % (extName,
+                                                    extVer.replace('-', '_'),
+                                                    cmtcfgopt.replace('-', '_'))
+        return requireline
+            
+
     def _createRequires(self):
         '''
         Prepare the Requires section of the RPM
         '''
         tmp = ""
         for k,v in self._externalsDict.items():
-            extVer = v[0]
 
+            
             # Ignore packages from the system like uuid
-            if v[3].startswith("/usr"):
+            if len(v) > 3 and v[3] != None and v[3].startswith("/usr"):
                 continue
 
-            # Temporary hack: require only -opt packages instead of DBG
-            # 20141010 - Remove hack -> use real config instead...
-            #cmtcfgopt =  v[2].replace('-dbg', '-opt')
-            cmtcfgopt =  v[2]
-
-            # Exception for Expat, we need to understand this...
-            if k == "Expat":
-                k = "expat"
-            if k == "LCGCMT":
-                tmp += "Requires: %s_%s\n" % (k, extVer.replace('-', '_'))
-            else:
-                tmp += "Requires: LCG_%s_%s_%s_%s\n" % (self._lcgVersion, k, extVer.replace('-', '_'), cmtcfgopt.replace('-', '_'))
-
+            # Actually processing the external
+            tmp += self._createRequireForExt(k, v)
 
         return tmp
 
@@ -218,6 +245,11 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
                           default=None,
                           action="store",
                           help="Force platform")
+        parser.add_option('-n', '--name',
+                          dest="name",
+                          default=None,
+                          action="store",
+                          help="Force the name of the RPM generated")
         parser.add_option('-b', '--buildarea',
                           dest="buildarea",
                           default="/tmp",
@@ -287,7 +319,10 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
 
         print "%s %s %s %s %s %s" % (project, version, cmtconfig, buildarea, externalsDict, lcgVer)
 
-        spec = LHCbExternalsRpmSpec(project, version, cmtconfig, buildarea, externalsDict, lcgVer)
+        specname = project
+        if self.options.name != None:
+            specname = self.options.name
+        spec = LHCbExternalsRpmSpec(specname, version, cmtconfig, buildarea, externalsDict, lcgVer)
 
         if self.options.output:
             with open(self.options.output, "w") as outputfile:
@@ -514,6 +549,10 @@ def get_native_versions(native_version, binary):
     LCG_external = os.path.normpath(get_macro_value(None, "LCG_external", getCMTExtraTags(binary)))
     LCG_releases = os.path.normpath(get_macro_value(None, "LCG_releases", getCMTExtraTags(binary)))
 
+    print "============================================="
+    print "LCG_external: ", LCG_external
+    print "LCG_releases: ", LCG_releases
+    print "============================================="
 
     # Iterate over package to check whether they should be kept in external
     # or app/releases. We execute a show macro_value on the package home
@@ -544,8 +583,9 @@ def get_native_versions(native_version, binary):
                 print "get_native_version - %s home is %s, IGNORING package from system" % (pak, value)
                 del packages_versions[pak]
             else:
-                print "get_native_version - %s home is %s, not in external or app/releases, ABORTING" % (pak, value)
-                sys.exit(1)
+                print "get_native_version - %s home is %s, not in external or app/releases, WARNING" % (pak, value)
+                # Let's not stop for the moment
+                #sys.exit(1)
         else:
             # Adding the pakType to the attribute of the package in the map
             l = packages_versions[pak]
