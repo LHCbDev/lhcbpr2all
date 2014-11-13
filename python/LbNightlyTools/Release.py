@@ -119,6 +119,8 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 project['checkout_opts'].update(extra_opts)
             elif proj == 'Geant4':
                 project['with_shared'] = True
+            elif proj.upper() == 'DIRAC':
+                project['checkout'] = 'dirac'
 
             projects.append(project)
 

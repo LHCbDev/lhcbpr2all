@@ -184,6 +184,88 @@ def untar(desc, rootdir='.'):
         f.close()
     __log__.debug('unpacking of %s from %s completed', desc, src)
 
+def dirac(desc, rootdir='.'):
+    '''
+    Special hybrid checkout needed to release DIRAC.
+    '''
+    from os.path import normpath, join, isdir, exists, basename, dirname
+
+    url = desc.checkout_opts.get('url', 'git://github.com/DIRACGrid/DIRAC.git')
+    commit = desc.checkout_opts.get('commit', desc.version)
+    if commit.lower() == 'head':
+        commit = 'master'
+    export = desc.checkout_opts.get('export', False)
+    etc_orig = desc.checkout_opts.get('etc',
+                   '/afs/cern.ch/lhcb/software/releases/DIRAC/etc')
+
+    protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
+    getpack_cmd = ['getpack', '--batch', '--no-config',
+                   '--no-eclipse', '--branches',
+                   '--protocol', protocol]
+    if export:
+        getpack_cmd.append('--export')
+
+    prjroot = normpath(join(rootdir, desc.baseDir))
+
+    if not os.path.exists(rootdir):
+        __log__.debug('creating %s', rootdir)
+        os.makedirs(rootdir)
+
+    __log__.debug('checking out project %s', desc)
+    call(getpack_cmd + ['--project', desc.name, desc.version],
+         cwd=rootdir, retry=3)
+    for pkg in ('DiracPolicy', 'DiracConfig', 'DiracSys'):
+        __log__.debug('checking out package %s', pkg)
+        call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
+
+    dest = normpath(join(prjroot, 'DIRAC'))
+    __log__.debug('cloning git repository %s', url)
+    call(['git', 'clone', '--no-checkout', url, dest])
+    if not export:
+        __log__.debug('checkout commit %s for %s', commit, desc)
+        call(['git', 'checkout', commit], cwd=dest)
+    else:
+        __log__.debug('export commit %s for %s', commit, desc)
+        p1 = Popen(['git', 'archive', commit],
+                   cwd=dest, stdout=PIPE)
+        p2 = Popen(['tar', '--extract', '--file', '-'],
+                   cwd=dest, stdin=p1.stdout)
+        p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+        if p2.wait() or p1.wait():
+            __log__.warning('problems exporting commit %s for %s', commit, desc)
+        shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
+    __log__.debug('checkout of %s completed in %s', desc, prjroot)
+
+    __log__.debug('starting post-checkout step for %s', desc)
+    __log__.debug('deploying scripts')
+    call(['python', join(dest, 'Core', 'scripts', 'dirac-deploy-scripts.py')],
+         cwd=dest)
+    __log__.debug('generate cmt dirs')
+    # loop over the directories in the DIRAC directory (excluding . and ..)
+    for cmt in [join(dest, pkg, 'cmt')
+                for pkg in os.listdir(dest)
+                if pkg[0] != '.' and isdir(join(dest, pkg))]:
+        if not exists(cmt):
+            __log__.debug('creating %s', cmt)
+            os.makedirs(cmt)
+            #__log__.debug('writing version.cmt')
+            with open(join(cmt, 'version.cmt'), 'w') as f:
+                f.write(desc.version + '\n')
+            #__log__.debug('writing requirements')
+            with open(join(cmt, 'requirements'), 'w') as f:
+                f.write('package %s\nuse DiracPolicy *\n' %
+                        basename(dirname(cmt)))
+    __log__.debug('populate etc directory')
+    shutil.copytree(etc_orig, join(prjroot, 'etc'))
+    __log__.debug('prepare dummy Makefile')
+    with open(join(prjroot, 'Makefile'), 'w') as f:
+        f.write('''
+all:
+\tmkdir -p InstallArea/${{CMTCONFIG}}
+\techo '<?xml version="1.0" encoding="UTF-8"?>' > InstallArea/${{CMTCONFIG}}/manifest.xml
+\techo '<manifest><project name="{project}" version="{version}" /></manifest>' >> InstallArea/${{CMTCONFIG}}/manifest.xml
+tests:
+'''.format(project=desc.name, version=desc.version))
 
 
 # set default checkout method

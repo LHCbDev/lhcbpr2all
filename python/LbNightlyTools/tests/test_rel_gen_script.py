@@ -127,6 +127,28 @@ def test_Geant4():
     finally:
         os.remove(tmpname)
 
+def test_Dirac():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'Dirac', 'v6r12p1'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'Dirac', 'version': 'v6r12p1',
+                                       'checkout': 'dirac',
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_two_projects():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
