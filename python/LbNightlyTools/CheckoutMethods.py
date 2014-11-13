@@ -263,7 +263,7 @@ def dirac(desc, rootdir='.'):
 all:
 \tmkdir -p InstallArea/${{CMTCONFIG}}
 \techo '# Building package {project} [0/0]' > build.${{CMTCONFIG}}.log
-\techo 'nothing to build' >> build.${CMTCONFIG}.log
+\techo 'nothing to build' >> build.${{CMTCONFIG}}.log
 \techo '<?xml version="1.0" encoding="UTF-8"?>' > InstallArea/${{CMTCONFIG}}/manifest.xml
 \techo '<manifest><project name="{project}" version="{version}" /></manifest>' >> InstallArea/${{CMTCONFIG}}/manifest.xml
 tests:
