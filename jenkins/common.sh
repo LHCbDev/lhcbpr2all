@@ -61,6 +61,9 @@ else
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
 fi
 
+# FIXME: Get the latest getpack (while waiting for the release)
+export PYTHONPATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbRelease/python:$PYTHONPATH
+
 # FIXME: with gcc49 we do not get the right Python with LbLogin
 if (echo $CMTCONFIG | grep -q gcc49) ; then
   export PATH=/afs/cern.ch/sw/lcg/releases/LCG_68/Python/2.7.6/x86_64-slc6-gcc48-opt/bin:$PATH
