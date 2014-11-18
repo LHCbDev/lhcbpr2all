@@ -270,5 +270,18 @@ tests:
 '''.format(project=desc.name, version=desc.version))
 
 
+def lhcbdirac(desc, rootdir='.'):
+    '''
+    Special hybrid checkout needed to release LHCbDirac.
+    '''
+    from os.path import normpath, join, isdir, exists, basename, dirname
+    # we start from standard getpack checkout
+    getpack(desc, rootdir)
+    # we need to patch the Makefile
+    prjroot = normpath(join(rootdir, desc.baseDir))
+    with open(join(prjroot, 'Makefile'), 'a') as f:
+        f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
+
+
 # set default checkout method
 default = getpack # pylint: disable=C0103

@@ -45,7 +45,7 @@ try:
 except ImportError:
     # if we cannot find the list of names, we use a minimal hardcoded list
     PROJECT_NAMES = ['LHCb', 'DaVinci', 'DecFilesTests', 'MooreOnline',
-                     'LbScripts', 'VanDerMeer']
+                     'LbScripts', 'VanDerMeer', 'LHCbDirac']
 
 # convert the names to a a conversion dictionary
 PROJECT_NAMES = dict((name.lower(), name) for name in PROJECT_NAMES)
@@ -117,10 +117,11 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
                               'commit': 'GAUDI/GAUDI_' + vers}
                 project['checkout_opts'].update(extra_opts)
-            elif proj == 'Geant4':
+            elif proj in ('Dirac', 'LHCbDirac'):
+                project['checkout'] = proj.lower()
+
+            if proj in ('Geant4', 'LHCbDirac'):
                 project['with_shared'] = True
-            elif proj.upper() == 'DIRAC':
-                project['checkout'] = 'dirac'
 
             projects.append(project)
 
