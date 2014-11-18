@@ -277,8 +277,29 @@ def lhcbdirac(desc, rootdir='.'):
     from os.path import normpath, join, isdir, exists, basename, dirname
     # we start from standard getpack checkout
     getpack(desc, rootdir)
-    # we need to patch the Makefile
+
     prjroot = normpath(join(rootdir, desc.baseDir))
+    dest = join(prjroot, 'LHCbDIRAC')
+
+    __log__.debug('create LHCbDIRAC/__init__.py')
+    shutil.copy(join(prjroot, 'LHCbDiracPolicy', 'cmt', '__init__.py'), dest)
+
+    __log__.debug('create scripts directory')
+    __log__.debug('  looking for deploy script')
+    cmt_env = dict(os.environ)
+    cmt_env['PWD'] = cmt_env['CWD'] = join(prjroot, 'LHCbDiracPolicy', 'cmt')
+    out, _ = Popen(['cmt', 'show', 'macro_value', 'DiracPolicy_root'],
+                   env=cmt_env, cwd=cmt_env['PWD'], stdout=PIPE).communicate()
+    __log__.debug('  found %s', out.strip())
+    cmd = ['python', join(out.strip(), 'scripts', 'dirac-deploy-scripts.py'),
+           '-i', join(prjroot, 'scripts'), '-d']
+    for pkg in [join(dest, pkg)
+                for pkg in os.listdir(dest)
+                if pkg[0] != '.' and isdir(join(dest, pkg))]:
+        __log__.debug('  calling %s', cmd + [pkg])
+        call(cmd + [pkg])
+
+    __log__.debug('patching Makefile')
     with open(join(prjroot, 'Makefile'), 'a') as f:
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 

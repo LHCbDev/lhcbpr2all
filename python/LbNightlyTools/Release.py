@@ -120,7 +120,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
             elif proj in ('Dirac', 'LHCbDirac'):
                 project['checkout'] = proj.lower()
 
-            if proj in ('Geant4', 'LHCbDirac'):
+            if proj in ('Geant4'):
                 project['with_shared'] = True
 
             projects.append(project)
