@@ -347,11 +347,11 @@ def createManifestFile(project, version, platform, build_dir):
     heptools = re.search(r'LCGCMT_([^ ]+)', out).group(1)
 
     projects = ['    <project name="%s" version="%s" />' %
-                (fixProjectCase(name), version.split('_')[-1])
-                for name, version in [x.split()[0:2]
-                                      for x in out.splitlines()
-                                      if re.match(r'^  [^ ]', x)]
-                if name not in ('DBASE', 'PARAM')]
+                (fixProjectCase(name), vers.split('_')[-1])
+                for name, vers in [x.split()[0:2]
+                                   for x in out.splitlines()
+                                   if re.match(r'^  [^ ]', x)]
+                if name not in ('DBASE', 'PARAM', 'LCGCMT')]
     if projects:
         projects.insert(0, '\n  <used_projects>')
         projects.append('  </used_projects>')
