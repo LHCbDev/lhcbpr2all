@@ -274,29 +274,48 @@ def lhcbdirac(desc, rootdir='.'):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
-    from os.path import normpath, join, isdir, exists, basename, dirname
-    # we start from standard getpack checkout
-    getpack(desc, rootdir)
+    from os.path import normpath, join, isdir
+    if desc.version.lower() == 'head':
+        url = 'http://svn.cern.ch/guest/dirac/LHCbDIRAC/trunk/LHCbDIRAC'
+    else:
+        url = ('http://svn.cern.ch/guest/dirac/LHCbDIRAC/tags/LHCbDIRAC/' +
+               desc.version)
+
+    export = desc.checkout_opts.get('export', False)
+
+    protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
+    getpack_cmd = ['getpack', '--batch', '--no-config',
+                   '--no-eclipse', '--branches',
+                   '--protocol', protocol]
+    if export:
+        getpack_cmd.append('--export')
 
     prjroot = normpath(join(rootdir, desc.baseDir))
+    policy = join(prjroot, 'LHCbDiracPolicy')
     dest = join(prjroot, 'LHCbDIRAC')
 
-    __log__.debug('create LHCbDIRAC/__init__.py')
-    shutil.copy(join(prjroot, 'LHCbDiracPolicy', 'cmt', '__init__.py'), dest)
+    if not os.path.exists(rootdir):
+        __log__.debug('creating %s', rootdir)
+        os.makedirs(rootdir)
 
-    __log__.debug('create scripts directory')
-    __log__.debug('  looking for deploy script')
-    cmt_env = dict(os.environ)
-    cmt_env['PWD'] = cmt_env['CWD'] = join(prjroot, 'LHCbDiracPolicy', 'cmt')
-    out, _ = Popen(['cmt', 'show', 'macro_value', 'DiracPolicy_root'],
-                   env=cmt_env, cwd=cmt_env['PWD'], stdout=PIPE).communicate()
-    __log__.debug('  found %s', out.strip())
-    cmd = ['python', join(out.strip(), 'scripts', 'dirac-deploy-scripts.py'),
+    __log__.debug('checking out project %s', desc)
+    call(getpack_cmd + ['--project', desc.name, desc.version],
+         cwd=rootdir, retry=3)
+    for pkg in ('LHCbDiracPolicy', 'LHCbDiracConfig', 'LHCbDiracSys'):
+        __log__.debug('checking out package %s', pkg)
+        call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
+
+    __log__.debug('checking out %s', url)
+    call(['svn', 'checkout' if not export else 'export', url , dest])
+
+    __log__.debug('starting post-checkout step for %s', desc)
+    __log__.debug('deploying scripts')
+    cmd = ['python', join(policy, 'scripts', 'dirac-deploy-scripts.py'),
            '-i', join(prjroot, 'scripts'), '-d']
     for pkg in [join(dest, pkg)
                 for pkg in os.listdir(dest)
                 if pkg[0] != '.' and isdir(join(dest, pkg))]:
-        __log__.debug('  calling %s', cmd + [pkg])
+        __log__.debug('  - %s', pkg)
         call(cmd + [pkg])
 
     __log__.debug('patching Makefile')
