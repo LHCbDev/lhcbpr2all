@@ -191,6 +191,8 @@ class Script(LbUtils.Script.PlainScript):
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbBinaryRpmSpec
         (absFilename, buildlocation, fprojectVersion, fcmtconfig) = getBuildInfo(manifestxmlfile)
         spec = LHCbBinaryRpmSpec(project, version, platform, rpmbuildarea, buildlocation, manifest)
+        spec.addExtraRequire( "_".join([project, version, 'shared']))
+
         # Check if a non default RPM release dir was specified
         if self.options.rpmreldir != None:
             self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
@@ -250,7 +252,6 @@ class Script(LbUtils.Script.PlainScript):
         rpmname =  spec.getRPMName()
         
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
-        print "=================>", fullrpmpath
         self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
 
         # Remove tmpdirectory

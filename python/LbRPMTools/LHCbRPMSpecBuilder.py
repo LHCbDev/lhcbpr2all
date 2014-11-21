@@ -345,7 +345,7 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
-Provides: %{projectUp}_%{lbversion} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
+Provides: %{projectUp}_%{lbversion}_shared = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 
         \n""").substitute(buildarea = self._buildarea,
                           project = self._project,
@@ -440,7 +440,17 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         self._lhcb_patch_version = 0
         self._lhcb_release_version = 0
         self._arch = "noarch"
+        self._extraRequires = []
 
+    def addExtraRequire(self, req):
+        ''' Add a requirement for another package to the list '''
+        self._extraRequires.append(req)
+
+    def getExtraRequires(self):
+        ''' Add a requirement for another package to the list '''
+        return "\n".join([ "Requires: %s" % r for r in
+                           self._extraRequires ])
+        
     def getArch(self):
         ''' Return the architecture, always noarch for our packages'''
         return self._arch
@@ -497,7 +507,7 @@ Prefix: /opt/LHCbSoft
 Provides: /bin/sh
 Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 Requires: %{projectUp}_%{lbversion}
-
+${extraRequires}
         \n""").substitute(buildarea = self._buildarea,
                           buildlocation = self._buildlocation,
                           project = self._project,
@@ -510,6 +520,7 @@ Requires: %{projectUp}_%{lbversion}
                           lhcb_min_version = self._lhcb_min_version,
                           lhcb_patch_version = self._lhcb_patch_version,
                           lhcb_release_version = self._lhcb_release_version,
+                          extraRequires = self.getExtraRequires()
                           )
 
         return header
