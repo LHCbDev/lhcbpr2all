@@ -45,7 +45,7 @@ try:
 except ImportError:
     # if we cannot find the list of names, we use a minimal hardcoded list
     PROJECT_NAMES = ['LHCb', 'DaVinci', 'DecFilesTests', 'MooreOnline',
-                     'LbScripts', 'VanDerMeer']
+                     'LbScripts', 'VanDerMeer', 'LHCbDirac']
 
 # convert the names to a a conversion dictionary
 PROJECT_NAMES = dict((name.lower(), name) for name in PROJECT_NAMES)
@@ -117,10 +117,11 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
                               'commit': 'GAUDI/GAUDI_' + vers}
                 project['checkout_opts'].update(extra_opts)
-            elif proj == 'Geant4':
+            elif proj in ('Dirac', 'LHCbDirac'):
+                project['checkout'] = proj.lower()
+
+            if proj in ('Geant4'):
                 project['with_shared'] = True
-            elif proj.upper() == 'DIRAC':
-                project['checkout'] = 'dirac'
 
             projects.append(project)
 
@@ -346,11 +347,11 @@ def createManifestFile(project, version, platform, build_dir):
     heptools = re.search(r'LCGCMT_([^ ]+)', out).group(1)
 
     projects = ['    <project name="%s" version="%s" />' %
-                (fixProjectCase(name), version.split('_')[-1])
-                for name, version in [x.split()[0:2]
-                                      for x in out.splitlines()
-                                      if re.match(r'^  [^ ]', x)]
-                if name not in ('DBASE', 'PARAM')]
+                (fixProjectCase(name), vers.split('_')[-1])
+                for name, vers in [x.split()[0:2]
+                                   for x in out.splitlines()
+                                   if re.match(r'^  [^ ]', x)]
+                if name not in ('DBASE', 'PARAM', 'LCGCMT')]
     if projects:
         projects.insert(0, '\n  <used_projects>')
         projects.append('  </used_projects>')

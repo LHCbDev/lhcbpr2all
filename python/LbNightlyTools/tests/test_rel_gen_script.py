@@ -149,6 +149,28 @@ def test_Dirac():
     finally:
         os.remove(tmpname)
 
+def test_LHCbDirac():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'LHCbDirac', 'v7r6p24'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCbDirac', 'version': 'v7r6p24',
+                                       'checkout': 'lhcbdirac',
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_two_projects():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
