@@ -146,7 +146,7 @@ jQuery.fn.logfileEntries = function() {
           // with the right id
           .attr("id", l.id)
           // using the description or the package name
-          .html('&rarr;&nbsp;' + (l.desc || ("Package <strong>"+l.name+"</strong>"))).append(summary(l))
+          .html('&rarr;&nbsp;' + l.desc).append(summary(l))
         )
     );
   });

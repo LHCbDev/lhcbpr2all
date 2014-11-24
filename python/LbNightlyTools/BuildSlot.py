@@ -1409,19 +1409,19 @@ class BuildReporter(object):
                               'l': env_size + max(0, checkout_size-1),
                               'desc': 'Show getpack log'})
         offset = env_size + checkout_size
-        # When using CMT, the logfile_links must have 'name' and not 'desc'
-        if self.config.get('USE_CMT'):
-            desc_key = 'name'
-        else:
-            desc_key = 'desc'
+
+        special_sections = set(['configure', "'global'",
+                                'install', 'post-install'])
         for name, begin in self.summary['sections']:
             begin += offset
             logfile_links[-1]['l'] = begin - 1
+            desc = (('' if name in special_sections else 'Package ') +
+                    ('<strong>%s</strong>' % name))
             logfile_links.append({'id': 'section%d' % begin,
                                   'f': begin,
-                                  desc_key: name})
+                                  'name': name,
+                                  'desc': desc})
         logfile_links[-1]['l'] = offset + self.summary['size'] - 1
-
 
         ignored_counts = []
         for k in ['error', 'warning']:
