@@ -16,6 +16,7 @@ Run a LHCbPR job
 __author__ = 'Ben Couturier <ben.couturier@cern.ch>'
 
 import LbUtils.Script
+import re
 import sys
 from LbPR.LbPRJobManager import JobManager
 from LbNightlyTools import Configuration
@@ -51,6 +52,18 @@ class Script(LbUtils.Script.PlainScript):
                                     '[default: runlhcbpr.sh]')
         addBasicOptions(self.parser)
 
+    def interpretOptions(self, options):
+        '''  Filters the option to see if a command runner is defined
+        It returns  the filtered a tuple with (the runner, the options). '''
+        myre = re.compile('\s*runner=["\']+(.*?)["\']+(.*)$', re.IGNORECASE)
+        m = myre.match(options)
+        if m == None:
+            # No match, we have normal options, just use Gaudirun.py
+            self.log.warning("No runner defined, we use gaudirun.py")
+            return ("gaudirun.py", options)
+        else:
+            self.log.warning("Runner defined in options: %s" % m.group(1))
+            return (m.group(1), m.group(2))
 
     def main(self):
         '''
@@ -124,7 +137,8 @@ class Script(LbUtils.Script.PlainScript):
                 #lblogin_cmd = ". LbLogin.sh -c %s" % platform
                 setup_cmd = ". SetupProject.sh --keep-CMTPROJECTPATH %s %s %s"\
                                 % (application, project_version, setupcontent)
-                run_cmd = "gaudirun.py %s " % optionscontent
+                (runner, realopts) = self.interpretOptions(optionscontent)
+                run_cmd = "%s %s " %  (runner, realopts)
                 #setCMTPROJECTPATH=config["env"][0]
                 runfile.write('''
 #!/bin/bash
@@ -173,6 +187,7 @@ exit $RETCODE
 
 
 
+        
 
 # __main__
 sys.exit(Script().run())
