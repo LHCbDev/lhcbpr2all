@@ -149,6 +149,30 @@ def test_Dirac():
     finally:
         os.remove(tmpname)
 
+def test_LHCbGrid():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'LHCbGrid', 'v0r4'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCbGrid', 'version': 'v0r4',
+                                       'checkout': 'svn',
+                                       'checkout_opts': {'export': True,
+                                                         'url': 'http://svn.cern.ch/guest/lhcb/LHCbGrid/'
+                                                                'tags/LHCBGRID/LHCBGRID_v0r4'}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_LHCbDirac():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
