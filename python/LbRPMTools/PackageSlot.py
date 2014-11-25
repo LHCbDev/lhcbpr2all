@@ -191,7 +191,8 @@ class Script(LbUtils.Script.PlainScript):
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbBinaryRpmSpec
         (absFilename, buildlocation, fprojectVersion, fcmtconfig) = getBuildInfo(manifestxmlfile)
         spec = LHCbBinaryRpmSpec(project, version, platform, rpmbuildarea, buildlocation, manifest)
-        spec.addExtraRequire( "_".join([project, version, 'shared']))
+        if hasShared:
+            spec.addExtraRequire( "_".join([project, version, 'shared']))
 
         # Check if a non default RPM release dir was specified
         if self.options.rpmreldir != None:
@@ -250,7 +251,7 @@ class Script(LbUtils.Script.PlainScript):
 
         # Building the name of the expected RPM
         rpmname =  spec.getRPMName()
-        
+
         fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
         self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
 
@@ -329,7 +330,7 @@ class Script(LbUtils.Script.PlainScript):
         if self.options.rpmreldir != None:
             self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
             spec.setRPMReleaseDir(self.options.rpmreldir)
-            
+
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
