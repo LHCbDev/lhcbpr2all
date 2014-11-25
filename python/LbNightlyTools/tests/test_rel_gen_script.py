@@ -161,10 +161,8 @@ def test_LHCbGrid():
 
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'LHCbGrid', 'version': 'v0r4',
-                                       'checkout': 'svn',
-                                       'checkout_opts': {'export': True,
-                                                         'url': 'http://svn.cern.ch/guest/lhcb/LHCbGrid/'
-                                                                'tags/LHCBGRID/LHCBGRID_v0r4'}}]
+                                       'checkout': 'lhcbgrid',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 

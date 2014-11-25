@@ -117,13 +117,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
                               'commit': 'GAUDI/GAUDI_' + vers}
                 project['checkout_opts'].update(extra_opts)
-            elif proj == 'LHCbGrid':
-                project['checkout'] = 'svn'
-                extra_opts = {'url': 'http://svn.cern.ch/guest/lhcb'
-                                     '/LHCbGrid/tags/LHCBGRID/LHCBGRID_' +
-                                     vers}
-                project['checkout_opts'].update(extra_opts)
-            elif proj in ('Dirac', 'LHCbDirac'):
+            elif proj in ('Dirac', 'LHCbDirac', 'LHCbGrid'):
                 project['checkout'] = proj.lower()
 
             if proj in ('Geant4'):

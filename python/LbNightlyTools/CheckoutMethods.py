@@ -323,5 +323,24 @@ def lhcbdirac(desc, rootdir='.'):
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 
 
+def lhcbgrid(desc, rootdir='.'):
+    '''
+    Special hybrid checkout needed to release LHCbGrid.
+    '''
+    if 'url' not in desc.checkout_opts:
+        if desc.version.lower() == 'head':
+            url = 'http://svn.cern.ch/guest/lhcb/LHCbGrid/trunk'
+        else:
+            url = ('http://svn.cern.ch/guest/lhcb/LHCbGrid/tags/' +
+                   'LHCBGRID/LHCBGRID_' + desc.version)
+        desc.checkout_opts['url'] = url
+
+    svn(desc, rootdir)
+
+    dest = os.path.join(rootdir, desc.baseDir)
+    __log__.debug('fixing requirements files')
+    call(['make', 'clean'], cwd=dest)
+    call(['make', 'requirements'], cwd=dest)
+
 # set default checkout method
 default = getpack # pylint: disable=C0103
