@@ -45,7 +45,7 @@ try:
 except ImportError:
     # if we cannot find the list of names, we use a minimal hardcoded list
     PROJECT_NAMES = ['LHCb', 'DaVinci', 'DecFilesTests', 'MooreOnline',
-                     'LbScripts', 'VanDerMeer', 'LHCbDirac']
+                     'LbScripts', 'VanDerMeer', 'LHCbDirac', 'LHCbGrid']
 
 # convert the names to a a conversion dictionary
 PROJECT_NAMES = dict((name.lower(), name) for name in PROJECT_NAMES)
