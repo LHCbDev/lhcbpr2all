@@ -14,6 +14,7 @@ Generate a basic nightly builds configuration file from a list of projects and
 versions.
 '''
 import LbNightlyTools.Configuration
+import LbNightlyTools.CheckoutMethods
 
 import os
 import json
@@ -117,7 +118,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
                               'commit': 'GAUDI/GAUDI_' + vers}
                 project['checkout_opts'].update(extra_opts)
-            elif proj in ('Dirac', 'LHCbDirac', 'LHCbGrid'):
+            elif hasattr(LbNightlyTools.CheckoutMethods, proj.lower()):
                 project['checkout'] = proj.lower()
 
             if proj in ('Geant4'):
