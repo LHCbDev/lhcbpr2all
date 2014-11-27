@@ -49,10 +49,10 @@ class Test(unittest.TestCase):
     def testGetHEPTools(self):
         ''' test loading of LCG info '''
         parser = Parser(self._data_file)
-        (v, b, l) = parser.getHEPTools()
+        (v, b, p) = parser.getHEPTools()
         self.assertEqual(v, '66', "LCG version")
         self.assertEqual(b, 'x86_64-slc6-gcc48-opt', "CMTCONFIG")
-        self.assertEqual(l, 'x86_64-slc6-gcc48', "LCG system")
+        self.assertEqual(p, {}, "externals")
 
     def testUsedProjects(self):
         ''' test the getUsedProjects method '''
