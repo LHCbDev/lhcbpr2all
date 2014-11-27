@@ -84,11 +84,19 @@ class LHCbBaseRpmSpec(object):
                + str(self._createTrailer())
 
     def _createHEPToolsRequires(self):
-        """ Creates the depedency on the HepTools (LHCbExternals) RPM """
+        """ Creates the dependency on the HepTools (LHCbExternals) RPM """
         heptools = self._manifest.getHEPTools()
         if heptools:
-            (hver, hcmtconfig) = heptools
-            return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig.replace("-", "_"))
+            (hver, hcmtconfig, packages) = heptools
+            hcmtconfig = hcmtconfig.replace("-", "_")
+            if packages:
+                requires = ['Requires: LCG_{hver}_{name}_{vers}_{platf}\n'
+                            .format(hver=hver, name=name, vers=vers,
+                                    platf=hcmtconfig)
+                            for name, vers in sorted(packages.items())]
+                return ''.join(requires)
+            else:
+                return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig)
         else:
             return ""
 

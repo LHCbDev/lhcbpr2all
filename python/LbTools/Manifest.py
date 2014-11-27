@@ -44,8 +44,10 @@ class Parser(object):
         return (projectNode.attrib["name"], projectNode.attrib["version"])
 
     def getHEPTools(self):
-        ''' Returns the triplet (lcgversion, CMTCONFIG, lcgsystem) or None
-        if there is no heptools tag.'''
+        ''' Returns the triplet (lcgversion, CMTCONFIG, packages) or None
+        if there is no heptools tag.
+        The 'packages' is a dictionary of names to versions.
+        '''
         # check if there is a dependency on heptools
         node = self._tree.find('./heptools')
         if node is None:
@@ -61,6 +63,9 @@ class Parser(object):
                 raise Exception("%s not found" % t)
             tagValues.append(node.text)
 
+        packages= {pkg.attrib['name']: pkg.attrib['version']
+                   for pkg in self._tree.findall('./heptools/packages/package')}
+        tagValues.append(packages)
         return tuple(tagValues)
 
     def getUsedProjects(self):
