@@ -20,7 +20,7 @@ import logging
 import json
 import os
 import unittest
-from os.path import normpath, join, exists
+from os.path import normpath, join
 
 class Test(unittest.TestCase):
     ''' Test cases for the RPM Spec builder '''
@@ -50,7 +50,6 @@ class Test(unittest.TestCase):
         lcgVer = "68"
         platform = "x86_64-slc6-gcc48-opt"
         rpmbuildarea = "/tmp"
-        import json
         externalsDict = None
         with open(self._externalsDictJSON, 'r') as infile:
             externalsDict = json.load(infile)
@@ -156,13 +155,12 @@ Requires: LCG_68_oracle_11.2.0.3.0_x86_64_slc6_gcc48_opt
 '''
         #print newspectxt
 
-        import sys
         nl = newspectxt.splitlines()
         ol = oldspectxt.splitlines()
         self.assertEquals(len(nl), len(ol))
 
 
-        for i, l in enumerate(ol):
+        for i in range(len(ol)):
             if ol[i] != nl[i]:
                 print "LINE[%d] REFERENCE:<%s>" % (i, ol[i])
                 print "LINE[%d] GENERATED:<%s>" % (i, nl[i])

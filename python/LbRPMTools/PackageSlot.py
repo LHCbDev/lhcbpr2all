@@ -17,10 +17,8 @@ Created on Feb 27, 2014
 '''
 
 import os
-import re
 import logging
 import shutil
-from string import Template
 
 __log__ = logging.getLogger(__name__)
 
@@ -110,8 +108,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Prepare the option parser.
         '''
-        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
-                                                  addDashboardOptions)
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
 
         addBasicOptions(self.parser)
         self.addRpmOptions(self.parser)
@@ -189,7 +186,7 @@ class Script(LbUtils.Script.PlainScript):
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import getBuildInfo
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbBinaryRpmSpec
-        (absFilename, buildlocation, fprojectVersion, fcmtconfig) = getBuildInfo(manifestxmlfile)
+        (_absFilename, buildlocation, _fprojectVersion, _fcmtconfig) = getBuildInfo(manifestxmlfile)
         spec = LHCbBinaryRpmSpec(project, version, platform, rpmbuildarea, buildlocation, manifest)
         if hasShared:
             spec.addExtraRequire( "_".join([project, version, 'shared']))
@@ -306,10 +303,9 @@ class Script(LbUtils.Script.PlainScript):
     def _buildDatapkgRpm(self, project, fulldatapkg, version, rpmbuildarea, artifactdir, keeprpmdir):
         ''' Build the RPM for the datapkg and copy them to the target area '''
         fulldatapkg
-        hat = None
         datapkg = fulldatapkg
         if "/" in datapkg:
-            (hat, datapkg) = fulldatapkg.split("/")
+            (_hat, datapkg) = fulldatapkg.split("/")
 
         rpmbuildname = "_".join([project, datapkg ])
 
@@ -479,9 +475,7 @@ class Script(LbUtils.Script.PlainScript):
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
-        configfile = self.args[0]
         # Same logic as BuildSlot lo locate the builddir
-        import os
         builddir = os.path.join(os.getcwd(), 'build')
 
         # Now loading the slot configuration
@@ -500,7 +494,6 @@ class Script(LbUtils.Script.PlainScript):
                 os.makedirs(artifactdir)
 
         # Check plaform to package for
-        import os
         platform = self.options.platform
         if platform == None:
             platform = os.environ.get("CMTCONFIG", None)

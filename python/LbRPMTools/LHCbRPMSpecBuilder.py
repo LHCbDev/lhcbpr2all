@@ -123,7 +123,6 @@ class LHCbBaseRpmSpec(object):
                 else:
                     __log__.warning("Found %d files matching checking latest release" % len(allfiles) )
                     allrels = []
-                    import re
                     # Getting the releae numbers from the files found
                     for f in allfiles:
                         m = re.match("-(\d+)\.", f[len(prefix):])
@@ -1028,7 +1027,7 @@ def getBuildInfo(manifestFileName):
         return (realFilename, None, None, None)
     else:
         barea = realFilename
-        for i in range(5):
+        for _i in range(5):
             barea = os.path.dirname(barea)
         return(realFilename, barea , splitPath[-4], splitPath[-2])
 
@@ -1148,14 +1147,14 @@ class Script(LbUtils.Script.PlainScript):
         # Extracting info from filename
         filename = self.args[0]
         self.log.warning("Processing file %s" % filename)
-        (absFilename, buildlocation, fprojectVersion, fcmtconfig) = getBuildInfo(filename)
+        (_absFilename, buildlocation, _fprojectVersion, _fcmtconfig) = getBuildInfo(filename)
 
         # Parsing the XML itself
         from LbTools.Manifest import Parser
         manifest = Parser(filename)
 
         (project, version) =  manifest.getProject()
-        (LCGVerson, cmtconfig, lcg_system) = manifest.getHEPTools()
+        (_LCGVerson, cmtconfig, _lcg_system) = manifest.getHEPTools()
 
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version + "_" + cmtconfig)
