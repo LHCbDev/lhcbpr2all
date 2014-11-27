@@ -274,7 +274,7 @@ def lhcbdirac(desc, rootdir='.'):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
-    from os.path import normpath, join, isdir
+    from os.path import normpath, join, isdir, basename
     if desc.version.lower() == 'head':
         url = 'http://svn.cern.ch/guest/dirac/LHCbDIRAC/trunk/LHCbDIRAC'
     else:
@@ -307,6 +307,13 @@ def lhcbdirac(desc, rootdir='.'):
 
     __log__.debug('checking out %s', url)
     call(['svn', 'checkout' if not export else 'export', url , dest])
+    __log__.debug('creating version.cmt files')
+    for root, dirs, files in os.walk(dest):
+        if basename(root) == 'cmt':
+            dirs[:] = [] # stop recursion
+            if 'version.cmt' not in files:
+                __log__.debug('  writing %s/version.cmt', root)
+                open(join(root, 'version.cmt'), 'w').write('v*\n')
 
     __log__.debug('starting post-checkout step for %s', desc)
     __log__.debug('deploying scripts')
