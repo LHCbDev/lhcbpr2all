@@ -52,8 +52,7 @@ class Parser(object):
             return None
 
         tags = ["./heptools/version",
-                "./heptools/binary_tag",
-                "./heptools/lcg_system"]
+                "./heptools/binary_tag"]
 
         tagValues = []
         for t in tags:

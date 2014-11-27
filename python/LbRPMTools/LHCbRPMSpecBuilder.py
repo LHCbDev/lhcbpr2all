@@ -87,7 +87,7 @@ class LHCbBaseRpmSpec(object):
         """ Creates the depedency on the HepTools (LHCbExternals) RPM """
         heptools = self._manifest.getHEPTools()
         if heptools:
-            (hver, hcmtconfig, hsystem) = heptools
+            (hver, hcmtconfig) = heptools
             return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig.replace("-", "_"))
         else:
             return ""
@@ -96,7 +96,7 @@ class LHCbBaseRpmSpec(object):
     def setRPMReleaseDir(self, rpmRelDir):
         """ Set the location for the RPM release directory """
         self._prodRPMReleaseDir = rpmRelDir
-        
+
     def _setNextReleaseNumberFromRepo(self):
         """ Checks the RPM release dir (see constructor for the class) to find the
         next release number for the package.
@@ -123,16 +123,16 @@ class LHCbBaseRpmSpec(object):
                             allrels.append(int(m.group(1)))
                         else:
                             __log__.warning("Released RPM %s does not abide by naming convention for release" % f)
-                            
+
                     # Now checking the latest one and increase number
                     newrel = sorted(allrels)[-1] + 1
                     __log__.warning("New release is %d" % newrel)
                     self._lhcb_release_version = newrel
 
-            else: 
+            else:
                 # In the case the directory does not exist, still set it to one...
                 self._lhcb_release_version = 1
-        
+
 
 #
 # Spec for shared RPMs
@@ -170,7 +170,7 @@ class LHCbSharedRpmSpec(LHCbBaseRpmSpec):
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
-    
+
     def _createHeader(self):
         '''
         Prepare the RPM header
@@ -312,7 +312,7 @@ class LHCbExtraSharedRpmSpec(LHCbBaseRpmSpec):
         full = "-".join([projname, projver, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
-    
+
     def _createHeader(self):
         '''
         Prepare the RPM header
@@ -450,7 +450,7 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         ''' Add a requirement for another package to the list '''
         return "\n".join([ "Requires: %s" % r for r in
                            self._extraRequires ])
-        
+
     def getArch(self):
         ''' Return the architecture, always noarch for our packages'''
         return self._arch
