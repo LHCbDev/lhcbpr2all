@@ -15,4 +15,13 @@
       <package name="QMtest" version="2.4.1_python2.7" />
     </packages>
   </heptools>
+  <exttools>
+    <binary_tag>x86_64-slc6-gcc48-opt</binary_tag>
+    <packages>
+      <package name="pygsi"           version="0.5_python2.7" />
+      <package name="voms"            version="2.0.12"        />
+      <package name="epel"            version="20141030"      />
+      <package name="dm-utils"        version="1.16.0-2"      />
+    </packages>
+  </exttools>
 </manifest>

@@ -84,7 +84,7 @@ class LHCbBaseRpmSpec(object):
                + str(self._createTrailer())
 
     def _createHEPToolsRequires(self):
-        """ Creates the dependency on the HepTools (LHCbExternals) RPM """
+        """ Creates the dependency on the HepTools (LHCbExternals) RPMs """
         heptools = self._manifest.getHEPTools()
         if heptools:
             (hver, hcmtconfig, packages) = heptools
@@ -99,6 +99,14 @@ class LHCbBaseRpmSpec(object):
                 return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig)
         else:
             return ""
+
+    def _createExtToolsRequires(self):
+        """ Creates the dependency on the external (middleware) RPMs """
+        binary_tag, exttools = self._manifest.getExtTools()
+        binary_tag = binary_tag.replace('-', '_')
+        return ''.join('Requires: {name}_{vers}_{platf}\n'
+                       .format(name=name, vers=vers, platf=binary_tag)
+                       for name, vers in sorted(exttools.items()))
 
 
     def setRPMReleaseDir(self, rpmRelDir):
@@ -585,6 +593,7 @@ ${extraRequires}
                                                             dversion)
         # Dependency to LCGCMT
         tmp += self._createHEPToolsRequires()
+        tmp += self._createExtToolsRequires()
 
         # Dependency to data packages
         for (pack, ver) in self._manifest.getUsedDataPackages():
@@ -1154,7 +1163,7 @@ class Script(LbUtils.Script.PlainScript):
         manifest = Parser(filename)
 
         (project, version) =  manifest.getProject()
-        (_LCGVerson, cmtconfig, _lcg_system) = manifest.getHEPTools()
+        (_LCGVerson, cmtconfig, _packages) = manifest.getHEPTools()
 
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version + "_" + cmtconfig)

@@ -68,6 +68,18 @@ class Parser(object):
         tagValues.append(packages)
         return tuple(tagValues)
 
+    def getExtTools(self):
+        ''' Returns a dictionary (name->version) of external packages.
+        '''
+        try:
+            bin_tag = self._tree.find('./exttools/binary_tag').text.strip()
+        except AttributeError:
+            # exttools/binary_tag not found
+            bin_tag = ''
+        pkgs = {pkg.attrib['name']: pkg.attrib['version']
+                for pkg in self._tree.findall('./exttools/packages/package')}
+        return bin_tag, pkgs
+
     def getUsedProjects(self):
         ''' Returns the list of tuples (project, version) for used projects '''
 

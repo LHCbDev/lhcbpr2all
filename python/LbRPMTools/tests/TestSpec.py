@@ -221,6 +221,10 @@ Requires: LCG_70root6_Qt_4.8.4_x86_64_slc6_gcc48_opt
 Requires: LCG_70root6_RELAX_RELAX_1_4_1_x86_64_slc6_gcc48_opt
 Requires: LCG_70root6_ROOT_6.02.01_x86_64_slc6_gcc48_opt
 Requires: LCG_70root6_libunwind_5c2cade_x86_64_slc6_gcc48_opt
+Requires: dm-utils_1.16.0-2_x86_64_slc6_gcc48_opt
+Requires: epel_20141030_x86_64_slc6_gcc48_opt
+Requires: pygsi_0.5_python2.7_x86_64_slc6_gcc48_opt
+Requires: voms_2.0.12_x86_64_slc6_gcc48_opt
 %description
 %{project}
 
