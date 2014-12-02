@@ -116,13 +116,13 @@ if(NOT STEP STREQUAL TEST)
     ctest_submit(PARTS Update Notes Configure Build)
   endif()
   if(NOT USE_CMT)
-    execute_process(COMMAND $${CMAKE_COMMAND} -P $${CTEST_BINARY_DIRECTORY}/cmake_install.cmake
+    execute_process(COMMAND make unsafe-install WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
                     OUTPUT_VARIABLE install_log ERROR_VARIABLE install_log)
     message("$${install_log}")
     if(EXISTS $${CTEST_SCRIPT_DIRECTORY}/InstallArea/$${config}/python)
-      execute_process(COMMAND make python.zip WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
-                      OUTPUT_VARIABLE python_zip_log ERROR_VARIABLE python_zip_log)
-      message("$${python_zip_log}")
+      execute_process(COMMAND make post-install WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
+                      OUTPUT_VARIABLE post_install_log ERROR_VARIABLE post_install_log)
+      message("$${post_install_log}")
     endif()
   endif()
 
@@ -132,13 +132,21 @@ if(NOT STEP STREQUAL TEST)
     file(READ $${config_log} f)
     file(WRITE ${summary_dir}/build.log
          "#### CMake configure ####\n# Start: $${configure_start}\n$${f}# End: $${configure_end}\n")
-    file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild_*.log)
-    file(READ $${build_log} f)
-    file(APPEND ${summary_dir}/build.log
-         "#### CMake build ####\n# Start: $${build_start}\n$${f}# End: $${build_end}\n")
+    execute_process(COMMAND lbn-collect-build-logs --append
+                              --exclude ".*unsafe-install.*"
+                              --exclude ".*python.zip.*"
+                              --exclude ".*precompile-.*"
+                              $${CTEST_BINARY_DIRECTORY} ${summary_dir}/build.log
+                    RESULT_VARIABLE collect_logs_result)
+    if(NOT collect_logs_result EQUAL 0)
+      file(GLOB build_log $${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild_*.log)
+      file(READ $${build_log} f)
+      file(APPEND ${summary_dir}/build.log
+           "#### CMake build ####\n# Start: $${build_start}\n$${f}# End: $${build_end}\n")
+    endif()
     file(APPEND ${summary_dir}/build.log "#### CMake install ####\n$${install_log}")
-    if(python_zip_log)
-      file(APPEND ${summary_dir}/build.log "#### CMake python.zip ####\n$${python_zip_log}")
+    if(post_install_log)
+      file(APPEND ${summary_dir}/build.log "#### CMake post-install ####\n$${post_install_log}")
     endif()
   else()
     # for CMT we need a different way
@@ -186,7 +194,8 @@ if(NOT STEP STREQUAL BUILD)
     # produce plain text summary of QMTest tests
     execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
                     OUTPUT_FILE ${summary_dir}/QMTestSummary.txt)
-    if(IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/xml_test_results)
+    if(IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/Testing/xml_test_results OR
+       IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/xml_test_results)
       # this is a build that supports CTest XML test results from QMTest
       execute_process(COMMAND make HTMLSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
     endif()

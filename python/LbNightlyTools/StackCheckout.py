@@ -119,23 +119,20 @@ class StackDesc(object):
         self.packages = packages or []
         self.env = env or []
 
-    def checkout(self, rootdir='.', requested=None):
+    def checkout(self, rootdir='.', requested=None, ignore_failures=True):
         '''
         Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
         if self.packages:
             for pkg in self.packages:
-                pkg.checkout(rootdir)
-                if pkg.build(rootdir) != 0:
-                    __log__.warning('%s build failed', pkg)
-                for link in pkg.getVersionLinks(rootdir):
-                    __log__.debug('creating symlink %s', link)
-                    os.symlink(pkg.version,
-                               os.path.normpath(os.path.join(rootdir,
-                                                             pkg.baseDir,
-                                                             os.pardir,
-                                                             link)))
+                try:
+                    pkg.checkout(rootdir)
+                except RuntimeError, err:
+                    if not ignore_failures:
+                        raise
+                    __log__.warning(str(err))
+
             __log__.debug('create shallow clones of DBASE and PARAM')
             # clone the container projects
             ignore = IgnorePackageVersions(self.packages)
@@ -147,11 +144,31 @@ class StackDesc(object):
                     shallow_copytree(path, os.path.join(rootdir, container),
                                      ignore)
 
+            for pkg in self.packages:
+                if os.path.exists(os.path.join(rootdir, pkg.baseDir)):
+                    if pkg.build(rootdir) != 0:
+                        __log__.warning('%s build failed', pkg)
+                    for link in pkg.getVersionLinks(rootdir):
+                        __log__.debug('creating symlink %s', link)
+                        os.symlink(pkg.version,
+                                   os.path.normpath(os.path.join(rootdir,
+                                                                 pkg.baseDir,
+                                                                 os.pardir,
+                                                                 link)))
+                else:
+                    __log__.warning('package %s not found', pkg)
+
+
         for proj in self.projects:
             # Consider only requested projects (if there was a selection)
             if requested and proj.name.lower() not in requested:
                 continue # project not requested: skip
-            proj.checkout(rootdir)
+            try:
+                proj.checkout(rootdir)
+            except RuntimeError, err:
+                if not ignore_failures:
+                    raise
+                __log__.warning(str(err))
         __log__.info('... done.')
 
     def patch(self, rootdir='.', patchfile='stack.patch'):
@@ -167,7 +184,6 @@ class StackDesc(object):
                               for p in self.projects])
         proj_versions_uc = dict([(p.name.upper(), p.version)
                                  for p in self.projects])
-        # FIXME: we will need to handle the _preview/-preview case
         heptools_version = proj_versions_uc.get('HEPTOOLS',
                                                 proj_versions_uc.get('LCGCMT'))
 
@@ -291,9 +307,6 @@ class StackDesc(object):
                         if tokens[1] in proj_versions_uc:
                             tokens[2] = (tokens[1] + '_'
                                          + proj_versions_uc[tokens[1]])
-                            # special case
-                            if tokens[2] == 'LCGCMT_preview':
-                                tokens[2] = 'LCGCMT-preview'
                             line = ' '.join(tokens) + '\n'
                     newdata.append(line)
 
@@ -400,6 +413,7 @@ def parseConfigFile(path):
         else:
             checkout = getattr(CheckoutMethods, checkout)
         packages.append(PackageDesc(pkg[u'name'], pkg[u'version'],
+                                    container=pkg.get(u'container', 'DBASE'),
                                     checkout=checkout,
                                     checkout_opts=pkg.get(u'checkout_opts',
                                                            {})))
@@ -458,6 +472,17 @@ class Script(LbUtils.Script.PlainScript):
                                                   addDashboardOptions)
         addBasicOptions(self.parser)
         addDashboardOptions(self.parser)
+
+        self.parser.add_option('--ignore-checkout-errors',
+                               action='store_true',
+                               dest='ignore_checkout_errors',
+                               help='continue to checkout if there is a '
+                                    'failure (default)')
+        self.parser.add_option('--no-ignore-checkout-errors',
+                               action='store_false',
+                               dest='ignore_checkout_errors',
+                               help='stop the checkout if there is a failure')
+        self.parser.set_defaults(ignore_checkout_errors=True)
 
     def packname(self, element):
         '''
@@ -527,7 +552,8 @@ class Script(LbUtils.Script.PlainScript):
         # (but we have to update it later)
         dashboard.publish(cfg)
 
-        slot.checkout(build_dir, opts.projects)
+        slot.checkout(build_dir, opts.projects,
+                      ignore_failures=opts.ignore_checkout_errors)
 
         if not cfg.get('no_patch'):
             slot.patch(build_dir,
@@ -537,23 +563,30 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info('not patching the sources')
 
         deps = slot.collectDeps(build_dir)
-        for p in cfg['projects']:
+        for p in cfg.get('projects', []):
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            deps.get(p['name'], [])))
         # add dependencies of data packages on the corresponding container
         containers = set()
-        for p in cfg['packages']:
+        for p in cfg.get('packages', []):
             container = slot.package(p['name']).container
             containers.add(container)
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            [container]))
-        for p in containers:
+
+        # ensure that we have a project list in the configuration if we need
+        # to add the containers
+        if containers and 'projects' not in cfg:
+            cfg['projects'] = []
+        # I believe it's nicer if the container projects are at the top
+        # of the list in alphabetical order
+        for p in sorted(containers, reverse=True):
             # Note that we add the containers only to the configuration and not
             # to the slot object.
             if slot.project(p) is None:
-                cfg['projects'].append({'name': p,
-                                        'version': 'None',
-                                        'checkout': 'ignore'})
+                cfg['projects'].insert(0,{'name': p,
+                                          'version': 'None',
+                                          'checkout': 'ignore'})
 
         for element in slot.projects + slot.packages:
             # ignore missing directories

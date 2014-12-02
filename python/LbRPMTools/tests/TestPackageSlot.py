@@ -30,8 +30,14 @@ class Test(unittest.TestCase):
         self._data_dir = normpath(join(*([__file__] + [os.pardir] * 4
                                          + ['testdata', 'rpm'])))
 
+        self._rel_dir = normpath(join(*([__file__] + [os.pardir] * 4
+                                         + ['testdata', 'rpm',  'rel'])))
+        
         self._slotconfig = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'slot-config.json'])))
+
+        self._datapkgslotconfig = normpath(join(*([__file__] + [os.pardir] * 4
+                                                  + ['testdata', 'rpm', 'datapkg-slot-config.json'])))
 
         self._manifestxml = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'manifest.xml'])))
@@ -46,6 +52,13 @@ class Test(unittest.TestCase):
         self._indexspecname = "glimpse_Brunel_v46r0.spec"
         self._fullindexspecname =  normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', self._indexspecname])))
+
+        self._datapkgspecname = "PARAM_TMVAWeights.spec"
+        self._fulldatapkgspecname =  normpath(join(*([__file__] + [os.pardir] * 4
+                                                  + ['testdata', 'rpm', self._datapkgspecname])))
+        self._fulldatapkgspecnamenewrel =  normpath(join(*([__file__] + [os.pardir] * 4
+                                                           + ['testdata', 'rpm', "PARAM_TMVAWeights_rel5.spec"])))
+
 
         logging.basicConfig(level=logging.INFO)
 
@@ -139,11 +152,11 @@ class Test(unittest.TestCase):
                              '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml ,
                              self._slotconfig ])
 
-
-        newspecfilename = os.path.join(artifactdir, self._indexspecname)
+        
+        newspecfilename = os.path.join(artifactdir,  self._indexspecname)
         newlines = [ l for l in open(newspecfilename, 'U').readlines()
                      if "%define buildarea" not in l ]
-        oldlines = [ l for l in open(self._fullindexspecname, 'U').readlines()
+        oldlines = [ l for l in open(self._fullindexspecname, 'U').readlines() 
         if "%define buildarea" not in l ]
 
         from difflib import Differ, unified_diff
@@ -162,6 +175,78 @@ class Test(unittest.TestCase):
         import shutil
         shutil.rmtree(artifactdir)
 
+
+    def testDatapkgSpec(self):
+        '''
+        Test the creation of Datapkg RPMs by the PackageSlot script
+        '''
+
+        from tempfile import mkdtemp
+        from LbRPMTools.PackageSlot import Script
+        artifactdir = mkdtemp("DATAPKG")
+        script = Script()
+        script.run(['--dry-run', '-k', '--verbose',  '--build-id', 'lhcb-release.999',
+                    '--artifacts-dir',  artifactdir, self._datapkgslotconfig,
+                    '--rpmreldir', self._data_dir ])
+
+        newspecfilename = os.path.join(artifactdir, self._datapkgspecname)
+        newlines = [ l for l in open(newspecfilename, 'U').readlines()
+                     if "%define buildarea" not in l ]
+        oldlines = [ l for l in open(self._fulldatapkgspecname, 'U').readlines()
+        if "%define buildarea" not in l ]
+
+        from difflib import Differ, unified_diff
+        d = Differ()
+        print "Comparing %s and %s" % (self._fulldatapkgspecname,newspecfilename)
+        result = unified_diff(oldlines, newlines, fromfile=self._fulldatapkgspecname,
+        tofile=newspecfilename, n=0)
+        diffFound = False
+        import sys
+        for l in result:
+            diffFound = True
+            sys.stdout.write(l)
+
+        self.assertFalse(diffFound)
+
+        import shutil
+        shutil.rmtree(artifactdir)
+
+    def testDatapkgSpecNewRelease(self):
+        '''
+        Test the creation of Datapkg RPMs by the PackageSlot script
+        '''
+
+        from tempfile import mkdtemp
+        from LbRPMTools.PackageSlot import Script
+        artifactdir = mkdtemp("DATAPKG")
+        script = Script()
+        script.run(['--dry-run', '-k', '--verbose',  '--build-id', 'lhcb-release.999',
+                    '--artifacts-dir',  artifactdir, self._datapkgslotconfig,
+                    '--rpmreldir', self._rel_dir ])
+
+        newspecfilename = os.path.join(artifactdir, self._datapkgspecname)
+        newlines = [ l for l in open(newspecfilename, 'U').readlines()
+                     if "%define buildarea" not in l ]
+        oldlines = [ l for l in open(self._fulldatapkgspecnamenewrel, 'U').readlines()
+        if "%define buildarea" not in l ]
+
+        from difflib import Differ, unified_diff
+        d = Differ()
+        print "Comparing %s and %s" % (self._fulldatapkgspecnamenewrel,newspecfilename)
+        result = unified_diff(oldlines, newlines, fromfile=self._fulldatapkgspecnamenewrel,
+        tofile=newspecfilename, n=0)
+        diffFound = False
+        import sys
+        for l in result:
+            diffFound = True
+            sys.stdout.write(l)
+
+        self.assertFalse(diffFound)
+
+        import shutil
+        shutil.rmtree(artifactdir)
+
+ 
 
 if __name__ == "__main__":
     unittest.main()

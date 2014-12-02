@@ -44,11 +44,17 @@ class Parser(object):
         return (projectNode.attrib["name"], projectNode.attrib["version"])
 
     def getHEPTools(self):
-        ''' Returns the triplet (lcgversion, CMTCONFIG, lcgsystem) '''
+        ''' Returns the triplet (lcgversion, CMTCONFIG, packages) or None
+        if there is no heptools tag.
+        The 'packages' is a dictionary of names to versions.
+        '''
+        # check if there is a dependency on heptools
+        node = self._tree.find('./heptools')
+        if node is None:
+            return None
 
         tags = ["./heptools/version",
-                "./heptools/binary_tag",
-                "./heptools/lcg_system"]
+                "./heptools/binary_tag"]
 
         tagValues = []
         for t in tags:
@@ -57,7 +63,22 @@ class Parser(object):
                 raise Exception("%s not found" % t)
             tagValues.append(node.text)
 
+        packages= {pkg.attrib['name']: pkg.attrib['version']
+                   for pkg in self._tree.findall('./heptools/packages/package')}
+        tagValues.append(packages)
         return tuple(tagValues)
+
+    def getExtTools(self):
+        ''' Returns a dictionary (name->version) of external packages.
+        '''
+        try:
+            bin_tag = self._tree.find('./exttools/binary_tag').text.strip()
+        except AttributeError:
+            # exttools/binary_tag not found
+            bin_tag = ''
+        pkgs = {pkg.attrib['name']: pkg.attrib['version']
+                for pkg in self._tree.findall('./exttools/packages/package')}
+        return bin_tag, pkgs
 
     def getUsedProjects(self):
         ''' Returns the list of tuples (project, version) for used projects '''

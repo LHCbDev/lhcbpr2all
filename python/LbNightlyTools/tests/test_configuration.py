@@ -54,7 +54,7 @@ TEST_XML = u'''
             <warning value="was hidden"/>
         </ignore>
     </general>
-    <slot name="lhcb-lcg-head" description="lhcb-lcg-head - head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
+    <slot name="lhcb-lcg-head" description="lhcb-lcg-head - head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6" use_cmake="false">
         <cmtprojectpath>
             <path value="dir1"/>
             <path value="dir2/%DAY%"/>
@@ -72,7 +72,7 @@ TEST_XML = u'''
         <cmtextratags value="use-distcc,no-pyzip"/>
         <projects>
             <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-                <dependence project="LCGCMT" tag="LCGCMT-preview"/>
+                <dependence project="LCGCMT" tag="LCGCMT_preview"/>
             </project>
             <project name="Online" tag="ONLINE_HEAD" headofeverything="true"/>
             <project name="LHCb" tag="LHCB_HEAD" headofeverything="true">
@@ -97,7 +97,7 @@ TEST_XML = u'''
         </platforms>
         <cmtextratags value="use-distcc,no-pyzip"/>
         <projects>
-            <project name="LCGCMT" tag="LCGCMT-preview" headofeverything="false" disabled="true"/>
+            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
             <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
             </project>
         </projects>
@@ -167,6 +167,19 @@ TEST_XML = u'''
             <project name="Gauss" tag="GAUSS_HEAD" />
         </projects>
     </slot>
+    <slot name="lhcb-cmake" description="CMake-enabled slot" use_cmake="true">
+        <cmtprojectpath>
+            <path value="/afs/cern.ch/lhcb/software/releases"/>
+        </cmtprojectpath>
+        <platforms>
+            <platform name="x86_64-slc6-gcc49-opt"/>
+        </platforms>
+        <projects>
+            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
+            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
+            </project>
+        </projects>
+    </slot>
 </configuration>
 '''
 
@@ -223,7 +236,7 @@ def test_loadXML():
     assert found == expected
 
 def test_loadXML_2():
-    'Configuration.load(xml) [with LCGCMT-preview]'
+    'Configuration.load(xml) [with LCGCMT_preview]'
 
     expected = {'slot': 'lhcb-lcg-test',
                 'description': "a test",
@@ -342,6 +355,31 @@ def test_loadXML_5():
                 }
 
     load = lambda path: Configuration.load(path+"#lhcb-sim")
+    found = processFile(TEST_XML, load)
+    from pprint import pprint
+    pprint(found)
+    pprint(expected)
+    assert found == expected
+
+def test_loadXML_6():
+    'Configuration.load(xml) [with CMake]'
+
+    expected = {'slot': 'lhcb-cmake',
+                'description': "CMake-enabled slot",
+                'projects': [{'name': 'LCGCMT',
+                              'version': 'preview',
+                              'checkout': 'ignore',
+                              'overrides': {}},
+                             {'name': 'Gaudi',
+                              'version': 'HEAD',
+                              'overrides': {}}],
+                'env': ['CMTPROJECTPATH=/afs/cern.ch/lhcb/software/releases'],
+                'default_platforms': ['x86_64-slc6-gcc49-opt'],
+                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
+                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
+                }
+
+    load = lambda path: Configuration.load(path+"#lhcb-cmake")
     found = processFile(TEST_XML, load)
     from pprint import pprint
     pprint(found)

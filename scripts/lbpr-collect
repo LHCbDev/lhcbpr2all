@@ -1,0 +1,30 @@
+#!/bin/bash
+###############################################################################
+# (c) Copyright 2014 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+
+#
+# Script to collect the run results and push them to LHCbPR
+# The steps are to:
+# 1- Setup the environment for LHCbDirac and ROOT
+# 2- Download the LHCbPRHandler and install the copy in the local directory
+# 3- Actually run the collectRunResult command from LHCbPR 
+
+# We unset the LD_LIBRARY_PATH to make sure the LbLogin/SetupProject works
+unset $LD_LIBRARY_PATH
+. LbLogin.sh -c x86_64-slc6-gcc48-opt
+. SetupProject.sh LHCbDirac ROOT
+
+# Download the LHCbPRHandlers
+python -c "import os,urllib,zipfile;urllib.urlretrieve('http://lhcbproject.web.cern.ch/lhcbproject/GIT/dist/LHCbPRHandlers/LHCbPRHandlers.zip','LHCbPRHandlers.zip');unzipper=zipfile.ZipFile('LHCbPRHandlers.zip');unzipper.extractall();os.remove('LHCbPRHandlers.zip')"
+
+# Collect the run results...
+python LHCbPRHandlers/collectRunResults.py $@
+

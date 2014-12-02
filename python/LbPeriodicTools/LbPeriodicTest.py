@@ -144,7 +144,7 @@ def _fromXML(etree):
 
     ttime = validateTime(testdict[ASCHEDTIME])
     testdict[AHOUR] = ttime.hour
-    testdict[AMINUTE] = ttime.hour
+    testdict[AMINUTE] = ttime.minute
 
     return testdict
 
@@ -197,6 +197,16 @@ class PeriodicTest(object):
         return "/".join([ "%s=%s" % (k, getattr(self, k))
                          for k in TEST_ATTRIBUTES])
 
+    def shortStr(self):
+        '''
+        Shorter representation for logs
+        '''
+        testrunner = self.testrunner
+        if testrunner == None:
+            testrunner = "default"
+        return "/".join([ testrunner, self.testgroup,  self.project,  self.slot   ])
+
+
     def isForDate(self, date_start, date_end):
         '''
         Check the date specified in the test schedule, with the dates passed
@@ -236,13 +246,15 @@ class PeriodicTest(object):
         matching_tests = []
         for buildinfo in buildlist:
             # First checking the builds matching slots
-            __log__.debug("Checking against build: %s" % buildinfo)
+            __log__.debug(self.testgroup + "Checking against build: %s" % buildinfo["slot"])
             if fnmatch(buildinfo["slot"], self.slot):# pylint: disable=E1101
                 # Okay we found a matching slot, now check the projects
+                __log__.debug("Slot matches: " + self.slot  )
                 for proj in buildinfo["projects"]:
                     if fnmatch(proj["name"].lower(),
                                self.project.lower()): # pylint: disable=E1101
                         # Project matches !
+                        __log__.debug("Project matches: " + self.project)
                         for platf in buildinfo["platforms"]:
                             if fnmatch(platf,
                                        self.platform):# pylint: disable=E1101
@@ -288,3 +300,9 @@ class ScheduledTest(object):
         '''
         return "/".join([ "%s=%s" % (k, getattr(self, k))
                          for k in SCHED_ATTRIBUTES])
+
+    def shortStr(self):
+        '''
+        Shorter representation for logs
+        '''
+        return "/".join([ self.testrunner, self.testgroup,  self.project,  self.slot   ])

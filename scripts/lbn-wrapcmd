@@ -1,0 +1,29 @@
+#!/bin/bash
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+
+# Simple script to be used in CMake launcher rules.
+# A launcher rule defined as
+#
+#  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "lbn-wrapcmd <CMAKE_CURRENT_BINARY_DIR> <TARGET_NAME>")
+#
+# produces log files like SubDir/1234-TargetName-abcd-build.log for each compile
+# command.
+
+log_dir=$1
+target=$2
+shift 2
+
+mkdir -p $log_dir
+logfile=$log_dir/$(date +%s%N)-$target-$(echo "$@" | md5sum | cut -c1-32)"-build.log"
+echo ">" "$@" >> "$logfile"
+set -o pipefail
+exec "$@" 2>&1 | tee -a "$logfile"

@@ -17,10 +17,8 @@ Created on Feb 27, 2014
 '''
 
 import os
-import re
 import logging
 import shutil
-from string import Template
 
 __log__ = logging.getLogger(__name__)
 
@@ -52,6 +50,11 @@ class Script(LbUtils.Script.PlainScript):
                           default=False,
                           action="store_true",
                           help="Build shared RPM")
+        group.add_option('-k', '--datapkg',
+                          dest="datapkg",
+                          default=False,
+                          action="store_true",
+                          help="Builds datapackage rpms")
         group.add_option('-g', '--glimpse',
                           dest="glimpse",
                           default=False,
@@ -92,6 +95,11 @@ class Script(LbUtils.Script.PlainScript):
                          default=None,
                          action="store",
                          help="Force the manifest file to be used")
+        group.add_option('--rpmreldir',
+                         dest="rpmreldir",
+                         default=None,
+                         action="store",
+                         help="Specify the RPM release directory")
 
         parser.add_option_group(group)
         return parser
@@ -100,8 +108,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Prepare the option parser.
         '''
-        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
-                                                  addDashboardOptions)
+        from LbNightlyTools.ScriptsCommon import addBasicOptions
 
         addBasicOptions(self.parser)
         self.addRpmOptions(self.parser)
@@ -159,6 +166,10 @@ class Script(LbUtils.Script.PlainScript):
     def _buildRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
         ''' Build the RPM for the project them and copy them to the target area '''
 
+        # First check if there is a shared RPM to build
+        hasShared = self._buildExtraSharedRpm(project, version, rpmbuildarea,
+                                              artifactdir, keeprpmdir)
+
         rpmbuildname = "_".join([project, version, platform])
 
         # Creating the temp directories to prepare the RPMs
@@ -171,14 +182,20 @@ class Script(LbUtils.Script.PlainScript):
         from LbTools.Manifest import Parser
 
         manifest = Parser(manifestxmlfile)
-        (tmpproject, tmpversion) =  manifest.getProject()
-        (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
 
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import getBuildInfo
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbBinaryRpmSpec
-        (absFilename, buildlocation, fprojectVersion, fcmtconfig) = getBuildInfo(manifestxmlfile)
+        (_absFilename, buildlocation, _fprojectVersion, _fcmtconfig) = getBuildInfo(manifestxmlfile)
         spec = LHCbBinaryRpmSpec(project, version, platform, rpmbuildarea, buildlocation, manifest)
+        if hasShared:
+            spec.addExtraRequire( "_".join([project, version, 'shared']))
+
+        # Check if a non default RPM release dir was specified
+        if self.options.rpmreldir != None:
+            self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
+            spec.setRPMReleaseDir(self.options.rpmreldir)
+
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
@@ -194,6 +211,55 @@ class Script(LbUtils.Script.PlainScript):
             self.log.info("Removing: %s " % rpmconf.buildarea)
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+
+
+    def _buildExtraSharedRpm(self, project, version, rpmbuildarea, artifactdir, keeprpmdir):
+        ''' Build the RPM for the extra shared tar filed produced by some projects
+        like geant4 '''
+
+        hasShared = False
+        rpmbuildname = "_".join([project, version, 'shared'])
+
+        # Creating the temp directories to prepare the RPMs
+        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        # Looking for archive with sources
+        srcArchive = self._findExtraSharedArchive(project, version, artifactdir)
+        if srcArchive != None:
+            self.log.info("Taking sources from %s" % srcArchive)
+            hasShared = True
+        else:
+            # No tar find, no need to do anything...
+            hasShared = False
+            return hasShared
+
+        # Now generating the spec
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbExtraSharedRpmSpec
+        spec = LHCbExtraSharedRpmSpec(project, version, srcArchive, rpmbuildarea)
+        # Check if a non default RPM release dir was specified
+        if self.options.rpmreldir != None:
+            self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
+            spec.setRPMReleaseDir(self.options.rpmreldir)
+
+        specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
+        with open(specfilename, "w") as outputfile:
+            outputfile.write(spec.getSpec())
+
+        # Building the name of the expected RPM
+        rpmname =  spec.getRPMName()
+
+        fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
+        self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
+
+        # Remove tmpdirectory
+        if not keeprpmdir:
+            rpmconf.removeBuildArea()
+            self.log.info("Removing: %s " % rpmconf.buildarea)
+        else:
+            self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+
 
     def _buildSharedRpm(self, project, version, rpmbuildarea, artifactdir, keeprpmdir):
         ''' Build the RPM for the project them and copy them to the target area '''
@@ -213,6 +279,11 @@ class Script(LbUtils.Script.PlainScript):
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbSharedRpmSpec
         spec = LHCbSharedRpmSpec(project, version, srcArchive, rpmbuildarea)
+        # Check if a non default RPM release dir was specified
+        if self.options.rpmreldir != None:
+            self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
+            spec.setRPMReleaseDir(self.options.rpmreldir)
+
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
@@ -229,6 +300,51 @@ class Script(LbUtils.Script.PlainScript):
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
 
+    def _buildDatapkgRpm(self, project, fulldatapkg, version, rpmbuildarea, artifactdir, keeprpmdir):
+        ''' Build the RPM for the datapkg and copy them to the target area '''
+        fulldatapkg
+        datapkg = fulldatapkg
+        if "/" in datapkg:
+            (_hat, datapkg) = fulldatapkg.split("/")
+
+        rpmbuildname = "_".join([project, datapkg ])
+
+        # Creating the temp directories to prepare the RPMs
+        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        # Looking for archive with sources
+        srcArchive = self._findDatapkgArchive(project, fulldatapkg, version, artifactdir)
+        if srcArchive != None:
+            self.log.info("Taking sources from %s" % srcArchive)
+        else:
+            self.log.warning("Doing clean checkout of the sources")
+
+        # Now generating the spec
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbDatapkgRpmSpec
+        spec = LHCbDatapkgRpmSpec(project, fulldatapkg, version, srcArchive, rpmbuildarea)
+        # Check if a non default RPM release dir was specified
+        if self.options.rpmreldir != None:
+            self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
+            spec.setRPMReleaseDir(self.options.rpmreldir)
+
+        specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
+        with open(specfilename, "w") as outputfile:
+            outputfile.write(spec.getSpec())
+
+
+        # Building the name of the expected RPM
+        rpmname =  spec.getRPMName()
+        fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
+        self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
+
+        # Remove tmpdirectory
+        if not keeprpmdir:
+            rpmconf.removeBuildArea()
+            self.log.info("Removing: %s " % rpmconf.buildarea)
+        else:
+            self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+
     def _buildGlimpseRpm(self, project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir):
         ''' Build the RPM for glimpse index and copy them to the target area '''
 
@@ -244,8 +360,6 @@ class Script(LbUtils.Script.PlainScript):
         from LbTools.Manifest import Parser
 
         manifest = Parser(manifestxmlfile)
-        (tmpproject, tmpversion) =  manifest.getProject()
-        (tmpLCGVerson, tmpcmtconfig, rmplcg_system) = manifest.getHEPTools()
 
         # Looking for archive with sources
         srcArchive = self._findGlimpseArchive(project, version, artifactdir)
@@ -257,6 +371,11 @@ class Script(LbUtils.Script.PlainScript):
         # Now generating the spec
         from LbRPMTools.LHCbRPMSpecBuilder import LHCbGlimpseRpmSpec
         spec = LHCbGlimpseRpmSpec(project, version, srcArchive, rpmbuildarea, manifest)
+        # Check if a non default RPM release dir was specified
+        if self.options.rpmreldir != None:
+            self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
+            spec.setRPMReleaseDir(self.options.rpmreldir)
+
         specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
         with open(specfilename, "w") as outputfile:
             outputfile.write(spec.getSpec())
@@ -308,6 +427,45 @@ class Script(LbUtils.Script.PlainScript):
         else:
             return None
 
+    def _findExtraSharedArchive(self, project, version, artifactdir):
+        ''' Locate the Extra Shared RPM '''
+        # Checking if we find the src archive
+        packname = [ project, version ]
+        if self.options.build_id:
+            packname.append(self.options.build_id)
+        packname.append('shared')
+        packname.append('tar.bz2')
+        archname =  '.'.join(packname)
+
+        fullarchname = os.path.join(artifactdir, archname)
+        self.log.info("Looking for file: %s" %  fullarchname)
+        if os.path.exists(fullarchname):
+            return os.path.abspath(fullarchname)
+        else:
+            return None
+
+
+    def _findDatapkgArchive(self, project, datapkg, version, artifactdir):
+        ''' Locate the source RPM '''
+        # Checking if we find the src archive
+        fixeddatapkg = datapkg.replace("/", "_")
+        packname = [ fixeddatapkg, version ]
+
+        if self.options.build_id:
+            packname.append(self.options.build_id)
+
+        packname.append('src')
+        packname.append('tar.bz2')
+        archname =  '.'.join(packname)
+
+        fullarchname = os.path.join(artifactdir, archname)
+        self.log.info("Looking for file: %s" %  fullarchname)
+        if os.path.exists(fullarchname):
+            return os.path.abspath(fullarchname)
+        else:
+            return None
+
+
     def main(self):
         '''
         Main method for the script
@@ -317,9 +475,7 @@ class Script(LbUtils.Script.PlainScript):
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
-        configfile = self.args[0]
         # Same logic as BuildSlot lo locate the builddir
-        import os
         builddir = os.path.join(os.getcwd(), 'build')
 
         # Now loading the slot configuration
@@ -338,7 +494,6 @@ class Script(LbUtils.Script.PlainScript):
                 os.makedirs(artifactdir)
 
         # Check plaform to package for
-        import os
         platform = self.options.platform
         if platform == None:
             platform = os.environ.get("CMTCONFIG", None)
@@ -348,11 +503,30 @@ class Script(LbUtils.Script.PlainScript):
         # temp area used to build the RPMs
         from tempfile import mkdtemp
         rpmbuildarea = mkdtemp(prefix="rpm")
-
         keeprpmdir = self.options.keeprpmdir
+
+        if self.options.datapkg:
+            for p in self.config["packages"]:
+                fulldatapkg = p["name"]
+                project = "DBASE" # by default..
+                try:
+                    project = p["container"]
+                except:
+                    # We can pass if not specified, default is DBASE
+                    pass
+                version = p["version"]
+                self.log.info("Preparing RPM for datapkg %s %s %s" % (project, fulldatapkg, version))
+                self._buildDatapkgRpm(project, fulldatapkg, version, rpmbuildarea, artifactdir, keeprpmdir)
+
+            # Done we now exit...
+            return
+
+
         for p in self.config["projects"]:
             project = p["name"]
-            if self.options.projects and project.name.lower() not in self.options.projects:
+            if ((self.options.projects and
+                 project.lower() not in self.options.projects) or
+                project.lower() in ('dbase', 'param')):
                 self.log.warning("Skipping project %s" % project)
                 continue # project not requested: skip
             version = p["version"]
@@ -366,3 +540,4 @@ class Script(LbUtils.Script.PlainScript):
             else:
                 self.log.info("Preparing RPM for project %s %s %s" % (project, version, platform))
                 self._buildRpm(project, version, platform, rpmbuildarea, builddir, artifactdir, keeprpmdir)
+

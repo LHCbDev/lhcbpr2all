@@ -95,7 +95,9 @@ class Script(LbUtils.Script.PlainScript):
                     # Write a file with one line with all test tests concatenated
                     f.write("tests_list=" + " ".join(tmpl))
         else:
-            print json.dumps(tests_to_run, indent=2)
+            for ttr in tests_to_run:
+                jenkins_test = JenkinsTest.fromScheduledTest(ttr)
+                print json.dumps(jenkins_test.toJenkinsString(), indent=2)
 
 
 # __main__

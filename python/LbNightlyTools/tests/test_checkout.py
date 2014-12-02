@@ -511,6 +511,14 @@ def test_checkout_datapkg():
 
         assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
 
+    slot = StackCheckout.parseConfigFile(join(_testdata, 'data-packs.json'))
+    with TemporaryDir(chdir=True):
+        os.makedirs('build')
+        slot.checkout('build')
+        
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
+        assert exists(join('build', 'PARAM', 'TMVAWeights', 'v1r0', 'cmt'))
+
 def test_stack_checkout_datapkg():
     '''checkout a data package within a slot'''
     if not which('getpack'):

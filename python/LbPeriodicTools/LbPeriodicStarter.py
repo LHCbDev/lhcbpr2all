@@ -29,7 +29,7 @@ def getSlotsForDay(datestr):
     '''
     dashboard = Dashboard()
     allslots = dashboard.slotsByDay(datestr, datestr, True)
-    return allslots
+    return list(allslots)
 
 class PeriodicTestStarter (object):
     '''
@@ -92,6 +92,7 @@ class PeriodicTestStarter (object):
         '''
         all_tests = []
         for to_run in self._tests_to_run:
+            __log__.debug("Preparing tests for " + to_run.shortStr())
             all_tests.append((to_run, to_run.getBuildMatches(self._slot_list)))
 
         self._all_tests = all_tests

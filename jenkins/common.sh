@@ -54,8 +54,19 @@ if [ -n "${set_config}" ] ; then
   #        environment
   # See https://its.cern.ch/jira/browse/LBCORE-151
   export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
+
+  # FIXME: we need to get the latest compilers wrappers until we release LbScripts
+  export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
 else
   . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
+fi
+
+# FIXME: Get the latest getpack (while waiting for the release)
+export PYTHONPATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbRelease/python:$PYTHONPATH
+
+# FIXME: with gcc49 we do not get the right Python with LbLogin
+if (echo $CMTCONFIG | grep -q gcc49) ; then
+  export PATH=/afs/cern.ch/sw/lcg/releases/LCG_68/Python/2.7.6/x86_64-slc6-gcc48-opt/bin:$PATH
 fi
 
 # FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)

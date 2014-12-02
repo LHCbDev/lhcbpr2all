@@ -49,10 +49,10 @@ class Test(unittest.TestCase):
     def testGetHEPTools(self):
         ''' test loading of LCG info '''
         parser = Parser(self._data_file)
-        (v, b, l) = parser.getHEPTools()
+        (v, b, p) = parser.getHEPTools()
         self.assertEqual(v, '66', "LCG version")
         self.assertEqual(b, 'x86_64-slc6-gcc48-opt', "CMTCONFIG")
-        self.assertEqual(l, 'x86_64-slc6-gcc48', "LCG system")
+        self.assertEqual(p, {}, "externals")
 
     def testUsedProjects(self):
         ''' test the getUsedProjects method '''
@@ -65,6 +65,16 @@ class Test(unittest.TestCase):
         parser = Parser(self._data_file)
         used = parser.getUsedDataPackages()
         self.assertEqual(len(used), 5, "Number of used data packages")
+
+    def testMinimalManifest(self):
+        ''' test parsing of minimal manifest '''
+        parser = Parser(join(self._data_dir, "mini_manifest.xml"))
+        self.assertEqual(parser.getHEPTools(), None, "Dependency on LCG")
+        usedProjects = parser.getUsedProjects()
+        self.assertEqual(len(usedProjects), 0, "Number of used projects")
+        used = parser.getUsedDataPackages()
+        self.assertEqual(len(used), 0, "Number of used data packages")
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testLoadXML']

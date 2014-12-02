@@ -17,11 +17,13 @@ from LbNightlyTools import StackCheckout
 import os
 import shutil
 import re
+import json
 
 from subprocess import call
 from tempfile import mkdtemp
 from os.path import normpath, join, isfile
 from LbNightlyTools.Utils import ensureDirs
+from LbNightlyTools.tests.utils import TemporaryDir
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
@@ -103,3 +105,49 @@ def test_lbcore_192():
     finally:
         os.chdir(oldcwd)
         shutil.rmtree(tmpd, ignore_errors=True)
+
+def test_empty_conf():
+    with TemporaryDir(chdir=True):
+        with open('test.json', 'w') as cfg:
+            cfg.write('{}')
+        retval = StackCheckout.Script().run(['test.json'])
+        assert retval == 0
+
+def test_only_projects_conf():
+    with TemporaryDir(chdir=True):
+        with open('test.json', 'w') as cfg:
+            conf_data = {'projects': [{'name': 'Gaudi',
+                                       'version': 'HEAD',
+                                       'checkout': 'git',
+                                       'checkout_opts':
+                                        {'url': 'http://git.cern.ch/pub/gaudi'}}
+                                      ]}
+            cfg.write(json.dumps(conf_data))
+        retval = StackCheckout.Script().run(['test.json'])
+        assert retval == 0
+
+def test_only_packages_conf():
+    with TemporaryDir(chdir=True):
+        with open('test.json', 'w') as cfg:
+            conf_data = {'packages': [{'name': 'WG/CharmConfig',
+                                       'version': 'head'}]}
+            cfg.write(json.dumps(conf_data))
+        retval = StackCheckout.Script().run(['test.json'])
+        assert retval == 0
+
+def test_lbcore_664():
+    '''https://its.cern.ch/jira/browse/LBCORE-664
+    '''
+    configfile = join(_testdata, 'testing-slot-lbcore-664.json')
+    with TemporaryDir(chdir=True):
+        StackCheckout.Script().run(['--ignore-checkout-errors',
+                                    configfile])
+    with TemporaryDir(chdir=True):
+        StackCheckout.Script().run([configfile])
+
+    with TemporaryDir(chdir=True):
+        try:
+            StackCheckout.Script().run(['--no-ignore-checkout-errors', configfile])
+            assert False, 'the script should have failed'
+        except:
+            pass

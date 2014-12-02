@@ -22,20 +22,20 @@ def test_filesToIndex():
     'Indexer.filesToIndex()'
     files = list(Indexer.filesToIndex(join(_testdata, 'indexer', 'AProject')))
 
-    expected = ['MyPackage/Headers/MyHeader.h',
-                'MyPackage/python/MyPackage/SomeModule.py',
-                #'MyPackage/python/MyPackage/__init__.py',
-                'MyPackage/scripts/MyScript',
-                'MyPackage/src/MySource.cpp',
-                'InstallArea/include/GeneratedHeader.h',
+    expected = ['InstallArea/include/GeneratedHeader.h',
+                'InstallArea/include/MyHeader.h',
                 #'InstallArea/python/AProject_merged_confDb.py',
                 'InstallArea/python/GeneratedPython.py',
                 #'InstallArea/python/MyPackage/MyPackageConf.py',
                 #'InstallArea/python/MyPackage/MyPackage_confDb.py',
                 #'InstallArea/python/MyPackage/MyPackage_user_confDb.py',
+                'InstallArea/python/MyPackage/SomeModule.py',
+                #'MyPackage/python/MyPackage/__init__.py',
+                'MyPackage/scripts/MyScript',
+                'MyPackage/src/MySource.cpp',
                 ]
 
-    #from pprint import pprint
-    #pprint(files)
+    from pprint import pprint
+    pprint(files)
     assert files == expected
 

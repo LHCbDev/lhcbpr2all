@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Collect the build logs produced by lbn-wrapcmd and write the content grouped by
+subdir and target.
+'''
+
+import sys
+import os
+import logging
+
+def collect_logs(path):
+    '''
+    Looks for files ending in '-build.log' in all the subdirs.
+
+    @param path: directory where to start the search from
+    @return: dictionary with the subdir as key (relative path) and the list of
+             files (full path) as values.
+    '''
+    logging.getLogger('collect_logs').info('searching log files')
+    logs = {}
+    for subdir, _dirs, files in os.walk(path):
+        files = [os.path.join(subdir, f)
+                 for f in files if f.endswith('-build.log')]
+        if files:
+            files.sort()
+            logs[os.path.relpath(subdir, path)] = files
+    return logs
+
+class RegexExcusion(object):
+    '''
+    Small helper class to filter a list excluding entries matching one of the
+    provided regular expressions.
+    '''
+    def __init__(self, exps):
+        '''
+        Initialize the object with a list of regular expression (strings).
+        '''
+        from re import compile
+        self.exps = map(compile, exps)
+
+    def __call__(self, s):
+        '''
+        Check if a string is good (no match) or not (match).
+
+        @return: True is there is no match, False if there is a match.
+        '''
+        for x in self.exps:
+            if x.match(s):
+                return False
+        return True
+
+    def filter(self, iterable):
+        '''
+        Generator that returns only the good (not excluded) entries in an
+        iterable.
+        '''
+        return (s for s in iterable if self(s))
+
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Collect disk usage statistics and publish them to the Dashboard.
+    '''
+    __usage__ = '%prog [options] directory output_file'
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('--append', action="store_true",
+                               help='append to the output file instead of '
+                                    'overwrite it')
+        self.parser.add_option('-x', '--exclude', action="append",
+                               help='regular expression to select files that '
+                                    'should not be included in the output')
+        self.parser.set_defaults(exclude=[])
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+
+        path, output = self.args
+        logs = collect_logs(path)
+        if not logs:
+            self.log.error('lbn-wrapcmd did not produce files in %s', path)
+            return 1
+
+        exclude = RegexExcusion(self.options.exclude)
+
+        # sort the directories by contained filename, so that even if they
+        # are built at the same time, the one that completes first wins
+        # (note that the list of files in each subdir is sorted)
+        from os.path import basename
+        subdirs = sorted(logs, key=lambda s: (basename(logs[s][-1]), s))
+        # copy the content of each log file into the output file, prepending
+        # the group of files in a subdir with a separator
+        with open(output, 'a' if self.options.append else 'w') as outfile:
+            for subdir in subdirs:
+                # we want to show only files that are not excluded
+                files = exclude.filter(logs[subdir])
+                if files:
+                    # targets in the '.' directory are "global" targets
+                    if subdir == '.':
+                        subdir = "'global'"
+                    outfile.write('#### CMake %s ####\n' % subdir)
+                    for fname in files:
+                        outfile.writelines(open(fname))
+
+        return 0
+
+if __name__ == '__main__':
+    sys.exit(Script().run())

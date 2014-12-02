@@ -11,12 +11,23 @@ var FILTER_DEFAULT = {
 // special artifacts locations
 var flavour = /\/nightlies-([^/]+)\//.exec(window.location);
 if (flavour) {
-	ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour[1] + "/";
-	if (flavour[1] == 'testing') {
-		// special url for testing slots
-		JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
-	}
+    ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour[1] + "/";
+    if (flavour[1] == 'testing') {
+        // special url for testing slots
+        JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
+    }
 }
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+var REQUESTED_SLOT = getParameterByName("slot");
+var REQUESTED_PROJECT = getParameterByName("project");
+var REQUESTED_DAY = getParameterByName("day");
 
 // variables set from cookies
 if (!$.cookie("filters")) {
@@ -132,7 +143,7 @@ jQuery.fn.lbSlotTable = function(data) {
                 '<table class="results"><tr>' +
                 '<td class="build"/><td class="tests"/></tr></table>');
         });
-        if ($.inArray(val.name, filters.projects) >= 0) {
+        if (! isProjectRequested(val.name)) {
             tr.hide();
         }
         tab.append(tr);
@@ -263,13 +274,14 @@ jQuery.fn.loadButton = function() {
 
                         var slot = $('<div class="slot" slot="' + value.slot + '" build_id="' + value.build_id + '"/>');
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
-                            .append('<table><tr><td nowrap>' + value.slot +
-                                ':</td><td>' + value.description +
+                            .append('<table><tr><td nowrap>' +
+                                '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">' + value.slot + '</a>:' +
+                                '</td><td>' + value.description +
                                 '</td></tr></table>'));
                         el.append(slot);
 
                         // do show/load only non-hidden slots
-                        if ($.inArray(value.slot, filters.slots) >= 0) {
+                        if (! isSlotRequested(value.slot)) {
                             slot.append($('<p>Data for this slot not loaded. </p>')
                                 .append('<a href="' + window.location.href + '">Reload the page</a>'));
                             slot.hide();
@@ -314,17 +326,23 @@ jQuery.fn.showButton = function() {
 jQuery.fn.lbNightly = function() {
     return this.each(function() {
         var day = $(this).attr('day');
-        var dayName = moment(day).format('dddd');
+        var mday = moment(day);
+        var dayName = mday.format('dddd');
+        var dayTitle = dayName;
+        if (mday < moment().subtract(7, 'days'))
+            dayTitle = mday.format('dddd YYYY-MM-DD');
         var btn = $('<button day="' + day + '">show</button>')
             .loadButton();
+        if (REQUESTED_DAY) btn.hide();
 
         var spin = spinInit(day);
+
 
         $(this).append($('<table class="header"/>')
             .append($('<tr/>')
                 .append($('<td class="button"/>').append(btn))
                 .append($('<td class="spinner"/>').append(spin))
-                .append('<td class="day-name">' + dayName + '</td>')))
+                .append($('<td class="day-name"><a class="permalink" title="Permalink to this day" href="?day=' + day + '">' + dayTitle + '</a></td>'))))
             .append($('<div class="slots"/>').hide());
 
         if (isDayEnabled(dayName))
@@ -363,10 +381,13 @@ function getFilterCheckboxes(tab) {
 }
 
 var todayName = moment().format('dddd');
-var yesterdayName = moment().subtract('days', 1).format('dddd');
+var yesterdayName = moment().subtract(1, 'days').format('dddd');
 
 function isDayEnabled(dayName) {
-    return ($.inArray(dayName, filters.days) >= 0 || (dayName == todayName && $.inArray('Today', filters.days) >= 0) || (dayName == yesterdayName && $.inArray('Yesterday', filters.days) >= 0));
+    return (REQUESTED_DAY ||
+            ($.inArray(dayName, filters.days) >= 0 ||
+                    (dayName == todayName && $.inArray('Today', filters.days) >= 0) ||
+                    (dayName == yesterdayName && $.inArray('Yesterday', filters.days) >= 0)));
 }
 
 
@@ -393,6 +414,20 @@ function fillDialogTab(tab) {
     }
 }
 
+function isSlotRequested(s) {
+    if (REQUESTED_SLOT) {
+        return s == REQUESTED_SLOT;
+    }
+    return $.inArray(s, filters.slots) < 0;
+}
+
+function isProjectRequested(p) {
+    if (REQUESTED_PROJECT) {
+        return p == REQUESTED_PROJECT;
+    }
+    return $.inArray(p, filters.projects) < 0;
+}
+
 function applyFilters() {
     $('div.day table.header button').each(function() {
         var btn = $(this);
@@ -409,7 +444,7 @@ function applyFilters() {
     $('div.slot').each(function() {
         var el = $(this);
         var s = el.attr("slot")
-        if (s && $.inArray(s, filters.slots) < 0) {
+        if (s && isSlotRequested(s)) {
             el.show();
         } else {
             el.hide();
@@ -418,10 +453,10 @@ function applyFilters() {
 
     $('tr[project]').each(function() {
         var el = $(this);
-        if ($.inArray(el.attr('project'), filters.projects) >= 0) {
-            el.hide();
-        } else {
+        if (isProjectRequested(el.attr('project'))) {
             el.show();
+        } else {
+            el.hide();
         }
     });
 
@@ -516,40 +551,33 @@ function prepareRssForm() {
             $("#rssform").dialog("open");
             refreshAccordion();
         });
-
-    /*
-	$("#rssform").css("width",0.95*$("#container").width()).hide();
-
-	$("#rss-form-iframe").css("width",$("#container").width()).css("visibility","hidden");//.hide();
-
-
-	$("#open-rssform")
-	.button()
-	.click(function() {
-
-		$("#rss-form-iframe").css("width",$("#container").width()).show().css("visibility","visible");
-		var rssformposition = $("#rss-form-iframe").position();
-		$("#close-rssform").css("top",rssformposition.top).css("left",rssformposition.left+$("#rss-form-iframe").width()-32).show();//.css("display","block");
-	});
-
-	$("#close-rssform").click(function(){
-		$("#rss-form-iframe").hide();
-		$(this).hide();
-	});
-	*/
 }
-$(function() {
-    prepareFilterDialog();
-    prepareRssForm();
 
-    // Prepare day tables
-    var today = moment();
-    for (var day = 0; day < 7; day++) {
-        var d = moment(today).subtract('days', day);
-        $('#summaries').append('<div class="day" ' +
-            'day="' + d.format('YYYY-MM-DD') + '"' +
-            'day_id="' + d.format('ddd') + '"/>');
+$(function() {
+    if (REQUESTED_DAY || REQUESTED_SLOT || REQUESTED_PROJECT) {
+        // when there is a specific selection we filters do not make sense...
+        $("#toolbar").hide();
+        // ... and we need a link to the full page
+        $('#banner > h1').wrapInner('<a href="index.html"/>');
+    } else {
+        prepareFilterDialog();
+        prepareRssForm();
     }
 
+    // Prepare day tables
+    if (REQUESTED_DAY) {
+        var d = moment(REQUESTED_DAY);
+        $('#summaries').append('<div class="day" ' +
+                'day="' + d.format('YYYY-MM-DD') + '"' +
+                'day_id="' + d.format('ddd') + '"/>');
+    } else {
+        var today = moment();
+        for (var day = 0; day < 7; day++) {
+            var d = moment(today).subtract('days', day);
+            $('#summaries').append('<div class="day" ' +
+                'day="' + d.format('YYYY-MM-DD') + '"' +
+                'day_id="' + d.format('ddd') + '"/>');
+        }
+    }
     $('.day').lbNightly();
 });

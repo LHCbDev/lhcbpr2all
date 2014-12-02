@@ -20,9 +20,9 @@ fi
 
 if [ "${slot}" = "lhcb-release" ] ; then
   if [ -n "${platforms}" ] ; then
-    lbn-gen-release-config --cmt --platforms="${platforms}" -o configs/${slot}.json ${projects_list}
+    lbn-gen-release-config --cmt --platforms="${platforms}" -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
   else
-    lbn-gen-release-config --cmt -o configs/${slot}.json ${projects_list}
+    lbn-gen-release-config --cmt -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
   fi
 fi
 
@@ -36,7 +36,11 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
   submit_opt="--submit --flavour ${flavour}"
 fi
 
-lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${config_file}
+if [ "${flavour}" = "release" ] ; then
+  ignore_error_opt=--no-ignore-checkout-errors
+fi
+
+lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${ignore_error_opt} ${config_file}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting
@@ -47,6 +51,9 @@ echo "$BUILD_URL" > ${ARTIFACTS_DIR}/checkout_job_url.txt
 if [ "${flavour}" = "release" ] ; then
   # Now preparing the RPM with the project source
   time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+  if [ -n "${packages_list}" ] ; then
+    time lbn-rpm --datapkg --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
+  fi
 fi
 
 # Cleaning up

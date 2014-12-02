@@ -15,7 +15,57 @@
 # example of acron entry:
 #  */5 5-16 * * * lxplus.cern.ch $HOME/LbNightlyTools/cron/preheat_nightly_dashboard.sh
 
-for view in projectsNames platformsNames slotsNames diskSpace summaries systemLoad ; do
-    url="https://buildlhcb.cern.ch/nightlies/_view/${view}?key=0"
-    curl --insecure --silent --output /dev/null "$url"
+page=
+ddocurl=
+verbose=false
+
+while getopts p:d:hv opt; do
+    case $opt in
+	p)
+          page=$OPTARG
+          ;;
+	d)
+          ddocurl=$OPTARG
+          ;;
+        v)
+          verbose=true
+          ;;
+        h)
+          echo "Usage: $0 [-p <nightly_page>|-d <ddoc_url>]"
+          exit 0
+          ;;
+        ?)
+          exit 1
+          ;;
+    esac
 done
+
+if [ -n "$page" ] ; then
+    if [ -n "$ddocurl" ] ; then
+        echo 'cannot mix -p and -d options'
+        exit 1
+    fi
+else
+    page=nightlies
+fi
+
+if [ -z "$ddocurl" ] ; then
+    ddocurl=https://buildlhcb.cern.ch/${page}/_ddoc
+    viewbase=https://buildlhcb.cern.ch/${page}/_view
+else
+    viewbase=${ddocurl}/_view
+fi
+
+$verbose && echo "Getting views from ${ddocurl}"
+
+views=$(curl --insecure --silent ${ddocurl} | \
+        python -c 'import json, sys; print " ".join(sorted(json.load(sys.stdin).get("views",{})))')
+
+$verbose && echo "  -> ${views}"
+
+for view in ${views} ; do
+    $verbose && echo "Triggering view '${view}'."
+    curl --insecure --silent --output /dev/null "${viewbase}/${view}?key=0"
+done
+
+$verbose && echo done.

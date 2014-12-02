@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+"""
+
+Create the tar file for LbScripts based on the TAR ball.
+
+This is 
+
+
+"""
+
+import logging
+import os
+import re
+import subprocess
+import sys
+from RpmHelpers import checkBuildArea
+
+log = logging.getLogger()
+log.addHandler(logging.StreamHandler())
+log.setLevel(logging.INFO)
+
+local_directory = os.path.dirname(__file__).strip()
+os.environ['PATH'] =  os.pathsep.join([os.environ['PATH'], local_directory])
+
+
+# Checking arguments
+################################################################################
+def usage():
+    print >> sys.stderr, "Usage: %s version" % sys.argv[0]
+    sys.exit(2)
+
+
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option("--versioned", dest="useVersion", action="store_true",
+                  help="Parse version and set it in the RPM instead of using it in the name",
+                  metavar="VERSION", default = False)
+parser.add_option("--buildarea", dest="buildarea", action="store",
+                  help="Location where the RPM is build",
+                  default = "/tmp/buildarea")
+parser.add_option("--release", dest="release", action="store",
+                  help="Release number",
+                  default = "0")
+
+(options, args) = parser.parse_args()
+
+
+maxarg = len(args)
+if  maxarg < 1:
+    print >> sys.stderr, "Missing arguments!"
+    usage()
+
+
+orig_project = "LbScripts"
+project = orig_project.upper()
+version = args[0]
+cmtconfig = ''
+
+useVersion = True
+log.info("Creating RPM for <%s> <%s> <%s>  - use version: %s" % (project, version, cmtconfig, useVersion))
+
+
+buildarea = options.buildarea
+release = options.release
+checkBuildArea(buildarea)
+log.info("Using build area: %s" % buildarea)
+
+# Parsing version
+################################################################################
+
+maj_version = 1
+min_version = 0
+patch_version = 0
+
+if useVersion:
+    m = re.match("v([\d]+)r([\d]+)$", version)
+    if m != None:
+        maj_version = m.group(1)
+        min_version = m.group(2)
+    else:
+        # Checking whether the version matches vXrYpZ in that case
+        m = re.match("v([\d]+)r([\d]+)p([\d]+)", version)
+        if m != None:
+            maj_version = m.group(1)
+            min_version = m.group(2)
+            patch_version = m.group(3)
+        else:
+            log.error("Version %s does not match format vXrY pr vXryPZ" % version)
+
+
+
+# Checking dependencies
+################################################################################
+
+p = subprocess.Popen("generateRPMDeps %s %s %s" % (project, version, cmtconfig), \
+                     stdout=subprocess.PIPE, shell = "True")
+deps = p.communicate()[0]
+
+if deps != None and len(deps) > 0:
+    log.info("The RPM will have the following dependencies:")
+    for l in deps.splitlines():
+        log.info(l)
+else:
+    log.info("RPM Without dependencies")
+
+# Now preparing rpmbuild command
+################################################################################
+def addDefine(param, val):
+    if val == None or val == '':
+	val = '""'
+    return " --define '%s %s' " % (param, val)
+
+cmd = "rpmbuild -v"
+cmd += addDefine("build_area", buildarea)
+cmd += addDefine("project", project)
+cmd += addDefine("orig_project", orig_project)
+cmd += addDefine("lbversion", version)
+cmd += addDefine("release", release)
+if cmtconfig != '':
+    cmd += addDefine("config", "_" + cmtconfig)
+else:
+    cmd += addDefine("config",  cmtconfig)
+cmd += addDefine("maj_version", maj_version)
+cmd += addDefine("min_version", min_version)
+cmd += addDefine("patch_version", patch_version)
+cmd += addDefine("packarch", "noarch")
+
+cmd += " -bb " + os.path.join(local_directory, "LHCb_LbScripts.spectemplate")
+
+log.info("Running: %s" % cmd)
+rc = subprocess.call(cmd, shell=True)
+sys.exit(rc)
+
+
+

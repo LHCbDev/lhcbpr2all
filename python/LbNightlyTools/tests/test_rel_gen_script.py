@@ -105,6 +105,94 @@ def test_Gaudi():
     finally:
         os.remove(tmpname)
 
+def test_Geant4():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'Geant4', 'v95r2p7'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'Geant4', 'version': 'v95r2p7',
+                                       'with_shared': True,
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
+def test_Dirac():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'Dirac', 'v6r12p1'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'Dirac', 'version': 'v6r12p1',
+                                       'checkout': 'dirac',
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
+def test_LHCbGrid():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'LHCbGrid', 'v0r4'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCbGrid', 'version': 'v0r4',
+                                       'checkout': 'lhcbgrid',
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
+def test_LHCbDirac():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['-o', tmpname, 'LHCbDirac', 'v7r6p24'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCbDirac', 'version': 'v7r6p24',
+                                       'checkout': 'lhcbdirac',
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is False
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_two_projects():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
@@ -232,3 +320,95 @@ def test_platforms():
     finally:
         os.remove(tmpname)
 
+def test_packages():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               '',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == []
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'MyPack v1r0',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'checkout_opts': {'export': True}}]
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'MyPack v1r0 Some/OtherPack v9r99',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'Some/OtherPack', 'version': 'v9r99',
+                                       'checkout_opts': {'export': True}}]
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'MyPack v1r0 MyPack v2r3 MyPack v1r0 ',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'MyPack', 'version': 'v2r3',
+                                       'checkout_opts': {'export': True}}]
+
+        assert output == s.genConfig()
+
+
+        s = Release.ConfigGenerator()
+        s.run(['--packages',
+               'DBASE:MyPack v1r0 PARAM:AnotherPack v2r3',
+               '-o', tmpname])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['no_patch'] is True
+        assert output['packages'] == [{'name': 'MyPack', 'version': 'v1r0',
+                                       'container': 'DBASE',
+                                       'checkout_opts': {'export': True}},
+                                      {'name': 'AnotherPack', 'version': 'v2r3',
+                                       'container': 'PARAM',
+                                       'checkout_opts': {'export': True}}]
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)

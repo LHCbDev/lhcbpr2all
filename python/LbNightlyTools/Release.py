@@ -14,6 +14,7 @@ Generate a basic nightly builds configuration file from a list of projects and
 versions.
 '''
 import LbNightlyTools.Configuration
+import LbNightlyTools.CheckoutMethods
 
 import os
 import json
@@ -45,7 +46,7 @@ try:
 except ImportError:
     # if we cannot find the list of names, we use a minimal hardcoded list
     PROJECT_NAMES = ['LHCb', 'DaVinci', 'DecFilesTests', 'MooreOnline',
-                     'LbScripts', 'VanDerMeer']
+                     'LbScripts', 'VanDerMeer', 'LHCbDirac', 'LHCbGrid']
 
 # convert the names to a a conversion dictionary
 PROJECT_NAMES = dict((name.lower(), name) for name in PROJECT_NAMES)
@@ -85,10 +86,14 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         self.parser.add_option('--platforms',
                                help='space or comma -separated list of '
                                     'platforms required [default: %default]')
+        self.parser.add_option('--packages',
+                               help='space-separated list of data packages, '
+                                    'with versions, to add')
         self.parser.set_defaults(slot='lhcb-release',
                                  cmt=False,
                                  output='-',
-                                 platforms=DEFAULT_PLATFORMS)
+                                 platforms=DEFAULT_PLATFORMS,
+                                 packages='')
 
     def genConfig(self):
         '''
@@ -113,8 +118,27 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                 extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
                               'commit': 'GAUDI/GAUDI_' + vers}
                 project['checkout_opts'].update(extra_opts)
+            elif hasattr(LbNightlyTools.CheckoutMethods, proj.lower()):
+                project['checkout'] = proj.lower()
+
+            if proj in ('Geant4'):
+                project['with_shared'] = True
 
             projects.append(project)
+
+        packages = []
+        if self.options.packages:
+            packages_opt = self.options.packages.split()
+            for pack, vers in zip(packages_opt[::2], packages_opt[1::2]):
+                package = {'version': vers,
+                           'checkout_opts': {'export': True}}
+                # the package name could by just the name or <container>:<name>
+                if ':' not in pack:
+                    package['name'] = pack
+                else:
+                    package['container'], package['name'] = pack.split(':', 1)
+                if package not in packages: # ignore duplicates
+                    packages.append(package)
 
         default_platforms = (self.options.platforms.replace(',', ' ')
                              .strip().split())
@@ -123,6 +147,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         config = {'slot': self.options.slot,
                   'description': 'Slot used for releasing projects.',
                   'projects': projects,
+                  'packages': packages,
                   'USE_CMT': self.options.cmt,
                   'no_patch': True,
                   'error_exceptions': ERR_EXCEPT,
@@ -291,3 +316,74 @@ class Trigger(LbUtils.Script.PlainScript):
             return 1
 
         return 0
+
+_manifest_template = u'''<?xml version='1.0' encoding='UTF-8'?>
+<manifest>
+  <project name="{project}" version="{version}" />
+  <heptools>
+    <version>{heptools}</version>
+    <binary_tag>{platform}</binary_tag>
+    <lcg_system>{system}</lcg_system>
+  </heptools>{used_projects}{used_data_pkgs}
+</manifest>
+'''
+
+def createManifestFile(project, version, platform, build_dir):
+    '''
+    Generate a manifest.xml from the CMT configuration.
+    '''
+    from subprocess import Popen, PIPE
+    import re
+    container_package = ((project + 'Sys')
+                         if project != 'Gaudi'
+                         else 'GaudiRelease')
+    container_dir = os.path.join(build_dir, container_package, 'cmt')
+    env = dict((key, value) for key, value in os.environ.iteritems()
+               if key not in ('PWD', 'CWD'))
+    proc = Popen(['cmt', 'show', 'projects'], cwd=build_dir, env=env,
+                 stdout=PIPE, stderr=PIPE)
+    out, _err = proc.communicate()
+
+    # no check because we must have a dependency on LCGCMT
+    heptools = re.search(r'LCGCMT_([^ ]+)', out).group(1)
+
+    projects = ['    <project name="%s" version="%s" />' %
+                (fixProjectCase(name), vers.split('_')[-1])
+                for name, vers in [x.split()[0:2]
+                                   for x in out.splitlines()
+                                   if re.match(r'^  [^ ]', x)]
+                if name not in ('DBASE', 'PARAM', 'LCGCMT')]
+    if projects:
+        projects.insert(0, '\n  <used_projects>')
+        projects.append('  </used_projects>')
+
+    data_pkgs = []
+    if 'DBASE' in out or 'PARAM' in out:
+        proc = Popen(['cmt', 'show', 'uses'], cwd=container_dir, env=env,
+                     stdout=PIPE, stderr=PIPE)
+        out, _err = proc.communicate()
+        out = out.splitlines()
+        data_pkgs = [x.replace(' ', ',').split(',')[1:4:2]
+                     for x in out
+                     if re.search(r'DBASE|PARAM', x)]
+        def findVersion(pkg):
+            v = (x.split()[3] for x in out
+                 if re.match(r'^#.*%s' % pkg, x)).next()
+            if v == 'v*':
+                v = '*'
+            return v
+
+        data_pkgs = ['    <package name="%s" version="%s" />' %
+                     (hat + '/' + name if hat else name,
+                      findVersion(name))
+                     for name, hat in data_pkgs]
+        if data_pkgs:
+            data_pkgs.insert(0, '\n  <used_data_pkgs>')
+            data_pkgs.append('  </used_data_pkgs>')
+
+    return _manifest_template.format(project=project, version=version,
+                                     platform=platform,
+                                     system=platform[:platform.rfind('-')],
+                                     heptools=heptools,
+                                     used_projects='\n'.join(projects),
+                                     used_data_pkgs='\n'.join(data_pkgs))
