@@ -24,6 +24,9 @@ __log__ = logging.getLogger(__name__)
 GP_EXP = re.compile(r'gaudi_project\(([^)]+)\)')
 HT_EXP = re.compile(r'set\(\s*heptools_version\s+([^)]+)\)')
 
+# all configured slots (Slot instances)
+slots = {}
+
 class Project(object):
     '''
     Describe a project to be checked out, built and tested.
@@ -147,8 +150,170 @@ class Project(object):
 class Package(object):
     pass
 
+
+class _SlotMeta(type):
+    '''
+    Metaclass for Slot.
+    '''
+    def __init__(cls, name, bases, dct):
+        '''
+        Class initialization by the metaclass.
+        '''
+        super(_SlotMeta, cls).__init__(name, bases, dct)
+        if 'projects' in dct:
+            cls.__projects__ = dct['projects']
+        cls.projects = property(lambda self: self._projects)
+
+class ProjectsList(list):
+    '''
+    Helper class to handle a list of projects bound to a slot.
+    '''
+    def __init__(self, slot, iterable=None):
+        '''
+        Initialize the ProjectList from an optional iterable, which must contain
+        only Project instances.
+        '''
+        self.slot = slot
+        def checkElements(iterable):
+            '''helper to check the elements of the iterable'''
+            if iterable is None:
+                return
+            for element in iterable:
+                if isinstance(element, Project):
+                    element.slot = slot
+                    yield element
+                else:
+                    raise ValueError('only Project instances are allowed')
+        super(ProjectsList, self).__init__(checkElements(iterable))
+
+    def __getitem__(self, key):
+        '''
+        Extension of the default list [] operator, so that it can get the
+        contained project by name or by position.
+        '''
+        if isinstance(key, basestring):
+            for proj in self.__iter__():
+                if proj.name == key:
+                    return proj
+            raise KeyError('project %r not found' % key)
+        return super(ProjectsList, self).__getitem__(key)
+
+    def __setitem__(self, idx, element):
+        '''
+        Override item assignment, so that the binding between the Project
+        instances and the slot is kept in sync.
+        '''
+        if not isinstance(element, Project):
+            raise ValueError('only Project instances are allowed')
+        old = self[idx]
+        super(ProjectsList, self).__setitem__(idx, element)
+        element.slot = self.slot
+        old.slot = None
+
+    def insert(self, idx, element):
+        '''
+        Override item insertion, so that the binding between the Project
+        instances and the slot is kept in sync.
+        '''
+        if not isinstance(element, Project):
+            raise ValueError('only Project instances are allowed')
+        element.slot = self.slot
+        return super(ProjectsList, self).insert(idx, element)
+
+    def append(self, element):
+        '''
+        Override item insertion, so that the binding between the Project
+        instances and the slot is kept in sync.
+        '''
+        if not isinstance(element, Project):
+            raise ValueError('only Project instances are allowed')
+        element.slot = self.slot
+        return super(ProjectsList, self).append(element)
+
+    def __delitem__(self, idx):
+        '''
+        Override item removal, so that the binding between the Project
+        instances and the slot is kept in sync.
+        '''
+        old = self[idx]
+        super(ProjectsList, self).__delitem__(idx)
+        old.slot = None
+
+    def remove(self, element):
+        '''
+        Override item removal, so that the binding between the Project
+        instances and the slot is kept in sync.
+        '''
+        super(ProjectsList, self).remove(element)
+        element.slot = None
+
 class Slot(object):
-    pass
+    '''
+    Class representing a nightly build slot.
+    '''
+    __metaclass__ = _SlotMeta
+    __slots__ = ('_name', '_projects')
+    __projects__ = []
+    rootdir = os.curdir
+
+    def __init__(self, name, projects=None):
+        '''
+        Initialize the slot with name and optional list of projects.
+        '''
+        self._name = name
+        if projects is None:
+            projects = self.__class__.__projects__
+        self._projects = ProjectsList(self, projects)
+
+        # add this slot to the global list of slots
+        global slots
+        slots[name] = self
+
+    @property
+    def name(self):
+        '''
+        Name of the slot.
+        '''
+        return self._name
+    @name.setter
+    def name(self, value):
+        '''
+        Change the name of the slot, keeping the slots global list in sync.
+        '''
+        global slots
+        del slots[self._name]
+        self._name = value
+        slots[self._name] = self
+
+    def __getattr__(self, name):
+        '''
+        Get the project with given name in the slot.
+        '''
+        for proj in self._projects:
+            if proj.name == name:
+                return proj
+        raise AttributeError('%r object has no attribute %r' %
+                             (self.__class__.__name__, name))
+
+    def __delattr__(self, name):
+        '''
+        Remove a project from the slot.
+        '''
+        self.projects.remove(self.projects[name])
+
+    def __dir__(self):
+        '''
+        Return the list of names of the attributes of the instance.
+        '''
+        return self.__dict__.keys() + [proj.name for proj in self.projects]
+
+    def checkout(self, export=False):
+        '''
+        Checkout all the projects in the slot.
+        '''
+        os.chdir(self.rootdir)
+        for project in self.projects:
+            project.checkout(export=True)
 
 
 def extractVersion(tag):
