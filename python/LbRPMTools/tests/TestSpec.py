@@ -214,6 +214,7 @@ Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}
 Requires: %{projectUp}_%{lbversion}
 
 
+Requires: LCGCMT_LCGCMT_70root6
 Requires: LCG_70root6_Boost_1.55.0_python2.7_x86_64_slc6_gcc48_opt
 Requires: LCG_70root6_CASTOR_2.1.13_6_x86_64_slc6_gcc48_opt
 Requires: LCG_70root6_Python_2.7.6_x86_64_slc6_gcc48_opt

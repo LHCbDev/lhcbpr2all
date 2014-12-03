@@ -90,11 +90,13 @@ class LHCbBaseRpmSpec(object):
             (hver, hcmtconfig, packages) = heptools
             hcmtconfig = hcmtconfig.replace("-", "_")
             if packages:
-                requires = ['Requires: LCG_{hver}_{name}_{vers}_{platf}\n'
-                            .format(hver=hver, name=name,
-                                    vers=vers.replace('-', '_'),
-                                    platf=hcmtconfig)
-                            for name, vers in sorted(packages.items())]
+                requires = ['Requires: LCGCMT_LCGCMT_{hver}\n'
+                            .format(hver=hver)]
+                requires += ['Requires: LCG_{hver}_{name}_{vers}_{platf}\n'
+                             .format(hver=hver, name=name,
+                                     vers=vers.replace('-', '_'),
+                                     platf=hcmtconfig)
+                             for name, vers in sorted(packages.items())]
                 return ''.join(requires)
             else:
                 return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig)
