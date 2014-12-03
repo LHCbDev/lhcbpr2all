@@ -20,6 +20,7 @@ import os
 import re
 import logging
 from string import Template
+from LbConfiguration.Version import extractVersion
 
 __log__ = logging.getLogger(__name__)
 
@@ -447,11 +448,14 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         super(LHCbBinaryRpmSpec, self).__init__(project, version)
         __log__.debug("Creating RPM for %s/%s/%s" % (project, version, cmtconfig))
         self._project = project
-        self._version = version
         self._cmtconfig = cmtconfig
         self._buildarea = buildarea
         self._buildlocation = buildlocation
         self._manifest = manifest
+        # This is the version in LHCb Format
+        self._version = version
+        self._parsedVersion = extractVersion(version)
+        # These are used for the main version of the package
         self._lhcb_maj_version = 1
         self._lhcb_min_version = 0
         self._lhcb_patch_version = 0
@@ -522,7 +526,6 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
-Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 Requires: %{projectUp}_%{lbversion}
 ${extraRequires}
         \n""").substitute(buildarea = self._buildarea,

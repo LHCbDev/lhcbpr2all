@@ -108,7 +108,6 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
-Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 Requires: %{projectUp}_%{lbversion}
 
 
@@ -210,7 +209,6 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
-Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 Requires: %{projectUp}_%{lbversion}
 
 
@@ -256,7 +254,9 @@ rsync -arL %{buildlocation}/%{projectUp}/%{projectUp}_%{lbversion}/InstallArea/%
         nl = map(str.strip, newspectxt.splitlines())
         ol = map(str.strip, oldspectxt.splitlines())
 
-        print newspectxt
+        #print newspectxt
+	print newspectxt
+	print oldspectxt
         self.assertEquals(len(nl), len(ol))
 
 
