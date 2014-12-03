@@ -78,7 +78,7 @@ class Parser(object):
             bin_tag = ''
 
         pkgs= dict((pkg.attrib['name'], pkg.attrib['version'])
-                   for pkg in self._tree.findall('./heptools/packages/package'))
+                   for pkg in self._tree.findall('./exttools/packages/package'))
         return bin_tag, pkgs
 
     def getUsedProjects(self):
