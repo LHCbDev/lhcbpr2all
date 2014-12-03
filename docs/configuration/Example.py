@@ -27,8 +27,10 @@ class Gaudi(Project):
         from LbNightlyTools.Checkout import git
         return git(self.__url__, self.commitId(), rootdir=rootdir, export=export)
 
+
 class LHCb(Project):
     pass
+
 
 class LHCb_head(LHCb):
     override = {'GaudiObjDesc': 'v4r5',
@@ -49,6 +51,15 @@ CMakeSlot('lhcb-cmake',
                     Project('Lbcom', 'head')])
 
 
+class HeadSlot(Slot):
+    projects = [Gaudi('head'),
+                LHCb_head()]
+
+
+HeadSlot('lhcb-head-1')
+HeadSlot('lhcb-head-2').projects.append(Project('Lbcom', 'head'))
+
+
 # in the scripts:
 #from NightlyConf import lhcb_cmake
 from LbNightlyTools.Configuration import slots
@@ -58,7 +69,8 @@ lhcb_cmake = slots['lhcb-cmake']
 
 # lhcb_cmake.json() -> JSON representation of the configuration for the dashboard
 
-lhcb_cmake.rootdir = '/a/b/c'
+# Either we work in current directory or we override it with something like:
+# lhcb_cmake.rootdir = '/a/b/c'
 lhcb_cmake.checkout(export)
 # lhcb_cmake.dependencies() -> {'LHCb': ['Gaudi'], 'Lbcom': ['LHCb'], 'Gaudi': []}
 # ## How to cache the discovered dependencies?
@@ -78,11 +90,11 @@ test_results = lhcb_cmake.Gaudi.test()
 # ---------------
 # packages
 # ---------------
-from LbNightlyTools.Configuration import Slot, Project, Package
+from LbNightlyTools.Configuration import Slot, Project, Package, DBASE
 
 lh = Slot('lhcb-head', [Project('Gaudi', 'head'),
                         Project('LHCb', 'head'),
-                        Package('AppConfig', 'v3r199'),
-                        Package('WG/CharmConfig', 'v3r16')])
+                        DBASE([Package('AppConfig', 'v3r199'),
+                               Package('WG/CharmConfig', 'v3r16')])
 
-lh.WG_CharmConfig.checkout()
+lh.DBASE.WG_CharmConfig.checkout()
