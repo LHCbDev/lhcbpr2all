@@ -45,7 +45,7 @@ class Project(object):
         self.name = name
         self.version = 'HEAD' if version.upper() == 'HEAD' else version
 
-        self.disabled = kwargs.get('disabled', {})
+        self.disabled = kwargs.get('disabled', False)
 
         self.overrides = kwargs.get('overrides', {})
 
@@ -62,7 +62,10 @@ class Project(object):
 
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
-    def build(self, rootdir='.'):
+        # slot owning this project
+        self.slot = None
+
+    def build(self):
         '''
         Build the project.
         '''
@@ -73,13 +76,30 @@ class Project(object):
         upcase = self.name.upper()
         return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
 
-    def getDeps(self, rootdir='.'):
+    @property
+    def rootdir(self):
+        '''
+        Directory where the project is.
+        '''
+        return self.slot.rootdir if self.slot else self._rootdir
+
+    @rootdir.setter
+    def rootdir(self, value):
+        '''
+        Set the directory where the project is.
+        '''
+        if not self.slot:
+            self._rootdir = value
+        else:
+            raise AttributeError("can't set attribute")
+
+    def getDeps(self):
         '''
         Return the dependencies of a checked out project using the information
         retrieved from the configuration files.
         @return: list of used projects (all converted to lowercase)
         '''
-        proj_root = os.path.join(rootdir, self.baseDir)
+        proj_root = os.path.join(self.rootdir, self.baseDir)
         deps = []
 
         # try with CMakeLists.txt first
