@@ -91,7 +91,8 @@ class LHCbBaseRpmSpec(object):
             hcmtconfig = hcmtconfig.replace("-", "_")
             if packages:
                 requires = ['Requires: LCG_{hver}_{name}_{vers}_{platf}\n'
-                            .format(hver=hver, name=name, vers=vers,
+                            .format(hver=hver, name=name,
+                                    vers=vers.replace('-', '_'),
                                     platf=hcmtconfig)
                             for name, vers in sorted(packages.items())]
                 return ''.join(requires)
@@ -105,7 +106,8 @@ class LHCbBaseRpmSpec(object):
         binary_tag, exttools = self._manifest.getExtTools()
         binary_tag = binary_tag.replace('-', '_')
         return ''.join('Requires: {name}_{vers}_{platf}\n'
-                       .format(name=name, vers=vers, platf=binary_tag)
+                       .format(name=name, vers=vers.replace('-', '_'),
+                               platf=binary_tag)
                        for name, vers in sorted(exttools.items()))
 
 
