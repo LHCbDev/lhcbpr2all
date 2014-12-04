@@ -496,14 +496,14 @@ def test_checkout_datapkg():
     if not which('getpack'):
         raise nose.SkipTest
 
-    PackageDesc = StackCheckout.PackageDesc
+    Package = StackCheckout.Package
 
     mlh = MockLoggingHandler()
     StackCheckout.__log__.addHandler(mlh)
 
     with TemporaryDir(chdir=True):
         os.makedirs('build')
-        pkg = PackageDesc(name='AppConfig', version='v3r198')
+        pkg = Package(name='AppConfig', version='v3r198')
         pkg.rootdir = 'build'
         pkg.checkout()
 
@@ -523,15 +523,15 @@ def test_stack_checkout_datapkg():
     if not which('getpack'):
         raise nose.SkipTest
 
-    PackageDesc = StackCheckout.PackageDesc
+    Package = StackCheckout.Package
 
     mlh = MockLoggingHandler()
     StackCheckout.__log__.addHandler(mlh)
 
     with TemporaryDir(chdir=True):
         os.makedirs('build')
-        pkgs = [PackageDesc(name='AppConfig', version='v3r198'),
-                PackageDesc(name='Det/SQLDDDB', version='HEAD')]
+        pkgs = [Package(name='AppConfig', version='v3r198'),
+                Package(name='Det/SQLDDDB', version='HEAD')]
         slot = StackCheckout.StackDesc(packages=pkgs)
         slot.rootdir = 'build'
         slot.checkout()

@@ -355,3 +355,24 @@ def lhcbgrid(desc):
 
 # set default checkout method
 default = getpack # pylint: disable=C0103
+
+def getMethod(method=None):
+    '''
+    Helper function to get a checkout method by name.
+
+    If method is a callable we return it, otherwise we look for the name in the
+    current module or as a function coming from another module.
+    If method is None, we return the default checkout method.
+    '''
+    if method is None:
+        return default
+    if hasattr(method, '__call__'):
+        return method
+    if isinstance(method, basestring):
+        if '.' in method:
+            # method is a fully qualified function name
+            m, f = method.rsplit('.', 1)
+            return getattr(__import__(m, fromlist=[f]), f)
+        else:
+            # it must be a name in this module
+            return globals()[method]

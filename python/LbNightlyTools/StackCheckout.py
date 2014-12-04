@@ -22,92 +22,12 @@ import codecs
 from datetime import date
 
 from LbNightlyTools import Configuration
-from LbNightlyTools.Configuration import GP_EXP, HT_EXP, Project
+from LbNightlyTools.Configuration import GP_EXP, HT_EXP, Project, Package
 from LbNightlyTools.Utils import ensureDirs, pack, setenv, shallow_copytree
 from LbNightlyTools.Utils import find_path, IgnorePackageVersions
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
-
-
-class PackageDesc(object):
-    '''
-    Describe a package to be checked out.
-    '''
-    def __init__(self, name, version, **kwargs):
-        '''
-        @param name: name of the package
-        @param version: version of the package as 'vXrY' or 'HEAD'
-        @param container: name of the container project ('DBASE' or 'PARAM')
-        @param checkout: callable that can check out the specified project
-        @param checkout_opts: dictionary with extra options for the checkout
-                              callable
-        '''
-        self.name = name
-        if version.lower() == 'head':
-            version = 'head'
-        self.version = version
-        self.container = kwargs.get('container', 'DBASE')
-        self._checkout = kwargs.get('checkout', CheckoutMethods.default)
-        self.checkout_opts = kwargs.get('checkout_opts', {})
-        self.isProject = False
-        self.isPackage = True
-        self.rootdir = os.curdir
-
-    def checkout(self):
-        '''
-        Helper function to call the checkout method.
-        '''
-        __log__.info('checking out %s', self)
-        self._checkout(self)
-
-    @property
-    def baseDir(self):
-        '''Name of the package directory (relative to the build directory).'''
-        return os.path.join(self.container, self.name, self.version)
-
-    def build(self):
-        '''
-        Build the package and return the return code of the build process.
-        '''
-        from subprocess import Popen
-        base = os.path.join(self.rootdir, self.baseDir)
-        if os.path.exists(os.path.join(base, 'Makefile')):
-            __log__.info('building %s (make)', self)
-            return Popen(['make'], cwd=base).wait()
-        elif os.path.exists(os.path.join(base, 'cmt', 'requirements')):
-            __log__.info('building %s (cmt make)', self)
-            # CMT is very sensitive to these variables (better to unset them)
-            env = dict((key, value) for key, value in os.environ.items()
-                        if key not in ('PWD', 'CWD', 'CMTSTRUCTURINGSTYLE'))
-            base = os.path.join(base, 'cmt')
-            Popen(['cmt', 'config'], cwd=base, env=env).wait()
-            return Popen(['cmt', 'make'], cwd=base, env=env).wait()
-        __log__.info('%s does not require build', self)
-        return 0
-
-    def getVersionLinks(self):
-        '''
-        Return a list of version aliases for the current package (only if the
-        requested version is head).
-        '''
-        if self.version != 'head':
-            return []
-        base = os.path.join(self.rootdir, self.baseDir)
-        aliases = ['v999r999']
-        print os.path.exists(os.path.join(base, 'cmt', 'requirements'))
-        if os.path.exists(os.path.join(base, 'cmt', 'requirements')):
-            for l in open(os.path.join(base, 'cmt', 'requirements')):
-                l = l.strip()
-                if l.startswith('version'):
-                    version = l.split()[1]
-                    aliases.append(version[:version.rfind('r')] + 'r999')
-                    break
-        return aliases
-
-    def __str__(self):
-        '''String representation of the project.'''
-        return "{0} {1}".format(self.name, self.version)
 
 
 class StackDesc(object):
@@ -419,7 +339,7 @@ def parseConfigFile(path):
             checkout = getattr(__import__(m, fromlist=[f]), f)
         else:
             checkout = getattr(CheckoutMethods, checkout)
-        packages.append(PackageDesc(pkg[u'name'], pkg[u'version'],
+        packages.append(Package(pkg[u'name'], pkg[u'version'],
                                     container=pkg.get(u'container', 'DBASE'),
                                     checkout=checkout,
                                     checkout_opts=pkg.get(u'checkout_opts',
