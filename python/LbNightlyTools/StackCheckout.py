@@ -52,25 +52,26 @@ class PackageDesc(object):
         self.checkout_opts = kwargs.get('checkout_opts', {})
         self.isProject = False
         self.isPackage = True
+        self.rootdir = os.curdir
 
-    def checkout(self, rootdir='.'):
+    def checkout(self):
         '''
         Helper function to call the checkout method.
         '''
         __log__.info('checking out %s', self)
-        self._checkout(self, rootdir=rootdir)
+        self._checkout(self)
 
     @property
     def baseDir(self):
         '''Name of the package directory (relative to the build directory).'''
         return os.path.join(self.container, self.name, self.version)
 
-    def build(self, rootdir='.'):
+    def build(self):
         '''
         Build the package and return the return code of the build process.
         '''
         from subprocess import Popen
-        base = os.path.join(rootdir, self.baseDir)
+        base = os.path.join(self.rootdir, self.baseDir)
         if os.path.exists(os.path.join(base, 'Makefile')):
             __log__.info('building %s (make)', self)
             return Popen(['make'], cwd=base).wait()
@@ -85,14 +86,14 @@ class PackageDesc(object):
         __log__.info('%s does not require build', self)
         return 0
 
-    def getVersionLinks(self, rootdir='.'):
+    def getVersionLinks(self):
         '''
         Return a list of version aliases for the current package (only if the
         requested version is head).
         '''
         if self.version != 'head':
             return []
-        base = os.path.join(rootdir, self.baseDir)
+        base = os.path.join(self.rootdir, self.baseDir)
         aliases = ['v999r999']
         print os.path.exists(os.path.join(base, 'cmt', 'requirements'))
         if os.path.exists(os.path.join(base, 'cmt', 'requirements')):
@@ -118,16 +119,19 @@ class StackDesc(object):
         self.projects = projects or []
         self.packages = packages or []
         self.env = env or []
+        self.rootdir = os.curdir
 
-    def checkout(self, rootdir='.', requested=None, ignore_failures=True):
+    def checkout(self, requested=None, ignore_failures=True):
         '''
         Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
+        rootdir = self.rootdir
         if self.packages:
             for pkg in self.packages:
                 try:
-                    pkg.checkout(rootdir)
+                    pkg.rootdir = rootdir # FIXME: temporary hack
+                    pkg.checkout()
                 except RuntimeError, err:
                     if not ignore_failures:
                         raise
@@ -146,9 +150,9 @@ class StackDesc(object):
 
             for pkg in self.packages:
                 if os.path.exists(os.path.join(rootdir, pkg.baseDir)):
-                    if pkg.build(rootdir) != 0:
+                    if pkg.build() != 0:
                         __log__.warning('%s build failed', pkg)
-                    for link in pkg.getVersionLinks(rootdir):
+                    for link in pkg.getVersionLinks():
                         __log__.debug('creating symlink %s', link)
                         os.symlink(pkg.version,
                                    os.path.normpath(os.path.join(rootdir,
@@ -164,14 +168,15 @@ class StackDesc(object):
             if requested and proj.name.lower() not in requested:
                 continue # project not requested: skip
             try:
-                proj.checkout(rootdir)
+                proj.rootdir = rootdir # FIXME: temporary hack
+                proj.checkout()
             except RuntimeError, err:
                 if not ignore_failures:
                     raise
                 __log__.warning(str(err))
         __log__.info('... done.')
 
-    def patch(self, rootdir='.', patchfile='stack.patch'):
+    def patch(self, patchfile='stack.patch'):
         '''
         Take all projects/packages in the stack and fix the dependencies to make
         a consistent set.
@@ -187,6 +192,7 @@ class StackDesc(object):
         heptools_version = proj_versions_uc.get('HEPTOOLS',
                                                 proj_versions_uc.get('LCGCMT'))
 
+        rootdir = self.rootdir
         pfile = open(join(rootdir, patchfile), 'w')
         def write_patch(data, newdata, filename):
             '''
@@ -362,7 +368,7 @@ class StackDesc(object):
 
         pfile.close()
 
-    def collectDeps(self, rootdir='.'):
+    def collectDeps(self):
         '''
         Scan the configuration files of the projects to discover their
         dependencies.
@@ -373,7 +379,7 @@ class StackDesc(object):
         deps = {}
         for p in self.projects:
             # note that we ignore projects not in the stack
-            p.rootdir = rootdir
+            p.rootdir = self.rootdir
             deps[p.name] = [names[n]
                             for n in p.getDeps()
                             if n in names]
@@ -553,17 +559,17 @@ class Script(LbUtils.Script.PlainScript):
         # (but we have to update it later)
         dashboard.publish(cfg)
 
-        slot.checkout(build_dir, opts.projects,
+        slot.rootdir = build_dir
+        slot.checkout(opts.projects,
                       ignore_failures=opts.ignore_checkout_errors)
 
         if not cfg.get('no_patch'):
-            slot.patch(build_dir,
-                       join(artifacts_dir,
+            slot.patch(join(artifacts_dir,
                             '.'.join([opts.build_id or 'slot', 'patch'])))
         else:
             self.log.info('not patching the sources')
 
-        deps = slot.collectDeps(build_dir)
+        deps = slot.collectDeps()
         for p in cfg.get('projects', []):
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            deps.get(p['name'], [])))

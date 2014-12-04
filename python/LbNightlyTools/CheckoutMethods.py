@@ -22,7 +22,7 @@ from LbNightlyTools.Utils import retry_call as call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 
-def getpack(desc, rootdir='.'):
+def getpack(desc):
     '''
     Checkout the project described by the Project instance 'desc'.
 
@@ -40,6 +40,7 @@ def getpack(desc, rootdir='.'):
                                             desc.version == 'HEAD')
     export = desc.checkout_opts.get('export', False)
 
+    rootdir = desc.rootdir
     prjroot = normpath(join(rootdir, desc.baseDir))
     from LbNightlyTools.Configuration import Project
     if isinstance(desc, Project):
@@ -73,7 +74,7 @@ def getpack(desc, rootdir='.'):
 
     __log__.debug('checkout of %s completed in %s', desc, prjroot)
 
-def ignore(desc, rootdir='.'): # pylint: disable=W0613
+def ignore(desc):
     '''
     Special checkout function used to just declare a project version in the
     configuration but do not perform the checkout, so that it's picked up from
@@ -81,7 +82,7 @@ def ignore(desc, rootdir='.'): # pylint: disable=W0613
     '''
     __log__.info('checkout not requested for %s', desc)
 
-def git(desc, rootdir='.'):
+def git(desc):
     '''
     Checkout from a git repository.
 
@@ -95,7 +96,7 @@ def git(desc, rootdir='.'):
     export = desc.checkout_opts.get('export', False)
 
     __log__.debug('checking out %s from %s (%s)', desc, url, commit)
-    dest = os.path.join(rootdir, desc.baseDir)
+    dest = os.path.join(desc.rootdir, desc.baseDir)
     __log__.debug('cloning git repository %s', url)
     call(['git', 'clone', '--no-checkout', url, dest])
     if not export:
@@ -116,7 +117,7 @@ def git(desc, rootdir='.'):
     f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
-def svn(desc, rootdir='.'):
+def svn(desc):
     '''
     Checkout from an svn repository.
 
@@ -129,7 +130,7 @@ def svn(desc, rootdir='.'):
     export = desc.checkout_opts.get('export', False)
 
     __log__.debug('checking out %s from %s', desc, url)
-    dest = os.path.join(rootdir, desc.baseDir)
+    dest = os.path.join(desc.rootdir, desc.baseDir)
     call(['svn', 'checkout' if not export else 'export', url, dest])
     makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(makefile):
@@ -140,7 +141,7 @@ def svn(desc, rootdir='.'):
         __log__.debug('using original Makefile')
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
-def copy(desc, rootdir='.'):
+def copy(desc):
     '''
     Copy the content of a directory.
 
@@ -151,7 +152,7 @@ def copy(desc, rootdir='.'):
         raise RuntimeError('mandatory checkout_opts "src" is missing')
     src = desc.checkout_opts['src']
     __log__.debug('copying %s from %s', desc, src)
-    dest = os.path.join(rootdir, desc.baseDir)
+    dest = os.path.join(desc.rootdir, desc.baseDir)
     ensureDirs([dest])
     shutil.copytree(os.path.join(src, os.curdir), dest)
     top_makefile = os.path.join(dest, 'Makefile')
@@ -161,10 +162,10 @@ def copy(desc, rootdir='.'):
         f.close()
     __log__.debug('copy of %s completed in %s', desc, dest)
 
-def untar(desc, rootdir='.'):
+def untar(desc):
     '''
-    Unpack a tarball in the rootdir (assuming that the tarball already contains
-    the <PROJECT>/<PROJECT>_<version> directories).
+    Unpack a tarball in the rootdir of desc (assuming that the tarball already
+    contains the <PROJECT>/<PROJECT>_<version> directories).
 
     Requires a mandatory 'src' field in the 'checkout_opts' of the
     project description.
@@ -173,8 +174,8 @@ def untar(desc, rootdir='.'):
         raise RuntimeError('mandatory checkout_opts "src" is missing')
     src = desc.checkout_opts['src']
     __log__.debug('unpacking %s', src)
-    call(['tar', '-x', '-C', rootdir, '-f', src])
-    dest = os.path.join(rootdir, desc.baseDir)
+    call(['tar', '-x', '-C', desc.rootdir, '-f', src])
+    dest = os.path.join(desc.rootdir, desc.baseDir)
     if not os.path.isdir(dest):
         raise RuntimeError('the tarfile %s does not contain %s',
                            src, desc.baseDir)
@@ -185,7 +186,7 @@ def untar(desc, rootdir='.'):
         f.close()
     __log__.debug('unpacking of %s from %s completed', desc, src)
 
-def dirac(desc, rootdir='.'):
+def dirac(desc):
     '''
     Special hybrid checkout needed to release DIRAC.
     '''
@@ -206,6 +207,7 @@ def dirac(desc, rootdir='.'):
     if export:
         getpack_cmd.append('--export')
 
+    rootdir = desc.rootdir
     prjroot = normpath(join(rootdir, desc.baseDir))
 
     if not os.path.exists(rootdir):
@@ -271,7 +273,7 @@ tests:
 '''.format(project=desc.name, version=desc.version))
 
 
-def lhcbdirac(desc, rootdir='.'):
+def lhcbdirac(desc):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
@@ -291,6 +293,7 @@ def lhcbdirac(desc, rootdir='.'):
     if export:
         getpack_cmd.append('--export')
 
+    rootdir = desc.rootdir
     prjroot = normpath(join(rootdir, desc.baseDir))
     policy = join(prjroot, 'LHCbDiracPolicy')
     dest = join(prjroot, 'LHCbDIRAC')
@@ -331,7 +334,7 @@ def lhcbdirac(desc, rootdir='.'):
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 
 
-def lhcbgrid(desc, rootdir='.'):
+def lhcbgrid(desc):
     '''
     Special hybrid checkout needed to release LHCbGrid.
     '''
@@ -343,9 +346,9 @@ def lhcbgrid(desc, rootdir='.'):
                    'LHCBGRID/LHCBGRID_' + desc.version)
         desc.checkout_opts['url'] = url
 
-    svn(desc, rootdir)
+    svn(desc)
 
-    dest = os.path.join(rootdir, desc.baseDir)
+    dest = os.path.join(desc.rootdir, desc.baseDir)
     __log__.debug('fixing requirements files')
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)

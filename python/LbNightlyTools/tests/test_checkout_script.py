@@ -54,8 +54,9 @@ def test_noop_patch():
 
         configfile = join(_testdata, 'testing-slot.json')
         slot = StackCheckout.parseConfigFile(configfile)
+        slot.rootdir = build_dir
 
-        slot.patch(build_dir, 'slot.patch')
+        slot.patch('slot.patch')
 
         assert isfile(join(build_dir, 'slot.patch'))
         assert not open(join(build_dir, 'slot.patch')).read().strip(), 'patch file not empty'
@@ -89,8 +90,9 @@ def test_lbcore_192():
 
         configfile = join(_testdata, 'testing-slot-lbcore-192.json')
         slot = StackCheckout.parseConfigFile(configfile)
+        slot.rootdir = build_dir
 
-        slot.patch(build_dir, 'slot.patch')
+        slot.patch('slot.patch')
 
         assert isfile(join(build_dir, 'slot.patch'))
 

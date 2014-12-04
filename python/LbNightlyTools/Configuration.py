@@ -44,13 +44,15 @@ class Project(object):
                               callable
         @param disabled: if set to True, the project is taken into account only
                          for the configuration
+        @param rootdir: location of the project (where it should be checked out,
+                        etc.)
         '''
         self.name = name
         self.version = 'HEAD' if version.upper() == 'HEAD' else version
 
         self.disabled = kwargs.get('disabled', False)
-
         self.overrides = kwargs.get('overrides', {})
+        self._rootdir = kwargs.get('rootdir', os.curdir)
 
         import CheckoutMethods
         checkout = kwargs.get('checkout', CheckoutMethods.default)
@@ -61,12 +63,19 @@ class Project(object):
             else:
                 checkout = getattr(CheckoutMethods, checkout)
         # note that self.checkout is a method
-        self.checkout = checkout
+        self._checkout = checkout
 
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
         # slot owning this project
         self.slot = None
+
+    def checkout(self):
+        '''
+        Helper function to call the checkout method.
+        '''
+        __log__.info('checking out %s', self)
+        self._checkout(self)
 
     def build(self):
         '''
@@ -313,7 +322,7 @@ class Slot(object):
         '''
         os.chdir(self.rootdir)
         for project in self.projects:
-            project.checkout(export=True)
+            project.checkout(export=export)
 
 
 def extractVersion(tag):

@@ -80,7 +80,7 @@ def test_Project():
     assert p.name == 'Gaudi'
     assert p.version == 'v23r5'
     assert p.overrides == {}
-    assert p.checkout == CheckoutMethods.default
+    assert p._checkout == CheckoutMethods.default
     assert p.baseDir == 'GAUDI/GAUDI_v23r5'
     assert str(p) == 'Gaudi v23r5'
 
@@ -88,7 +88,7 @@ def test_Project():
     assert p.name == 'Gaudi'
     assert p.version == 'HEAD'
     assert p.overrides == {}
-    assert p.checkout == CheckoutMethods.default
+    assert p._checkout == CheckoutMethods.default
     assert p.baseDir == 'GAUDI/GAUDI_HEAD'
     assert str(p) == 'Gaudi HEAD'
 
@@ -96,7 +96,7 @@ def test_Project():
     assert p.name == 'Gaudi'
     assert p.version == 'v23r5'
     assert p.overrides == {}
-    assert p.checkout == mockCheckout
+    assert p._checkout == mockCheckout
 
     p = Project('Gaudi', 'v23r5',
                 overrides={'GaudiPolicy': 'head',
@@ -108,15 +108,12 @@ def test_Project():
     assert p.overrides == {'GaudiPolicy': 'head',
                            'GaudiProfiling': None,
                            'GaudiObjDesc': 'v11r17'}
-    assert p.checkout == mockCheckout
+    assert p._checkout == mockCheckout
 
     cb = MockFunc()
     p = Project('Gaudi', 'v23r5', checkout=cb)
     p.checkout()
-    assert cb.args == (), cb.args
-    assert cb.kwargs == {}, cb.kwargs
-    p.checkout('/tmp')
-    assert cb.args == ('/tmp',), cb.args
+    assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
 
 def test_StackDesc():
@@ -136,10 +133,7 @@ def test_StackDesc():
     p = Project('Gaudi', 'v23r5', checkout=cb)
     s = StackDesc([p])
     s.checkout()
-    assert cb.args == ('.',), cb.args
-    assert cb.kwargs == {}, cb.kwargs
-    s.checkout('/tmp')
-    assert cb.args == ('/tmp',), cb.args
+    assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
 
 def test_PartialCheckout():
@@ -155,7 +149,7 @@ def test_PartialCheckout():
     s = StackDesc([p1, p2])
     s.checkout(requested=set(['gaudi']))
 
-    assert gcb.args == ('.',), gcb.args
+    assert gcb.args == (p1,), gcb.args
     assert gcb.kwargs == {}, gcb.kwargs
     assert lcb.args == None
     assert lcb.kwargs == None
@@ -179,10 +173,10 @@ def test_parseConfigFile():
     assert len(s.projects) == 2
     p = s.projects[0]
     assert (p.name, p.version) == ('Gaudi', 'v23r5')
-    assert p.checkout == CheckoutMethods.special_test #@UndefinedVariable
+    assert p._checkout == CheckoutMethods.special_test #@UndefinedVariable
     p = s.projects[1]
     assert (p.name, p.version) == ('LHCb', 'v32r5')
-    assert p.checkout == CheckoutMethods.default
+    assert p._checkout == CheckoutMethods.default
     assert p.overrides == {"GaudiObjDesc": "HEAD",
                            "GaudiPython": "v12r4",
                            "Online/RootCnv": None}
@@ -197,7 +191,7 @@ def test_parseConfigFile():
     assert len(s.projects) == 1
     p = s.projects[0]
     assert (p.name, p.version) == ('P', 'V')
-    assert p.checkout == os.path.exists
+    assert p._checkout == os.path.exists
 
     try:
         s = doCall({'projects':[{"name": "Gaudi"}]})
@@ -216,14 +210,14 @@ def test_checkout():
         for f in files:
             assert exists(join(tmpdir, f)), 'Missing %s' % f
     try:
-        CheckoutMethods.default(Project('Brunel', 'v44r1'), tmpdir)
+        CheckoutMethods.default(Project('Brunel', 'v44r1', rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
                          ('cmt', 'project.cmt'),
                          ('BrunelSys', 'cmt', 'requirements')]])
 
-        CheckoutMethods.default(Project('Brunel', 'head'), tmpdir)
+        CheckoutMethods.default(Project('Brunel', 'head', rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -235,8 +229,8 @@ def test_checkout():
         CheckoutMethods.default(Project('Brunel', 'head',
                                         overrides={'GaudiObjDesc': 'head',
                                                    'GaudiPolicy': 'v12r0',
-                                                   'Rec/Brunel': None}),
-                                tmpdir)
+                                                   'Rec/Brunel': None},
+                                        rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -250,8 +244,8 @@ def test_checkout():
 
         CheckoutMethods.git(Project('Gaudi', 'v23r6',
                                     checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
-                                                   'commit': 'GAUDI/GAUDI_v23r6'}),
-                            tmpdir)
+                                                   'commit': 'GAUDI/GAUDI_v23r6'},
+                                    rootdir=tmpdir))
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -262,8 +256,8 @@ def test_checkout():
 
 
         CheckoutMethods.git(Project('Gaudi', 'HEAD',
-                                    checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'}),
-                            tmpdir)
+                                    checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'},
+                                    rootdir=tmpdir))
         check([join('GAUDI', 'GAUDI_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -275,8 +269,8 @@ def test_checkout():
         shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
         svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
         CheckoutMethods.svn(Project('Brunel', 'HEAD',
-                                    checkout_opts={'url': svnurl}),
-                            tmpdir)
+                                    checkout_opts={'url': svnurl},
+                                    rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -292,7 +286,7 @@ def test_checkout():
 
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'), ignore_errors=True)
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_HEAD'), ignore_errors=True)
-        CheckoutMethods.ignore(Project('Gaudi', 'v23r6'), tmpdir)
+        CheckoutMethods.ignore(Project('Gaudi', 'v23r6', rootdir=tmpdir))
         assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
 
 
@@ -314,8 +308,8 @@ def test_checkout_export():
             assert exists(join(tmpdir, f)), 'Missing %s' % f
     try:
         CheckoutMethods.default(Project('Brunel', 'v44r1',
-                                        checkout_opts={'export': True}),
-                                tmpdir)
+                                        checkout_opts={'export': True},
+                                        rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -327,8 +321,8 @@ def test_checkout_export():
         CheckoutMethods.git(Project('Gaudi', 'v23r6',
                                     checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
                                                    'commit': 'GAUDI/GAUDI_v23r6',
-                                                   'export': True}),
-                            tmpdir)
+                                                   'export': True},
+                                    rootdir=tmpdir))
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -340,8 +334,8 @@ def test_checkout_export():
         svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
         CheckoutMethods.svn(Project('Brunel', 'HEAD',
                                     checkout_opts={'url': svnurl,
-                                                   'export': True}),
-                            tmpdir)
+                                                   'export': True},
+                                    rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -385,7 +379,7 @@ def test_getpack_recursive_head():
 
     try:
 
-        CheckoutMethods.default(Project('Brunel', 'v44r1'), tmpdir)
+        CheckoutMethods.default(Project('Brunel', 'v44r1', rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -400,7 +394,7 @@ def test_getpack_recursive_head():
         assert getPkgVersion(sysreq) == 'v44r1'
 
 
-        CheckoutMethods.default(Project('Brunel', 'head'), tmpdir)
+        CheckoutMethods.default(Project('Brunel', 'head', rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -417,8 +411,8 @@ def test_getpack_recursive_head():
         shutil.rmtree(join(tmpdir, 'BRUNEL'), ignore_errors=True)
         CheckoutMethods.default(Project('Brunel', 'v44r1',
                                         checkout_opts={'recursive_head':
-                                                       True}),
-                                 tmpdir)
+                                                       True},
+                                        rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -432,8 +426,8 @@ def test_getpack_recursive_head():
 
         CheckoutMethods.default(Project('Brunel', 'HEAD',
                                         checkout_opts={'recursive_head':
-                                                       False}),
-                                 tmpdir)
+                                                       False},
+                                        rootdir=tmpdir))
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -465,7 +459,8 @@ def test_collectDeps():
 
     rootdir = join(_testdata, 'collect_deps', 'cmt')
     slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
-    deps = slot.collectDeps(rootdir)
+    slot.rootdir = rootdir
+    deps = slot.collectDeps()
     print 'CMT:', deps
     assert deps == expected
     assert len(mlh.messages['warning']) == 1
@@ -473,7 +468,8 @@ def test_collectDeps():
 
     rootdir = join(_testdata, 'collect_deps', 'cmake')
     slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
-    deps = slot.collectDeps(rootdir)
+    slot.rootdir = rootdir
+    deps = slot.collectDeps()
     print 'CMake:', deps
     assert deps == expected
     assert len(mlh.messages['warning']) == 1
@@ -481,7 +477,8 @@ def test_collectDeps():
 
     rootdir = join(_testdata, 'collect_deps', 'broken')
     slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
-    deps = slot.collectDeps(rootdir)
+    slot.rootdir = rootdir
+    deps = slot.collectDeps()
     expected = {'Gaudi': [],
                 'BadCMT': [],
                 'BadCMake': [],
@@ -507,15 +504,17 @@ def test_checkout_datapkg():
     with TemporaryDir(chdir=True):
         os.makedirs('build')
         pkg = PackageDesc(name='AppConfig', version='v3r198')
-        pkg.checkout('build')
+        pkg.rootdir = 'build'
+        pkg.checkout()
 
         assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
 
     slot = StackCheckout.parseConfigFile(join(_testdata, 'data-packs.json'))
     with TemporaryDir(chdir=True):
         os.makedirs('build')
-        slot.checkout('build')
-        
+        slot.rootdir = 'build'
+        slot.checkout()
+
         assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
         assert exists(join('build', 'PARAM', 'TMVAWeights', 'v1r0', 'cmt'))
 
@@ -534,7 +533,8 @@ def test_stack_checkout_datapkg():
         pkgs = [PackageDesc(name='AppConfig', version='v3r198'),
                 PackageDesc(name='Det/SQLDDDB', version='HEAD')]
         slot = StackCheckout.StackDesc(packages=pkgs)
-        slot.checkout('build')
+        slot.rootdir = 'build'
+        slot.checkout()
 
         for pkg in pkgs:
             assert exists(join('build', pkg.baseDir)), 'missing %s' % pkg.baseDir
