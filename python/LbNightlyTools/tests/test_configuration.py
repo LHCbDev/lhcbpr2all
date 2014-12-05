@@ -11,8 +11,7 @@
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools.Configuration import slots, Project, Slot, ProjectsList,\
-    CheckType
+from LbNightlyTools.Configuration import slots, Project, Slot, ProjectsList
 
 def setup():
     slots.clear()
@@ -92,50 +91,4 @@ def test_slot_projects():
         slot.projects = []
         assert False, '"slot.projects = []" should have failed'
     except:
-        pass
-
-def test_check_type():
-    class TestType(object):
-        pass
-    class Tester(object):
-        @CheckType('element', TestType)
-        def doSomething(self, element):
-            pass
-        @CheckType('data', basestring)
-        def write(self, something, data=None):
-            pass
-        try:
-            @CheckType('xyz', basestring)
-            def generic(self, *args, **kwargs):
-                pass
-            assert False, 'exception expected'
-        except ValueError:
-            pass
-
-    t = Tester()
-    t.doSomething(TestType())
-    t.doSomething(element=TestType())
-    try:
-        t.doSomething('hi')
-        assert False, 'exception expected'
-    except ValueError:
-        pass
-    try:
-        t.doSomething(element='hi')
-        assert False, 'exception expected'
-    except ValueError:
-        pass
-
-    t.write(123)
-    t.write(123, 'abc')
-    t.write(123, data='abc')
-    try:
-        t.write(123, None)
-        assert False, 'exception expected'
-    except ValueError:
-        pass
-    try:
-        t.write(123, data=None)
-        assert False, 'exception expected'
-    except ValueError:
         pass
