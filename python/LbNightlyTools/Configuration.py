@@ -15,7 +15,6 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import re
-import types
 import logging
 
 __log__ = logging.getLogger(__name__)
@@ -226,7 +225,249 @@ class Package(object):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
 
+class _CheckTypeWrapper(object):
+    def __init__(self, arg, types, method):
+        '''
+        Instantiate a type checker
+        '''
+        import inspect
+        self.arg = arg
+        self.types = () if types is None else types
+        self.instace = None
+        self.method = method
 
+        spec = inspect.getargspec(method)
+        self.pos = spec.args.index(self.arg)
+
+    @property
+    def msg(self):
+        try:
+            if len(self.types) > 1:
+                typenames = ', '.join(t.__name__
+                                      for t in self.types[:-1])
+                typenames += ' and ' + self.types[-1].__name__
+            elif self.types:
+                typenames = self.types[0].__name__
+            else:
+                typenames = '()'
+        except TypeError:
+            typenames = self.types.__name__
+        return 'only %s instances are allowed for %s' % (typenames, self.arg)
+
+    def __call__(self, *args, **kwargs):
+        if self.arg in kwargs:
+            arg = kwargs[self.arg]
+        elif len(args) > self.pos:
+            arg = args[self.pos]
+        if 'arg' in locals():
+            if not isinstance(arg, self.types):
+                raise ValueError(self.msg)
+        print self
+        print self.method.__name__, args, kwargs
+        print self.method
+        return self.method(*args, **kwargs)
+
+class _CheckTypeInfos(object):
+    '''
+    Helper class to allow deferred set of the allowed types in the CheckType
+    decorator.
+    '''
+    def __init__(self, argname, types, pos):
+        self.argname = argname
+        self.types = types
+        self.pos = pos
+
+class CheckType(object):
+    '''
+    Decorator that adds type checking on an argument of a function.
+
+    >>> @CheckType('element', basestring)
+    ... def f1(element):
+    ...     pass
+    ...
+    >>> f1('abc')
+    >>> f1(123)
+    Traceback (most recent call last):
+    ...
+    ValueError: only basestring instances are allowed for element
+
+    >>> @CheckType('element', (basestring, bool, int))
+    ... def f2(element):
+    ...     pass
+    ...
+    >>> f2('abc')
+    >>> f2(123)
+    >>> f2(True)
+    >>> f2(1.2)
+    Traceback (most recent call last):
+    ...
+    ValueError: only basestring, bool and int instances are allowed for element
+
+    >>> @CheckType('element', basestring)
+    ... def f3(element):
+    ...     pass
+    ...
+    >>> f3('abc')
+    >>> f3(123)
+    Traceback (most recent call last):
+    ...
+    ValueError: only basestring instances are allowed for element
+    >>> f3.checker_infos.types = int
+    >>> f3(123)
+    >>> f3('abc')
+    Traceback (most recent call last):
+    ...
+    ValueError: only int instances are allowed for element
+    '''
+    def __init__(self, arg, types=None):
+        '''
+        Instantiate a type checker
+        '''
+        self.arg = arg
+        self.types = () if types is None else types
+    def __call__(self, method):
+        import inspect
+        spec = inspect.getargspec(method)
+        # We use a _CheckTypeInfos instance in the closure so that we can record
+        # a reference to it and change it later on.
+        infos = _CheckTypeInfos(self.arg, self.types, spec.args.index(self.arg))
+        def wrapper(*args, **kwargs):
+            argname, types, pos = infos.argname, infos.types, infos.pos
+            if argname in kwargs:
+                arg = kwargs[argname]
+            elif len(args) > pos:
+                arg = args[pos]
+            if 'arg' in locals():
+                if not isinstance(arg, types):
+                    try:
+                        if len(types) > 1:
+                            typenames = ', '.join(t.__name__
+                                                  for t in types[:-1])
+                            typenames += ' and ' + types[-1].__name__
+                        elif types:
+                            typenames = types[0].__name__
+                        else:
+                            typenames = '()'
+                    except TypeError:
+                        typenames = types.__name__
+                    msg = 'only %s instances are allowed for %s' % (typenames,
+                                                                    argname)
+                    raise ValueError(msg)
+            return method(*args, **kwargs)
+        # here is were we record a reference to the instance in the closure
+        wrapper.checker_infos = infos
+        return wrapper
+
+
+class _ContainedListMeta(type):
+    def __new__(cls, name, bases, dct):
+        for base in bases:
+            for method in base.__dict__:
+                if hasattr(getattr(base, method), 'checker_infos'):
+                    if method not in dct:
+                        dct[method] = getattr(base, method)
+        return type.__new__(cls, name, bases, dct)
+    def __init__(cls, name, bases, dct):
+        super(_ContainedListMeta, cls).__init__(name, bases, dct)
+        for method in dct.itervalues():
+            if hasattr(method, 'checker_infos'):
+                method.checker_infos.types = cls.__type__
+
+
+class _ContainedList(object):
+    '''
+    Helper class to handle a list of projects bound to a slot.
+    '''
+    __metaclass__ = _ContainedListMeta
+    __type__ = None
+    __container_member__ = ''
+    __id_member__ = 'name'
+
+    def __init__(self, container, iterable=None):
+        '''
+        Initialize the list from an optional iterable, which must contain
+        only instances of the required class.
+        '''
+        self.container = container
+        def checkElements(iterable):
+            '''helper to check the elements of the iterable'''
+            if iterable is None:
+                return
+            for element in iterable:
+                if isinstance(element, self.__type__):
+                    setattr(element, self.__container_member__, container)
+                    yield element
+                else:
+                    raise ValueError('only %s instances are allowed',
+                                     self.__type__.__name__)
+        self._elements = list(checkElements(iterable))
+
+    def __getitem__(self, key):
+        '''
+        Get contained element either by name or by position.
+        '''
+        if isinstance(key, basestring):
+            for element in self._elements:
+                if getattr(element, self.__id_member__) == key:
+                    return element
+            raise KeyError('package %r not found' % key)
+        return self._elements[key]
+
+    @CheckType('element')
+    def __setitem__(self, idx, element):
+        '''
+        Item assignment that keeps the binding between container and containee
+        in sync.
+        '''
+        old = self[idx]
+        self._elements(idx, element)
+        setattr(element, self.__container_member__, self.container)
+        setattr(old, self.__container_member__, None)
+
+    @CheckType('element')
+    def insert(self, idx, element):
+        '''
+        Item insertion that binds the added object to the container.
+        '''
+        setattr(element, self.__container_member__, self.container)
+        return self._elements.insert(idx, element)
+
+    @CheckType('element')
+    def append(self, element):
+        '''
+        Item insertion that binds the added object to the container.
+        '''
+        setattr(element, self.__container_member__, self.container)
+        return self._elements.append(element)
+
+    def __delitem__(self, idx):
+        '''
+        Item removal that disconnect the element from the container.
+        '''
+        old = self[idx]
+        self.remove(old)
+
+    @CheckType('element')
+    def remove(self, element):
+        '''
+        Item removal that disconnect the element from the container.
+        '''
+        self._elements.remove(element)
+        setattr(element, self.__container_member__, None)
+
+    def __len__(self):
+        '''
+        Return the number of elements in the list.
+        '''
+        return len(self._elements)
+
+
+class ProjectsList(_ContainedList):
+    '''
+    Helper class to handle a list of projects bound to a slot.
+    '''
+    __type__ = Project
+    __container_member__ = 'slot'
 
 
 class _SlotMeta(type):
@@ -242,88 +483,6 @@ class _SlotMeta(type):
             cls.__projects__ = dct['projects']
         cls.projects = property(lambda self: self._projects)
 
-class ProjectsList(list):
-    '''
-    Helper class to handle a list of projects bound to a slot.
-    '''
-    def __init__(self, slot, iterable=None):
-        '''
-        Initialize the ProjectList from an optional iterable, which must contain
-        only Project instances.
-        '''
-        self.slot = slot
-        def checkElements(iterable):
-            '''helper to check the elements of the iterable'''
-            if iterable is None:
-                return
-            for element in iterable:
-                if isinstance(element, Project):
-                    element.slot = slot
-                    yield element
-                else:
-                    raise ValueError('only Project instances are allowed')
-        super(ProjectsList, self).__init__(checkElements(iterable))
-
-    def __getitem__(self, key):
-        '''
-        Extension of the default list [] operator, so that it can get the
-        contained project by name or by position.
-        '''
-        if isinstance(key, basestring):
-            for proj in self.__iter__():
-                if proj.name == key:
-                    return proj
-            raise KeyError('project %r not found' % key)
-        return super(ProjectsList, self).__getitem__(key)
-
-    def __setitem__(self, idx, element):
-        '''
-        Override item assignment, so that the binding between the Project
-        instances and the slot is kept in sync.
-        '''
-        if not isinstance(element, Project):
-            raise ValueError('only Project instances are allowed')
-        old = self[idx]
-        super(ProjectsList, self).__setitem__(idx, element)
-        element.slot = self.slot
-        old.slot = None
-
-    def insert(self, idx, element):
-        '''
-        Override item insertion, so that the binding between the Project
-        instances and the slot is kept in sync.
-        '''
-        if not isinstance(element, Project):
-            raise ValueError('only Project instances are allowed')
-        element.slot = self.slot
-        return super(ProjectsList, self).insert(idx, element)
-
-    def append(self, element):
-        '''
-        Override item insertion, so that the binding between the Project
-        instances and the slot is kept in sync.
-        '''
-        if not isinstance(element, Project):
-            raise ValueError('only Project instances are allowed')
-        element.slot = self.slot
-        return super(ProjectsList, self).append(element)
-
-    def __delitem__(self, idx):
-        '''
-        Override item removal, so that the binding between the Project
-        instances and the slot is kept in sync.
-        '''
-        old = self[idx]
-        super(ProjectsList, self).__delitem__(idx)
-        old.slot = None
-
-    def remove(self, element):
-        '''
-        Override item removal, so that the binding between the Project
-        instances and the slot is kept in sync.
-        '''
-        super(ProjectsList, self).remove(element)
-        element.slot = None
 
 class Slot(object):
     '''
