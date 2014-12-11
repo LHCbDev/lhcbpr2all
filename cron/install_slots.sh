@@ -36,7 +36,7 @@ for slot in $slots_on_afs ; do
     echo "$(date):   - $slot" >> $logfile 2>&1
     lbn-install $slot $day >> $logfile 2>&1
     # ensure that the symlink 'Today' points to the right day
-    if [ $(readlink $slot/Today) != "$day" ] ; then
+    if [ "$(readlink $slot/Today)" != "$day" ] ; then
         ln -sfTv $day $slot/Today >> $logfile 2>&1
     fi
 done
