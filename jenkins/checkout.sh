@@ -20,12 +20,12 @@ fi
 
 if [ "${slot}" = "lhcb-release" ] ; then
   if [ -z "${build_tool}" ] ; then
-    build_tool=cmake
+    build_tool=cmt
   fi
   if [ -n "${platforms}" ] ; then
-    lbn-gen-release-config --build_tool="${build_tool}" --platforms="${platforms}" -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
+    lbn-gen-release-config --build-tool="${build_tool}" --platforms="${platforms}" -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
   else
-    lbn-gen-release-config --build_tool="${build_tool}" -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
+    lbn-gen-release-config --build-tool="${build_tool}" -o configs/${slot}.json --packages "${packages_list}" ${projects_list}
   fi
 fi
 
