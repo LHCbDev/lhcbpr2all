@@ -625,8 +625,8 @@ jQuery.fn.loadSlots = function() {
 				'</td><td nowrap>Release build ' + value.build_id +
                                 '</td><td>(' + day_data.key  +
                                 ')</td><td><button id="'+ value.build_id + '"class="rebuild-button"/>'+
-				'</td><td><a href= https://buildlhcb.cern.ch/artifacts/release/lhcb-release/' + value.build_id +
-				'><img id="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>'+
+				'</td><td><a href="https://buildlhcb.cern.ch/artifacts/release/lhcb-release/' + value.build_id +
+				'" target="_blank"><img id="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>'+
 		                '</td></tr></table>'));
 
 				el.append(slot);
