@@ -235,7 +235,8 @@ class Poll(LbUtils.Script.PlainScript):
         # sort the list for stable behavior
         for stack in stacks:
             for k in stack:
-                stack[k].sort()
+                if hasattr(stack[k], 'sort'):
+                    stack[k].sort()
         stacks.sort()
         self.log.debug('found %d stacks', len(stacks))
 
