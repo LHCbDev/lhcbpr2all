@@ -618,7 +618,10 @@ jQuery.fn.loadSlots = function() {
                         var slot = $('<div class="slot" id="build-' + value.build_id +
 					'"slot="' + value.slot + '" build_id="'
 					+ value.build_id + '"/>');
-
+                        var build_tool_logo = "";
+                        if (value.build_tool) {
+                        	build_tool_logo = '<td><img  height="22" width="22" src="images/' + value.build_tool + '.png"/></td>';
+                        }
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
 				.append('<table><tr><td><a href="' + window.location.origin + window.location.pathname +
 				"?build=" +value.build_id + '"><img src="images/link.png" title="direct link"></a>'+
@@ -627,7 +630,7 @@ jQuery.fn.loadSlots = function() {
                                 ')</td><td><button id="'+ value.build_id + '"class="rebuild-button"/>'+
 				'</td><td><a href="https://buildlhcb.cern.ch/artifacts/release/lhcb-release/' + value.build_id +
 				'" target="_blank"><img id="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>'+
-		                '</td></tr></table>'));
+		                '</td>' + build_tool_logo + '</tr></table>'));
 
 				el.append(slot);
 
