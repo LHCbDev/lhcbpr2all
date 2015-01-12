@@ -120,6 +120,7 @@ function prepareRebuildInfo(data){
 		tableplatforms.append('<tr><td><b>'+data.platforms[i]+'</b></td><tr>');
 	}
 
+
 	//fill in confirmation build info table dialog
 	$('#confirm-build-info > tbody:last').append('<tr><td><b>Would you like to rebuild slot ' +
 					data.build_id + ' with the following parameters?</b></td></tr>');
@@ -127,6 +128,8 @@ function prepareRebuildInfo(data){
 	$('#confirm-build-info > tbody:last').append(tableprojects);
 	$('#confirm-build-info > tbody:last').append('<br/>');
 	$('#confirm-build-info > tbody:last').append(tableplatforms);
+	$('#confirm-build-info > tbody:last').append('<br/>');
+	$('#confirm-build-info > tbody:last').append('<table><tr><td>Build System: <b>' + data.build_tool + '</b></td></tr></table>');
 	$('#confirm-build-info > tbody:last').append('<br/>');
 	$('#confirm-build-info > tbody:last').append('<tr><td><img style="width:20px;" alt="!"'+
 				'src="images/exclamation.png"/>'+
