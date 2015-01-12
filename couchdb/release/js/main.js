@@ -82,13 +82,12 @@ function prepareRebuildInfo(data){
 	projects = projects.substring(0, projects.length - 1);
 
 
-	var platforms  = "";
+	var platforms = "";
 	//make string of platforms with spacing
 	for (var platform in data.platforms){
 		platform =(data.platforms[platform]).toString();
 		platforms+= platform + " ";
 	}
-
 	//remove the last space
 	platforms = platforms.substring(0, platforms.length - 1);
 
@@ -96,6 +95,7 @@ function prepareRebuildInfo(data){
 	var form = $('#rebuild_info');
 	(form.find('input[name="projects_list"]')).val(projects);
 	(form.find('input[name="platforms"]')).val(platforms);
+	(form.find('input[name="build_tool"]')).val(data.build_tool);
 
 	//prepare the information to display in the dialog
 
