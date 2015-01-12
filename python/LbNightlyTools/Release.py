@@ -81,19 +81,24 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
         self.parser.add_option('-o', '--output',
                                help='name of the output file [default "-", '
                                     'i.e. standard output]')
-        self.parser.add_option('--cmt', action='store_true',
-                               help='configure to use CMT for the build')
+        self.parser.add_option('--cmt', action='store_const', const='cmt',
+                               dest='build_tool',
+                               help='configure to use CMT for the build '
+                                    '(equivalent to "--build-tool=cmt")')
         self.parser.add_option('--platforms',
                                help='space or comma -separated list of '
                                     'platforms required [default: %default]')
         self.parser.add_option('--packages',
                                help='space-separated list of data packages, '
                                     'with versions, to add')
+        self.parser.add_option('-t', '--build-tool', action='store',
+                               help='which build tool to use '
+                                    '(case insensitive) [default: %default]')
         self.parser.set_defaults(slot='lhcb-release',
-                                 cmt=False,
                                  output='-',
                                  platforms=DEFAULT_PLATFORMS,
-                                 packages='')
+                                 packages='',
+                                 build_tool='cmake')
 
     def genConfig(self):
         '''
@@ -148,7 +153,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                   'description': 'Slot used for releasing projects.',
                   'projects': projects,
                   'packages': packages,
-                  'USE_CMT': self.options.cmt,
+                  'USE_CMT': self.options.build_tool.lower() == 'cmt',
                   'no_patch': True,
                   'error_exceptions': ERR_EXCEPT,
                   'warning_exceptions': WARN_EXCEPT,
@@ -300,13 +305,19 @@ class Trigger(LbUtils.Script.PlainScript):
 
         stack = stacks[index]
 
-        projects_list = ' '.join(' '.join(project_version) for project_version in stack.get('projects', []))
+        projects_list = ' '.join(' '.join(project_version)
+                                 for project_version
+                                     in stack.get('projects', []))
         platforms = ' '.join(stack.get('platforms', []))
+        build_tool = stack.get('build_tool', 'cmt')
 
         output_param_file = self.options.output_param_file
         if projects_list and platforms:
-            data = 'projects_list={0}\nplatforms={1}\n'.format(projects_list,
-                                                               platforms)
+            data = ('projects_list={0}\n'
+                    'platforms={1}\n'
+                    'build_tool={2}\n').format(projects_list,
+                                               platforms,
+                                               build_tool)
             with open(output_param_file, 'w') as output:
                 output.write(data)
         else:

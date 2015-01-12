@@ -89,6 +89,54 @@ def test_simple_call():
     try:
         stacks = prepare_data([{'platforms': ['p1', 'p2'],
                                 'projects': [['Proj1', 'v1'],
+                                             ['Proj2', 'v2']],
+                                'build_tool': 'CMake'}])
+
+        script = Trigger()
+        retcode = script.run(['stacks.json', '0'])
+    except IndexError:
+        pass
+        assert retcode == 0
+
+    assert exists(script.options.output_param_file)
+
+    params = dict(line.strip().split('=', 1)
+                  for line in open(script.options.output_param_file))
+    pprint(params)
+
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == stacks[0]['platforms']
+    assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == stacks[0]['build_tool'].lower()
+
+def test_simple_with_cmt():
+    try:
+        stacks = prepare_data([{'platforms': ['p1', 'p2'],
+                                'projects': [['Proj1', 'v1'],
+                                             ['Proj2', 'v2']],
+                                'build_tool': 'cmt'}])
+
+        script = Trigger()
+        retcode = script.run(['stacks.json', '0'])
+    except IndexError:
+        pass
+        assert retcode == 0
+
+    assert exists(script.options.output_param_file)
+
+    params = dict(line.strip().split('=', 1)
+                  for line in open(script.options.output_param_file))
+    pprint(params)
+
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == stacks[0]['platforms']
+    assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == stacks[0]['build_tool'].lower()
+
+def test_simple_no_build_tool():
+    try:
+        stacks = prepare_data([{'platforms': ['p1', 'p2'],
+                                'projects': [['Proj1', 'v1'],
                                              ['Proj2', 'v2']]}])
 
         script = Trigger()
@@ -103,9 +151,10 @@ def test_simple_call():
                   for line in open(script.options.output_param_file))
     pprint(params)
 
-    assert set(params) == set(['platforms', 'projects_list'])
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
     assert params['platforms'].split() == stacks[0]['platforms']
     assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == 'cmt'
 
 def test_bad_stack():
     prepare_data([{'projects': [['Proj1', 'v1'],
