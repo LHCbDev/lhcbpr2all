@@ -623,7 +623,7 @@ jQuery.fn.loadSlots = function() {
 					+ value.build_id + '"/>');
                         var build_tool_logo = "";
                         if (value.build_tool) {
-                        	build_tool_logo = '<td><img  height="22" width="22" src="images/' + value.build_tool + '.png"/></td>';
+                        	build_tool_logo = '<td><img height="22" width="22" src="images/' + value.build_tool + '.png"/></td>';
                         }
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
 				.append('<table><tr><td><a href="' + window.location.origin + window.location.pathname +

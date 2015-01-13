@@ -130,3 +130,9 @@ table.buttons td {
 #rssform{
 	background-color:white;
 }
+
+img.build-logo {
+	vertical-align: top;
+	width: 22px;
+	height: 22px;
+}
