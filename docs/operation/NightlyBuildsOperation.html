@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.11: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.12: http://docutils.sourceforge.net/" />
 <title>Nightly Builds Operation Manual</title>
 <style type="text/css">
 
@@ -591,9 +591,21 @@ into Jenkins jobs.</p>
 </li>
 <li><dl class="first docutils">
 <dt>Ensure that the views' caches of the backup database are up to date</dt>
+<dd><ol class="first last loweralpha">
+<li><dl class="first docutils">
+<dt>either from the web</dt>
 <dd><ol class="first last arabic simple">
 <li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup">http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup</a></li>
 <li>select all the views, one by one, in the dropdown list (each view will take some time to be cached)</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p class="first">or with a script (from LbNightlyTools):</p>
+<pre class="literal-block">
+./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nb-backup/_design/dashboard
+</pre>
+</li>
 </ol>
 </dd>
 </dl>
@@ -613,9 +625,21 @@ into Jenkins jobs.</p>
 </li>
 <li><dl class="first docutils">
 <dt>Regenerate the views' caches of the main database</dt>
+<dd><ol class="first last loweralpha">
+<li><dl class="first docutils">
+<dt>either from the web</dt>
 <dd><ol class="first last arabic simple">
 <li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds">http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds</a></li>
 <li>select all the views, one by one, in the dropdown list (each view will take some time to be cached)</li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p class="first">or with a script (from LbNightlyTools):</p>
+<pre class="literal-block">
+./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nightly-builds/_design/dashboard
+</pre>
+</li>
 </ol>
 </dd>
 </dl>

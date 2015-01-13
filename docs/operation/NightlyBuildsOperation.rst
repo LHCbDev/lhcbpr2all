@@ -203,16 +203,26 @@ To update the dashboard CouchApp avoiding downtime of the web page, we need to u
     2. select the local database ``nightly-builds`` as source and ``nb-backup`` as destination
     3. click on the *Replicate* button and wait
 2. Ensure that the views' caches of the backup database are up to date
-    1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup
-    2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+    a. either from the web
+        1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup
+        2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+    b. or with a script (from LbNightlyTools)::
+
+            ./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nb-backup/_design/dashboard
+
 3. Repeat step 1 to ensure that the most recent data is replicated to the backup copy
 4. Redirect the dashboard web page traffic to the backup database
     1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightly-builds`` with ``nb-backup``
     2. (as root) call ``service httpd reload``
 5. Update/modify the Dashboard CouchApp in the main database
 6. Regenerate the views' caches of the main database
-    1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds
-    2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+    a. either from the web
+        1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds
+        2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+    b. or with a script (from LbNightlyTools)::
+
+            ./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nightly-builds/_design/dashboard
+
 7. Replicate new documents from the backup instance to the main one
     1. same as step 1, but swapping source and target
     2. check for conflicts
