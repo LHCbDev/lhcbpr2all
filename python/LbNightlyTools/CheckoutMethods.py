@@ -238,8 +238,27 @@ def dirac(desc, rootdir='.'):
 
     __log__.debug('starting post-checkout step for %s', desc)
     __log__.debug('deploying scripts')
-    call(['python', join(dest, 'Core', 'scripts', 'dirac-deploy-scripts.py')],
-         cwd=dest)
+    scripts_dir = join(prjroot, 'scripts')
+    if not isdir(scripts_dir):
+        os.makedirs(scripts_dir)
+    for root, dirs, files in os.walk(prjroot):
+        if root == prjroot:
+            if 'scripts' in dirs:
+                dirs.remove('scripts')
+        elif 'scripts' in dirs:
+            __log__.debug('  - %s', root)
+            # we are only interested in the content of the scripts directories
+            dirs[:] = ['scripts']
+        elif basename(root) == 'scripts':
+            dirs[:] = [] # avoid further recursion (it should not be needed)
+            for f in files:
+                if f.endswith('.py'):
+                    dst = join(scripts_dir, f[:-3])
+                else:
+                    dst = join(scripts_dir, f)
+                shutil.copyfile(join(root, f), dst)
+                os.chmod(dst, 0755) # ensure that the new file is executable
+
     __log__.debug('generate cmt dirs')
     # loop over the directories in the DIRAC directory (excluding . and ..)
     for cmt in [join(dest, pkg, 'cmt')
