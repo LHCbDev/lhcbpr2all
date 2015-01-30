@@ -215,12 +215,4 @@ if(NOT STEP STREQUAL BUILD)
     file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
          DESTINATION ${summary_dir}/html/.)
   endif()
-
-  # this is the old-style build log names
-  set(OLD_BUILD_ID ${old_build_id})
-  if(OLD_BUILD_ID)
-    file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
-         DESTINATION ${summary_dir}/$${OLD_BUILD_ID}-qmtest/.)
-    execute_process(COMMAND $${CMAKE_COMMAND} -E copy ${summary_dir}/QMTestSummary.txt ${summary_dir}/$${OLD_BUILD_ID}-qmtest.log)
-  endif()
 endif()
