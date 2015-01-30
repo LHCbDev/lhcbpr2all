@@ -194,11 +194,7 @@ if(NOT STEP STREQUAL BUILD)
     # produce plain text summary of QMTest tests
     execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
                     OUTPUT_FILE ${summary_dir}/QMTestSummary.txt)
-    if(IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/Testing/xml_test_results OR
-       IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/xml_test_results)
-      # this is a build that supports CTest XML test results from QMTest
-      execute_process(COMMAND make HTMLSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
-    endif()
+    execute_process(COMMAND make HTMLSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
   else()
     # CMT requires special commands for the tests.
     set(ENV{PWD} "$${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt")
