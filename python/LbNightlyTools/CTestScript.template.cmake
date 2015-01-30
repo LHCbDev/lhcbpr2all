@@ -187,7 +187,7 @@ endif()
 if(NOT STEP STREQUAL BUILD)
 
   if(NOT USE_CMT)
-    ctest_test(${labels}) # it seems there is no need for APPEND here
+    ctest_test(${test_selection}) # it seems there is no need for APPEND here
     if(NOT NO_SUBMIT)
       ctest_submit(PARTS Test)
     endif()
