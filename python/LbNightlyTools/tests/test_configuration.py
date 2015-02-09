@@ -92,3 +92,19 @@ def test_slot_projects():
         assert False, '"slot.projects = []" should have failed'
     except:
         pass
+
+def test_deps():
+    # explicit dependencies
+    slot = Slot('test', projects=[Project('a', 'v1r0',
+                                          dependencies=['zero']),
+                                  Project('b', 'v2r0',
+                                          dependencies=['c', 'a'])])
+    #slot.checkout()
+    deps = slot.dependencies()
+
+    expected = {'a': [], 'b': ['a']}
+    assert deps == expected, deps
+
+    full_deps = slot.fullDependencies()
+    expected = {'b': ['a', 'c'], 'a': ['zero']}
+    assert full_deps == expected, full_deps

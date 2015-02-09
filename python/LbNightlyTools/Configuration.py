@@ -455,6 +455,22 @@ class Slot(object):
         for project in self.projects:
             project.checkout(export=export)
 
+    def dependencies(self):
+        '''
+        Dictionary of dependencies between projects (only within the slot).
+        '''
+        deps = self.fullDependencies()
+        for key in deps:
+            deps[key] = [val for val in deps[key] if val in deps]
+        return deps
+
+    def fullDependencies(self):
+        '''
+        Dictionary of dependencies of projects (also to projects not in the
+        slot).
+        '''
+        return dict([(p.name, p.dependencies()) for p in self.projects])
+
 
 def extractVersion(tag):
     '''
