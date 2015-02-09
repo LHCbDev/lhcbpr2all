@@ -579,6 +579,30 @@ class IgnorePackageVersions(object):
         '''
         return self._exclusions.get(os.path.basename(src), [])
 
+def applyenv(envdict, definitions):
+    '''
+    Modify the environment  described by 'envdict' from a list of definitions of
+    the type 'name=value', expanding the variables in 'value'.
+
+    >>> env = {}
+    >>> applyenv(env, ['foo=bar'])
+    >>> env['foo']
+    'bar'
+    >>> applyenv(env, ['baz=some_${foo}'])
+    >>> env['baz']
+    'some_bar'
+
+    If a variable in the value cannot be expanded, it is left unmodified:
+
+    >>> applyenv(env, ['unknown=${var}'])
+    >>> env['unknown']
+    '${var}'
+    '''
+    from string import Template
+    for item in definitions:
+        name, value = item.split('=', 1)
+        envdict[name] = Template(value).safe_substitute(envdict)
+
 def setenv(definitions):
     '''
     Modify the environment from a list of definitions of the type 'name=value',
@@ -587,10 +611,7 @@ def setenv(definitions):
     >>> setenv(['foo=bar'])
     >>> os.environ['foo']
     'bar'
-    >>> setenv(['baz=some_${foo}'])
-    >>> os.environ['baz']
-    'some_bar'
+
+    @note: it is equivalent to 'applyenv(os.environ, definitions)'
     '''
-    for item in definitions:
-        name, value = item.split('=', 1)
-        os.environ[name] = os.path.expandvars(value)
+    applyenv(os.environ, definitions)
