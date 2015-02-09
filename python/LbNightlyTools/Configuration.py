@@ -35,6 +35,9 @@ class Project(object):
         @param name: name of the project
         @param version: version of the project as 'vXrY' or 'HEAD', where 'HEAD'
                         means the head version of all the packages
+        @param dependencies: optional list of dependencies (as list of project
+                             names), can be used to extend the actual (code)
+                             dependencies of the project
         @param overrides: dictionary describing the differences between the
                           versions of the packages in the requested projects
                           version and the ones required in the checkout
@@ -51,6 +54,7 @@ class Project(object):
 
         self.disabled = kwargs.get('disabled', False)
         self.overrides = kwargs.get('overrides', {})
+        self._deps = kwargs.get('dependencies', [])
         self._rootdir = kwargs.get('rootdir', os.curdir)
 
         from CheckoutMethods import getMethod
@@ -96,7 +100,7 @@ class Project(object):
         else:
             raise AttributeError("can't set attribute")
 
-    def getDeps(self):
+    def dependencies(self):
         '''
         Return the dependencies of a checked out project using the information
         retrieved from the configuration files.
@@ -174,7 +178,7 @@ class Project(object):
         else:
             __log__.warning('cannot discover dependencies for %s', self)
 
-        return sorted(deps)
+        return sorted(set(deps + self._deps))
 
     def __str__(self):
         '''String representation of the project.'''

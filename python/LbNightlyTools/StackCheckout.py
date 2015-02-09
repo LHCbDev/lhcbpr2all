@@ -301,7 +301,7 @@ class StackDesc(object):
             # note that we ignore projects not in the stack
             p.rootdir = self.rootdir
             deps[p.name] = [names[n]
-                            for n in p.getDeps()
+                            for n in p.dependencies()
                             if n in names]
         return deps
 
