@@ -12,6 +12,7 @@
 #__test__ = False
 
 from LbNightlyTools.Configuration import slots, Project, Slot, ProjectsList
+import os
 
 def setup():
     slots.clear()
@@ -108,3 +109,53 @@ def test_deps():
     full_deps = slot.fullDependencies()
     expected = {'b': ['a', 'c'], 'a': ['zero']}
     assert full_deps == expected, full_deps
+
+def test_env():
+    slot = Slot('test', projects=[Project('a', 'v1r0', env=['proj=a'])],
+                env=['slot=test', 'proj=none'])
+    # with dummy env
+    initial = {}
+    env = slot.environment(initial)
+    assert env == {'slot': 'test', 'proj': 'none'}
+    assert initial == {}
+
+    env = slot.a.environment(initial)
+    assert env == {'slot': 'test', 'proj': 'a'}
+    assert initial == {}
+
+    # with os.environ
+    key = 'USER'
+    if key not in os.environ:
+        os.environ[key] = 'dummy'
+    value = os.environ[key]
+    initial = dict(os.environ)
+
+    slot.env.append('me=${%s}' % key)
+
+    env = slot.environment()
+    assert env['slot'] == 'test'
+    assert env['proj'] == 'none'
+    assert env[key] == value
+    assert env['me'] == value
+    assert os.environ == initial
+
+    env = slot.a.environment()
+    assert env['slot'] == 'test'
+    assert env['proj'] == 'a'
+    assert env[key] == value
+    assert env['me'] == value
+    assert os.environ == initial
+
+    # derived class
+    class SpecialSlot(Slot):
+        projects = []
+        env = ['slot=test', 'proj=none']
+    slot = SpecialSlot('test')
+
+    env = slot.environment({})
+    assert env == {'slot': 'test', 'proj': 'none'}
+
+    slot.env.append('another=entry')
+    env = slot.environment({})
+    assert env == {'slot': 'test', 'proj': 'none', 'another': 'entry'}
+

@@ -16,8 +16,10 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import os
 import re
 import logging
+from LbNightlyTools.Utils import applyenv
 
 __log__ = logging.getLogger(__name__)
+
 
 # constants
 GP_EXP = re.compile(r'gaudi_project\(([^)]+)\)')
@@ -48,6 +50,7 @@ class Project(object):
                          for the configuration
         @param rootdir: location of the project (where it should be checked out,
                         etc.)
+        @param env: override the environment for the project
         '''
         self.name = name
         self.version = 'HEAD' if version.upper() == 'HEAD' else version
@@ -56,6 +59,7 @@ class Project(object):
         self.overrides = kwargs.get('overrides', {})
         self._deps = kwargs.get('dependencies', [])
         self._rootdir = kwargs.get('rootdir', os.curdir)
+        self.env = kwargs.get('env', [])
 
         from CheckoutMethods import getMethod
         self._checkout = getMethod(kwargs.get('checkout'))
@@ -183,6 +187,25 @@ class Project(object):
     def __str__(self):
         '''String representation of the project.'''
         return "{0} {1}".format(self.name, self.version)
+
+    def environment(self, envdict=None):
+        '''
+        Return a dictionary with the environment for the project.
+
+        If envdict is provided, it will be used as a starting point, otherwise
+        the environment defined by the slot or by the system will be used.
+        '''
+        # get the initial env from the argument or the system
+        if envdict is None:
+            envdict = os.environ
+        # if we are in a slot, we first process the environment through it
+        if self.slot:
+            result = self.slot.environment(envdict)
+        else:
+            # we make a copy to avoid changes to the input
+            result = dict(envdict)
+        applyenv(result, self.env)
+        return result
 
 
 class Package(object):
@@ -382,9 +405,12 @@ class _SlotMeta(type):
         Class initialization by the metaclass.
         '''
         super(_SlotMeta, cls).__init__(name, bases, dct)
+
         if 'projects' in dct:
             cls.__projects__ = dct['projects']
         cls.projects = property(lambda self: self._projects)
+
+        cls.__env__ = dct.get('env', [])
 
 
 class Slot(object):
@@ -392,18 +418,26 @@ class Slot(object):
     Class representing a nightly build slot.
     '''
     __metaclass__ = _SlotMeta
-    __slots__ = ('_name', '_projects')
+    __slots__ = ('_name', '_projects', 'env')
     __projects__ = []
+    __env__ = []
     rootdir = os.curdir
 
-    def __init__(self, name, projects=None):
+    def __init__(self, name, **kwargs):
         '''
         Initialize the slot with name and optional list of projects.
+
+        @param name: name of the slot
+        @param projects: (optional) list of Project instances
+        @param env: (optional) list of strings ('name=value') used to modify the
+                    environment for the slot
         '''
         self._name = name
-        if projects is None:
-            projects = self.__class__.__projects__
+
+        projects = kwargs.get('projects', self.__class__.__projects__)
         self._projects = ProjectsList(self, projects)
+
+        self.env = kwargs.get('env', self.__class__.__env__)
 
         # add this slot to the global list of slots
         global slots
@@ -471,6 +505,16 @@ class Slot(object):
         '''
         return dict([(p.name, p.dependencies()) for p in self.projects])
 
+    def environment(self, envdict=None):
+        '''
+        Return a dictionary with the environment for the slot.
+
+        If envdict is provided, it will be used as a starting point, otherwise
+        the environment defined by the system will be used.
+        '''
+        result = dict(os.environ) if envdict is None else dict(envdict)
+        applyenv(result, self.env)
+        return result
 
 def extractVersion(tag):
     '''
