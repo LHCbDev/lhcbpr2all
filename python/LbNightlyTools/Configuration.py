@@ -24,8 +24,12 @@ def extractVersion(tag):
     'v23r8'
     >>> extractVersion('LCGCMT_preview')
     'preview'
+    >>> extractVersion('HEAD')
+    'HEAD'
     '''
-    return tag.split('_', 1)[1]
+    if '_' in tag:
+        return tag.split('_', 1)[1]
+    return tag
 
 def loadFromOldXML(source, slot):
     '''
