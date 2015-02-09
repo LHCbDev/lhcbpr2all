@@ -71,10 +71,10 @@ lhcb_cmake = slots['lhcb-cmake']
 
 # Either we work in current directory or we override it with something like:
 # lhcb_cmake.rootdir = '/a/b/c'
-lhcb_cmake.checkout(export)
+lhcb_cmake.checkout(export=True)
 # lhcb_cmake.dependencies() -> {'LHCb': ['Gaudi'], 'Lbcom': ['LHCb'], 'Gaudi': []}
 # ## How to cache the discovered dependencies?
-lhcb_cmake.build(...)
+lhcb_cmake.build()
 lhcb_cmake.Gaudi.deps.build()
 build_results = lhcb_cmake.Gaudi.build(clean=True)
 # build_results.warnings ->
@@ -95,6 +95,6 @@ from LbNightlyTools.Configuration import Slot, Project, Package, DBASE
 lh = Slot('lhcb-head', [Project('Gaudi', 'head'),
                         Project('LHCb', 'head'),
                         DBASE([Package('AppConfig', 'v3r199'),
-                               Package('WG/CharmConfig', 'v3r16')])
+                               Package('WG/CharmConfig', 'v3r16')])])
 
 lh.DBASE.WG_CharmConfig.checkout()
