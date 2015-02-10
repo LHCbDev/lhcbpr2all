@@ -437,7 +437,7 @@ class Slot(object):
         projects = kwargs.get('projects', self.__class__.__projects__)
         self._projects = ProjectsList(self, projects)
 
-        self.env = kwargs.get('env', self.__class__.__env__)
+        self.env = kwargs.get('env', list(self.__class__.__env__))
 
         # add this slot to the global list of slots
         global slots

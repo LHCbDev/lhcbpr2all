@@ -158,4 +158,7 @@ def test_env():
     slot.env.append('another=entry')
     env = slot.environment({})
     assert env == {'slot': 'test', 'proj': 'none', 'another': 'entry'}
+    # ensure that touching the instance 'env' attribute does not change the
+    # class
+    assert SpecialSlot.env == SpecialSlot.__env__ == ['slot=test', 'proj=none']
 
