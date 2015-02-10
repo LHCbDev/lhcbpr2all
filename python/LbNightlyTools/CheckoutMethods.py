@@ -421,6 +421,22 @@ def lhcbintegrationtests(desc, rootdir='.'):
             desc.checkout_opts['commit'] = desc.version
     return git(desc, rootdir)
 
+def ganga(desc, rootdir='.'):
+    '''
+    Special hybrid checkout needed to release Ganga.
+    '''
+    __log__.debug('getting checkout script')
+    script_url = 'svn+ssh://svn.cern.ch/reps/ganga/trunk/external/LHCbSetupProject/scripts/lhcb-prepare'
+    call(['svn', 'export', script_url], cwd=rootdir)
+    __log__.debug('running checkout script')
+    call([os.path.join(rootdir, 'lhcb-prepare'), '-d', rootdir, desc.version.lower()])
+
+    projdir = os.path.join(rootdir, desc.baseDir)
+
+    __log__.debug('creating Makefile')
+    with open(os.path.join(projdir, 'Makefile'), 'w') as f:
+        f.write('include ${LBCONFIGURATIONROOT}/data/Makefile\n')
+
 
 # set default checkout method
 default = getpack # pylint: disable=C0103
