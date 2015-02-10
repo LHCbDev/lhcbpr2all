@@ -23,9 +23,12 @@ class Gaudi(Project):
             return '{0}/{0}_{1}'.format(self.name.upper(), self.version)
         return self.version.replace('/', '_')
 
-    def checkout(self, rootdir='.', export=False):
+    def checkout(self, **kwargs):
         from LbNightlyTools.Checkout import git
-        return git(self.__url__, self.commitId(), rootdir=rootdir, export=export)
+        args = {'url': self.__url__,
+                'commit': self.commitId()}
+        args.update(kwargs)
+        return git(self, **args)
 
 
 class LHCb(Project):

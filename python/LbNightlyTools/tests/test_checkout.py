@@ -210,14 +210,16 @@ def test_checkout():
         for f in files:
             assert exists(join(tmpdir, f)), 'Missing %s' % f
     try:
-        CheckoutMethods.default(Project('Brunel', 'v44r1', rootdir=tmpdir))
+        # default method
+        Project('Brunel', 'v44r1', rootdir=tmpdir).checkout()
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
                          ('cmt', 'project.cmt'),
                          ('BrunelSys', 'cmt', 'requirements')]])
 
-        CheckoutMethods.default(Project('Brunel', 'head', rootdir=tmpdir))
+        # default method
+        Project('Brunel', 'head', rootdir=tmpdir).checkout()
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -226,11 +228,12 @@ def test_checkout():
                          ('BrunelSys', 'cmt', 'requirements')]])
 
         shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
-        CheckoutMethods.default(Project('Brunel', 'head',
-                                        overrides={'GaudiObjDesc': 'head',
-                                                   'GaudiPolicy': 'v12r0',
-                                                   'Rec/Brunel': None},
-                                        rootdir=tmpdir))
+        # default method
+        Project('Brunel', 'head',
+                overrides={'GaudiObjDesc': 'head',
+                           'GaudiPolicy': 'v12r0',
+                           'Rec/Brunel': None},
+                rootdir=tmpdir).checkout()
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -242,10 +245,11 @@ def test_checkout():
         assert re.search(r'version\s+v12r0', GaudiPolicy_requirements)
         assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements'))
 
-        CheckoutMethods.git(Project('Gaudi', 'v23r6',
-                                    checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
-                                                   'commit': 'GAUDI/GAUDI_v23r6'},
-                                    rootdir=tmpdir))
+        Project('Gaudi', 'v23r6',
+                checkout=CheckoutMethods.git,
+                checkout_opts=dict(url='http://git.cern.ch/pub/gaudi',
+                                   commit='GAUDI/GAUDI_v23r6'),
+                rootdir=tmpdir).checkout()
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -255,9 +259,9 @@ def test_checkout():
         assert get_git_branch(join(tmpdir, 'GAUDI', 'GAUDI_v23r6')) is None
 
 
-        CheckoutMethods.git(Project('Gaudi', 'HEAD',
-                                    checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'},
-                                    rootdir=tmpdir))
+        Project('Gaudi', 'HEAD',
+                checkout=CheckoutMethods.git,
+                rootdir=tmpdir).checkout(url='http://git.cern.ch/pub/gaudi')
         check([join('GAUDI', 'GAUDI_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -268,9 +272,8 @@ def test_checkout():
 
         shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
         svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
-        CheckoutMethods.svn(Project('Brunel', 'HEAD',
-                                    checkout_opts={'url': svnurl},
-                                    rootdir=tmpdir))
+        Project('Brunel', 'HEAD', checkout=CheckoutMethods.svn,
+                rootdir=tmpdir).checkout(url=svnurl)
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -286,7 +289,7 @@ def test_checkout():
 
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'), ignore_errors=True)
         shutil.rmtree(join(tmpdir, 'GAUDI', 'GAUDI_HEAD'), ignore_errors=True)
-        CheckoutMethods.ignore(Project('Gaudi', 'v23r6', rootdir=tmpdir))
+        Project('Gaudi', 'v23r6', checkout='ignore', rootdir=tmpdir).checkout()
         assert not exists(join(tmpdir, 'GAUDI', 'GAUDI_v23r6'))
 
 
@@ -307,9 +310,7 @@ def test_checkout_export():
         for f in files:
             assert exists(join(tmpdir, f)), 'Missing %s' % f
     try:
-        CheckoutMethods.default(Project('Brunel', 'v44r1',
-                                        checkout_opts={'export': True},
-                                        rootdir=tmpdir))
+        Project('Brunel', 'v44r1', rootdir=tmpdir).checkout(export=True)
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -318,11 +319,12 @@ def test_checkout_export():
         assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1',
                                'BrunelSys', '.svn'))
 
-        CheckoutMethods.git(Project('Gaudi', 'v23r6',
-                                    checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
-                                                   'commit': 'GAUDI/GAUDI_v23r6',
-                                                   'export': True},
-                                    rootdir=tmpdir))
+        Project('Gaudi', 'v23r6',
+                checkout='git',
+                checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
+                               'commit': 'GAUDI/GAUDI_v23r6',
+                               'export': True},
+                rootdir=tmpdir).checkout()
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -332,10 +334,8 @@ def test_checkout_export():
 
         shutil.rmtree(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
         svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
-        CheckoutMethods.svn(Project('Brunel', 'HEAD',
-                                    checkout_opts={'url': svnurl,
-                                                   'export': True},
-                                    rootdir=tmpdir))
+        Project('Brunel', 'HEAD', checkout=CheckoutMethods.svn,
+                rootdir=tmpdir).checkout(url=svnurl, export=True)
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -379,7 +379,7 @@ def test_getpack_recursive_head():
 
     try:
 
-        CheckoutMethods.default(Project('Brunel', 'v44r1', rootdir=tmpdir))
+        Project('Brunel', 'v44r1', rootdir=tmpdir).checkout()
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -394,7 +394,7 @@ def test_getpack_recursive_head():
         assert getPkgVersion(sysreq) == 'v44r1'
 
 
-        CheckoutMethods.default(Project('Brunel', 'head', rootdir=tmpdir))
+        Project('Brunel', 'head', rootdir=tmpdir).checkout()
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -409,10 +409,9 @@ def test_getpack_recursive_head():
         assert getPkgVersion(sysreq) != 'v44r1'
 
         shutil.rmtree(join(tmpdir, 'BRUNEL'), ignore_errors=True)
-        CheckoutMethods.default(Project('Brunel', 'v44r1',
-                                        checkout_opts={'recursive_head':
-                                                       True},
-                                        rootdir=tmpdir))
+        Project('Brunel', 'v44r1',
+                checkout_opts=dict(recursive_head=True),
+                rootdir=tmpdir).checkout()
         check([join('BRUNEL', 'BRUNEL_v44r1', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -424,10 +423,7 @@ def test_getpack_recursive_head():
         sysreq = join(tmpdir, 'BRUNEL', 'BRUNEL_v44r1', 'BrunelSys', 'cmt', 'requirements')
         assert not isFromTrunk(sysreq)
 
-        CheckoutMethods.default(Project('Brunel', 'HEAD',
-                                        checkout_opts={'recursive_head':
-                                                       False},
-                                        rootdir=tmpdir))
+        Project('Brunel', 'HEAD', rootdir=tmpdir).checkout(recursive_head=False)
         check([join('BRUNEL', 'BRUNEL_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),

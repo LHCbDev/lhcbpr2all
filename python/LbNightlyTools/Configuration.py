@@ -69,12 +69,14 @@ class Project(object):
         # slot owning this project
         self.slot = None
 
-    def checkout(self):
+    def checkout(self, **kwargs):
         '''
         Helper function to call the checkout method.
         '''
         __log__.info('checking out %s', self)
-        self._checkout(self)
+        opts = dict(self.checkout_opts)
+        opts.update(kwargs)
+        self._checkout(self, **opts)
 
     def build(self):
         '''
@@ -231,12 +233,14 @@ class Package(object):
         self.checkout_opts = kwargs.get('checkout_opts', {})
         self.rootdir = os.curdir
 
-    def checkout(self):
+    def checkout(self, **kwargs):
         '''
         Helper function to call the checkout method.
         '''
         __log__.info('checking out %s', self)
-        self._checkout(self)
+        opts = dict(self.checkout_opts)
+        opts.update(kwargs)
+        self._checkout(self, **opts)
 
     @property
     def baseDir(self):

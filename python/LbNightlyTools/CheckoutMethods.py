@@ -22,23 +22,18 @@ from LbNightlyTools.Utils import retry_call as call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 
-def getpack(desc):
+def getpack(desc, recursive_head=None, export=False, protocol=None):
     '''
     Checkout the project described by the Project instance 'desc'.
-
-    The optional field 'recursive_head' in the 'checkout_opts' can be used to
-    override the default behavior (i.e. use the head of all the packages for
-    the project HEAD and the tags for an explicit project version).
     '''
     from os.path import normpath, join
-    protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
+    protocol = protocol or os.environ.get('GETPACK_PROTOCOL', 'anonymous')
     getpack_cmd = ['getpack', '--batch', '--no-config',
                    '--no-eclipse', '--branches',
                    '--protocol', protocol]
 
-    recursive_head = desc.checkout_opts.get('recursive_head',
-                                            desc.version == 'HEAD')
-    export = desc.checkout_opts.get('export', False)
+    if recursive_head is None:
+        recursive_head = desc.version == 'HEAD'
 
     rootdir = desc.rootdir
     prjroot = normpath(join(rootdir, desc.baseDir))
@@ -82,19 +77,10 @@ def ignore(desc):
     '''
     __log__.info('checkout not requested for %s', desc)
 
-def git(desc):
+def git(desc, url, commit='master', export=False):
     '''
     Checkout from a git repository.
-
-    This function requires mandatory 'url' field in the 'checkout_opts' of the
-    project description.
     '''
-    if 'url' not in desc.checkout_opts:
-        raise RuntimeError('mandatory checkout_opts "url" is missing')
-    url = desc.checkout_opts['url']
-    commit = desc.checkout_opts.get('commit', 'master')
-    export = desc.checkout_opts.get('export', False)
-
     __log__.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = os.path.join(desc.rootdir, desc.baseDir)
     __log__.debug('cloning git repository %s', url)
@@ -123,18 +109,10 @@ def git(desc):
     f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
-def svn(desc):
+def svn(desc, url, export=False):
     '''
     Checkout from an svn repository.
-
-    This function requires mandatory 'url' field in the 'checkout_opts' of the
-    project description.
     '''
-    if 'url' not in desc.checkout_opts:
-        raise RuntimeError('mandatory checkout_opts "url" is missing')
-    url = desc.checkout_opts['url']
-    export = desc.checkout_opts.get('export', False)
-
     __log__.debug('checking out %s from %s', desc, url)
     dest = os.path.join(desc.rootdir, desc.baseDir)
     call(['svn', 'checkout' if not export else 'export', url, dest])
@@ -147,16 +125,10 @@ def svn(desc):
         __log__.debug('using original Makefile')
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
-def copy(desc):
+def copy(desc, src):
     '''
     Copy the content of a directory.
-
-    Requires a mandatory 'src' field in the 'checkout_opts' of the
-    project description.
     '''
-    if 'src' not in desc.checkout_opts:
-        raise RuntimeError('mandatory checkout_opts "src" is missing')
-    src = desc.checkout_opts['src']
     __log__.debug('copying %s from %s', desc, src)
     dest = os.path.join(desc.rootdir, desc.baseDir)
     ensureDirs([dest])
@@ -168,17 +140,11 @@ def copy(desc):
         f.close()
     __log__.debug('copy of %s completed in %s', desc, dest)
 
-def untar(desc):
+def untar(desc, src):
     '''
     Unpack a tarball in the rootdir of desc (assuming that the tarball already
     contains the <PROJECT>/<PROJECT>_<version> directories).
-
-    Requires a mandatory 'src' field in the 'checkout_opts' of the
-    project description.
     '''
-    if 'src' not in desc.checkout_opts:
-        raise RuntimeError('mandatory checkout_opts "src" is missing')
-    src = desc.checkout_opts['src']
     __log__.debug('unpacking %s', src)
     call(['tar', '-x', '-C', desc.rootdir, '-f', src])
     dest = os.path.join(desc.rootdir, desc.baseDir)
@@ -192,19 +158,17 @@ def untar(desc):
         f.close()
     __log__.debug('unpacking of %s from %s completed', desc, src)
 
-def dirac(desc):
+def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
+          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc'):
     '''
     Special hybrid checkout needed to release DIRAC.
     '''
     from os.path import normpath, join, isdir, exists, basename, dirname
 
-    url = desc.checkout_opts.get('url', 'git://github.com/DIRACGrid/DIRAC.git')
-    commit = desc.checkout_opts.get('commit', desc.version)
+    if commit is None:
+        commit = desc.version
     if commit.lower() == 'head':
         commit = 'master'
-    export = desc.checkout_opts.get('export', False)
-    etc_orig = desc.checkout_opts.get('etc',
-                   '/afs/cern.ch/lhcb/software/releases/DIRAC/etc')
 
     protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
     getpack_cmd = ['getpack', '--batch', '--no-config',
@@ -284,7 +248,7 @@ def dirac(desc):
                 f.write('package %s\nuse DiracPolicy *\n' %
                         basename(dirname(cmt)))
     __log__.debug('populate etc directory')
-    shutil.copytree(etc_orig, join(prjroot, 'etc'))
+    shutil.copytree(etc, join(prjroot, 'etc'))
     __log__.debug('prepare dummy Makefile')
     with open(join(prjroot, 'Makefile'), 'w') as f:
         f.write('''
@@ -298,7 +262,7 @@ tests:
 '''.format(project=desc.name, version=desc.version))
 
 
-def lhcbdirac(desc):
+def lhcbdirac(desc, export=False):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
@@ -308,8 +272,6 @@ def lhcbdirac(desc):
     else:
         url = ('http://svn.cern.ch/guest/dirac/LHCbDIRAC/tags/LHCbDIRAC/' +
                desc.version)
-
-    export = desc.checkout_opts.get('export', False)
 
     protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
     getpack_cmd = ['getpack', '--batch', '--no-config',
@@ -368,19 +330,18 @@ def lhcbdirac(desc):
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 
 
-def lhcbgrid(desc):
+def lhcbgrid(desc, url=None, export=False):
     '''
     Special hybrid checkout needed to release LHCbGrid.
     '''
-    if 'url' not in desc.checkout_opts:
+    if url is None:
         if desc.version.lower() == 'head':
             url = 'http://svn.cern.ch/guest/lhcb/LHCbGrid/trunk'
         else:
             url = ('http://svn.cern.ch/guest/lhcb/LHCbGrid/tags/' +
                    'LHCBGRID/LHCBGRID_' + desc.version)
-        desc.checkout_opts['url'] = url
 
-    svn(desc)
+    svn(desc, url=url, export=export)
 
     dest = os.path.join(desc.rootdir, desc.baseDir)
     __log__.debug('fixing requirements files')
