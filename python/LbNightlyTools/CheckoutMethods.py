@@ -103,6 +103,12 @@ def git(desc):
         __log__.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
     else:
+        __log__.debug('extracting the list of branches')
+        proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
+        branches = set(branch[2:].rstrip()
+                       for branch in proc.communicate()[0].splitlines())
+        if 'remotes/origin/' + commit in branches:
+            commit = 'origin/' + commit
         __log__.debug('export commit %s for %s', commit, desc)
         p1 = Popen(['git', 'archive', commit],
                    cwd=dest, stdout=PIPE)
