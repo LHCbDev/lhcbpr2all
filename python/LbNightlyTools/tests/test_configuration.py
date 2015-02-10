@@ -96,10 +96,10 @@ def test_slot_projects():
 
 def test_deps():
     # explicit dependencies
-    slot = Slot('test', projects=[Project('a', 'v1r0',
-                                          dependencies=['zero']),
+    slot = Slot('test', projects=[Project('A', 'v1r0',
+                                          dependencies=['Zero']),
                                   Project('b', 'v2r0',
-                                          dependencies=['c', 'a'])])
+                                          dependencies=['c', 'A'])])
     #slot.checkout()
     deps = slot.dependencies()
 

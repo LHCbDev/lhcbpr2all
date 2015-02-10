@@ -57,7 +57,7 @@ class Project(object):
 
         self.disabled = kwargs.get('disabled', False)
         self.overrides = kwargs.get('overrides', {})
-        self._deps = kwargs.get('dependencies', [])
+        self._deps = map(str.lower, kwargs.get('dependencies', []))
         self._rootdir = kwargs.get('rootdir', os.curdir)
         self.env = kwargs.get('env', [])
 
@@ -82,6 +82,7 @@ class Project(object):
         '''
         Build the project.
         '''
+        raise NotImplementedError()
 
     @property
     def baseDir(self):
@@ -511,7 +512,7 @@ class Slot(object):
         Dictionary of dependencies of projects (also to projects not in the
         slot).
         '''
-        return dict([(p.name, p.dependencies()) for p in self.projects])
+        return dict([(p.name.lower(), p.dependencies()) for p in self.projects])
 
     def environment(self, envdict=None):
         '''

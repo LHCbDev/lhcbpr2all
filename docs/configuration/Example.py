@@ -75,7 +75,7 @@ lhcb_cmake = slots['lhcb-cmake']
 # Either we work in current directory or we override it with something like:
 # lhcb_cmake.rootdir = '/a/b/c'
 lhcb_cmake.checkout(export=True)
-# lhcb_cmake.dependencies() -> {'LHCb': ['Gaudi'], 'Lbcom': ['LHCb'], 'Gaudi': []}
+# lhcb_cmake.dependencies() -> {'lhcb': ['gaudi'], 'lbcom': ['lhcb'], 'gaudi': []}
 # ## How to cache the discovered dependencies?
 lhcb_cmake.build()
 lhcb_cmake.Gaudi.deps.build()
