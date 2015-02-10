@@ -410,7 +410,11 @@ class _SlotMeta(type):
             cls.__projects__ = dct['projects']
         cls.projects = property(lambda self: self._projects)
 
-        cls.__env__ = dct.get('env', [])
+        env = dct.get('env', [])
+        if bases and hasattr(bases[0], '__env__'):
+            cls.__env__ = bases[0].__env__ + env
+        else:
+            cls.__env__ = env
 
 
 class Slot(object):

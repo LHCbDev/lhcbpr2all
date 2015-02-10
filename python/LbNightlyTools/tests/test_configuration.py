@@ -162,3 +162,10 @@ def test_env():
     # class
     assert SpecialSlot.env == SpecialSlot.__env__ == ['slot=test', 'proj=none']
 
+    # derived class
+    class ExtendedSlot(SpecialSlot):
+        env = ['proj=dummy']
+    slot = ExtendedSlot('test')
+
+    env = slot.environment({})
+    assert env == {'slot': 'test', 'proj': 'dummy'}
