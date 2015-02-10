@@ -271,10 +271,13 @@ jQuery.fn.loadButton = function() {
                 if (data.rows.length) {
                     $.each(data.rows, function(idx, row) {
                         var value = row.value;
-
+                        var build_tool_logo = "";
+                        if (value.build_tool) {
+                        	build_tool_logo = '<img class="build-logo" src="images/' + value.build_tool + '.png"/> ';
+                        }
                         var slot = $('<div class="slot" slot="' + value.slot + '" build_id="' + value.build_id + '"/>');
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
-                            .append('<table><tr><td nowrap>' +
+                            .append('<table><tr><td nowrap>' + build_tool_logo +
                                 '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">' + value.slot + '</a>:' +
                                 '</td><td>' + value.description +
                                 '</td></tr></table>'));

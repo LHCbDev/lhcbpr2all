@@ -13,6 +13,7 @@
       <package name="Qt" version="4.8.4" />
       <package name="ROOT" version="6.02.01" />
       <package name="QMtest" version="2.4.1_python2.7" />
+      <package name="CASTOR" version="2.1.13-6" />
     </packages>
   </heptools>
   <exttools>

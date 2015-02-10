@@ -187,18 +187,14 @@ endif()
 if(NOT STEP STREQUAL BUILD)
 
   if(NOT USE_CMT)
-    ctest_test() # it seems there is no need for APPEND here
+    ctest_test(${test_selection}) # it seems there is no need for APPEND here
     if(NOT NO_SUBMIT)
       ctest_submit(PARTS Test)
     endif()
     # produce plain text summary of QMTest tests
     execute_process(COMMAND make QMTestSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY}
                     OUTPUT_FILE ${summary_dir}/QMTestSummary.txt)
-    if(IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/Testing/xml_test_results OR
-       IS_DIRECTORY $${CTEST_BINARY_DIRECTORY}/xml_test_results)
-      # this is a build that supports CTest XML test results from QMTest
-      execute_process(COMMAND make HTMLSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
-    endif()
+    execute_process(COMMAND make HTMLSummary WORKING_DIRECTORY $${CTEST_BINARY_DIRECTORY})
   else()
     # CMT requires special commands for the tests.
     set(ENV{PWD} "$${CTEST_BINARY_DIRECTORY}/$${CMT_CONTAINER_PACKAGE}/cmt")
@@ -218,13 +214,5 @@ if(NOT STEP STREQUAL BUILD)
   else()
     file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
          DESTINATION ${summary_dir}/html/.)
-  endif()
-
-  # this is the old-style build log names
-  set(OLD_BUILD_ID ${old_build_id})
-  if(OLD_BUILD_ID)
-    file(COPY $${CTEST_BINARY_DIRECTORY}/test_results/.
-         DESTINATION ${summary_dir}/$${OLD_BUILD_ID}-qmtest/.)
-    execute_process(COMMAND $${CMAKE_COMMAND} -E copy ${summary_dir}/QMTestSummary.txt ${summary_dir}/$${OLD_BUILD_ID}-qmtest.log)
   endif()
 endif()

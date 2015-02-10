@@ -29,7 +29,6 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
-Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 Requires: %{projectUp}_%{lbversion}
 
         

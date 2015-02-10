@@ -241,8 +241,27 @@ def dirac(desc):
 
     __log__.debug('starting post-checkout step for %s', desc)
     __log__.debug('deploying scripts')
-    call(['python', join(dest, 'Core', 'scripts', 'dirac-deploy-scripts.py')],
-         cwd=dest)
+    scripts_dir = join(prjroot, 'scripts')
+    if not isdir(scripts_dir):
+        os.makedirs(scripts_dir)
+    for root, dirs, files in os.walk(prjroot):
+        if root == prjroot:
+            if 'scripts' in dirs:
+                dirs.remove('scripts')
+        elif 'scripts' in dirs:
+            __log__.debug('  - %s', root)
+            # we are only interested in the content of the scripts directories
+            dirs[:] = ['scripts']
+        elif basename(root) == 'scripts':
+            dirs[:] = [] # avoid further recursion (it should not be needed)
+            for f in files:
+                if f.endswith('.py'):
+                    dst = join(scripts_dir, f[:-3])
+                else:
+                    dst = join(scripts_dir, f)
+                shutil.copyfile(join(root, f), dst)
+                os.chmod(dst, 0755) # ensure that the new file is executable
+
     __log__.debug('generate cmt dirs')
     # loop over the directories in the DIRAC directory (excluding . and ..)
     for cmt in [join(dest, pkg, 'cmt')
@@ -295,7 +314,6 @@ def lhcbdirac(desc):
 
     rootdir = desc.rootdir
     prjroot = normpath(join(rootdir, desc.baseDir))
-    policy = join(prjroot, 'LHCbDiracPolicy')
     dest = join(prjroot, 'LHCbDIRAC')
 
     if not os.path.exists(rootdir):
@@ -321,13 +339,23 @@ def lhcbdirac(desc):
 
     __log__.debug('starting post-checkout step for %s', desc)
     __log__.debug('deploying scripts')
-    cmd = ['python', join(policy, 'scripts', 'dirac-deploy-scripts.py'),
-           '-i', join(prjroot, 'scripts'), '-d']
-    for pkg in [join(dest, pkg)
-                for pkg in os.listdir(dest)
-                if pkg[0] != '.' and isdir(join(dest, pkg))]:
-        __log__.debug('  - %s', pkg)
-        call(cmd + [pkg])
+    scripts_dir = join(prjroot, 'scripts')
+    if not isdir(scripts_dir):
+        os.makedirs(scripts_dir)
+    for root, dirs, files in os.walk(dest):
+        if 'scripts' in dirs:
+            __log__.debug('  - %s', root)
+            # we are only interested in the content of the scripts directories
+            dirs[:] = ['scripts']
+        elif basename(root) == 'scripts':
+            dirs[:] = [] # avoid further recursion (it should not be needed)
+            for f in files:
+                if f.endswith('.py'):
+                    dst = join(scripts_dir, f[:-3])
+                else:
+                    dst = join(scripts_dir, f)
+                shutil.copyfile(join(root, f), dst)
+                os.chmod(dst, 0755) # ensure that the new file is executable
 
     __log__.debug('patching Makefile')
     with open(join(prjroot, 'Makefile'), 'a') as f:

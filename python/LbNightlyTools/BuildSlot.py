@@ -299,11 +299,27 @@ class Script(LbUtils.Script.PlainScript):
                          help='set a global timeout on all tests '
                               '(default: %default)')
 
+        group.add_option('--test-regex',
+                         dest='tests',
+                         metavar='TEST_REGEX',
+                         action='append',
+                         help='regular expressions used to match the names of '
+                              'the tests to run')
+
+        group.add_option('--label',
+                         dest='labels',
+                         metavar='LABEL_REGEX',
+                         action='append',
+                         help='regular expressions used to match the labels of '
+                              'the tests to run')
+
         self.parser.add_option_group(group)
         self.parser.set_defaults(with_tests=False,
                                  tests_only=False,
                                  test_suite=None,
-                                 timeout=600)
+                                 timeout=600,
+                                 labels=[],
+                                 tests=[])
 
     def defineDeploymentOptions(self):
         '''
@@ -674,13 +690,26 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
             self.write(join(proj.build_dir, 'CTestConfig.cmake'),
                        self.ctest_config.substitute(self.config))
 
+            # prepare the INCLUDE argument for ctest_test()
+            tests = ' '.join('"{0}"'.format(l.replace('"', '\\"'))
+                             for l in self.options.tests)
+            if tests:
+                tests = 'INCLUDE ' + tests
+
+            # prepare the INCLUDE_LABEL argument for ctest_test()
+            labels = ' '.join('"{0}"'.format(l.replace('"', '\\"'))
+                              for l in self.options.labels)
+            if labels:
+                labels = 'INCLUDE_LABEL ' + labels
+
             script_data = {'project': proj.name,
                            'version': proj.version,
                            'build_dir': self.build_dir,
                            'site': gethostname(),
                            'summary_dir': proj.summary_dir,
                            'Model': self.options.model,
-                           'old_build_id': proj.old_build_id}
+                           'old_build_id': proj.old_build_id,
+                           'test_selection': tests + ' ' + labels}
             self.write(join(proj.build_dir, 'CTestScript.cmake'),
                        self.ctest_script.substitute(script_data))
 

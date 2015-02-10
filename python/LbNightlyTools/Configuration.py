@@ -103,10 +103,12 @@ class Project(object):
         @return: list of used projects (all converted to lowercase)
         '''
         proj_root = os.path.join(self.rootdir, self.baseDir)
-        deps = []
 
-        # try with CMakeLists.txt first
-        try:
+        def fromCMake():
+            '''
+            Helper to extract dependencies from CMake configuration.
+            '''
+            deps = []
             cmake = os.path.join(proj_root, 'CMakeLists.txt')
             # arguments to the gaudi_project call
             args = GP_EXP.search(open(cmake).read()).group(1).split()
@@ -128,18 +130,50 @@ class Project(object):
                 # we set explicit the version of heptools,
                 # so we depend on LCGCMT
                 deps.append('lcgcmt')
-        except:
-            # try with CMT
+            return deps
+
+        def fromCMT():
+            '''
+            Helper to extract dependencies from CMT configuration.
+            '''
+            cmt = os.path.join(proj_root, 'cmt', 'project.cmt')
+            # from all the lines in project.cmt that start with 'use',
+            # we extract the second word (project name) and convert it to
+            # lower case
+            return [l.split()[1].lower()
+                    for l in [l.strip() for l in open(cmt)]
+                    if l.startswith('use')]
+
+        def fromProjInfo():
+            '''
+            Helper to get the dependencies from an info file in the project,
+            called 'project.info'.
+            The file must be in "config" format (see ConfigParser module) and
+            the dependencies must be declared as a comma separated list in
+            the section project.
+
+            E.g.:
+            [Project]
+            dependencies: ProjectA, ProjectB
+            '''
+            import ConfigParser
+            config = ConfigParser.ConfigParser()
+            config.read(os.path.join(proj_root, 'project.info'))
+            return [proj.strip().lower()
+                    for proj in config.get('Project', 'dependencies')
+                                      .split(',')]
+
+        # Try all the helpers until one succeeds
+        deps = []
+        for helper in (fromCMake, fromCMT, fromProjInfo):
             try:
-                cmt = os.path.join(proj_root, 'cmt', 'project.cmt')
-                # from all the lines in project.cmt that start with 'use',
-                # we extract the second word (project name) and convert it to
-                # lower case
-                deps = [l.split()[1].lower()
-                        for l in [l.strip() for l in open(cmt)]
-                        if l.startswith('use')]
+                deps = helper()
+                break
             except:
-                __log__.warning('cannot discover dependencies for %s', self)
+                pass
+        else:
+            __log__.warning('cannot discover dependencies for %s', self)
+
         return sorted(deps)
 
     def __str__(self):

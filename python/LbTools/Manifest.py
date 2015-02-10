@@ -63,9 +63,9 @@ class Parser(object):
                 raise Exception("%s not found" % t)
             tagValues.append(node.text)
 
-        packages= {pkg.attrib['name']: pkg.attrib['version']
-                   for pkg in self._tree.findall('./heptools/packages/package')}
-        tagValues.append(packages)
+        pkgs= dict((pkg.attrib['name'], pkg.attrib['version'])
+                   for pkg in self._tree.findall('./heptools/packages/package'))
+        tagValues.append(pkgs)
         return tuple(tagValues)
 
     def getExtTools(self):
@@ -76,8 +76,9 @@ class Parser(object):
         except AttributeError:
             # exttools/binary_tag not found
             bin_tag = ''
-        pkgs = {pkg.attrib['name']: pkg.attrib['version']
-                for pkg in self._tree.findall('./exttools/packages/package')}
+
+        pkgs= dict((pkg.attrib['name'], pkg.attrib['version'])
+                   for pkg in self._tree.findall('./exttools/packages/package'))
         return bin_tag, pkgs
 
     def getUsedProjects(self):

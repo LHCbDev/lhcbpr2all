@@ -54,7 +54,8 @@ def test_wrong_args():
 def test_simple_call():
     stacks = prepare_data([{'platforms': ['p1', 'p2'],
                             'projects': [['Proj1', 'v1'],
-                                         ['Proj2', 'v2']]}])
+                                         ['Proj2', 'v2']],
+                            'build_tool': 'CMAKE'}])
 
     script = Poll()
     retcode = script.run(['file:data.json'])
@@ -85,16 +86,20 @@ def test_no_input():
 def test_sorting():
     prepare_data([{'platforms': ['p2', 'p1'],
                    'projects': [['ZZZ', 'v1'],
-                                ['AAA', 'v2']]},
+                                ['AAA', 'v2']],
+                   'build_tool': 'CMT'},
                   {'platforms': ['f1', 'f2'],
                    'projects': [['P1', 'v1'],
-                                ['P2', 'v2']]}])
+                                ['P2', 'v2']],
+                   'build_tool': 'CMAKE'}])
     expected = [{'platforms': ['f1', 'f2'],
                  'projects': [['P1', 'v1'],
-                              ['P2', 'v2']]},
+                              ['P2', 'v2']],
+                 'build_tool': 'CMAKE'},
                 {'platforms': ['p1', 'p2'],
                  'projects': [['AAA', 'v2'],
-                              ['ZZZ', 'v1']]}]
+                              ['ZZZ', 'v1']],
+                 'build_tool': 'CMT'}]
 
     script = Poll()
     retcode = script.run(['file:data.json'])

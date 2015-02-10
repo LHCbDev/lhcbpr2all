@@ -20,6 +20,7 @@ import os
 import re
 import logging
 from string import Template
+from LbConfiguration.Version import extractVersion
 
 __log__ = logging.getLogger(__name__)
 
@@ -90,10 +91,13 @@ class LHCbBaseRpmSpec(object):
             (hver, hcmtconfig, packages) = heptools
             hcmtconfig = hcmtconfig.replace("-", "_")
             if packages:
-                requires = ['Requires: LCG_{hver}_{name}_{vers}_{platf}\n'
-                            .format(hver=hver, name=name, vers=vers,
-                                    platf=hcmtconfig)
-                            for name, vers in sorted(packages.items())]
+                requires = ['Requires: LCGCMT_LCGCMT_{hver}\n'
+                            .format(hver=hver)]
+                requires += ['Requires: LCG_{hver}_{name}_{vers}_{platf}\n'
+                             .format(hver=hver, name=name,
+                                     vers=vers.replace('-', '_'),
+                                     platf=hcmtconfig)
+                             for name, vers in sorted(packages.items())]
                 return ''.join(requires)
             else:
                 return "Requires: LHCbExternals_%s_%s\n"  % (hver, hcmtconfig)
@@ -105,7 +109,8 @@ class LHCbBaseRpmSpec(object):
         binary_tag, exttools = self._manifest.getExtTools()
         binary_tag = binary_tag.replace('-', '_')
         return ''.join('Requires: {name}_{vers}_{platf}\n'
-                       .format(name=name, vers=vers, platf=binary_tag)
+                       .format(name=name, vers=vers.replace('-', '_'),
+                               platf=binary_tag)
                        for name, vers in sorted(exttools.items()))
 
 
@@ -445,11 +450,14 @@ class LHCbBinaryRpmSpec(LHCbBaseRpmSpec):
         super(LHCbBinaryRpmSpec, self).__init__(project, version)
         __log__.debug("Creating RPM for %s/%s/%s" % (project, version, cmtconfig))
         self._project = project
-        self._version = version
         self._cmtconfig = cmtconfig
         self._buildarea = buildarea
         self._buildlocation = buildlocation
         self._manifest = manifest
+        # This is the version in LHCb Format
+        self._version = version
+        self._parsedVersion = extractVersion(version)
+        # These are used for the main version of the package
         self._lhcb_maj_version = 1
         self._lhcb_min_version = 0
         self._lhcb_patch_version = 0
@@ -520,7 +528,6 @@ BuildArch: noarch
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
-Provides: %{projectUp}%{cmtconfig_rpm} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
 Requires: %{projectUp}_%{lbversion}
 ${extraRequires}
         \n""").substitute(buildarea = self._buildarea,

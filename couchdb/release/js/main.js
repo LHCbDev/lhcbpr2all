@@ -82,13 +82,12 @@ function prepareRebuildInfo(data){
 	projects = projects.substring(0, projects.length - 1);
 
 
-	var platforms  = "";
+	var platforms = "";
 	//make string of platforms with spacing
 	for (var platform in data.platforms){
 		platform =(data.platforms[platform]).toString();
 		platforms+= platform + " ";
 	}
-
 	//remove the last space
 	platforms = platforms.substring(0, platforms.length - 1);
 
@@ -96,6 +95,7 @@ function prepareRebuildInfo(data){
 	var form = $('#rebuild_info');
 	(form.find('input[name="projects_list"]')).val(projects);
 	(form.find('input[name="platforms"]')).val(platforms);
+	(form.find('input[name="build_tool"]')).val(data.build_tool);
 
 	//prepare the information to display in the dialog
 
@@ -120,6 +120,7 @@ function prepareRebuildInfo(data){
 		tableplatforms.append('<tr><td><b>'+data.platforms[i]+'</b></td><tr>');
 	}
 
+
 	//fill in confirmation build info table dialog
 	$('#confirm-build-info > tbody:last').append('<tr><td><b>Would you like to rebuild slot ' +
 					data.build_id + ' with the following parameters?</b></td></tr>');
@@ -127,6 +128,8 @@ function prepareRebuildInfo(data){
 	$('#confirm-build-info > tbody:last').append(tableprojects);
 	$('#confirm-build-info > tbody:last').append('<br/>');
 	$('#confirm-build-info > tbody:last').append(tableplatforms);
+	$('#confirm-build-info > tbody:last').append('<br/>');
+	$('#confirm-build-info > tbody:last').append('<table><tr><td>Build System: <b>' + data.build_tool + '</b></td></tr></table>');
 	$('#confirm-build-info > tbody:last').append('<br/>');
 	$('#confirm-build-info > tbody:last').append('<tr><td><img style="width:20px;" alt="!"'+
 				'src="images/exclamation.png"/>'+
@@ -618,16 +621,19 @@ jQuery.fn.loadSlots = function() {
                         var slot = $('<div class="slot" id="build-' + value.build_id +
 					'"slot="' + value.slot + '" build_id="'
 					+ value.build_id + '"/>');
-
+                        var build_tool_logo = "";
+                        if (value.build_tool) {
+                        	build_tool_logo = '<td><img height="22" width="22" src="images/' + value.build_tool + '.png"/></td>';
+                        }
                         slot.append($('<h4/>').append('<span class="alerts"/> ')
 				.append('<table><tr><td><a href="' + window.location.origin + window.location.pathname +
 				"?build=" +value.build_id + '"><img src="images/link.png" title="direct link"></a>'+
 				'</td><td nowrap>Release build ' + value.build_id +
                                 '</td><td>(' + day_data.key  +
                                 ')</td><td><button id="'+ value.build_id + '"class="rebuild-button"/>'+
-				'</td><td><a href= https://buildlhcb.cern.ch/artifacts/release/lhcb-release/' + value.build_id +
-				'><img id="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>'+
-		                '</td></tr></table>'));
+				'</td><td><a href="https://buildlhcb.cern.ch/artifacts/release/lhcb-release/' + value.build_id +
+				'" target="_blank"><img id="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>'+
+		                '</td>' + build_tool_logo + '</tr></table>'));
 
 				el.append(slot);
 

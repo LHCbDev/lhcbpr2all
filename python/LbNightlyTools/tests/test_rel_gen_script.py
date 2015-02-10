@@ -296,6 +296,27 @@ def test_with_cmt():
     finally:
         os.remove(tmpname)
 
+def test_with_build_tool_cmt():
+    tmpfd, tmpname = mkstemp()
+    os.close(tmpfd)
+    try:
+        s = Release.ConfigGenerator()
+        s.run(['--build-tool', 'cmt', '-o', tmpname, 'LHCb', 'v36r1'])
+
+        output = json.load(open(tmpname))
+        pprint(output)
+
+        assert output['slot'] == 'lhcb-release'
+        assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
+                                       'checkout_opts': {'export': True}}]
+        assert output['USE_CMT'] is True
+        assert output['no_patch'] is True
+
+        assert output == s.genConfig()
+
+    finally:
+        os.remove(tmpname)
+
 def test_platforms():
     tmpfd, tmpname = mkstemp()
     os.close(tmpfd)
