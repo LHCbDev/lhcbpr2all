@@ -505,7 +505,7 @@ class Slot(object):
     Class representing a nightly build slot.
     '''
     __metaclass__ = _SlotMeta
-    __slots__ = ('_name', '_projects', 'env', 'build_tool')
+    __slots__ = ('_name', '_projects', 'env', '_build_tool')
     __projects__ = []
     __env__ = []
     __build_tool__ = 'default'
@@ -527,9 +527,8 @@ class Slot(object):
 
         self.env = kwargs.get('env', list(self.__class__.__env__))
 
-        from BuildMethods import getMethod
-        self.build_tool = getMethod(kwargs.get('build_tool',
-                                               self.__class__.__build_tool__))
+        self.build_tool = kwargs.get('build_tool',
+                                     self.__class__.__build_tool__)
 
         # add this slot to the global list of slots
         global slots
@@ -550,6 +549,21 @@ class Slot(object):
         del slots[self._name]
         self._name = value
         slots[self._name] = self
+
+    @property
+    def build_tool(self):
+        '''
+        Build method used for the slot.
+        '''
+        return self._build_tool
+
+    @build_tool.setter
+    def build_tool(self, value):
+        '''
+        Set the build method used for the slot.
+        '''
+        from BuildMethods import getMethod as getBuildMethod
+        self._build_tool = getBuildMethod(value)
 
     def __getattr__(self, name):
         '''
