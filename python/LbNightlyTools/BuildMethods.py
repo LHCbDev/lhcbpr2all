@@ -164,6 +164,15 @@ def cmake(proj, *args, **kwargs):
 
     return BuildResults(proj, *output)
 
+def echo(proj, *args, **kwargs):
+    '''
+    Dummy build method that just print (and return) the arguments
+    Useful for tests.
+    '''
+    output =' '.join(['building', str(proj), str(args), str(kwargs)])
+    print output
+    return BuildResults(proj, 0, output, '')
+
 default = cmake
 
 def getMethod(method=None):
