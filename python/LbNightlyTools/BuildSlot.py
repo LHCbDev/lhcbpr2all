@@ -25,6 +25,7 @@ import codecs
 import json
 
 from LbNightlyTools import Configuration
+from LbNightlyTools.Configuration import sortedByDeps
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
 from LbNightlyTools.Utils import Dashboard
 
@@ -132,45 +133,6 @@ class ProjDesc():
 
     def __str__(self):
         return '{0} {1}'.format(self.name, self.version)
-
-def sortedByDeps(deps):
-    '''
-    Take a dictionary of dependencies as {'depender': ['dependee', ...]} and
-    return the list of keys sorted according to their dependencies so that
-    that a key comes after its dependencies.
-
-    >>> sortedByDeps({'4':['2','3'],'3':['1'],'2':['1'],'1':['0'],'0':[]})
-    ['0', '1', '3', '2', '4']
-
-    If the argument is an OrderedDict, the returned list preserves the order of
-    the keys (if possible).
-
-    >>> sortedByDeps(dict([('1', []), ('2', ['1']), ('3', ['1'])]))
-    ['1', '3', '2']
-    >>> sortedByDeps(OrderedDict([('1', []), ('2', ['1']), ('3', ['1'])]))
-    ['1', '2', '3']
-    '''
-    def unique(iterable):
-        '''Return only the unique elements in the list l.
-
-        >>> unique([0, 0, 1, 2, 1])
-        [0, 1, 2]
-        '''
-        uniquelist = []
-        for item in iterable:
-            if item not in uniquelist:
-                uniquelist.append(item)
-        return uniquelist
-    def recurse(keys):
-        '''
-        Recursive helper function to sort by dependency: for each key we
-        first add (recursively) its dependencies then the key itself.'''
-        result = []
-        for k in keys:
-            result.extend(recurse(deps[k]))
-            result.append(k)
-        return unique(result)
-    return recurse(deps)
 
 OLD_BUILD_ID = '{slot}.{today}_{project}_{version}-{platform}'
 
@@ -449,7 +411,6 @@ class Script(LbUtils.Script.PlainScript):
                                      for p in map(ProjDesc,
                                                   self.config.get(u'projects',
                                                                   []))])
-
         deps = OrderedDict([(p.name, p.deps) for p in self.projects.values()])
         self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]
 
