@@ -16,6 +16,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import os
 import re
 import logging
+import BuildMethods
 from LbNightlyTools.Utils import applyenv
 from collections import OrderedDict
 
@@ -93,9 +94,13 @@ class Project(object):
         @param rootdir: location of the project (where it should be checked out,
                         etc.)
         @param env: override the environment for the project
+        @param build_tool: build method used for the project
         '''
         self.name = name
         self.version = 'HEAD' if version.upper() == 'HEAD' else version
+
+        # slot owning this project
+        self.slot = None
 
         self.disabled = kwargs.get('disabled', False)
         self.overrides = kwargs.get('overrides', {})
@@ -103,13 +108,14 @@ class Project(object):
         self._rootdir = kwargs.get('rootdir', os.curdir)
         self.env = kwargs.get('env', [])
 
-        from CheckoutMethods import getMethod
-        self._checkout = getMethod(kwargs.get('checkout'))
+        from CheckoutMethods import getMethod as getCheckoutMethod
+        self._checkout = getCheckoutMethod(kwargs.get('checkout'))
 
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
-        # slot owning this project
-        self.slot = None
+        self.build_tool = kwargs.get('build_tool')
+
+        self.build_results = None
 
     def checkout(self, **kwargs):
         '''
@@ -120,11 +126,20 @@ class Project(object):
         opts.update(kwargs)
         self._checkout(self, **opts)
 
-    def build(self):
+    def build(self, *args, **kwargs):
         '''
         Build the project.
+
+        @param args: (positional arguments) extra build arguments like special
+                     targets
+        @param jobs: number of parallel jobs to use [default: cpu count + 1]
+        @param verbose: if True, print the output of the build while running
         '''
-        raise NotImplementedError()
+        if 'jobs' not in kwargs:
+            from multiprocessing import cpu_count
+            kwargs['jobs'] = cpu_count() + 1
+        self.build_results = self.build_tool(self, *args, **kwargs)
+        return self.build_results
 
     @property
     def baseDir(self):
@@ -146,6 +161,24 @@ class Project(object):
         '''
         if not self.slot:
             self._rootdir = value
+        else:
+            raise AttributeError("can't set attribute")
+
+    @property
+    def build_tool(self):
+        '''
+        Build method used for the project.
+        '''
+        return self.slot.build_tool if self.slot else self._build_tool
+
+    @build_tool.setter
+    def build_tool(self, value):
+        '''
+        Set the build method used for the project.
+        '''
+        if not self.slot:
+            from BuildMethods import getMethod as getBuildMethod
+            self._build_tool = getBuildMethod(value)
         else:
             raise AttributeError("can't set attribute")
 
@@ -463,15 +496,19 @@ class _SlotMeta(type):
         else:
             cls.__env__ = env
 
+        if 'build_tool' in dct:
+            cls.__build_tool__ = dct['build_tool']
+
 
 class Slot(object):
     '''
     Class representing a nightly build slot.
     '''
     __metaclass__ = _SlotMeta
-    __slots__ = ('_name', '_projects', 'env')
+    __slots__ = ('_name', '_projects', 'env', 'build_tool')
     __projects__ = []
     __env__ = []
+    __build_tool__ = 'default'
     rootdir = os.curdir
 
     def __init__(self, name, **kwargs):
@@ -489,6 +526,10 @@ class Slot(object):
         self._projects = ProjectsList(self, projects)
 
         self.env = kwargs.get('env', list(self.__class__.__env__))
+
+        from BuildMethods import getMethod
+        self.build_tool = getMethod(kwargs.get('build_tool',
+                                               self.__class__.__build_tool__))
 
         # add this slot to the global list of slots
         global slots
@@ -515,7 +556,9 @@ class Slot(object):
         Get the project with given name in the slot.
         '''
         for proj in self._projects:
-            if proj.name == name:
+            # FIXME: the lookup has to be case insensitive to match the
+            #        case insesitivity of dependencies()
+            if proj.name.lower() == name.lower():
                 return proj
         raise AttributeError('%r object has no attribute %r' %
                              (self.__class__.__name__, name))
@@ -540,11 +583,15 @@ class Slot(object):
         for project in self.projects:
             project.checkout(export=export)
 
-    def dependencies(self):
+    def dependencies(self, projects=None):
         '''
         Dictionary of dependencies between projects (only within the slot).
         '''
         deps = self.fullDependencies()
+        if projects:
+            for unwanted in (set(deps) -
+                             set(project.lower() for project in projects)):
+                deps.pop(unwanted)
         for key in deps:
             deps[key] = [val for val in deps[key] if val in deps]
         return deps
@@ -554,7 +601,9 @@ class Slot(object):
         Dictionary of dependencies of projects (also to projects not in the
         slot).
         '''
-        return dict([(p.name.lower(), p.dependencies()) for p in self.projects])
+        # FIXME: we need this to be case insensitive for CMT
+        return OrderedDict([(p.name.lower(), p.dependencies())
+                            for p in self.projects])
 
     def environment(self, envdict=None):
         '''
@@ -566,6 +615,19 @@ class Slot(object):
         result = dict(os.environ) if envdict is None else dict(envdict)
         applyenv(result, self.env)
         return result
+
+    def build(self, *args, **kwargs):
+        '''
+        Build projects in the slot.
+
+        @param projects: optional list of projects to build [default: all]
+        '''
+        deps = self.dependencies(projects=kwargs.pop('projects', None))
+        projects = [getattr(self, project) for project in sortedByDeps(deps)]
+        for project in projects:
+            project.build(*args, **kwargs)
+        return OrderedDict((project.name, project.build_results)
+                           for project in projects)
 
 def extractVersion(tag):
     '''
