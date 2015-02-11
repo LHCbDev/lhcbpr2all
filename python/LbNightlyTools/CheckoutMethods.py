@@ -69,7 +69,7 @@ def getpack(desc, recursive_head=None, export=False, protocol=None):
 
     __log__.debug('checkout of %s completed in %s', desc, prjroot)
 
-def ignore(desc):
+def ignore(desc, export=False):
     '''
     Special checkout function used to just declare a project version in the
     configuration but do not perform the checkout, so that it's picked up from
@@ -125,7 +125,7 @@ def svn(desc, url, export=False):
         __log__.debug('using original Makefile')
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
-def copy(desc, src):
+def copy(desc, src, export=False):
     '''
     Copy the content of a directory.
     '''
@@ -140,7 +140,7 @@ def copy(desc, src):
         f.close()
     __log__.debug('copy of %s completed in %s', desc, dest)
 
-def untar(desc, src):
+def untar(desc, src, export=False):
     '''
     Unpack a tarball in the rootdir of desc (assuming that the tarball already
     contains the <PROJECT>/<PROJECT>_<version> directories).
