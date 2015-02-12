@@ -128,7 +128,7 @@ class make(object):
         verbose = kwargs.get('verbose')
 
         env = proj.environment()
-        env.update(kwargs.get(env, {}))
+        env.update(kwargs.get('env', {}))
 
         cmd = ['make']
         if jobs:

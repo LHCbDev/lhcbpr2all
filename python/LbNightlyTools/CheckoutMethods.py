@@ -131,7 +131,7 @@ def copy(desc, src, export=False):
     '''
     __log__.debug('copying %s from %s', desc, src)
     dest = os.path.join(desc.rootdir, desc.baseDir)
-    ensureDirs([dest])
+    ensureDirs([os.path.dirname(dest)])
     shutil.copytree(os.path.join(src, os.curdir), dest)
     top_makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(top_makefile):
