@@ -12,5 +12,7 @@
               {"name": "Rec",
                "version": "HEAD"},
               {"name": "Brunel",
+               "version": "HEAD"},
+              {"name": "NewProj",
                "version": "HEAD"}]
 }
