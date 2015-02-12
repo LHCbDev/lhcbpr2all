@@ -16,7 +16,6 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import os
 import re
 import logging
-import BuildMethods
 from LbNightlyTools.Utils import applyenv
 from collections import OrderedDict
 
@@ -126,20 +125,29 @@ class Project(object):
         opts.update(kwargs)
         self._checkout(self, **opts)
 
-    def build(self, *args, **kwargs):
+    def build(self, **kwargs):
         '''
         Build the project.
-
-        @param args: (positional arguments) extra build arguments like special
-                     targets
         @param jobs: number of parallel jobs to use [default: cpu count + 1]
         @param verbose: if True, print the output of the build while running
         '''
         if 'jobs' not in kwargs:
             from multiprocessing import cpu_count
             kwargs['jobs'] = cpu_count() + 1
-        self.build_results = self.build_tool(self, *args, **kwargs)
+        self.build_results = self.build_tool.build(self, **kwargs)
         return self.build_results
+
+    def clean(self, **kwargs):
+        '''
+        Clean the project.
+        '''
+        return self.build_tool.clean(self, **kwargs)
+
+    def test(self, **kwargs):
+        '''
+        Test the project.
+        '''
+        return self.build_tool.test(self, **kwargs)
 
     @property
     def baseDir(self):
@@ -178,7 +186,7 @@ class Project(object):
         '''
         if not self.slot:
             from BuildMethods import getMethod as getBuildMethod
-            self._build_tool = getBuildMethod(value)
+            self._build_tool = getBuildMethod(value)()
         else:
             raise AttributeError("can't set attribute")
 
@@ -563,7 +571,7 @@ class Slot(object):
         Set the build method used for the slot.
         '''
         from BuildMethods import getMethod as getBuildMethod
-        self._build_tool = getBuildMethod(value)
+        self._build_tool = getBuildMethod(value)()
 
     def __getattr__(self, name):
         '''
@@ -630,18 +638,43 @@ class Slot(object):
         applyenv(result, self.env)
         return result
 
-    def build(self, *args, **kwargs):
+    def _projects_by_deps(self, projects=None):
+        deps = self.dependencies(projects=projects)
+        return [getattr(self, project) for project in sortedByDeps(deps)]
+
+    def build(self, **kwargs):
         '''
         Build projects in the slot.
 
         @param projects: optional list of projects to build [default: all]
         '''
-        deps = self.dependencies(projects=kwargs.pop('projects', None))
-        projects = [getattr(self, project) for project in sortedByDeps(deps)]
-        for project in projects:
-            project.build(*args, **kwargs)
-        return OrderedDict((project.name, project.build_results)
-                           for project in projects)
+        results = OrderedDict()
+        for project in self._projects_by_deps(kwargs.pop('projects', None)):
+            results[project.name] = project.build(**kwargs)
+        return results
+
+    def clean(self, **kwargs):
+        '''
+        Clean projects in the slot.
+
+        @param projects: optional list of projects to build [default: all]
+        '''
+        results = OrderedDict()
+        for project in self._projects_by_deps(kwargs.pop('projects', None)):
+            results[project.name] = project.clean(**kwargs)
+        return results
+
+    def test(self, **kwargs):
+        '''
+        Test projects in the slot.
+
+        @param projects: optional list of projects to build [default: all]
+        '''
+        results = OrderedDict()
+        for project in self._projects_by_deps(kwargs.pop('projects', None)):
+            results[project.name] = project.test(**kwargs)
+        return results
+
 
 def extractVersion(tag):
     '''

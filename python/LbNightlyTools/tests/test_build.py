@@ -22,11 +22,23 @@ from os.path import normpath, join
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
-def test_basic_buils():
+def test_basic_build():
     with TemporaryDir():
-        slot = Slot('test', build_tool='echo')
+        slot = Slot('slot', build_tool='echo')
         slot.projects.append(Project('Gaudi', 'HEAD', checkout='ignore'))
         slot.checkout()
+
+        res = slot.clean()
+        assert 'Gaudi' in res
+        assert res['Gaudi'].returncode == 0
+        assert 'clean' in res['Gaudi'].stdout
+
         res = slot.build()
         assert 'Gaudi' in res
         assert res['Gaudi'].returncode == 0
+        assert 'build' in res['Gaudi'].stdout
+
+        res = slot.test()
+        assert 'Gaudi' in res
+        assert res['Gaudi'].returncode == 0
+        assert 'test' in res['Gaudi'].stdout

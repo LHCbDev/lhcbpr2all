@@ -105,75 +105,172 @@ class BuildResults(object):
         self.stdout = stdout
         self.stderr = stderr
 
-def cmt(proj, *args, **kwargs):
+
+class make(object):
     '''
-    Build a Gaudi/LHCb project using CMT.
+    Base class for build tools based on make.
     '''
-    jobs = kwargs.get('jobs', 1)
-    verbose = kwargs.get('verbose')
+    def _make(self, target, proj, **kwargs):
+        '''
+        Internal function to wrap the call to make for CMT.
 
-    env = proj.environment()
-    env['USE_CMT'] = '1'
+        @param target: name of the target to build
+        @param proj: Project instance to build
+        @param jobs: number of parallel build processes [default: 1]
+        @param max_load: maximum allowed load beyond which no new process are started
+        @param verbose: echo the build output [default: False]
+        @param env: dictionary used to override environment variables from the
+                    project configuration
+        @param args: list of extra arguments to pass to make
+        '''
+        jobs = kwargs.get('jobs')
+        max_load = kwargs.get('max_load')
+        verbose = kwargs.get('verbose')
 
-    cmd = ['make', '-j%d' % jobs]
-    cmd.extend(kwargs.get('args', []))
-    if args:
-        cmd.extend(args)
-    build_root = os.path.join(proj.rootdir, proj.baseDir)
+        env = proj.environment()
+        env.update(kwargs.get(env, {}))
 
-    __log__.debug('running %s', ' '.join(cmd))
-    output = call(cmd, env=env, cwd=build_root, verbose=verbose)
-    __log__.debug('command exited with code %d', output[0])
+        cmd = ['make']
+        if jobs:
+            cmd.append('-j%d' % jobs)
+        if max_load:
+            cmd.append('-l%.1f' % max_load)
+        cmd.extend(kwargs.get('args', []))
+        cmd.append(target)
 
-    return BuildResults(proj, *output)
+        build_root = os.path.join(proj.rootdir, proj.baseDir)
 
-def cmake(proj, *args, **kwargs):
-    '''
-    Build a Gaudi/LHCb project using CMake.
-    '''
-    jobs = kwargs.get('jobs', 1)
-    verbose = kwargs.get('verbose')
-    max_load = kwargs.get('max_load')
-
-    env = proj.environment()
-    env['USE_CMAKE'] = '1'
-    env['USE_MAKE'] = '1' # this is to avoid ninja for the build
-
-    cmd = ['make', '-j%d' % jobs]
-    if max_load:
-        cmd.append('-l%.1f' % max_load)
-    cmd.extend(kwargs.get('args', []))
-    build_root = os.path.join(proj.rootdir, proj.baseDir)
-
-    if args:
-        cmd.extend(args)
         __log__.debug('running %s', ' '.join(cmd))
         output = call(cmd, env=env, cwd=build_root, verbose=verbose)
         __log__.debug('command exited with code %d', output[0])
-    else:
-        output = []
-        for target in ('configure', 'all', 'unsafe-install', 'post-install'):
-            cmdtgt = cmd + [target]
-            __log__.debug('running: %s', ' '.join(cmdtgt))
-            output.append(call(cmdtgt, env=env, cwd=build_root,
-                               verbose=verbose))
-            __log__.debug('command exited with code %d', output[-1][0])
+
+        return BuildResults(proj, *output)
+
+    def build(self, proj, **kwargs):
+        '''
+        Build a project.
+        '''
+        return self._make('all', proj, **kwargs)
+
+    def clean(self, proj, **kwargs):
+        '''
+        Clean the build products.
+        '''
+        return self._make('clean', proj, **kwargs)
+
+    def test(self, proj, **kwargs):
+        '''
+        Run the tests.
+        '''
+        return self._make('test', proj, **kwargs)
+
+
+class cmt(make):
+    '''
+    Class to wrap the build/test semantics for CMT-based projects.
+    '''
+    def _make(self, target, proj, **kwargs):
+        '''
+        Override basic make call to set the environment variable USE_CMT=1.
+        '''
+        env = kwargs.pop('env', {})
+        env.update({'USE_CMT': '1'})
+        return make._make(self, target, proj, env=env, **kwargs)
+
+    def clean(self, proj, **kwargs):
+        '''
+        Override default clean method to call the 'purge' target (more
+        aggressive).
+        '''
+        return self._make('purge', proj, **kwargs)
+
+    def test(self, proj, **kwargs):
+        '''
+        Run the tests in a Gaudi/LHCb project using CMT.
+        '''
+        # ensure that tests are not run in parallel
+        kwargs.pop('max_load')
+        kwargs.pop('jobs')
+        return self._make('test', proj, **kwargs)
+
+
+class cmake(object):
+    '''
+    Class to wrap the build/test semantics for CMT-based projects.
+    '''
+    def _make(self, target, proj, **kwargs):
+        '''
+        Override basic make call to set the environment variable USE_CMT=1.
+        '''
+        env = kwargs.pop('env', {})
+        env.update({'USE_CMAKE': '1',
+                    'USE_MAKE': '1'})
+        return make._make(self, target, proj, env=env, **kwargs)
+
+    def build(self, proj, **kwargs):
+        '''
+        Override the basic build method to call the different targets used in
+        CMake builds: configure, all, unasfe-install, post-install.
+        '''
+        output = [self._make(target, proj, **kwargs)
+                  for target in ('configure', 'all',
+                                 'unsafe-install', 'post-install')]
         output = (output[1][0], # use the build return code
                   ''.join(step[1] for step in output),
                   ''.join(step[2] for step in output))
 
-    return BuildResults(proj, *output)
+        return BuildResults(proj, *output)
 
-def echo(proj, *args, **kwargs):
+    def clean(self, proj, **kwargs):
+        '''
+        Override default clean method to call the 'purge' target (more
+        aggressive).
+        '''
+        return self._make('purge', proj, **kwargs)
+
+    def test(self, proj, **kwargs):
+        '''
+        Run the tests in a Gaudi/LHCb project using CMT.
+        '''
+        # ensure that tests are not run in parallel
+        kwargs.pop('max_load')
+        kwargs.pop('jobs')
+        return self._make('test', proj, **kwargs)
+
+
+class echo(object):
     '''
-    Dummy build method that just print (and return) the arguments
-    Useful for tests.
+    Dummy build tool class used for testing.
     '''
-    output =' '.join(['building', str(proj), str(args), str(kwargs)])
-    print output
-    return BuildResults(proj, 0, output, '')
+    def _report(self, target, proj, **kwargs):
+        '''
+        Helper.
+        '''
+        output =' '.join([target, str(proj), str(kwargs)])
+        print output
+        return BuildResults(proj, 0, output, '')
+
+    def build(self, proj, **kwargs):
+        '''
+        Build method.
+        '''
+        return self._report('build', proj,**kwargs)
+
+    def clean(self, proj, **kwargs):
+        '''
+        Clean method.
+        '''
+        return self._report('clean', proj,**kwargs)
+
+    def test(self, proj, **kwargs):
+        '''
+        Test method.
+        '''
+        return self._report('test', proj,**kwargs)
+
 
 default = cmake
+
 
 def getMethod(method=None):
     '''
@@ -185,7 +282,7 @@ def getMethod(method=None):
     '''
     if method is None:
         return default
-    if hasattr(method, '__call__'):
+    if hasattr(method, 'build'):
         return method
     if isinstance(method, basestring):
         if '.' in method:
