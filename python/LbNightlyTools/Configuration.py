@@ -70,10 +70,42 @@ def sortedByDeps(deps):
     return recurse(deps)
 
 
+class _BuildToolProperty(object):
+    '''
+    Descriptor for the build_tool property of a slot
+    '''
+    def __get__(self, instance, owner):
+        'getter'
+        try:
+            return instance.slot.build_tool
+        except AttributeError:
+            return instance._build_tool
+    def __set__(self, instance, value):
+        'setter'
+        if hasattr(instance, 'slot') and instance.slot:
+            raise AttributeError("can't set attribute")
+        from BuildMethods import getMethod as getBuildMethod
+        instance._build_tool = getBuildMethod(value)()
+
+
+class _ProjectMeta(type):
+    '''
+    Metaclass for Project.
+    '''
+    def __new__(cls, name, bases, dct):
+        '''
+        Instrument Project classes.
+        '''
+        dct['__build_tool__'] = dct.get('build_tool')
+        dct['build_tool'] = _BuildToolProperty()
+        return type.__new__(cls, name, bases, dct)
+
+
 class Project(object):
     '''
     Describe a project to be checked out, built and tested.
     '''
+    __metaclass__ = _ProjectMeta
     def __init__(self, name, version, **kwargs):
         '''
         @param name: name of the project
@@ -112,7 +144,7 @@ class Project(object):
 
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
-        self.build_tool = kwargs.get('build_tool')
+        self.build_tool = kwargs.get('build_tool', self.__build_tool__)
 
         self.build_results = None
 
@@ -169,24 +201,6 @@ class Project(object):
         '''
         if not self.slot:
             self._rootdir = value
-        else:
-            raise AttributeError("can't set attribute")
-
-    @property
-    def build_tool(self):
-        '''
-        Build method used for the project.
-        '''
-        return self.slot.build_tool if self.slot else self._build_tool
-
-    @build_tool.setter
-    def build_tool(self, value):
-        '''
-        Set the build method used for the project.
-        '''
-        if not self.slot:
-            from BuildMethods import getMethod as getBuildMethod
-            self._build_tool = getBuildMethod(value)()
         else:
             raise AttributeError("can't set attribute")
 
@@ -488,6 +502,14 @@ class _SlotMeta(type):
     '''
     Metaclass for Slot.
     '''
+    def __new__(cls, name, bases, dct):
+        '''
+        Instrument Slot classes.
+        '''
+        dct['__build_tool__'] = dct.get('build_tool')
+        dct['build_tool'] = _BuildToolProperty()
+        return type.__new__(cls, name, bases, dct)
+
     def __init__(cls, name, bases, dct):
         '''
         Class initialization by the metaclass.
@@ -504,9 +526,6 @@ class _SlotMeta(type):
         else:
             cls.__env__ = env
 
-        if 'build_tool' in dct:
-            cls.__build_tool__ = dct['build_tool']
-
 
 class Slot(object):
     '''
@@ -516,7 +535,6 @@ class Slot(object):
     __slots__ = ('_name', '_projects', 'env', '_build_tool')
     __projects__ = []
     __env__ = []
-    __build_tool__ = 'default'
     rootdir = os.curdir
 
     def __init__(self, name, **kwargs):
@@ -530,13 +548,12 @@ class Slot(object):
         '''
         self._name = name
 
-        projects = kwargs.get('projects', self.__class__.__projects__)
+        projects = kwargs.get('projects', self.__projects__)
         self._projects = ProjectsList(self, projects)
 
-        self.env = kwargs.get('env', list(self.__class__.__env__))
+        self.env = kwargs.get('env', list(self.__env__))
 
-        self.build_tool = kwargs.get('build_tool',
-                                     self.__class__.__build_tool__)
+        self.build_tool = kwargs.get('build_tool', self.__build_tool__)
 
         # add this slot to the global list of slots
         global slots
@@ -557,21 +574,6 @@ class Slot(object):
         del slots[self._name]
         self._name = value
         slots[self._name] = self
-
-    @property
-    def build_tool(self):
-        '''
-        Build method used for the slot.
-        '''
-        return self._build_tool
-
-    @build_tool.setter
-    def build_tool(self, value):
-        '''
-        Set the build method used for the slot.
-        '''
-        from BuildMethods import getMethod as getBuildMethod
-        self._build_tool = getBuildMethod(value)()
 
     def __getattr__(self, name):
         '''

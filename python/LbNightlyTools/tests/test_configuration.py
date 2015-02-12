@@ -12,6 +12,8 @@
 #__test__ = False
 
 from LbNightlyTools.Configuration import slots, Project, Slot, ProjectsList
+import LbNightlyTools.BuildMethods as BM
+
 import os
 
 def setup():
@@ -169,3 +171,59 @@ def test_env():
 
     env = slot.environment({})
     assert env == {'slot': 'test', 'proj': 'dummy'}
+
+def test_build_tool_prop():
+    #######
+    p = Project('p', 'v')
+    assert p.__build_tool__ is None
+    assert isinstance(p.build_tool, BM.default)
+
+    p.build_tool = 'echo'
+    assert isinstance(p.build_tool, BM.echo)
+
+    p.build_tool = BM.cmt
+    assert isinstance(p.build_tool, BM.cmt)
+
+    #######
+    class MyProj(Project):
+        build_tool = 'echo'
+
+    mp = MyProj('mp', 'v')
+    assert isinstance(mp.build_tool, BM.echo)
+
+    mp.build_tool = BM.cmt
+    assert isinstance(mp.build_tool, BM.cmt)
+
+    #######
+    s = Slot('s')
+    assert s.__build_tool__ is None
+    assert isinstance(s.build_tool, BM.default)
+
+    s.build_tool = 'echo'
+    assert isinstance(s.build_tool, BM.echo)
+
+    s.build_tool = BM.cmt
+    assert isinstance(s.build_tool, BM.cmt)
+
+    #######
+    class MySlot(Slot):
+        build_tool = 'echo'
+
+    ms = MySlot('ms')
+    assert isinstance(ms.build_tool, BM.echo)
+
+    ms.build_tool = BM.cmt
+    assert isinstance(ms.build_tool, BM.cmt)
+
+    #######
+    p.build_tool = BM.cmt
+    s.build_tool = 'echo'
+    s.projects.append(p)
+    assert isinstance(p.build_tool, BM.echo)
+    try:
+        p.build_tool = 'cmake'
+        assert False, 'exception expected'
+    except AttributeError:
+        pass
+    except:
+        assert False, 'AttributeError exception expected'

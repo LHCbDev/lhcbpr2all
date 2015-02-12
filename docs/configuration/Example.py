@@ -8,8 +8,8 @@ lhcb_head = Slot('lhcb-head',
                  env=['CMTPROJECTPATH=${LHCBDEV}:${CMTPROJECTPATH}'])
 
 class CMakeSlot(Slot):
-    env = ['USE_CMAKE=1',
-           'PATH=/opt/CMake/bin:${PATH}']
+    build_tool = 'cmake'
+    env = ['PATH=/opt/CMake/bin:${PATH}']
 
 
 class Gaudi(Project):
