@@ -198,13 +198,45 @@ class cmake(object):
     '''
     Class to wrap the build/test semantics for CMT-based projects.
     '''
+    def _cache_preload_file(self, proj):
+        '''
+        Name of the cache preload file to be passed to CMake.
+        '''
+        return os.path.join(proj.roodir, proj.baseDir, 'cache_preload.cmake')
+
+    def _prepare_cache(self, proj, cache_entries=None):
+        '''
+        Prepare the cache_preload.cmake file passed to CMake during the
+        configuration.
+        '''
+        # prepare the cache to give to CMake: add the launcher rules commands,
+        # followed by what is found passed as argument
+        if cache_entries is None:
+            cache_entries = []
+        elif hasattr(cache_entries, 'items'):
+            cache_entries = cache_entries.items()
+
+        # add the RULE_LAUNCH settings for the build
+        launcher_cmd = 'lbn-wrapcmd <CMAKE_CURRENT_BINARY_DIR> <TARGET_NAME>'
+        cache_entries = ([('GAUDI_RULE_LAUNCH_%s' % n, launcher_cmd)
+                          for n in ('COMPILE', 'LINK', 'CUSTOM')] +
+                         cache_entries)
+
+        with open(self._cache_preload_file(proj), 'w') as cache:
+            cache.writelines(['set(%s "%s" CACHE STRING "override")\n' % item
+                              for item in cache_entries])
+
     def _make(self, target, proj, **kwargs):
         '''
         Override basic make call to set the environment variable USE_CMT=1.
         '''
+        self._prepare_cache(proj,
+                            cache_entries=kwargs.pop('cache_entries', None))
+
         env = kwargs.pop('env', {})
         env.update({'USE_CMAKE': '1',
-                    'USE_MAKE': '1'})
+                    'USE_MAKE': '1',
+                    'CMAKEFLAGS': '-C' + self._cache_preload_file(proj)})
         return make._make(self, target, proj, env=env, **kwargs)
 
     def build(self, proj, **kwargs):
@@ -235,7 +267,13 @@ class cmake(object):
         # ensure that tests are not run in parallel
         kwargs.pop('max_load')
         kwargs.pop('jobs')
-        return self._make('test', proj, **kwargs)
+        output = [self._make(target, proj, **kwargs)
+                  for target in ('configure', 'test')]
+        output = (output[-1][0], # use the test return code
+                  ''.join(step[1] for step in output),
+                  ''.join(step[2] for step in output))
+
+        return BuildResults(proj, *output)
 
 
 class echo(object):
