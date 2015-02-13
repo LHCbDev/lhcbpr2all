@@ -280,7 +280,16 @@ class Project(object):
         else:
             __log__.warning('cannot discover dependencies for %s', self)
 
-        return sorted(set(deps + self._deps))
+        deps = sorted(set(deps + self._deps))
+        if self.slot:
+            # helper dict to map case insensitive name to correct project names
+            names = dict((p.name.lower(), p.name) for p in self.slot.projects)
+            def fixNames(iterable):
+                'helper to fix the cases of names in dependencies'
+                return [names.get(name.lower(), name) for name in iterable]
+            deps = fixNames(deps)
+
+        return deps
 
     def __str__(self):
         '''String representation of the project.'''
@@ -620,13 +629,7 @@ class Slot(object):
         Dictionary of dependencies of projects (also to projects not in the
         slot).
         '''
-        # helper dict to map case insensitive name to correct project names
-        names = dict((p.name.lower(), p.name) for p in self.projects)
-        def fixNames(iterable):
-            'helper to fix the cases of names in dependencies'
-            return [names.get(name.lower(), name) for name in iterable]
-        # FIXME: we need this to be case insensitive for CMT
-        return OrderedDict([(p.name, fixNames(p.dependencies()))
+        return OrderedDict([(p.name, p.dependencies())
                             for p in self.projects])
 
     def environment(self, envdict=None):
