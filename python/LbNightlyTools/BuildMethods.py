@@ -13,83 +13,11 @@ Module grouping the common build functions.
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
-import sys
 import os
-import select
-import errno
 import logging
-from subprocess import Popen, PIPE
+from LbNightlyTools.Utils import tee_call
 
 __log__ = logging.getLogger(__name__)
-
-def call(*args, **kwargs):
-    '''
-    Wrapper for Popen to run a command and collect the output.
-
-    The arguments are those of Popen, with the addition of
-    @param verbose: if True, the output and error are printed while the process
-                    is running.
-
-    @return: tuple with return code, stdout and stderr
-
-    Example:
-    >>> call(['echo hello'], shell=True, verbose=True)
-    hello
-    (0, 'hello\\n', '')
-    '''
-    verbose = kwargs.pop('verbose', False)
-    if 'stdout' not in kwargs:
-        kwargs['stdout'] = PIPE
-    if 'stderr' not in kwargs:
-        kwargs['stderr'] = PIPE
-
-    proc = Popen(*args, **kwargs)
-
-    if not verbose:
-        out, err = proc.communicate()
-        retcode = proc.returncode
-    else:
-        # code inspired (mostly copied) from subprocess module
-        poller = select.poll()
-        files = {proc.stdout.fileno(): (proc.stdout, sys.stdout),
-                 proc.stderr.fileno(): (proc.stderr, sys.stderr)}
-        out = []
-        err = []
-        output = {proc.stdout.fileno(): out,
-                  proc.stderr.fileno(): err}
-
-        select_POLLIN_POLLPRI = select.POLLIN | select.POLLPRI
-
-        poller.register(proc.stdout, select_POLLIN_POLLPRI)
-        poller.register(proc.stderr, select_POLLIN_POLLPRI)
-
-        def close_unregister_and_remove(fd):
-            poller.unregister(fd)
-            files[fd][0].close()
-            files.pop(fd)
-
-        while files:
-            try:
-                ready = poller.poll()
-            except select.error, e:
-                if e.args[0] == errno.EINTR:
-                    continue
-                raise
-            for fd, mode in ready:
-                if mode & select_POLLIN_POLLPRI:
-                    data = os.read(fd, 4096)
-                    if not data:
-                        close_unregister_and_remove(fd)
-                    output[fd].append(data)
-                    files[fd][1].write(data)
-                else:
-                    # Ignore hang up or errors.
-                    close_unregister_and_remove(fd)
-        out = ''.join(out)
-        err = ''.join(err)
-        retcode = proc.wait()
-
-    return retcode, out, err
 
 
 class BuildResults(object):
@@ -141,7 +69,7 @@ class make(object):
         build_root = os.path.join(proj.rootdir, proj.baseDir)
 
         __log__.debug('running %s', ' '.join(cmd))
-        output = call(cmd, env=env, cwd=build_root, verbose=verbose)
+        output = tee_call(cmd, env=env, cwd=build_root, verbose=verbose)
         __log__.debug('command exited with code %d', output[0])
 
         return BuildResults(proj, *output)

@@ -155,7 +155,7 @@ class Project(object):
         __log__.info('checking out %s', self)
         opts = dict(self.checkout_opts)
         opts.update(kwargs)
-        self._checkout(self, **opts)
+        return self._checkout(self, **opts)
 
     def build(self, **kwargs):
         '''
@@ -609,8 +609,10 @@ class Slot(object):
         Checkout all the projects in the slot.
         '''
         os.chdir(self.rootdir)
+        results = OrderedDict()
         for project in self.projects:
-            project.checkout(export=export)
+            results[project.name] = project.checkout(export=export)
+        return results
 
     def dependencies(self, projects=None):
         '''

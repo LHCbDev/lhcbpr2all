@@ -18,11 +18,27 @@ import shutil
 import os
 
 from subprocess import Popen, PIPE
-from LbNightlyTools.Utils import retry_call as call, ensureDirs
+from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 
-def getpack(desc, recursive_head=None, export=False, protocol=None):
+def _merge_outputs(outputs):
+    '''
+    Helper function to merge the tuples returned by tee_call.
+
+    >>> _merge_outputs([(1, 'a\\n', ''), (0, 'b\\n', '')]
+    (1, 'a\\nb\\n', '')
+    '''
+    returncode = 0
+    for out in outputs:
+        if out[0]:
+            returncode = out[0]
+    return (returncode,
+            ''.join(step[1] for step in outputs),
+            ''.join(step[2] for step in outputs))
+
+def getpack(desc, recursive_head=None, export=False,
+            protocol=None, verbose=False):
     '''
     Checkout the project described by the Project instance 'desc'.
     '''
@@ -55,40 +71,52 @@ def getpack(desc, recursive_head=None, export=False, protocol=None):
         os.makedirs(rootdir)
 
     __log__.debug('checking out %s', desc)
-    call(cmd, cwd=rootdir, retry=3)
+    outputs = [retry_tee_call(cmd, cwd=rootdir, retry=3, verbose=verbose)]
 
     if hasattr(desc, 'overrides') and desc.overrides:
         __log__.debug('overriding packages')
         for package, version in desc.overrides.items():
             if version:
                 cmd = getpack_cmd + [package, version]
-                call(cmd, cwd=prjroot, retry=3)
+                outputs.append(retry_tee_call(cmd, cwd=prjroot, retry=3,
+                                              verbose=verbose))
             else:
-                print 'Removing', package
+                if verbose:
+                    print 'Removing', package
+                outputs.append((0, 'Removing %s\n' % package, ''))
                 shutil.rmtree(join(prjroot, package), ignore_errors=True)
 
     __log__.debug('checkout of %s completed in %s', desc, prjroot)
+    return _merge_outputs(outputs)
 
-def ignore(desc, export=False):
+def ignore(desc, export=False, verbose=False):
     '''
     Special checkout function used to just declare a project version in the
     configuration but do not perform the checkout, so that it's picked up from
     the release area.
     '''
     __log__.info('checkout not requested for %s', desc)
+    return (0, 'checkout not requested for %s' % desc, '')
 
-def git(desc, url, commit='master', export=False):
+def git(desc, url, commit='master', export=False, verbose=False):
     '''
     Checkout from a git repository.
     '''
     __log__.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = os.path.join(desc.rootdir, desc.baseDir)
     __log__.debug('cloning git repository %s', url)
+
+    outputs = []
+    def call(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+
     call(['git', 'clone', '--no-checkout', url, dest])
     if not export:
         __log__.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
     else:
+        # FIXME: the outputs of git archive is not collected
         __log__.debug('extracting the list of branches')
         proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
         branches = set(branch[2:].rstrip()
@@ -108,14 +136,16 @@ def git(desc, url, commit='master', export=False):
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
+    return _merge_outputs(outputs)
 
-def svn(desc, url, export=False):
+def svn(desc, url, export=False, verbose=False):
     '''
     Checkout from an svn repository.
     '''
     __log__.debug('checking out %s from %s', desc, url)
     dest = os.path.join(desc.rootdir, desc.baseDir)
-    call(['svn', 'checkout' if not export else 'export', url, dest])
+    output = tee_call(['svn', 'checkout' if not export else 'export',
+                       url, dest], verbose=verbose)
     makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(makefile):
         f = open(makefile, 'w')
@@ -124,8 +154,9 @@ def svn(desc, url, export=False):
     else:
         __log__.debug('using original Makefile')
     __log__.debug('checkout of %s completed in %s', desc, dest)
+    return output
 
-def copy(desc, src, export=False):
+def copy(desc, src, export=False, verbose=False):
     '''
     Copy the content of a directory.
     '''
@@ -139,14 +170,16 @@ def copy(desc, src, export=False):
         f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
         f.close()
     __log__.debug('copy of %s completed in %s', desc, dest)
+    return (0, 'copied %s from %s' % (desc, src), '')
 
-def untar(desc, src, export=False):
+def untar(desc, src, export=False, verbose=False):
     '''
     Unpack a tarball in the rootdir of desc (assuming that the tarball already
     contains the <PROJECT>/<PROJECT>_<version> directories).
     '''
     __log__.debug('unpacking %s', src)
-    call(['tar', '-x', '-C', desc.rootdir, '-f', src])
+    output = tee_call(['tar', '-x', '-C', desc.rootdir, '-f', src],
+                      verbose=verbose)
     dest = os.path.join(desc.rootdir, desc.baseDir)
     if not os.path.isdir(dest):
         raise RuntimeError('the tarfile %s does not contain %s',
@@ -157,9 +190,11 @@ def untar(desc, src, export=False):
         f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
         f.close()
     __log__.debug('unpacking of %s from %s completed', desc, src)
+    return output
 
 def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
-          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc'):
+          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc',
+          verbose=False):
     '''
     Special hybrid checkout needed to release DIRAC.
     '''
@@ -184,6 +219,11 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
         __log__.debug('creating %s', rootdir)
         os.makedirs(rootdir)
 
+    outputs = []
+    def call(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+
     __log__.debug('checking out project %s', desc)
     call(getpack_cmd + ['--project', desc.name, desc.version],
          cwd=rootdir, retry=3)
@@ -198,6 +238,7 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
         __log__.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
     else:
+        # FIXME: the outputs of git archive is not collected
         __log__.debug('export commit %s for %s', commit, desc)
         p1 = Popen(['git', 'archive', commit],
                    cwd=dest, stdout=PIPE)
@@ -261,8 +302,10 @@ all:
 tests:
 '''.format(project=desc.name, version=desc.version))
 
+    return _merge_outputs(outputs)
 
-def lhcbdirac(desc, export=False):
+
+def lhcbdirac(desc, export=False, verbose=False):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
@@ -287,6 +330,11 @@ def lhcbdirac(desc, export=False):
     if not os.path.exists(rootdir):
         __log__.debug('creating %s', rootdir)
         os.makedirs(rootdir)
+
+    outputs = []
+    def call(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
 
     __log__.debug('checking out project %s', desc)
     call(getpack_cmd + ['--project', desc.name, desc.version],
@@ -329,8 +377,10 @@ def lhcbdirac(desc, export=False):
     with open(join(prjroot, 'Makefile'), 'a') as f:
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 
+    return _merge_outputs(outputs)
 
-def lhcbgrid(desc, url=None, export=False):
+
+def lhcbgrid(desc, url=None, export=False, verbose=False):
     '''
     Special hybrid checkout needed to release LHCbGrid.
     '''
@@ -343,10 +393,17 @@ def lhcbgrid(desc, url=None, export=False):
 
     svn(desc, url=url, export=export)
 
+    outputs = []
+    def call(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+
     dest = os.path.join(desc.rootdir, desc.baseDir)
     __log__.debug('fixing requirements files')
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)
+
+    return _merge_outputs(outputs)
 
 # set default checkout method
 default = getpack # pylint: disable=C0103
