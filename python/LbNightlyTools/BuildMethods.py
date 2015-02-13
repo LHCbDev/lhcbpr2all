@@ -57,6 +57,10 @@ class make(object):
 
         env = proj.environment()
         env.update(kwargs.get('env', {}))
+        # "unset" variables set to None
+        env = dict((key, value)
+                   for key, value in env.iteritems()
+                   if value is not None)
 
         cmd = ['make']
         if jobs:
@@ -102,7 +106,10 @@ class cmt(make):
         Override basic make call to set the environment variable USE_CMT=1.
         '''
         env = kwargs.pop('env', {})
-        env.update({'USE_CMT': '1'})
+        # PWD and CWD may cause troubles to CMT, so we unset them
+        env.update({'USE_CMT': '1',
+                    'PWD': None,
+                    'CWD': None})
         return make._make(self, target, proj, env=env, **kwargs)
 
     def clean(self, proj, **kwargs):
