@@ -101,16 +101,18 @@ def test_deps():
     slot = Slot('test', projects=[Project('A', 'v1r0',
                                           dependencies=['Zero']),
                                   Project('b', 'v2r0',
-                                          dependencies=['c', 'A'])])
+                                          dependencies=['c', 'a'])])
     #slot.checkout()
-    deps = slot.dependencies()
-
-    expected = {'a': [], 'b': ['a']}
-    assert deps == expected, deps
+    assert slot.A.dependencies() == ['Zero']
+    assert set(slot.b.dependencies()) == set(['c', 'a'])
 
     full_deps = slot.fullDependencies()
-    expected = {'b': ['a', 'c'], 'a': ['zero']}
+    expected = {'b': ['A', 'c'], 'A': ['Zero']}
     assert full_deps == expected, full_deps
+
+    deps = slot.dependencies()
+    expected = {'A': [], 'b': ['A']}
+    assert deps == expected, deps
 
 def test_env():
     slot = Slot('test', projects=[Project('a', 'v1r0', env=['proj=a'])],

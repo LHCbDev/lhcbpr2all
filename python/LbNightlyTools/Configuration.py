@@ -135,7 +135,7 @@ class Project(object):
 
         self.disabled = kwargs.get('disabled', False)
         self.overrides = kwargs.get('overrides', {})
-        self._deps = map(str.lower, kwargs.get('dependencies', []))
+        self._deps = kwargs.get('dependencies', [])
         self._rootdir = kwargs.get('rootdir', os.curdir)
         self.env = kwargs.get('env', [])
 
@@ -227,9 +227,7 @@ class Project(object):
                     data_idx = args.index('DATA')
                 else:
                     data_idx = len(args)
-                # extract the odds elements (project names) and convert them
-                # to lower case
-                deps = [p.lower() for p in args[use_idx:data_idx:2]]
+                deps = [p for p in args[use_idx:data_idx:2]]
 
             # artificial dependency on LCGCMT, if needed
             toolchain = os.path.join(proj_root, 'toolchain.cmake')
@@ -237,7 +235,7 @@ class Project(object):
                 HT_EXP.search(open(toolchain).read())):
                 # we set explicit the version of heptools,
                 # so we depend on LCGCMT
-                deps.append('lcgcmt')
+                deps.append('LCGCMT')
             return deps
 
         def fromCMT():
@@ -248,7 +246,7 @@ class Project(object):
             # from all the lines in project.cmt that start with 'use',
             # we extract the second word (project name) and convert it to
             # lower case
-            return [l.split()[1].lower()
+            return [l.split()[1]
                     for l in [l.strip() for l in open(cmt)]
                     if l.startswith('use')]
 
@@ -267,7 +265,7 @@ class Project(object):
             import ConfigParser
             config = ConfigParser.ConfigParser()
             config.read(os.path.join(proj_root, 'project.info'))
-            return [proj.strip().lower()
+            return [proj.strip()
                     for proj in config.get('Project', 'dependencies')
                                       .split(',')]
 
@@ -580,9 +578,7 @@ class Slot(object):
         Get the project with given name in the slot.
         '''
         for proj in self._projects:
-            # FIXME: the lookup has to be case insensitive to match the
-            #        case insesitivity of dependencies()
-            if proj.name.lower() == name.lower():
+            if proj.name == name:
                 return proj
         raise AttributeError('%r object has no attribute %r' %
                              (self.__class__.__name__, name))
@@ -613,8 +609,7 @@ class Slot(object):
         '''
         deps = self.fullDependencies()
         if projects:
-            for unwanted in (set(deps) -
-                             set(project.lower() for project in projects)):
+            for unwanted in (set(deps) - set(projects)):
                 deps.pop(unwanted)
         for key in deps:
             deps[key] = [val for val in deps[key] if val in deps]
@@ -625,8 +620,13 @@ class Slot(object):
         Dictionary of dependencies of projects (also to projects not in the
         slot).
         '''
+        # helper dict to map case insensitive name to correct project names
+        names = dict((p.name.lower(), p.name) for p in self.projects)
+        def fixNames(iterable):
+            'helper to fix the cases of names in dependencies'
+            return [names.get(name.lower(), name) for name in iterable]
         # FIXME: we need this to be case insensitive for CMT
-        return OrderedDict([(p.name.lower(), p.dependencies())
+        return OrderedDict([(p.name, fixNames(p.dependencies()))
                             for p in self.projects])
 
     def environment(self, envdict=None):
