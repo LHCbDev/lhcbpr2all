@@ -300,9 +300,9 @@ class StackDesc(object):
         for p in self.projects:
             # note that we ignore projects not in the stack
             p.rootdir = self.rootdir
-            deps[p.name] = [names[n]
+            deps[p.name] = [names[n.lower()]
                             for n in p.dependencies()
-                            if n in names]
+                            if n.lower() in names]
         return deps
 
     def package(self, name):
