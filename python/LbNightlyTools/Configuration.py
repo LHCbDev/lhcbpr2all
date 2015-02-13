@@ -98,14 +98,32 @@ class _ProjectMeta(type):
         '''
         dct['__build_tool__'] = dct.get('build_tool')
         dct['build_tool'] = _BuildToolProperty()
+        if 'name' in dct:
+            dct['__project_name__'] = dct.pop('name')
+        if 'checkout' in dct and isinstance(dct['checkout'], basestring):
+            dct['__checkout__'] = dct.pop('checkout')
         return type.__new__(cls, name, bases, dct)
 
+    def __call__(self, *args, **kwargs):
+        '''
+        Use the class name as project name in classes derived from Project.
+        '''
+        name = None
+        if hasattr(self, '__project_name__'):
+            name = self.__project_name__
+        elif self.__name__ != 'Project':
+            name = self.__name__
+        if name:
+            # we prepend the class name to the arguments.
+            args = (name,) + args
+        return type.__call__(self, *args, **kwargs)
 
 class Project(object):
     '''
     Describe a project to be checked out, built and tested.
     '''
     __metaclass__ = _ProjectMeta
+    __checkout__ = 'default'
     def __init__(self, name, version, **kwargs):
         '''
         @param name: name of the project
@@ -140,7 +158,8 @@ class Project(object):
         self.env = kwargs.get('env', [])
 
         from CheckoutMethods import getMethod as getCheckoutMethod
-        self._checkout = getCheckoutMethod(kwargs.get('checkout'))
+        self._checkout = getCheckoutMethod(kwargs.get('checkout',
+                                                      self.__checkout__))
 
         self.checkout_opts = kwargs.get('checkout_opts', {})
 

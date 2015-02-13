@@ -193,7 +193,7 @@ def test_build_tool_prop():
     class MyProj(Project):
         build_tool = 'echo'
 
-    mp = MyProj('mp', 'v')
+    mp = MyProj('v')
     assert isinstance(mp.build_tool, BM.echo)
 
     mp.build_tool = BM.cmt
@@ -232,3 +232,46 @@ def test_build_tool_prop():
         pass
     except:
         assert False, 'AttributeError exception expected'
+
+def test_custom_projects():
+    from LbNightlyTools.CheckoutMethods import ignore
+
+    class LHCb(Project):
+        checkout = 'ignore'
+
+    p = LHCb('HEAD')
+    assert p.name == 'LHCb'
+    assert p.version == 'HEAD'
+    assert p._checkout == ignore, (p._checkout, ignore)
+
+    class Gaudi(Project):
+        __url__ = 'http://git.cern.ch/pub/gaudi'
+        def commitId(self):
+            import re
+            if self.version.lower() == 'head':
+                return 'master'
+            elif re.match(r'v[0-9]+', self.version):
+                return '{0}/{0}_{1}'.format(self.name.upper(), self.version)
+            return self.version.replace('/', '_')
+        def checkout(self, **kwargs):
+            args = {'url': self.__url__,
+                    'commit': self.commitId()}
+            args.update(kwargs)
+            return (0, str(args), '')
+
+    g = Gaudi('v26r1')
+    assert g.name == 'Gaudi'
+    assert g.version == 'v26r1'
+    assert g.commitId() == 'GAUDI/GAUDI_v26r1'
+    expected = (0, str({'url': 'http://git.cern.ch/pub/gaudi',
+                        'commit': 'GAUDI/GAUDI_v26r1',
+                        'verbose': True}), '')
+    output = g.checkout(verbose=True)
+    assert output == expected, (output, expected)
+
+    class SpecialGaudi(Project):
+        name = 'Special'
+
+    assert SpecialGaudi.__project_name__ == 'Special'
+    s = SpecialGaudi('HEAD')
+    assert s.name == 'Special', s.name
