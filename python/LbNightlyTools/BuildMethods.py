@@ -189,8 +189,8 @@ class cmt(make):
         Run the tests in a Gaudi/LHCb project using CMT.
         '''
         # ensure that tests are not run in parallel
-        kwargs.pop('max_load')
-        kwargs.pop('jobs')
+        kwargs.pop('max_load', None)
+        kwargs.pop('jobs', None)
         return self._make('test', proj, **kwargs)
 
 

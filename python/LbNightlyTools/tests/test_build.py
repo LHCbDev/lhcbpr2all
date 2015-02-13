@@ -55,17 +55,66 @@ def test_make_build():
 
         res = slot.build()
         assert 'dummy' in res
+        assert res['dummy'].returncode == 0
         assert '=== building all ===' in res['dummy'].stdout
         assert exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
 
         res = slot.test()
         assert 'dummy' in res
+        assert res['dummy'].returncode == 0
         assert '=== running tests ===' in res['dummy'].stdout
         assert exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
 
         res = slot.clean()
         assert 'dummy' in res
+        assert res['dummy'].returncode == 0
         assert '=== cleaning ===' in res['dummy'].stdout
         assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
         assert not exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
         assert not exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
+
+def test_cmt_build():
+    dummy_src = join(_testdata, 'artifacts', 'TestProject.HEAD.testing-slot.src.tar.bz2')
+    with TemporaryDir(chdir=True):
+        slot = Slot('slot', build_tool='cmt',
+                    projects=[Project('TestProject', 'HEAD',
+                                      checkout='untar',
+                                      checkout_opts=dict(src=dummy_src))])
+        slot.checkout()
+
+        proj_root = join('TESTPROJECT', 'TESTPROJECT_HEAD')
+        assert exists(join(proj_root, 'Makefile'))
+        with open(join(proj_root, 'Makefile'), 'a') as mkf:
+            # the Makefile in TestProject does not include tests and purge
+            mkf.write('test:\n'
+                      '\t@echo === running tests ===\n'
+                      'clean:\n'
+                      '\tcd TestProjectSys/cmt; $(MAKE) clean\n'
+                      '\t$(RM) -r InstallArea\n'
+                      'purge: clean\n'
+                      '\t$(RM) TestProjectSys/cmt/Makefile\n')
+        config = os.environ['CMTCONFIG']
+
+        res = slot.build()
+        assert 'TestProject' in res
+        assert res['TestProject'].returncode == 0
+        assert exists(join(proj_root, 'TestProjectSys', config,
+                           'HelloWorld.exe'))
+        assert exists(join(proj_root, 'TestProjectSys', 'cmt',
+                           'Makefile'))
+        assert exists(join(proj_root, 'InstallArea', config,
+                           'bin', 'HelloWorld.exe'))
+
+        res = slot.test()
+        assert 'TestProject' in res
+        assert res['TestProject'].returncode == 0
+
+        res = slot.clean()
+        assert 'TestProject' in res
+        assert res['TestProject'].returncode == 0
+        assert not exists(join(proj_root, 'TestProjectSys', config,
+                               'HelloWorld.exe'))
+        assert not exists(join(proj_root, 'TestProjectSys', 'cmt',
+                               'Makefile'))
+        assert not exists(join(proj_root, 'InstallArea', config,
+                               'bin', 'HelloWorld.exe'))
