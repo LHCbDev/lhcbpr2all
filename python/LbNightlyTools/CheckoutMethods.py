@@ -61,7 +61,8 @@ def getpack(desc, recursive_head=None, export=False,
     else:
         # we are checking out a data package
         cmd = getpack_cmd + ['-v']
-        rootdir = normpath(join(rootdir, desc.container))
+        container_name = desc.container.name if desc.container else 'DBASE'
+        rootdir = normpath(join(rootdir, container_name))
     if export:
         cmd.append('--export')
     cmd.extend([desc.name, desc.version])

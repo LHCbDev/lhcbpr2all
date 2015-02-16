@@ -19,7 +19,6 @@ from xml.etree import ElementTree as ET
 from os.path import normpath, join, exists, islink, isdir
 from LbNightlyTools.tests.utils import *
 
-
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
 # Uncomment to disable the tests.
@@ -28,6 +27,7 @@ _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 from LbNightlyTools import StackCheckout
 from LbNightlyTools import Utils
 from LbNightlyTools import CheckoutMethods
+from LbNightlyTools import Configuration
 
 os.environ['LANG'] = 'C'
 
@@ -488,7 +488,7 @@ def test_collectDeps():
     assert filter(re.compile(r'cannot discover dependencies for Missing').match, warnings)
     assert not filter(re.compile(r'cannot discover dependencies for Gaudi').match, warnings)
 
-def test_checkout_datapkg():
+def test_checkout_datapkgs():
     '''checkout a single data package (getpack)'''
     if not which('getpack'):
         raise nose.SkipTest
@@ -529,6 +529,7 @@ def test_stack_checkout_datapkg():
         os.makedirs('build')
         pkgs = [Package(name='AppConfig', version='v3r198'),
                 Package(name='Det/SQLDDDB', version='HEAD')]
+        Configuration.DBASE(pkgs)
         slot = StackCheckout.StackDesc(packages=pkgs)
         slot.rootdir = 'build'
         slot.checkout()

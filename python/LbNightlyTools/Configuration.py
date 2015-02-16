@@ -16,7 +16,9 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import os
 import re
 import logging
-from LbNightlyTools.Utils import applyenv
+from LbNightlyTools.Utils import (applyenv, tee_call, ensureDirs,
+                                  shallow_copytree, IgnorePackageVersions,
+                                  find_path)
 from collections import OrderedDict
 
 __log__ = logging.getLogger(__name__)
@@ -342,7 +344,6 @@ class Package(object):
         '''
         @param name: name of the package
         @param version: version of the package as 'vXrY' or 'HEAD'
-        @param container: name of the container project ('DBASE' or 'PARAM')
         @param checkout: callable that can check out the specified package
         @param checkout_opts: dictionary with extra options for the checkout
                               callable
@@ -351,7 +352,7 @@ class Package(object):
         if version.lower() == 'head':
             version = 'head'
         self.version = version
-        self.container = kwargs.get('container', 'DBASE')
+        self.container = None
         from CheckoutMethods import getMethod
         self._checkout = getMethod(kwargs.get('checkout'))
         self.checkout_opts = kwargs.get('checkout_opts', {})
@@ -369,27 +370,30 @@ class Package(object):
     @property
     def baseDir(self):
         '''Name of the package directory (relative to the build directory).'''
-        return os.path.join(self.container, self.name, self.version)
+        if self.container:
+            return os.path.join(self.container.baseDir, self.name, self.version)
+        else:
+            return os.path.join(self.name, self.version)
 
-    def build(self):
+    def build(self, **kwargs):
         '''
         Build the package and return the return code of the build process.
         '''
-        from subprocess import Popen
         base = os.path.join(self.rootdir, self.baseDir)
         if os.path.exists(os.path.join(base, 'Makefile')):
             __log__.info('building %s (make)', self)
-            return Popen(['make'], cwd=base).wait()
+            return tee_call(['make'], cwd=base, **kwargs)
         elif os.path.exists(os.path.join(base, 'cmt', 'requirements')):
             __log__.info('building %s (cmt make)', self)
             # CMT is very sensitive to these variables (better to unset them)
             env = dict((key, value) for key, value in os.environ.items()
                         if key not in ('PWD', 'CWD', 'CMTSTRUCTURINGSTYLE'))
             base = os.path.join(base, 'cmt')
-            Popen(['cmt', 'config'], cwd=base, env=env).wait()
-            return Popen(['cmt', 'make'], cwd=base, env=env).wait()
+
+            tee_call(['cmt', 'config'], cwd=base, env=env, **kwargs)
+            return tee_call(['cmt', 'make'], cwd=base, env=env, **kwargs)
         __log__.info('%s does not require build', self)
-        return 0
+        return (0, '%s does not require build' % self, '')
 
     def getVersionLinks(self):
         '''
@@ -524,6 +528,86 @@ class ProjectsList(_ContainedList):
     '''
     __type__ = Project
     __container_member__ = 'slot'
+
+
+class PackagesList(_ContainedList):
+    '''
+    Helper class to handle a list of projects bound to a slot.
+    '''
+    __type__ = Package
+    __container_member__ = 'container'
+
+
+class DataProject(Project):
+    '''
+    Special Project class for projects containing only data packages.
+    '''
+    build_method = 'no_build'
+    def __init__(self, name, packages, **kwargs):
+        '''
+        Initialize the instance with name and list of packages.
+        '''
+        # we use 'HEAD' as version just to comply with Project.__init__, but the
+        # version is ignored
+        Project.__init__(self, name, 'HEAD', **kwargs)
+        self._packages = PackagesList(self, packages)
+
+    @property
+    def baseDir(self):
+        '''Name of the package directory (relative to the build directory).'''
+        return self.name.upper()
+
+    @property
+    def packages(self):
+        'List of contained packages'
+        return self._packages
+
+    def __getattr__(self, name):
+        '''
+        Get the project with given name in the slot.
+        '''
+        try:
+            return self._packages[name]
+        except KeyError:
+            raise AttributeError('%r object has no attribute %r' %
+                                 (self.__class__.__name__, name))
+
+    def checkout(self):
+        '''
+        Special checkout method to create a valid local copy of a DataProject
+        using an existing one as a baseline (cloning it with symlinks).
+        '''
+        __log__.debug('create packages directories')
+        for d in [os.path.dirname(os.path.join(self.rootdir, package.baseDir))
+                    for package in self.packages]:
+            print d
+        ensureDirs([os.path.dirname(os.path.join(self.rootdir, package.baseDir))
+                    for package in self.packages])
+
+        __log__.debug('create shallow clone of %s', self.name)
+        ignore = IgnorePackageVersions(self.packages)
+        path = find_path(self.baseDir)
+        if path:
+            shallow_copytree(path, os.path.join(self.rootdir, self.baseDir),
+                             ignore)
+        else:
+            cmt_dir = os.path.join(self.rootdir, self.baseDir, 'cmt')
+            ensureDirs([cmt_dir])
+            with open(os.path.join(cmt_dir, 'project.cmt'), 'w') as proj_cmt:
+                proj_cmt.write('project {0}\n'.format(self.name))
+
+        for package in self.packages:
+            print 'checkout and build', package
+
+        __log__.debug('create symlinks')
+
+
+class DBASE(DataProject):
+    pass
+
+
+class PARAM(DataProject):
+    pass
 
 
 class _SlotMeta(type):

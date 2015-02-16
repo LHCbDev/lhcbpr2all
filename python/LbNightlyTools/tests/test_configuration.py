@@ -11,7 +11,7 @@
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools.Configuration import slots, Project, Slot, ProjectsList
+from LbNightlyTools.Configuration import slots, Project, Package, Slot, ProjectsList, DBASE
 import LbNightlyTools.BuildMethods as BM
 
 import os
@@ -282,3 +282,25 @@ def test_custom_projects():
     assert SpecialGaudi.__project_name__ == 'Special'
     s = SpecialGaudi('HEAD')
     assert s.name == 'Special', s.name
+
+def test_dataproject():
+    name, version = 'AppConfig', 'v3r198'
+    d = DBASE(packages=[Package(name, version)])
+    assert d.name == 'DBASE'
+    assert d.baseDir == 'DBASE'
+
+    assert len(d.packages) == 1
+    ac = d.packages[0]
+    assert ac.name == name
+    assert ac.version == version
+    assert ac.baseDir == os.path.join('DBASE', name, version)
+    assert d.AppConfig is ac
+
+    name, version = 'Gen/DecFiles', 'v27r39'
+    d.packages.append(Package(name, version))
+    assert len(d.packages) == 2
+    ac = d.packages[name]
+    assert ac.name == name
+    assert ac.version == version
+    assert ac.baseDir == os.path.join('DBASE', name, version)
+    assert d.Gen_DecFiles is ac

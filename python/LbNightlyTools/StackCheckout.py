@@ -51,7 +51,7 @@ class StackDesc(object):
             for pkg in self.packages:
                 try:
                     pkg.rootdir = rootdir # FIXME: temporary hack
-                    pkg.checkout()
+                    pkg.checkout(verbose=True)
                 except RuntimeError, err:
                     if not ignore_failures:
                         raise
@@ -70,7 +70,7 @@ class StackDesc(object):
 
             for pkg in self.packages:
                 if os.path.exists(os.path.join(rootdir, pkg.baseDir)):
-                    if pkg.build() != 0:
+                    if pkg.build()[0] != 0:
                         __log__.warning('%s build failed', pkg)
                     for link in pkg.getVersionLinks():
                         __log__.debug('creating symlink %s', link)
@@ -332,6 +332,7 @@ def parseConfigFile(path):
     '''
     data = Configuration.load(path)
     packages = []
+    containers = {}
     for pkg in data.get(u'packages', []):
         checkout = pkg.get(u'checkout', 'default')
         if '.' in checkout:
@@ -339,11 +340,16 @@ def parseConfigFile(path):
             checkout = getattr(__import__(m, fromlist=[f]), f)
         else:
             checkout = getattr(CheckoutMethods, checkout)
-        packages.append(Package(pkg[u'name'], pkg[u'version'],
-                                    container=pkg.get(u'container', 'DBASE'),
-                                    checkout=checkout,
-                                    checkout_opts=pkg.get(u'checkout_opts',
-                                                           {})))
+        container = pkg.get(u'container', 'DBASE')
+        if container not in containers:
+            containers[container] = getattr(Configuration, container)([])
+        container = containers[container]
+        pkg = Package(pkg[u'name'], pkg[u'version'],
+                      checkout=checkout,
+                      checkout_opts=pkg.get(u'checkout_opts', {}))
+        packages.append(pkg)
+        container.packages.append(pkg)
+
     projects = []
     old_checkout_names = {'defaultCheckout': 'default',
                           'gitCheckout': 'git',
