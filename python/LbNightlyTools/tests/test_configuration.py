@@ -56,6 +56,13 @@ def test_ProjectsList():
     assert len(pl) == 1
     assert a.slot is None
 
+    pl.append(Project('a/b', 'v3r0'))
+    assert len(pl) == 2
+    a_b = pl['a/b']
+    assert a_b == pl[1]
+    assert a_b.name == 'a/b'
+    assert a_b == pl['a_b']
+
 
 def test_slot_projects():
     slot = Slot('test', projects=[Project('a', 'v1r0'), Project('b', 'v2r0')])

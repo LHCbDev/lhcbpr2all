@@ -462,9 +462,11 @@ class _ContainedList(object):
         '''
         if isinstance(key, basestring):
             for element in self._elements:
-                if getattr(element, self.__id_member__) == key:
+                id_key = getattr(element, self.__id_member__)
+                if key in (id_key, id_key.replace('/', '_')):
                     return element
-            raise KeyError('package %r not found' % key)
+            raise KeyError('%s %r not found' %
+                           (self.__type__.__name__.lower(), key))
         return self._elements[key]
 
     def __setitem__(self, idx, element):
@@ -605,11 +607,11 @@ class Slot(object):
         '''
         Get the project with given name in the slot.
         '''
-        for proj in self._projects:
-            if proj.name == name:
-                return proj
-        raise AttributeError('%r object has no attribute %r' %
-                             (self.__class__.__name__, name))
+        try:
+            return self._projects[name]
+        except KeyError:
+            raise AttributeError('%r object has no attribute %r' %
+                                 (self.__class__.__name__, name))
 
     def __delattr__(self, name):
         '''
