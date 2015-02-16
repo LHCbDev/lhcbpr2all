@@ -70,10 +70,8 @@ class make(object):
         cmd.extend(kwargs.get('args', []))
         cmd.append(target)
 
-        build_root = os.path.join(proj.rootdir, proj.baseDir)
-
         __log__.debug('running %s', ' '.join(cmd))
-        output = tee_call(cmd, env=env, cwd=build_root, verbose=verbose)
+        output = tee_call(cmd, env=env, cwd=proj.baseDir, verbose=verbose)
         __log__.debug('command exited with code %d', output[0])
 
         return BuildResults(proj, *output)

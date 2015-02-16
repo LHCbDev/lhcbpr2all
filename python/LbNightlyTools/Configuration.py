@@ -142,8 +142,6 @@ class Project(object):
                               callable
         @param disabled: if set to True, the project is taken into account only
                          for the configuration
-        @param rootdir: location of the project (where it should be checked out,
-                        etc.)
         @param env: override the environment for the project
         @param build_tool: build method used for the project
         '''
@@ -156,7 +154,6 @@ class Project(object):
         self.disabled = kwargs.get('disabled', False)
         self.overrides = kwargs.get('overrides', {})
         self._deps = kwargs.get('dependencies', [])
-        self._rootdir = kwargs.get('rootdir', os.curdir)
         self.env = kwargs.get('env', [])
 
         from CheckoutMethods import getMethod as getCheckoutMethod
@@ -208,30 +205,13 @@ class Project(object):
         upcase = self.name.upper()
         return os.path.join(upcase, '{0}_{1}'.format(upcase, self.version))
 
-    @property
-    def rootdir(self):
-        '''
-        Directory where the project is.
-        '''
-        return self.slot.rootdir if self.slot else self._rootdir
-
-    @rootdir.setter
-    def rootdir(self, value):
-        '''
-        Set the directory where the project is.
-        '''
-        if not self.slot:
-            self._rootdir = value
-        else:
-            raise AttributeError("can't set attribute")
-
     def dependencies(self):
         '''
         Return the dependencies of a checked out project using the information
         retrieved from the configuration files.
         @return: list of used projects (all converted to lowercase)
         '''
-        proj_root = os.path.join(self.rootdir, self.baseDir)
+        proj_root = self.baseDir
 
         def fromCMake():
             '''
@@ -356,7 +336,6 @@ class Package(object):
         from CheckoutMethods import getMethod
         self._checkout = getMethod(kwargs.get('checkout'))
         self.checkout_opts = kwargs.get('checkout_opts', {})
-        self.rootdir = os.curdir
 
     def checkout(self, **kwargs):
         '''
@@ -379,7 +358,7 @@ class Package(object):
         '''
         Build the package and return the return code of the build process.
         '''
-        base = os.path.join(self.rootdir, self.baseDir)
+        base = self.baseDir
         if os.path.exists(os.path.join(base, 'Makefile')):
             __log__.info('building %s (make)', self)
             return tee_call(['make'], cwd=base, **kwargs)
@@ -402,7 +381,7 @@ class Package(object):
         '''
         if self.version != 'head':
             return []
-        base = os.path.join(self.rootdir, self.baseDir)
+        base = self.baseDir
         aliases = ['v999r999']
         print os.path.exists(os.path.join(base, 'cmt', 'requirements'))
         if os.path.exists(os.path.join(base, 'cmt', 'requirements')):
@@ -572,26 +551,22 @@ class DataProject(Project):
             raise AttributeError('%r object has no attribute %r' %
                                  (self.__class__.__name__, name))
 
-    def checkout(self):
+    def checkout(self, **kwargs):
         '''
         Special checkout method to create a valid local copy of a DataProject
         using an existing one as a baseline (cloning it with symlinks).
         '''
         __log__.debug('create packages directories')
-        for d in [os.path.dirname(os.path.join(self.rootdir, package.baseDir))
-                    for package in self.packages]:
-            print d
-        ensureDirs([os.path.dirname(os.path.join(self.rootdir, package.baseDir))
+        ensureDirs([os.path.dirname(package.baseDir)
                     for package in self.packages])
 
         __log__.debug('create shallow clone of %s', self.name)
         ignore = IgnorePackageVersions(self.packages)
         path = find_path(self.baseDir)
         if path:
-            shallow_copytree(path, os.path.join(self.rootdir, self.baseDir),
-                             ignore)
+            shallow_copytree(path, self.baseDir, ignore)
         else:
-            cmt_dir = os.path.join(self.rootdir, self.baseDir, 'cmt')
+            cmt_dir = os.path.join(self.baseDir, 'cmt')
             ensureDirs([cmt_dir])
             with open(os.path.join(cmt_dir, 'project.cmt'), 'w') as proj_cmt:
                 proj_cmt.write('project {0}\n'.format(self.name))
@@ -647,7 +622,6 @@ class Slot(object):
     __slots__ = ('_name', '_projects', 'env', '_build_tool')
     __projects__ = []
     __env__ = []
-    rootdir = os.curdir
 
     def __init__(self, name, **kwargs):
         '''
@@ -713,7 +687,6 @@ class Slot(object):
         '''
         Checkout all the projects in the slot.
         '''
-        os.chdir(self.rootdir)
         results = OrderedDict()
         for project in self.projects:
             results[project.name] = project.checkout(export=export)

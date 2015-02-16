@@ -24,7 +24,7 @@ from datetime import date
 from LbNightlyTools import Configuration
 from LbNightlyTools.Configuration import GP_EXP, HT_EXP, Project, Package
 from LbNightlyTools.Utils import ensureDirs, pack, setenv, shallow_copytree
-from LbNightlyTools.Utils import find_path, IgnorePackageVersions
+from LbNightlyTools.Utils import find_path, IgnorePackageVersions, chdir
 from LbNightlyTools import CheckoutMethods
 
 __log__ = logging.getLogger(__name__)
@@ -46,55 +46,51 @@ class StackDesc(object):
         Call check out all the (requested) projects.
         '''
         __log__.info('checking out stack...')
-        rootdir = self.rootdir
-        if self.packages:
-            for pkg in self.packages:
+        with chdir(self.rootdir, create=True):
+            if self.packages:
+                for pkg in self.packages:
+                    try:
+                        pkg.checkout(verbose=True)
+                    except RuntimeError, err:
+                        if not ignore_failures:
+                            raise
+                        __log__.warning(str(err))
+
+                __log__.debug('create shallow clones of DBASE and PARAM')
+                # clone the container projects
+                ignore = IgnorePackageVersions(self.packages)
+                for container in ('DBASE', 'PARAM'):
+                    if not os.path.exists(container):
+                        continue
+                    path = find_path(container)
+                    if path:
+                        shallow_copytree(path, container, ignore)
+
+                for pkg in self.packages:
+                    if os.path.exists(pkg.baseDir):
+                        if pkg.build()[0] != 0:
+                            __log__.warning('%s build failed', pkg)
+                        for link in pkg.getVersionLinks():
+                            __log__.debug('creating symlink %s', link)
+                            os.symlink(pkg.version,
+                                       os.path.normpath(os.path.join(pkg.baseDir,
+                                                                     os.pardir,
+                                                                     link)))
+                    else:
+                        __log__.warning('package %s not found', pkg)
+
+
+            for proj in self.projects:
+                # Consider only requested projects (if there was a selection)
+                if requested and proj.name.lower() not in requested:
+                    continue # project not requested: skip
                 try:
-                    pkg.rootdir = rootdir # FIXME: temporary hack
-                    pkg.checkout(verbose=True)
+                    proj.checkout()
                 except RuntimeError, err:
                     if not ignore_failures:
                         raise
                     __log__.warning(str(err))
-
-            __log__.debug('create shallow clones of DBASE and PARAM')
-            # clone the container projects
-            ignore = IgnorePackageVersions(self.packages)
-            for container in ('DBASE', 'PARAM'):
-                if not os.path.exists(os.path.join(rootdir, container)):
-                    continue
-                path = find_path(container)
-                if path:
-                    shallow_copytree(path, os.path.join(rootdir, container),
-                                     ignore)
-
-            for pkg in self.packages:
-                if os.path.exists(os.path.join(rootdir, pkg.baseDir)):
-                    if pkg.build()[0] != 0:
-                        __log__.warning('%s build failed', pkg)
-                    for link in pkg.getVersionLinks():
-                        __log__.debug('creating symlink %s', link)
-                        os.symlink(pkg.version,
-                                   os.path.normpath(os.path.join(rootdir,
-                                                                 pkg.baseDir,
-                                                                 os.pardir,
-                                                                 link)))
-                else:
-                    __log__.warning('package %s not found', pkg)
-
-
-        for proj in self.projects:
-            # Consider only requested projects (if there was a selection)
-            if requested and proj.name.lower() not in requested:
-                continue # project not requested: skip
-            try:
-                proj.rootdir = rootdir # FIXME: temporary hack
-                proj.checkout()
-            except RuntimeError, err:
-                if not ignore_failures:
-                    raise
-                __log__.warning(str(err))
-        __log__.info('... done.')
+            __log__.info('... done.')
 
     def patch(self, patchfile='stack.patch'):
         '''
@@ -297,12 +293,12 @@ class StackDesc(object):
         # helper dict to map case insensitive name to correct project names
         names = dict((p.name.lower(), p.name) for p in self.projects)
         deps = {}
-        for p in self.projects:
-            # note that we ignore projects not in the stack
-            p.rootdir = self.rootdir
-            deps[p.name] = [names[n.lower()]
-                            for n in p.dependencies()
-                            if n.lower() in names]
+        with chdir(self.rootdir):
+            for p in self.projects:
+                # note that we ignore projects not in the stack
+                deps[p.name] = [names[n.lower()]
+                                for n in p.dependencies()
+                                if n.lower() in names]
         return deps
 
     def package(self, name):
@@ -502,7 +498,7 @@ class Script(LbUtils.Script.PlainScript):
         # add dependencies of data packages on the corresponding container
         containers = set()
         for p in cfg.get('packages', []):
-            container = slot.package(p['name']).container
+            container = slot.package(p['name']).container.name
             containers.add(container)
             p['dependencies'] = sorted(set(p.get('dependencies', []) +
                                            [container]))

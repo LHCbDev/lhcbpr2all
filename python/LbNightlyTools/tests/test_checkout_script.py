@@ -39,10 +39,7 @@ def teardown():
     os.environ.update(_env_bk)
 
 def test_noop_patch():
-    tmpd = mkdtemp()
-    oldcwd = os.getcwd()
-    try:
-        os.chdir(tmpd)
+    with TemporaryDir(chdir=True) as tmpd:
 
         build_dir = join(tmpd, 'checkout')
         ensureDirs([build_dir])
@@ -65,9 +62,6 @@ def test_noop_patch():
                        'TestProjectSys', 'cmt', 'requirements')
         assert isfile(reqfile)
 
-    finally:
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_lbcore_192():
     '''https://its.cern.ch/jira/browse/LBCORE-192
@@ -75,10 +69,7 @@ def test_lbcore_192():
     The *Sys package of a project is not correctly updated when new packages are
     added.
     '''
-    tmpd = mkdtemp()
-    oldcwd = os.getcwd()
-    try:
-        os.chdir(tmpd)
+    with TemporaryDir(chdir=True) as tmpd:
 
         build_dir = join(tmpd, 'checkout')
         ensureDirs([build_dir])
@@ -103,10 +94,6 @@ def test_lbcore_192():
         #print open(reqfile).read()
         assert [l for l in open(reqfile)
                 if re.match(r'^\s*use\s+NewPack\s+\*\s*$', l)], 'NewPack not in requirements'
-
-    finally:
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_empty_conf():
     with TemporaryDir(chdir=True):

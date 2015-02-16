@@ -18,7 +18,7 @@ import shutil
 import os
 
 from subprocess import Popen, PIPE
-from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs
+from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs, chdir
 
 __log__ = logging.getLogger(__name__)
 
@@ -51,8 +51,8 @@ def getpack(desc, recursive_head=None, export=False,
     if recursive_head is None:
         recursive_head = desc.version == 'HEAD'
 
-    rootdir = desc.rootdir
-    prjroot = normpath(join(rootdir, desc.baseDir))
+    rootdir = os.curdir
+    prjroot = normpath(desc.baseDir)
     from LbNightlyTools.Configuration import Project
     if isinstance(desc, Project):
         # we are checking out a project
@@ -61,8 +61,8 @@ def getpack(desc, recursive_head=None, export=False,
     else:
         # we are checking out a data package
         cmd = getpack_cmd + ['-v']
-        container_name = desc.container.name if desc.container else 'DBASE'
-        rootdir = normpath(join(rootdir, container_name))
+        if desc.container:
+            rootdir = desc.container.baseDir
     if export:
         cmd.append('--export')
     cmd.extend([desc.name, desc.version])
@@ -104,7 +104,7 @@ def git(desc, url, commit='master', export=False, verbose=False):
     Checkout from a git repository.
     '''
     __log__.debug('checking out %s from %s (%s)', desc, url, commit)
-    dest = os.path.join(desc.rootdir, desc.baseDir)
+    dest = desc.baseDir
     __log__.debug('cloning git repository %s', url)
 
     outputs = []
@@ -144,7 +144,7 @@ def svn(desc, url, export=False, verbose=False):
     Checkout from an svn repository.
     '''
     __log__.debug('checking out %s from %s', desc, url)
-    dest = os.path.join(desc.rootdir, desc.baseDir)
+    dest = desc.baseDir
     output = tee_call(['svn', 'checkout' if not export else 'export',
                        url, dest], verbose=verbose)
     makefile = os.path.join(dest, 'Makefile')
@@ -162,7 +162,7 @@ def copy(desc, src, export=False, verbose=False):
     Copy the content of a directory.
     '''
     __log__.debug('copying %s from %s', desc, src)
-    dest = os.path.join(desc.rootdir, desc.baseDir)
+    dest = desc.baseDir
     ensureDirs([os.path.dirname(dest)])
     shutil.copytree(os.path.join(src, os.curdir), dest)
     top_makefile = os.path.join(dest, 'Makefile')
@@ -175,13 +175,13 @@ def copy(desc, src, export=False, verbose=False):
 
 def untar(desc, src, export=False, verbose=False):
     '''
-    Unpack a tarball in the rootdir of desc (assuming that the tarball already
+    Unpack a tarball in the current directory (assuming that the tarball already
     contains the <PROJECT>/<PROJECT>_<version> directories).
     '''
     __log__.debug('unpacking %s', src)
-    output = tee_call(['tar', '-x', '-C', desc.rootdir, '-f', src],
+    output = tee_call(['tar', '-x', '-f', src],
                       verbose=verbose)
-    dest = os.path.join(desc.rootdir, desc.baseDir)
+    dest = desc.baseDir
     if not os.path.isdir(dest):
         raise RuntimeError('the tarfile %s does not contain %s',
                            src, desc.baseDir)
@@ -213,12 +213,7 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
     if export:
         getpack_cmd.append('--export')
 
-    rootdir = desc.rootdir
-    prjroot = normpath(join(rootdir, desc.baseDir))
-
-    if not os.path.exists(rootdir):
-        __log__.debug('creating %s', rootdir)
-        os.makedirs(rootdir)
+    prjroot = desc.baseDir
 
     outputs = []
     def call(*args, **kwargs):
@@ -226,8 +221,7 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
         outputs.append(tee_call(*args, verbose=verbose, **kwargs))
 
     __log__.debug('checking out project %s', desc)
-    call(getpack_cmd + ['--project', desc.name, desc.version],
-         cwd=rootdir, retry=3)
+    call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
     for pkg in ('DiracPolicy', 'DiracConfig', 'DiracSys'):
         __log__.debug('checking out package %s', pkg)
         call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
@@ -324,13 +318,8 @@ def lhcbdirac(desc, export=False, verbose=False):
     if export:
         getpack_cmd.append('--export')
 
-    rootdir = desc.rootdir
-    prjroot = normpath(join(rootdir, desc.baseDir))
+    prjroot = desc.baseDir
     dest = join(prjroot, 'LHCbDIRAC')
-
-    if not os.path.exists(rootdir):
-        __log__.debug('creating %s', rootdir)
-        os.makedirs(rootdir)
 
     outputs = []
     def call(*args, **kwargs):
@@ -338,8 +327,7 @@ def lhcbdirac(desc, export=False, verbose=False):
         outputs.append(tee_call(*args, verbose=verbose, **kwargs))
 
     __log__.debug('checking out project %s', desc)
-    call(getpack_cmd + ['--project', desc.name, desc.version],
-         cwd=rootdir, retry=3)
+    call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
     for pkg in ('LHCbDiracPolicy', 'LHCbDiracConfig', 'LHCbDiracSys'):
         __log__.debug('checking out package %s', pkg)
         call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
@@ -399,7 +387,7 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
         'helper to simplify the code'
         outputs.append(tee_call(*args, verbose=verbose, **kwargs))
 
-    dest = os.path.join(desc.rootdir, desc.baseDir)
+    dest = desc.baseDir
     __log__.debug('fixing requirements files')
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)
