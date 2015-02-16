@@ -17,6 +17,7 @@ import os
 import logging
 import json
 import codecs
+import contextlib
 from datetime import datetime
 
 DAY_NAMES = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
@@ -714,3 +715,22 @@ def setenv(definitions):
     @note: it is equivalent to 'applyenv(os.environ, definitions)'
     '''
     applyenv(os.environ, definitions)
+
+
+@contextlib.contextmanager
+def chdir(dirname=None, create=False):
+    '''
+    Context manager useful to switch to a directory for a context block and back
+    to the previous location once we are out put the block.
+
+    See http://www.astropython.org/snippet/2009/10/chdir-context-manager
+    '''
+    curdir = os.getcwd()
+    try:
+        if dirname is not None:
+            if not os.path.isdir(dirname) and create:
+                os.makedirs(dirname)
+            os.chdir(dirname)
+        yield
+    finally:
+        os.chdir(curdir)
