@@ -211,6 +211,30 @@ class cmake(object):
         return BuildResults(proj, *output)
 
 
+class no_build(object):
+    '''
+    No-op build tool, used for projects that do no require a build
+    (e.g. projects containing only data packages).
+    '''
+    def build(self, proj, **kwargs):
+        '''
+        Build method.
+        '''
+        return BuildResults(proj, 0, 'no build for %s' % proj, '')
+
+    def clean(self, proj, **kwargs):
+        '''
+        Clean method.
+        '''
+        return BuildResults(proj, 0, 'no clean for %s' % proj, '')
+
+    def test(self, proj, **kwargs):
+        '''
+        Test method.
+        '''
+        return BuildResults(proj, 0, 'no test for %s' % proj, '')
+
+
 class echo(object):
     '''
     Dummy build tool class used for testing.
