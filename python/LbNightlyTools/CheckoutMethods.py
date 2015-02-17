@@ -18,7 +18,7 @@ import shutil
 import os
 
 from subprocess import Popen, PIPE
-from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs, chdir
+from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 

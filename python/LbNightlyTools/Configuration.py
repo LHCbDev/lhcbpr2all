@@ -344,7 +344,7 @@ class Package(object):
         __log__.info('checking out %s', self)
         opts = dict(self.checkout_opts)
         opts.update(kwargs)
-        self._checkout(self, **opts)
+        return self._checkout(self, **opts)
 
     @property
     def baseDir(self):
@@ -571,10 +571,29 @@ class DataProject(Project):
             with open(os.path.join(cmt_dir, 'project.cmt'), 'w') as proj_cmt:
                 proj_cmt.write('project {0}\n'.format(self.name))
 
-        for package in self.packages:
-            print 'checkout and build', package
+        # separate checkout arguments from build arguments
+        co_kwargs = dict([(key, value) for key, value in kwargs.iteritems()
+                          if key in ('verbose', 'export')])
+        b_kwargs = dict([(key, value) for key, value in kwargs.iteritems()
+                         if key in ('verbose', 'jobs')])
+
+        __log__.info('checkout data packages in %s', self.name)
+        outputs = [package.checkout(**co_kwargs) for package in self.packages]
+
+        __log__.info('building data packages in %s', self.name)
+        outputs += [package.build(**b_kwargs) for package in self.packages]
 
         __log__.debug('create symlinks')
+        for package in self.packages:
+            for link in package.getVersionLinks():
+                __log__.debug('creating symlink %s', link)
+                os.symlink(package.version,
+                           os.path.normpath(os.path.join(package.baseDir,
+                                                         os.pardir,
+                                                         link)))
+
+        from CheckoutMethods import _merge_outputs
+        return _merge_outputs(outputs)
 
 
 class DBASE(DataProject):

@@ -467,6 +467,31 @@ def test_checkout_datapkgs():
     if not which('getpack'):
         raise nose.SkipTest
 
+    Package = Configuration.Package
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    with TemporaryDir(chdir=True):
+        pkg = Package(name='AppConfig', version='v3r198')
+        pkg.checkout()
+        assert exists(join('AppConfig', 'v3r198', 'cmt'))
+
+
+    dbase = Configuration.DBASE([Package(name='AppConfig', version='v3r198')])
+    param = Configuration.PARAM([Package(name='TMVAWeights', version='v1r1')])
+    slot = Configuration.Slot('data-packs', projects=[dbase, param])
+
+    with TemporaryDir(chdir=True):
+        slot.checkout()
+
+        assert exists(join('DBASE', 'AppConfig', 'v3r198', 'cmt'))
+        assert exists(join('PARAM', 'TMVAWeights', 'v1r0', 'cmt'))
+
+def test_checkout_datapkgs_old():
+    '''checkout a single data package (getpack)'''
+    if not which('getpack'):
+        raise nose.SkipTest
+
     Package = StackCheckout.Package
 
     mlh = MockLoggingHandler()
@@ -489,6 +514,52 @@ def test_checkout_datapkgs():
         assert exists(join('build', 'PARAM', 'TMVAWeights', 'v1r0', 'cmt'))
 
 def test_stack_checkout_datapkg():
+    '''checkout a data package within a slot'''
+    if not which('getpack'):
+        raise nose.SkipTest
+
+    Package = Configuration.Package
+
+    mlh = MockLoggingHandler()
+    StackCheckout.__log__.addHandler(mlh)
+
+    with TemporaryDir(chdir=True):
+        os.makedirs('build')
+        pkgs = [Package(name='AppConfig', version='v3r198'),
+                Package(name='Det/SQLDDDB', version='HEAD')]
+
+        slot = Configuration.Slot('data-packs',
+                                  projects=[Configuration.DBASE(pkgs)])
+        os.chdir('build')
+        slot.checkout()
+        os.chdir(os.pardir)
+
+        for pkg in pkgs:
+            assert exists(join('build', pkg.baseDir)), 'missing %s' % pkg.baseDir
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+        assert not islink(join('build', 'DBASE', 'AppConfig', 'v3r198'))
+        # these are signatures of a build
+        assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt', 'Makefile'))
+        assert isdir(join('build', 'DBASE', 'AppConfig', 'v3r198', os.environ['CMTCONFIG']))
+
+        assert islink(join('build', 'DBASE', 'AppConfig', 'v3r196'))
+
+        assert islink(join('build', 'DBASE', 'Gen'))
+
+        assert not islink(join('build', 'DBASE', 'Det'))
+        assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB'))
+        assert not islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head'))
+        assert exists(join('build', 'DBASE', 'Det', 'SQLDDDB', 'head', 'cmt'))
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r10'))
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r999'))
+        assert os.readlink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v7r999')) == 'head'
+        assert islink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v999r999'))
+        assert os.readlink(join('build', 'DBASE', 'Det', 'SQLDDDB', 'v999r999')) == 'head'
+
+        # we do not create PARAM if not requested
+        assert not exists(join('build', 'PARAM'))
+
+def test_stack_checkout_datapkg_old():
     '''checkout a data package within a slot'''
     if not which('getpack'):
         raise nose.SkipTest
