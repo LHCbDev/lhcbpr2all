@@ -383,7 +383,6 @@ class Package(object):
             return []
         base = self.baseDir
         aliases = ['v999r999']
-        print os.path.exists(os.path.join(base, 'cmt', 'requirements'))
         if os.path.exists(os.path.join(base, 'cmt', 'requirements')):
             for l in open(os.path.join(base, 'cmt', 'requirements')):
                 l = l.strip()
