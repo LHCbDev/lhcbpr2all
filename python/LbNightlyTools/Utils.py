@@ -734,3 +734,23 @@ def chdir(dirname=None, create=False):
         yield
     finally:
         os.chdir(curdir)
+
+
+def write_patch(patchfile, olddata, newdata, filename):
+    '''
+    Write the difference between olddata and newdata (of filename in  patchfile.
+
+    @param patchfile: file object to which write the differences
+    @param olddata: old version of the data
+    @param newdata: new version of teh data
+    @param fileanme: name of the file to be used in the diff headers
+    '''
+    from difflib import context_diff
+    if hasattr(olddata, 'splitlines'):
+        olddata = olddata.splitlines(True)
+    if hasattr(newdata, 'splitlines'):
+        newdata = newdata.splitlines(True)
+    for l in context_diff(olddata, newdata,
+                          fromfile=os.path.join('a', filename),
+                          tofile=os.path.join('b', filename)):
+        patchfile.write(l)

@@ -18,7 +18,7 @@ import re
 import logging
 from LbNightlyTools.Utils import (applyenv, tee_call, ensureDirs,
                                   shallow_copytree, IgnorePackageVersions,
-                                  find_path)
+                                  find_path, write_patch)
 from collections import OrderedDict
 
 __log__ = logging.getLogger(__name__)
@@ -315,6 +315,190 @@ class Project(object):
         applyenv(result, self.env)
         return result
 
+    def _fixCMakeLists(self, patchfile=None):
+        '''
+        Fix the 'CMakeLists.txt'.
+        '''
+        from os.path import join, exists
+        cmakelists = join(self.baseDir, 'CMakeLists.txt')
+
+        if exists(cmakelists):
+            __log__.info('patching %s', cmakelists)
+            with open(cmakelists) as f:
+                data = f.read()
+            try:
+                # find the project declaration call
+                m = GP_EXP.search(data)
+                if m is None:
+                    __log__.warning('%s does not look like a Gaudi/CMake '
+                                    'project, I\'m not touching it', self)
+                    return
+                args = m.group(1).split()
+                # the project version is always the second
+                args[1] = self.version
+
+                # fix the dependencies
+                if 'USE' in args:
+                    # look for the indexes of the range 'USE' ... 'DATA'
+                    use_idx = args.index('USE') + 1
+                    if 'DATA' in args:
+                        data_idx = args.index('DATA')
+                    else:
+                        data_idx = len(args)
+                    # for each key, get the version (if available)
+                    for i in range(use_idx, data_idx, 2):
+                        if hasattr(self.slot, args[i]):
+                            args[i+1] = getattr(self.slot, args[i]).version
+                # FIXME: we should take into account the declared deps
+                start, end = m.start(1), m.end(1)
+                newdata = data[:start] + ' '.join(args) + data[end:]
+            except: # pylint: disable=W0702
+                __log__.error('failed parsing of %s, not patching it',
+                              cmakelists)
+                return
+
+            with open(cmakelists, 'w') as f:
+                f.write(newdata)
+
+            if patchfile:
+                write_patch(patchfile, data, newdata, cmakelists)
+
+    def _fixCMakeToolchain(self, patchfile=None):
+        '''
+        Fix 'toolchain.cmake'.
+        '''
+        from os.path import join, exists
+        toolchain = join(self.baseDir, 'toolchain.cmake')
+
+        if exists(toolchain):
+            # case insensitive list of projects
+            projs = dict((p.name.lower(), p) for p in self.slot.projects)
+            heptools_version = projs.get('heptools')
+            for name in ('heptools', 'lcgcmt'):
+                if name in projs:
+                    heptools_version = projs[name].version
+                    break
+            else:
+                # no heptools in the slot
+                return
+            __log__.info('patching %s', toolchain)
+            with open(toolchain) as f:
+                data = f.read()
+            try:
+                # find the heptools version setting
+                m = HT_EXP.search(data)
+                if m is None:
+                    __log__.debug('%s does not set heptools_version, '
+                                  'no need to touch', self)
+                    return
+                start, end = m.start(1), m.end(1)
+                newdata = data[:start] + heptools_version + data[end:]
+            except: # pylint: disable=W0702
+                __log__.error('failed parsing of %s, not patching it',
+                              toolchain)
+                return
+
+            with open(toolchain, 'w') as f:
+                f.write(newdata)
+
+            if patchfile:
+                write_patch(patchfile, data, newdata, toolchain)
+
+    def _fixCMake(self, patchfile=None):
+        '''
+        Fix the CMake configuration of a project, if it exists, and write
+        the changes in 'patchfile'.
+        '''
+        self._fixCMakeLists(patchfile)
+        self._fixCMakeToolchain(patchfile)
+
+    def _fixCMT(self, patchfile=None):
+        '''
+        Fix the CMT configuration of a project, if it exists, and write
+        the changes in 'patchfile'.
+        '''
+        from os.path import join, exists
+        project_cmt = join(self.baseDir, 'cmt', 'project.cmt')
+
+        if exists(project_cmt):
+            __log__.info('patching %s', project_cmt)
+            with open(project_cmt) as f:
+                data = f.readlines()
+
+            # case insensitive list of projects
+            projs = dict((p.name.upper(), p) for p in self.slot.projects)
+
+            newdata = []
+            for line in data:
+                tokens = line.strip().split()
+                if len(tokens) == 3 and tokens[0] == 'use':
+                    if tokens[1] in projs:
+                        tokens[2] = (tokens[1] + '_'
+                                     + projs[tokens[1]].version)
+                        line = ' '.join(tokens) + '\n'
+                newdata.append(line)
+
+            with open(project_cmt, 'w') as f:
+                f.writelines(newdata)
+
+            if patchfile:
+                write_patch(patchfile, data, newdata, project_cmt)
+
+        # find the container package
+        requirements = join(self.baseDir, self.name + 'Release',
+                            'cmt', 'requirements')
+        if not exists(requirements):
+            requirements = join(self.baseDir, self.name + 'Sys',
+                                'cmt', 'requirements')
+
+        if exists(requirements):
+            __log__.info('patching %s', requirements)
+            with open(requirements) as f:
+                data = f.readlines()
+
+            used_pkgs = set()
+
+            newdata = []
+            for line in data:
+                tokens = line.strip().split()
+                if len(tokens) >= 3 and tokens[0] == 'use':
+                    tokens[2] = '*'
+                    if len(tokens) >= 4 and tokens[3][0] not in ('-', '#'):
+                        used_pkgs.add('{3}/{1}'.format(*tokens))
+                    else:
+                        used_pkgs.add(tokens[1])
+                    line = ' '.join(tokens) + '\n'
+                newdata.append(line)
+
+            for added_pkg in set(self.overrides.keys()) - used_pkgs:
+                if '/' in added_pkg:
+                    hat, added_pkg = added_pkg.rsplit('/', 1)
+                else:
+                    hat = ''
+                newdata.append('use {0} * {1}\n'.format(added_pkg, hat))
+
+            with open(requirements, 'w') as f:
+                f.writelines(newdata)
+
+            if patchfile:
+                write_patch(patchfile, data, newdata, requirements)
+
+
+    def patch(self, patchfile=None):
+        '''
+        Modify dependencies and references of the project to the other projects
+        in a slot.
+
+        @param patchfile: a file object where the applied changes can be
+                          recorded in the form of "patch" instructions.
+
+        @warning: It make sense only for projects within a slot.
+        '''
+        if not self.slot:
+            raise ValueError('project %s is not part of a slot' % self)
+
+        self._fixCMake(patchfile)
+        self._fixCMT(patchfile)
 
 class Package(object):
     '''
@@ -701,14 +885,32 @@ class Slot(object):
         '''
         return self.__dict__.keys() + [proj.name for proj in self.projects]
 
-    def checkout(self, export=False):
+    @property
+    def activeProjects(self):
+        '''
+        Generator yielding the projects in the slot that do not have the
+        disabled property set to True.
+        '''
+        for p in self.projects:
+            if not p.disabled:
+                yield p
+
+    def checkout(self, verbose=False, export=False):
         '''
         Checkout all the projects in the slot.
         '''
         results = OrderedDict()
-        for project in self.projects:
-            results[project.name] = project.checkout(export=export)
+        for project in self.activeProjects:
+            results[project.name] = project.checkout(verbose=verbose,
+                                                     export=export)
         return results
+
+    def patch(self, patchfile=None):
+        '''
+        Patch all active projects in the slot to have consistent dependencies.
+        '''
+        for project in self.activeProjects:
+            project.patch(patchfile)
 
     def dependencies(self, projects=None):
         '''
@@ -743,7 +945,10 @@ class Slot(object):
 
     def _projects_by_deps(self, projects=None):
         deps = self.dependencies(projects=projects)
-        return [getattr(self, project) for project in sortedByDeps(deps)]
+        return [project
+                for project in [getattr(self, project_name)
+                                for project_name in sortedByDeps(deps)]
+                if not project.disabled]
 
     def build(self, **kwargs):
         '''
@@ -753,7 +958,8 @@ class Slot(object):
         '''
         results = OrderedDict()
         for project in self._projects_by_deps(kwargs.pop('projects', None)):
-            results[project.name] = project.build(**kwargs)
+            if not project.disabled:
+                results[project.name] = project.build(**kwargs)
         return results
 
     def clean(self, **kwargs):
