@@ -821,7 +821,7 @@ class Slot(object):
     Class representing a nightly build slot.
     '''
     __metaclass__ = _SlotMeta
-    __slots__ = ('_name', '_projects', 'env', '_build_tool')
+    __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled')
     __projects__ = []
     __env__ = []
 
@@ -833,15 +833,16 @@ class Slot(object):
         @param projects: (optional) list of Project instances
         @param env: (optional) list of strings ('name=value') used to modify the
                     environment for the slot
+        @param disabled: if True the slot should not be used in the nightly
+                         builds
         '''
         self._name = name
 
         projects = kwargs.get('projects', self.__projects__)
         self._projects = ProjectsList(self, projects)
-
         self.env = kwargs.get('env', list(self.__env__))
-
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
+        self.disabled = kwargs.get('disabled', False)
 
         # add this slot to the global list of slots
         global slots
