@@ -394,6 +394,21 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
 
     return _merge_outputs(outputs)
 
+
+def gaudi(proj, url='http://git.cern.ch/pub/gaudi', export=False, verbose=False):
+    '''
+    Wrapper around the git function for Gaudi.
+    '''
+    import re
+    if proj.version.lower() == 'head':
+        commit = 'master'
+    elif re.match(r'v[0-9]+r[0-9]+', proj.version):
+        commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
+    else:
+        commit = proj.version
+    return git(proj, url, commit, export, verbose)
+
+
 # set default checkout method
 default = getpack # pylint: disable=C0103
 

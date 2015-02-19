@@ -271,6 +271,26 @@ def test_checkout():
         assert get_git_branch(join('GAUDI', 'GAUDI_HEAD')) == 'master'
 
 
+        shutil.rmtree('GAUDI', ignore_errors=True)
+        Project('Gaudi', 'v23r6', checkout='gaudi').checkout()
+        check([join('GAUDI', 'GAUDI_v23r6', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('GaudiRelease', 'cmt', 'requirements')]])
+        #assert 'v23r6' in open(join(tmpdir, 'GAUDI', 'GAUDI_v23r6', 'CMakeLists.txt')).read()
+        assert get_git_branch(join('GAUDI', 'GAUDI_v23r6')) is None
+
+
+        Project('Gaudi', 'HEAD', checkout='gaudi').checkout()
+        check([join('GAUDI', 'GAUDI_HEAD', join(*x))
+               for x in [('Makefile',),
+                         ('CMakeLists.txt',),
+                         ('cmt', 'project.cmt'),
+                         ('GaudiRelease', 'cmt', 'requirements')]])
+        assert get_git_branch(join('GAUDI', 'GAUDI_HEAD')) == 'master'
+
+
         shutil.rmtree(join('BRUNEL', 'BRUNEL_HEAD'), ignore_errors=True)
         svnurl = 'http://svn.cern.ch/guest/lhcb/Brunel/trunk'
         Project('Brunel', 'HEAD', checkout=CheckoutMethods.svn).checkout(url=svnurl)
