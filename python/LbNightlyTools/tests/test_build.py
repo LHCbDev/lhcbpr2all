@@ -118,3 +118,37 @@ def test_cmt_build():
                                'Makefile'))
         assert not exists(join(proj_root, 'InstallArea', config,
                                'bin', 'HelloWorld.exe'))
+
+def test_cmake_build():
+    dummy_src = join(_testdata, 'build_tests', 'orig', 'dummy', '.')
+    with TemporaryDir(chdir=True):
+        slot = Slot('slot', build_tool='cmake',
+                    projects=[Project('dummy', 'head',
+                                      checkout='copy',
+                                      checkout_opts=dict(src=dummy_src))])
+        slot.checkout()
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
+
+        res = slot.build()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== configure ===' in res['dummy'].stdout
+        assert '=== building all ===' in res['dummy'].stdout
+        assert '=== unsafe-install ===' in res['dummy'].stdout
+        assert '=== post-install ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'cache_preload.cmake'))
+
+        res = slot.test()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== running tests ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
+
+        res = slot.clean()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== purge ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
+        assert not exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
+        assert not exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))

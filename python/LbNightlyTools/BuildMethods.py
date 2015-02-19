@@ -127,7 +127,7 @@ class cmt(make):
         return self._make('test', proj, **kwargs)
 
 
-class cmake(object):
+class cmake(make):
     '''
     Class to wrap the build/test semantics for CMT-based projects.
     '''
@@ -135,7 +135,7 @@ class cmake(object):
         '''
         Name of the cache preload file to be passed to CMake.
         '''
-        return os.path.join(proj.roodir, proj.baseDir, 'cache_preload.cmake')
+        return os.path.join(proj.baseDir, 'cache_preload.cmake')
 
     def _prepare_cache(self, proj, cache_entries=None):
         '''
@@ -180,9 +180,10 @@ class cmake(object):
         output = [self._make(target, proj, **kwargs)
                   for target in ('configure', 'all',
                                  'unsafe-install', 'post-install')]
-        output = (output[1][0], # use the build return code
-                  ''.join(step[1] for step in output),
-                  ''.join(step[2] for step in output))
+
+        output = (output[1].returncode, # use the build return code
+                  ''.join(step.stdout for step in output),
+                  ''.join(step.stderr for step in output))
 
         return BuildResults(proj, *output)
 
@@ -198,13 +199,13 @@ class cmake(object):
         Run the tests in a Gaudi/LHCb project using CMT.
         '''
         # ensure that tests are not run in parallel
-        kwargs.pop('max_load')
-        kwargs.pop('jobs')
+        kwargs.pop('max_load', None)
+        kwargs.pop('jobs', None)
         output = [self._make(target, proj, **kwargs)
                   for target in ('configure', 'test')]
-        output = (output[-1][0], # use the test return code
-                  ''.join(step[1] for step in output),
-                  ''.join(step[2] for step in output))
+        output = (output[-1].returncode, # use the test return code
+                  ''.join(step.stdout for step in output),
+                  ''.join(step.stderr for step in output))
 
         return BuildResults(proj, *output)
 
