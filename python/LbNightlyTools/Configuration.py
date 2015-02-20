@@ -166,6 +166,20 @@ class Project(object):
 
         self.build_results = None
 
+    def __eq__(self, other):
+        '''Equality operator.'''
+        elems = ('__class__', 'name', 'version', 'disabled', 'overrides',
+                 '_deps', 'env', '_checkout', 'checkout_opts')
+        for elem in elems:
+            if getattr(self, elem) != getattr(other, elem):
+                return False
+        return (self.build_tool.__class__.__name__ ==
+                 other.build_tool.__class__.__name__)
+
+    def __ne__(self, other):
+        '''Non-equality operator.'''
+        return not (self == other)
+
     def checkout(self, **kwargs):
         '''
         Helper function to call the checkout method.
@@ -521,6 +535,18 @@ class Package(object):
         self._checkout = getMethod(kwargs.get('checkout'))
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
+    def __eq__(self, other):
+        '''Equality operator.'''
+        elems = ('__class__', 'name', 'version', '_checkout', 'checkout_opts')
+        for elem in elems:
+            if getattr(self, elem) != getattr(other, elem):
+                return False
+        return True
+
+    def __ne__(self, other):
+        '''Non-equality operator.'''
+        return not (self == other)
+
     def checkout(self, **kwargs):
         '''
         Helper function to call the checkout method.
@@ -622,6 +648,15 @@ class _ContainedList(object):
             for element in self._elements:
                 setattr(element, self.__container_member__, self.container)
 
+    def __eq__(self, other):
+        '''Equality operator.'''
+        return ((self.__class__ == other.__class__) and
+                (self._elements == other._elements))
+
+    def __ne__(self, other):
+        '''Non-equality operator.'''
+        return not (self == other)
+
     def __getitem__(self, key):
         '''
         Get contained element either by name or by position.
@@ -713,6 +748,14 @@ class DataProject(Project):
         # version is ignored
         Project.__init__(self, name, 'HEAD', **kwargs)
         self._packages = PackagesList(self, packages)
+
+    def __eq__(self, other):
+        '''Equality operator.'''
+        return Project.__eq__(self, other) and (self.packages == other.packages)
+
+    def __ne__(self, other):
+        '''Non-equality operator.'''
+        return not (self == other)
 
     @property
     def baseDir(self):
@@ -847,6 +890,21 @@ class Slot(object):
         # add this slot to the global list of slots
         global slots
         slots[name] = self
+
+    def __eq__(self, other):
+        '''
+        Equality operator.
+        '''
+        elems = ('__class__', 'name', 'projects', 'env', 'disabled')
+        for elem in elems:
+            if getattr(self, elem) != getattr(other, elem):
+                return False
+        return (self.build_tool.__class__.__name__ ==
+                 other.build_tool.__class__.__name__)
+
+    def __ne__(self, other):
+        '''Non-equality operator.'''
+        return not (self == other)
 
     @property
     def name(self):
