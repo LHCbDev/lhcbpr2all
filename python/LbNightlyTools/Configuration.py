@@ -1315,3 +1315,28 @@ def parse(path):
                                                             {})))
 
     return slot
+
+
+def getSlot(name, configdir=os.curdir):
+    '''
+    Find the slot with the given name in the configuration files.
+    '''
+    xml_config = os.path.join(configdir, 'configuration.xml')
+    json_config = os.path.join(configdir, name + '.json')
+
+    slot = None
+    attempts = [(parse, (json_config,)),
+                (parse, (xml_config + '#' + name,))]
+    for func, args in attempts:
+        try:
+            slot = func(*args)
+            break
+        except RuntimeError:
+            pass # it's not in the XML, let's try the other methods
+    else:
+        raise RuntimeError('cannot find slot {0}'.format(name))
+
+    if slot.name is None:
+        slot.name = name
+
+    return slot
