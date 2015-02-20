@@ -63,6 +63,8 @@ def test_ProjectsList():
     assert a_b.name == 'a/b'
     assert a_b == pl['a_b']
 
+    # works as iterable
+    assert [p.name for p in pl] == ['b', 'a/b']
 
 def test_slot_projects():
     slot = Slot('test', projects=[Project('a', 'v1r0'), Project('b', 'v2r0')])
