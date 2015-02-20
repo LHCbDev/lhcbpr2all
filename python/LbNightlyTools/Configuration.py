@@ -180,6 +180,24 @@ class Project(object):
         '''Non-equality operator.'''
         return not (self == other)
 
+    def __getstate__(self):
+        '''
+        Allow pickling.
+        '''
+        dct = dict((elem, getattr(self, elem))
+                    for elem in ('name', 'version', 'disabled', 'overrides',
+                                 '_deps', 'env', '_checkout',
+                                 'checkout_opts'))
+        dct['build_tool'] = self._build_tool.__class__.__name__
+        return dct
+
+    def __setstate__(self, state):
+        '''
+        Allow unpickling.
+        '''
+        for key in state:
+            setattr(self, key, state[key])
+
     def checkout(self, **kwargs):
         '''
         Helper function to call the checkout method.
@@ -759,6 +777,21 @@ class DataProject(Project):
         '''Non-equality operator.'''
         return not (self == other)
 
+    def __getstate__(self):
+        '''
+        Allow pickling.
+        '''
+        dct = Project.__getstate__(self)
+        dct['_packages'] = self._packages
+        return dct
+
+    def __setstate__(self, state):
+        '''
+        Allow unpickling.
+        '''
+        for key in state:
+            setattr(self, key, state[key])
+
     @property
     def baseDir(self):
         '''Name of the package directory (relative to the build directory).'''
@@ -907,6 +940,41 @@ class Slot(object):
     def __ne__(self, other):
         '''Non-equality operator.'''
         return not (self == other)
+
+    def __getstate__(self):
+        '''
+        Allow pickling.
+        '''
+        dct = dict((elem, getattr(self, elem))
+                    for elem in ('_projects', 'env', 'disabled'))
+        dct['_name'] = self._name
+        dct['build_tool'] = self._build_tool.__class__.__name__
+        return dct
+
+    def __setstate__(self, state):
+        '''
+        Allow unpickling.
+        '''
+        for key in state:
+            setattr(self, key, state[key])
+        global slots
+        slots[self._name] = self
+
+    def x__getinitargs__(self):
+        '''
+        Allow pickling.
+        '''
+        return {'name': self.name,
+                'projects': list(self.projects),
+                'env': self.env,
+                'build_tool': self.build_tool.name,
+                'disabled': self.disabled}
+
+    def _clone(self, new_name):
+        '''
+        Return a new instance configured as this one except for the name.
+        '''
+        return Slot(new_name, projects=self.projects)
 
     @property
     def name(self):
