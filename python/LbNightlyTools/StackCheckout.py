@@ -338,7 +338,7 @@ def parseConfigFile(path):
             checkout = getattr(CheckoutMethods, checkout)
         container = pkg.get(u'container', 'DBASE')
         if container not in containers:
-            containers[container] = getattr(Configuration, container)([])
+            containers[container] = getattr(Configuration, container)()
         container = containers[container]
         pkg = Package(pkg[u'name'], pkg[u'version'],
                       checkout=checkout,

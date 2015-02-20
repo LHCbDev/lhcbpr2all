@@ -740,13 +740,15 @@ class DataProject(Project):
     Special Project class for projects containing only data packages.
     '''
     build_method = 'no_build'
-    def __init__(self, name, packages, **kwargs):
+    def __init__(self, name, packages=None, **kwargs):
         '''
         Initialize the instance with name and list of packages.
         '''
         # we use 'HEAD' as version just to comply with Project.__init__, but the
         # version is ignored
         Project.__init__(self, name, 'HEAD', **kwargs)
+        if packages is None:
+            packages = []
         self._packages = PackagesList(self, packages)
 
     def __eq__(self, other):
@@ -1217,7 +1219,7 @@ def parse(path):
     for pkg in data.get(u'packages', []):
         container = pkg.get(u'container', 'DBASE')
         if container not in containers:
-            containers[container] = globals()[container]([])
+            containers[container] = globals()[container]()
         container = containers[container]
         pkg = Package(pkg[u'name'], pkg[u'version'],
                       checkout=pkg.get(u'checkout'),
