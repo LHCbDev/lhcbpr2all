@@ -868,7 +868,7 @@ class Slot(object):
     __projects__ = []
     __env__ = []
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name, projects=None, **kwargs):
         '''
         Initialize the slot with name and optional list of projects.
 
@@ -880,8 +880,8 @@ class Slot(object):
                          builds
         '''
         self._name = name
-
-        projects = kwargs.get('projects', self.__projects__)
+        if projects is None:
+            projects = self.__projects__
         self._projects = ProjectsList(self, projects)
         self.env = kwargs.get('env', list(self.__env__))
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
