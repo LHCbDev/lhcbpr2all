@@ -126,6 +126,15 @@ def test_deps():
     b = Project('b', 'v2r0', dependencies=['c', 'a'])
     assert b.dependencies() == ['a', 'c']
 
+def test_slot_def_args():
+    # test default arguments
+    dummy = Slot('dummy')
+    assert len(dummy.projects) == 0
+
+    dummy = Slot('dummy', [Project('A', 'v1r0')])
+    assert len(dummy.projects) == 1
+    assert dummy.A.version == 'v1r0'
+
 def test_env():
     slot = Slot('test', projects=[Project('a', 'v1r0', env=['proj=a'])],
                 env=['slot=test', 'proj=none'])
@@ -286,6 +295,9 @@ def test_custom_projects():
     assert s.name == 'Special', s.name
 
 def test_dataproject():
+    # test empty constructor
+    DBASE()
+
     name, version = 'AppConfig', 'v3r198'
     d = DBASE(packages=[Package(name, version)])
     assert d.name == 'DBASE'
