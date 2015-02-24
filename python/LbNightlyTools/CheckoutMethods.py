@@ -381,5 +381,36 @@ def lhcbgrid(desc, rootdir='.'):
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)
 
+
+def gaudi(desc, rootdir='.'):
+    '''
+    Wrapper to git for Gaudi.
+    '''
+    if 'url' not in desc.checkout_opts:
+        desc.checkout_opts['url'] = 'http://git.cern.ch/pub/gaudi'
+    if 'commit' not in desc.checkout_opts:
+        if desc.version.lower() == 'head':
+            desc.checkout_opts['commit'] = 'master'
+        elif desc.version.startswith('v'):
+            desc.checkout_opts['commit'] = 'GAUDI/GAUDI_' + desc.version
+        else:
+            desc.checkout_opts['commit'] = desc.version
+    return git(desc, rootdir)
+
+
+def lhcbintegrationtests(desc, rootdir='.'):
+    '''
+    Wrapper to git for LHCbIntegrationTests.
+    '''
+    if 'url' not in desc.checkout_opts:
+        desc.checkout_opts['url'] = 'http://git.cern.ch/pub/LHCbIntegrationTests'
+    if 'commit' not in desc.checkout_opts:
+        if desc.version.lower() == 'head':
+            desc.checkout_opts['commit'] = 'master'
+        else:
+            desc.checkout_opts['commit'] = desc.version
+    return git(desc, rootdir)
+
+
 # set default checkout method
 default = getpack # pylint: disable=C0103

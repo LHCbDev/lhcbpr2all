@@ -117,13 +117,8 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
 
             added.append(proj)
 
-            # we check out Gaudi from git
-            if proj == 'Gaudi':
-                project['checkout'] = 'git'
-                extra_opts = {'url': 'http://git.cern.ch/pub/gaudi',
-                              'commit': 'GAUDI/GAUDI_' + vers}
-                project['checkout_opts'].update(extra_opts)
-            elif hasattr(LbNightlyTools.CheckoutMethods, proj.lower()):
+            # look for a project-specific checkout method
+            if hasattr(LbNightlyTools.CheckoutMethods, proj.lower()):
                 project['checkout'] = proj.lower()
 
             if proj in ('Geant4'):
