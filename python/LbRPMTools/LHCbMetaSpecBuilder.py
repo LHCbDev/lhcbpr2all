@@ -40,14 +40,14 @@ __log__ = logging.getLogger(__name__)
 class LHCbMetaRpmSpec(LHCbBaseRpmSpec):
     """ Class representing a LHCb project"""
 
-    def __init__(self, project, version, requires, buildarea, release=1):
+    def __init__(self, project, version, requires, buildarea, release=None):
         """ Constructor taking the actual file name """
         super(LHCbMetaRpmSpec, self).__init__(project, version)
         __log__.debug("Creating RPM for %s/%s" % (project, version))
 
         self._project = project
         self._version = version
-        self._release =  release
+        self._lhcb_release_version =  release
         self._buildarea = buildarea
         self._requires = requires
         self._arch = "noarch"
@@ -56,7 +56,7 @@ class LHCbMetaRpmSpec(LHCbBaseRpmSpec):
         ''' Return the architecture, always noarch for our packages'''
         if norelease:
             return  "-".join([self._project, self._version])
-        full = "-".join([self._project, self._version, str(self._release)])
+        full = "-".join([self._project, self._version, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
                              
@@ -94,7 +94,7 @@ Provides: %{project} = %{version}
 \n""").substitute(buildarea = self._buildarea,
                   project = self._project,
                   version = self._version,
-                  release = self._release,
+                  release = self._lhcb_release_version,
                   arch = self._arch
                   )
         return header
