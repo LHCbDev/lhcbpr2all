@@ -14,6 +14,7 @@ Common functions to deal with the configuration files.
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import re
+import LbNightlyTools
 
 def extractVersion(tag):
     '''
@@ -107,6 +108,11 @@ def loadFromOldXML(source, slot):
                          'overrides': overrides}
             if proj.attrib.get('disabled', 'false').lower() != 'false':
                 proj_data['checkout'] = 'ignore'
+            else:
+                # look for a project-specific checkout method
+                if hasattr(LbNightlyTools.CheckoutMethods, name.lower()):
+                    proj_data['checkout'] = name.lower()
+
             if 'headofeverything' in proj.attrib:
                 recursive_head = proj.attrib.get('headofeverything').lower()
                 recursive_head = recursive_head == 'true'
