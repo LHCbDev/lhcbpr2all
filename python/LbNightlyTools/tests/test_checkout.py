@@ -437,7 +437,8 @@ def test_collectDeps():
                 'LHCb': ['Gaudi'],
                 'Lbcom': ['LHCb'],
                 'Rec': ['LHCb'],
-                'Brunel': ['Lbcom', 'Rec']
+                'Brunel': ['Lbcom', 'Rec'],
+                'NewProj': ['Brunel', 'Online']
                 }
 
     mlh = MockLoggingHandler()

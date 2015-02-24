@@ -113,6 +113,10 @@ def git(desc, rootdir='.'):
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
+    if not os.path.exists(os.path.join(dest, 'toolchain.cmake')):
+        f = open(os.path.join(dest, 'toolchain.cmake'), 'w')
+        f.write('include($ENV{LBUTILSROOT}/data/toolchain.cmake)\n')
+        f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
 
 def svn(desc, rootdir='.'):
