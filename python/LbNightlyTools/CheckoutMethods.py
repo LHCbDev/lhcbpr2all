@@ -403,7 +403,8 @@ def lhcbintegrationtests(desc, rootdir='.'):
     Wrapper to git for LHCbIntegrationTests.
     '''
     if 'url' not in desc.checkout_opts:
-        desc.checkout_opts['url'] = 'http://git.cern.ch/pub/LHCbIntegrationTests'
+        desc.checkout_opts['url'] = \
+            'http://git.cern.ch/pub/LHCbIntegrationTests'
     if 'commit' not in desc.checkout_opts:
         if desc.version.lower() == 'head':
             desc.checkout_opts['commit'] = 'master'
