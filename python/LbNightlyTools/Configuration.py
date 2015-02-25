@@ -14,7 +14,6 @@ Common functions to deal with the configuration files.
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import re
-import LbNightlyTools
 
 def extractVersion(tag):
     '''
@@ -39,6 +38,7 @@ def loadFromOldXML(source, slot):
     @param source: XML path, file object, URL
     @param slot: name of the slot to extract
     '''
+    import LbNightlyTools.CheckoutMethods
     from xml.etree.ElementTree import parse
     doc = parse(source)
 
