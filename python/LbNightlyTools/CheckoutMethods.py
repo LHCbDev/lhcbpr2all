@@ -26,7 +26,7 @@ def _merge_outputs(outputs):
     '''
     Helper function to merge the tuples returned by tee_call.
 
-    >>> _merge_outputs([(1, 'a\\n', ''), (0, 'b\\n', '')]
+    >>> _merge_outputs([(1, 'a\\n', ''), (0, 'b\\n', '')])
     (1, 'a\\nb\\n', '')
     '''
     returncode = 0
