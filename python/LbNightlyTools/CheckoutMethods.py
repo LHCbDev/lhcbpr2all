@@ -408,7 +408,8 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
     return _merge_outputs(outputs)
 
 
-def gaudi(proj, url='http://git.cern.ch/pub/gaudi', export=False, verbose=False):
+GAUDI_GIT_URL = 'http://git.cern.ch/pub/gaudi'
+def gaudi(proj, url=GAUDI_GIT_URL, export=False, verbose=False):
     '''
     Wrapper around the git function for Gaudi.
     '''
@@ -422,7 +423,8 @@ def gaudi(proj, url='http://git.cern.ch/pub/gaudi', export=False, verbose=False)
     return git(proj, url, commit, export, verbose)
 
 
-def lhcbintegrationtests(proj, url='http://git.cern.ch/pub/LHCbIntegrationTests', export=False, verbose=False):
+LIT_GIT_URL = 'http://git.cern.ch/pub/LHCbIntegrationTests'
+def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False, verbose=False):
     '''
     Wrapper around the git function for LHCbIntegrationTests.
     '''
