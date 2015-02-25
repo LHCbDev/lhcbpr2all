@@ -93,10 +93,8 @@ def test_Gaudi():
 
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'Gaudi', 'version': 'v23r9',
-                                       'checkout': 'git',
-                                       'checkout_opts': {'url': 'http://git.cern.ch/pub/gaudi',
-                                                         'commit': 'GAUDI/GAUDI_v23r9',
-                                                         'export': True}}]
+                                       'checkout': 'gaudi',
+                                       'checkout_opts': {'export': True}}]
         assert output['USE_CMT'] is False
         assert output['no_patch'] is True
 

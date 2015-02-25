@@ -116,6 +116,15 @@ def git(desc, url, commit='master', export=False, verbose=False):
     if not export:
         __log__.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
+        for subdir, version in desc.overrides.iteritems():
+            if version is None:
+                __log__.debug('removing %s', subdir)
+                shutil.rmtree(path=os.path.join(dest, subdir),
+                              ignore_errors=True)
+            else:
+                __log__.debug('checking out commit %s for dir %s',
+                              version, subdir)
+                call(['git', 'checkout', version, subdir], cwd=dest)
     else:
         # FIXME: the outputs of git archive is not collected
         __log__.debug('extracting the list of branches')
@@ -136,6 +145,10 @@ def git(desc, url, commit='master', export=False, verbose=False):
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
+    if not os.path.exists(os.path.join(dest, 'toolchain.cmake')):
+        f = open(os.path.join(dest, 'toolchain.cmake'), 'w')
+        f.write('include($ENV{LBUTILSROOT}/data/toolchain.cmake)\n')
+        f.close()
     __log__.debug('checkout of %s completed in %s', desc, dest)
     return _merge_outputs(outputs)
 
@@ -404,6 +417,17 @@ def gaudi(proj, url='http://git.cern.ch/pub/gaudi', export=False, verbose=False)
         commit = 'master'
     elif re.match(r'v[0-9]+r[0-9]+', proj.version):
         commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
+    else:
+        commit = proj.version
+    return git(proj, url, commit, export, verbose)
+
+
+def lhcbintegrationtests(proj, url='http://git.cern.ch/pub/LHCbIntegrationTests', export=False, verbose=False):
+    '''
+    Wrapper around the git function for LHCbIntegrationTests.
+    '''
+    if proj.version.lower() == 'head':
+        commit = 'master'
     else:
         commit = proj.version
     return git(proj, url, commit, export, verbose)
