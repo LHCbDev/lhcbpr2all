@@ -100,6 +100,15 @@ def git(desc, rootdir='.'):
     if not export:
         __log__.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
+        for subdir, version in desc.overrides.iteritems():
+            if version is None:
+                __log__.debug('removing %s', subdir)
+                shutil.rmtree(path=os.path.join(dest, subdir),
+                              ignore_errors=True)
+            else:
+                __log__.debug('checking out commit %s for dir %s',
+                              version, subdir)
+                call(['git', 'checkout', version, subdir], cwd=dest)
     else:
         __log__.debug('export commit %s for %s', commit, desc)
         p1 = Popen(['git', 'archive', commit],
