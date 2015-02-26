@@ -195,6 +195,26 @@ def test_env():
     env = slot.environment({})
     assert env == {'slot': 'test', 'proj': 'dummy'}
 
+def test_slot_desc():
+    slot = Slot('test')
+    assert slot.desc == Slot.__doc__.strip()
+
+    slot = Slot('test', desc='a test slot')
+    assert slot.desc == 'a test slot'
+
+    class MyTest(Slot):
+        '''
+        This is My Test.
+        '''
+    slot = MyTest('test')
+    assert slot.desc == 'This is My Test.'
+
+    class NoDesc(Slot):
+        pass
+    slot = NoDesc('test')
+    assert slot.desc == '<no description>'
+
+
 def test_build_tool_prop():
     #######
     p = Project('p', 'v')

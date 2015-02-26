@@ -515,7 +515,6 @@ class Project(object):
             if patchfile:
                 write_patch(patchfile, data, newdata, requirements)
 
-
     def patch(self, patchfile=None):
         '''
         Modify dependencies and references of the project to the other projects
@@ -531,6 +530,7 @@ class Project(object):
 
         self._fixCMake(patchfile)
         self._fixCMT(patchfile)
+
 
 class Package(object):
     '''
@@ -896,10 +896,10 @@ class _SlotMeta(type):
 
 class Slot(object):
     '''
-    Class representing a nightly build slot.
+    Generic nightly build slot.
     '''
     __metaclass__ = _SlotMeta
-    __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled')
+    __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc')
     __projects__ = []
     __env__ = []
 
@@ -913,6 +913,7 @@ class Slot(object):
                     environment for the slot
         @param disabled: if True the slot should not be used in the nightly
                          builds
+        @param desc: description of the slot
         '''
         self._name = name
         if projects is None:
@@ -921,6 +922,8 @@ class Slot(object):
         self.env = kwargs.get('env', list(self.__env__))
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
         self.disabled = kwargs.get('disabled', False)
+        self.desc = kwargs.get('desc',
+                               (self.__doc__ or '<no description>').strip())
 
         # add this slot to the global list of slots
         global slots
