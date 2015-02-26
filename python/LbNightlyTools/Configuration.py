@@ -1338,7 +1338,7 @@ def getSlot(name, configdir=os.curdir):
         try:
             slot = func(*args)
             break
-        except RuntimeError:
+        except (RuntimeError, IOError):
             pass # it's not in the XML, let's try the other methods
     else:
         raise RuntimeError('cannot find slot {0}'.format(name))
