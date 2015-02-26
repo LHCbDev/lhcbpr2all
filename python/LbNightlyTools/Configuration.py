@@ -1078,14 +1078,15 @@ class Slot(object):
             if not p.disabled:
                 yield p
 
-    def checkout(self, verbose=False, export=False):
+    def checkout(self, verbose=False, export=False, projects=None):
         '''
         Checkout all the projects in the slot.
         '''
         results = OrderedDict()
         for project in self.activeProjects:
-            results[project.name] = project.checkout(verbose=verbose,
-                                                     export=export)
+            if projects is None or project.name.lower() in projects:
+                results[project.name] = project.checkout(verbose=verbose,
+                                                         export=export)
         return results
 
     def patch(self, patchfile=None):
