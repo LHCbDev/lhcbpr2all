@@ -963,16 +963,6 @@ class Slot(object):
         global slots
         slots[self._name] = self
 
-    def x__getinitargs__(self):
-        '''
-        Allow pickling.
-        '''
-        return {'name': self.name,
-                'projects': list(self.projects),
-                'env': self.env,
-                'build_tool': self.build_tool.name,
-                'disabled': self.disabled}
-
     def _clone(self, new_name):
         '''
         Return a new instance configured as this one except for the name.
