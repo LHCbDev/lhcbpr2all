@@ -13,10 +13,14 @@ function(doc) {
 				"build_id": doc.build_id,
 				"platforms": [],
 				"projects": projs};
-		if (doc.USE_CMT) {
-			data.build_tool = "cmt";
+		if (doc.build_tool) {
+			data.build_tool = doc.build_tool;
 		} else {
-			data.build_tool = "cmake";
+			if (doc.USE_CMT) {
+				data.build_tool = "cmt";
+			} else {
+				data.build_tool = "cmake";
+			}
 		}
 		if (doc.platforms) {
 			data.platforms = doc.platforms;
