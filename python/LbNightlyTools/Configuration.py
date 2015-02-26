@@ -222,6 +222,7 @@ class Project(object):
         __log__.info('checking out %s', self)
         opts = dict(self.checkout_opts)
         opts.update(kwargs)
+        __log__.debug('  with args %s', opts)
         return self._checkout(self, **opts)
 
     def build(self, **kwargs):
@@ -602,6 +603,7 @@ class Package(object):
         __log__.info('checking out %s', self)
         opts = dict(self.checkout_opts)
         opts.update(kwargs)
+        __log__.debug('  with args %s', opts)
         return self._checkout(self, **opts)
 
     @property
@@ -1090,15 +1092,14 @@ class Slot(object):
             if not p.disabled:
                 yield p
 
-    def checkout(self, verbose=False, export=False, projects=None):
+    def checkout(self, projects=None, **kwargs):
         '''
         Checkout all the projects in the slot.
         '''
         results = OrderedDict()
         for project in self.activeProjects:
             if projects is None or project.name.lower() in projects:
-                results[project.name] = project.checkout(verbose=verbose,
-                                                         export=export)
+                results[project.name] = project.checkout(**kwargs)
         return results
 
     def patch(self, patchfile=None):
