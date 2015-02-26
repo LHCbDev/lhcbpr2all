@@ -718,16 +718,25 @@ class _ContainedList(object):
                            (self.__type__.__name__.lower(), key))
         return self._elements[key]
 
-    def __setitem__(self, idx, element):
+    def __setitem__(self, key, value):
         '''
         Item assignment that keeps the binding between container and containee
         in sync.
         '''
-        self._assertType(element)
-        old = self[idx]
-        self._elements(idx, element)
-        setattr(element, self.__container_member__, self.container)
-        setattr(old, self.__container_member__, None)
+        if isinstance(key, slice):
+            map(self._assertType, value)
+        else:
+            self._assertType(value)
+        old = self[key]
+        self._elements[key] = value
+        if isinstance(key, slice):
+            for elem in value:
+                setattr(elem, self.__container_member__, self.container)
+            for elem in old:
+                setattr(elem, self.__container_member__, None)
+        else:
+            setattr(value, self.__container_member__, self.container)
+            setattr(old, self.__container_member__, None)
 
     def insert(self, idx, element):
         '''
@@ -745,12 +754,15 @@ class _ContainedList(object):
         setattr(element, self.__container_member__, self.container)
         return self._elements.append(element)
 
-    def __delitem__(self, idx):
+    def __delitem__(self, key):
         '''
         Item removal that disconnect the element from the container.
         '''
-        old = self[idx]
-        self.remove(old)
+        if isinstance(key, slice):
+            old = self[key]
+        else:
+            old = [self[key]]
+        map(self.remove, old)
 
     def remove(self, element):
         '''
