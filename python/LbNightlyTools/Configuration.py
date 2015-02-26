@@ -166,6 +166,23 @@ class Project(object):
 
         self.build_results = None
 
+    def toDict(self):
+        '''
+        Return a dictionary describing the project, suitable to conversion to
+        JSON.
+        '''
+        data = {'name': self.name,
+                'version': self.version,
+                'dependencies': self._deps,
+                'overrides': self.overrides,
+                'checkout': self._checkout.__name__,
+                'checkout_opts': self.checkout_opts,
+                'disabled': self.disabled,
+                'env': self.env}
+        if not self.slot:
+            data['build_tool'] = self.build_tool.__class__.__name__
+        return data
+
     def __eq__(self, other):
         '''Equality operator.'''
         elems = ('__class__', 'name', 'version', 'disabled', 'overrides',
@@ -553,6 +570,19 @@ class Package(object):
         self._checkout = getMethod(kwargs.get('checkout'))
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
+    def toDict(self):
+        '''
+        Return a dictionary describing the package, suitable to conversion to
+        JSON.
+        '''
+        data = {'name': self.name,
+                'version': self.version,
+                'checkout': self._checkout.__name__,
+                'checkout_opts': self.checkout_opts}
+        if not self.container:
+            data['container'] = self.container.name
+        return data
+
     def __eq__(self, other):
         '''Equality operator.'''
         elems = ('__class__', 'name', 'version', '_checkout', 'checkout_opts')
@@ -762,12 +792,22 @@ class DataProject(Project):
         '''
         Initialize the instance with name and list of packages.
         '''
-        # we use 'HEAD' as version just to comply with Project.__init__, but the
+        # we use 'None' as version just to comply with Project.__init__, but the
         # version is ignored
-        Project.__init__(self, name, 'HEAD', **kwargs)
+        Project.__init__(self, name, 'None', **kwargs)
         if packages is None:
             packages = []
         self._packages = PackagesList(self, packages)
+
+    def toDict(self):
+        '''
+        Return a dictionary describing the data project, suitable to conversion
+        to JSON.
+        '''
+        data = {'name': self.name,
+                'version': self.version,
+                'checkout': 'ignore'}
+        return data
 
     def __eq__(self, other):
         '''Equality operator.'''
@@ -930,6 +970,25 @@ class Slot(object):
         # add this slot to the global list of slots
         global slots
         slots[name] = self
+
+    def toDict(self):
+        '''
+        Return a dictionary describing the slot, suitable to conversion to JSON.
+        '''
+        from itertools import chain
+        data = {'name': self.name,
+                'description': self.desc,
+                'projects': [proj.toDict() for proj in self.projects],
+                'disabled': self.disabled,
+                'build_tool': self.build_tool.__class__.__name__}
+
+        pkgs = list(chain.from_iterable([pack.toDict()
+                                         for pack in cont.packages]
+                                        for cont in self.projects
+                                        if isinstance(cont, DataProject)))
+        data['packages'] = pkgs
+
+        return data
 
     def __eq__(self, other):
         '''
