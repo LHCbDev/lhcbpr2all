@@ -922,8 +922,10 @@ class Slot(object):
         self.env = kwargs.get('env', list(self.__env__))
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
         self.disabled = kwargs.get('disabled', False)
-        self.desc = kwargs.get('desc',
-                               (self.__doc__ or '<no description>').strip())
+        desc = kwargs.get('desc')
+        if desc is None:
+            desc = (self.__doc__ or '<no description>').strip()
+        self.desc = desc
 
         # add this slot to the global list of slots
         global slots
@@ -1294,7 +1296,13 @@ def parse(path):
         container.packages.append(pkg)
 
     slot = Slot(data.get(u'slot', None), projects=containers.values(),
-                env=data.get(u'env', []))
+                env=data.get(u'env', []),
+                desc=data.get(u'description'))
+
+    if data.get(u'USE_CMT'):
+        slot.build_tool = 'cmt'
+    if u'build_tool' in data:
+        slot.build_tool = data[u'build_tool']
 
     old_checkout_names = {'defaultCheckout': 'default',
                           'gitCheckout': 'git',
