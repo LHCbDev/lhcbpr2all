@@ -1092,14 +1092,21 @@ class Slot(object):
             if not p.disabled:
                 yield p
 
-    def checkout(self, projects=None, **kwargs):
+    def checkout(self, projects=None, ignore_errors=False, **kwargs):
         '''
         Checkout all the projects in the slot.
         '''
         results = OrderedDict()
         for project in self.activeProjects:
             if projects is None or project.name.lower() in projects:
-                results[project.name] = project.checkout(**kwargs)
+                try:
+                    results[project.name] = project.checkout(**kwargs)
+                except RuntimeError, x:
+                    if ignore_errors:
+                        __log__.warning('failed to checkout %s', project)
+                        __log__.warning(str(x))
+                    else:
+                        raise
         return results
 
     def patch(self, patchfile=None):

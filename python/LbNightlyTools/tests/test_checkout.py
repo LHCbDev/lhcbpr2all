@@ -79,8 +79,8 @@ def check(files):
 
 
 def test_Project():
-    'StackCheckout.Project'
-    Project = StackCheckout.Project
+    'Configuration.Project'
+    Project = Configuration.Project
 
     mockCheckout = MockFunc()
 
@@ -124,38 +124,38 @@ def test_Project():
     assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
 
-def test_StackDesc():
-    'StackCheckout.StackDesc'
-    StackDesc = StackCheckout.StackDesc
-    Project = StackCheckout.Project
+def test_Slot():
+    'Configuration.Slot'
+    Slot = Configuration.Slot
+    Project = Configuration.Project
 
-    s = StackDesc()
-    assert s.projects == []
-    assert s.name == None
+    #s = Slot('dummy')
+    #assert len(s.projects) == 0
+    #assert s.name == 'dummy'
 
-    s = StackDesc(name='lhcb-gaudi-head')
-    assert s.projects == []
+    s = Slot(name='lhcb-gaudi-head')
+    assert len(s.projects) == 0
     assert s.name == 'lhcb-gaudi-head'
 
     cb = MockFunc()
     p = Project('Gaudi', 'v23r5', checkout=cb)
-    s = StackDesc([p])
+    s = Slot('dummy', [p])
     s.checkout()
     assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
 
 def test_PartialCheckout():
     'PartialCheckout'
-    StackDesc = StackCheckout.StackDesc
-    Project = StackCheckout.Project
+    Slot = Configuration.Slot
+    Project = Configuration.Project
 
     gcb = MockFunc()
     p1 = Project('Gaudi', 'v23r5', checkout=gcb)
     lcb = MockFunc()
     p2 = Project('LHCb', 'HEAD', checkout=lcb)
 
-    s = StackDesc([p1, p2])
-    s.checkout(requested=set(['gaudi']))
+    s = Slot('dummy', [p1, p2])
+    s.checkout(projects=set(['gaudi']))
 
     assert gcb.args == (p1,), gcb.args
     assert gcb.kwargs == {}, gcb.kwargs
@@ -163,9 +163,9 @@ def test_PartialCheckout():
     assert lcb.kwargs == None
 
 def test_parseConfigFile():
-    'StackCheckout.parseConfigFile()'
+    'Configuration.parse()'
 
-    doCall = lambda data: processFileWithName(json.dumps(data), 'dummy.json', StackCheckout.parseConfigFile)
+    doCall = lambda data: processFileWithName(json.dumps(data), 'dummy.json', Configuration.parse)
 
     CheckoutMethods.special_test = MockFunc()
 
@@ -211,7 +211,7 @@ def test_checkout():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    Project = StackCheckout.Project
+    Project = Configuration.Project
 
     with TemporaryDir(chdir=True):
         # default method
@@ -317,7 +317,7 @@ def test_checkout_export():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    Project = StackCheckout.Project
+    Project = Configuration.Project
 
     with TemporaryDir(chdir=True):
         Project('Brunel', 'v44r1').checkout(export=True)
@@ -358,7 +358,7 @@ def test_getpack_recursive_head():
     if not which('getpack') or not which('git'):
         raise nose.SkipTest
 
-    Project = StackCheckout.Project
+    Project = Configuration.Project
 
     def getPkgVersion(path):
         req = open(path).read()
@@ -433,7 +433,7 @@ def test_getpack_recursive_head():
         assert isFromTrunk(sysreq)
 
 
-def test_collectDeps():
+def test_dependencies():
     expected = {'LCGCMT': [],
                 'Gaudi': ['LCGCMT'],
                 'Online': ['Gaudi'],
@@ -449,27 +449,27 @@ def test_collectDeps():
     LbNightlyTools.Configuration.__log__.addHandler(mlh)
 
     rootdir = join(_testdata, 'collect_deps', 'cmt')
-    slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
-    slot.rootdir = rootdir
-    deps = slot.collectDeps()
+    slot = Configuration.parse(join(rootdir, 'conf.json'))
+    with Utils.chdir(rootdir):
+        deps = slot.dependencies()
     print 'CMT:', deps
     assert deps == expected
     assert len(mlh.messages['warning']) == 1
     assert 'LCGCMT' in mlh.messages['warning'].pop()
 
     rootdir = join(_testdata, 'collect_deps', 'cmake')
-    slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
-    slot.rootdir = rootdir
-    deps = slot.collectDeps()
+    slot = Configuration.parse(join(rootdir, 'conf.json'))
+    with Utils.chdir(rootdir):
+        deps = slot.dependencies()
     print 'CMake:', deps
     assert deps == expected
     assert len(mlh.messages['warning']) == 1
     assert 'LCGCMT' in mlh.messages['warning'].pop()
 
     rootdir = join(_testdata, 'collect_deps', 'broken')
-    slot = StackCheckout.parseConfigFile(join(rootdir, 'conf.json'))
-    slot.rootdir = rootdir
-    deps = slot.collectDeps()
+    slot = Configuration.parse(join(rootdir, 'conf.json'))
+    with Utils.chdir(rootdir):
+        deps = slot.dependencies()
     expected = {'Gaudi': [],
                 'BadCMT': [],
                 'BadCMake': [],
@@ -512,7 +512,7 @@ def test_checkout_datapkgs_old():
     if not which('getpack'):
         raise nose.SkipTest
 
-    Package = StackCheckout.Package
+    Package = Configuration.Package
 
     mlh = MockLoggingHandler()
     StackCheckout.__log__.addHandler(mlh)
@@ -524,11 +524,10 @@ def test_checkout_datapkgs_old():
 
         assert exists(join('AppConfig', 'v3r198', 'cmt'))
 
-    slot = StackCheckout.parseConfigFile(join(_testdata, 'data-packs.json'))
+    slot = Configuration.parse(join(_testdata, 'data-packs.json'))
     with TemporaryDir(chdir=True):
-        os.makedirs('build')
-        slot.rootdir = 'build'
-        slot.checkout()
+        with Utils.chdir('build', create=True):
+            slot.checkout()
 
         assert exists(join('build', 'DBASE', 'AppConfig', 'v3r198', 'cmt'))
         assert exists(join('build', 'PARAM', 'TMVAWeights', 'v1r0', 'cmt'))
@@ -584,19 +583,17 @@ def test_stack_checkout_datapkg_old():
     if not which('getpack'):
         raise nose.SkipTest
 
-    Package = StackCheckout.Package
+    Package = Configuration.Package
 
     mlh = MockLoggingHandler()
-    StackCheckout.__log__.addHandler(mlh)
+    Configuration.__log__.addHandler(mlh)
 
     with TemporaryDir(chdir=True):
-        os.makedirs('build')
         pkgs = [Package(name='AppConfig', version='v3r198'),
                 Package(name='Det/SQLDDDB', version='HEAD')]
-        Configuration.DBASE(pkgs)
-        slot = StackCheckout.StackDesc(packages=pkgs)
-        slot.rootdir = 'build'
-        slot.checkout()
+        slot = Configuration.Slot('dummy', projects=[Configuration.DBASE(pkgs)])
+        with Utils.chdir('build', create=True):
+            slot.checkout()
 
         for pkg in pkgs:
             assert exists(join('build', pkg.baseDir)), 'missing %s' % pkg.baseDir

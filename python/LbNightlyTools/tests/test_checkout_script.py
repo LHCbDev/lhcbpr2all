@@ -59,31 +59,6 @@ def test_noop_patch():
         assert isfile(reqfile)
 
 
-def test_noop_patch_old():
-    with TemporaryDir(chdir=True) as tmpd:
-
-        build_dir = join(tmpd, 'checkout')
-        ensureDirs([build_dir])
-
-        call(['tar', '-x',
-              '-f', join(_testdata, 'artifacts',
-                         'TestProject.HEAD.testing-slot.src.tar.bz2'),
-              '-C', build_dir])
-
-        configfile = join(_testdata, 'testing-slot.json')
-        slot = StackCheckout.parseConfigFile(configfile)
-        slot.rootdir = build_dir
-
-        slot.patch('slot.patch')
-
-        assert isfile(join(build_dir, 'slot.patch'))
-        assert not open(join(build_dir, 'slot.patch')).read().strip(), 'patch file not empty'
-
-        reqfile = join('checkout', 'TESTPROJECT', 'TESTPROJECT_HEAD',
-                       'TestProjectSys', 'cmt', 'requirements')
-        assert isfile(reqfile)
-
-
 def test_lbcore_192():
     '''https://its.cern.ch/jira/browse/LBCORE-192
 
@@ -104,38 +79,6 @@ def test_lbcore_192():
         assert isfile('slot.patch')
 
         reqfile = join('TESTPROJECT', 'TESTPROJECT_HEAD',
-                       'TestProjectSys', 'cmt', 'requirements')
-        assert isfile(reqfile)
-
-        #print open(reqfile).read()
-        assert [l for l in open(reqfile)
-                if re.match(r'^\s*use\s+NewPack\s+\*\s*$', l)], 'NewPack not in requirements'
-
-def test_lbcore_192_old():
-    '''https://its.cern.ch/jira/browse/LBCORE-192
-
-    The *Sys package of a project is not correctly updated when new packages are
-    added.
-    '''
-    with TemporaryDir(chdir=True) as tmpd:
-
-        build_dir = join(tmpd, 'checkout')
-        ensureDirs([build_dir])
-
-        call(['tar', '-x',
-              '-f', join(_testdata, 'artifacts',
-                         'TestProject.HEAD.testing-slot.src.tar.bz2'),
-              '-C', build_dir])
-
-        configfile = join(_testdata, 'testing-slot-lbcore-192.json')
-        slot = StackCheckout.parseConfigFile(configfile)
-        slot.rootdir = build_dir
-
-        slot.patch('slot.patch')
-
-        assert isfile(join(build_dir, 'slot.patch'))
-
-        reqfile = join('checkout', 'TESTPROJECT', 'TESTPROJECT_HEAD',
                        'TestProjectSys', 'cmt', 'requirements')
         assert isfile(reqfile)
 
