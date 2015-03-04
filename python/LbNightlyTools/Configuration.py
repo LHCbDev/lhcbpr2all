@@ -1005,6 +1005,42 @@ class Slot(object):
 
         return data
 
+    @classmethod
+    def fromDict(cls, data):
+        '''
+        Create a Slot instance from a dictionary like the one returned by
+        Slot.toDict().
+        '''
+        containers = {}
+        for pkg in data.get('packages', []):
+            container = pkg.get('container', 'DBASE')
+            if container not in containers:
+                containers[container] = globals()[container]()
+            container = containers[container]
+            pkg = Package(pkg['name'], pkg['version'],
+                          checkout=pkg.get('checkout'),
+                          checkout_opts=pkg.get('checkout_opts', {}))
+            container.packages.append(pkg)
+
+        slot = cls(name=data.get('slot', None), projects=containers.values(),
+                   env=data.get('env', []),
+                   desc=data.get('description'))
+
+        if data.get('USE_CMT'):
+            slot.build_tool = 'cmt'
+        if 'build_tool' in data:
+            slot.build_tool = data['build_tool']
+
+        for proj in data.get('projects', []):
+            checkout = proj.get('checkout')
+            slot.projects.append(Project(proj['name'], proj['version'],
+                                         overrides=proj.get('overrides', {}),
+                                         checkout=checkout,
+                                         checkout_opts=proj.get('checkout_opts',
+                                                                {})))
+
+        return slot
+
     def __eq__(self, other):
         '''
         Equality operator.
@@ -1358,6 +1394,8 @@ def configToString(config):
     Convert the configuration to a string.
     '''
     import json
+    if isinstance(config, Slot):
+        config = config.toDict()
     return json.dumps(config, sort_keys=True, indent=2, separators=(',', ': '))
 
 def parse(path):
@@ -1365,45 +1403,7 @@ def parse(path):
     Read a JSON file describing the configuration of a slot.
     '''
     data = load(path)
-    containers = {}
-    for pkg in data.get(u'packages', []):
-        container = pkg.get(u'container', 'DBASE')
-        if container not in containers:
-            containers[container] = globals()[container]()
-        container = containers[container]
-        pkg = Package(pkg[u'name'], pkg[u'version'],
-                      checkout=pkg.get(u'checkout'),
-                      checkout_opts=pkg.get(u'checkout_opts', {}))
-        container.packages.append(pkg)
-
-    slot = Slot(data.get(u'slot', None), projects=containers.values(),
-                env=data.get(u'env', []),
-                desc=data.get(u'description'))
-
-    if data.get(u'USE_CMT'):
-        slot.build_tool = 'cmt'
-    if u'build_tool' in data:
-        slot.build_tool = data[u'build_tool']
-
-    old_checkout_names = {'defaultCheckout': 'default',
-                          'gitCheckout': 'git',
-                          'noCheckout': 'ignore'}
-    for proj in data.get(u'projects', []):
-        checkout = proj.get(u'checkout')
-        # add backward compatibility check for the checkout functions
-        if checkout in old_checkout_names:
-            new_name = old_checkout_names[checkout]
-            __log__.warning('the checkout name "%s" is deprecated, '
-                            'use "%s" instead', checkout, new_name)
-            checkout = new_name
-        slot.projects.append(Project(proj[u'name'], proj[u'version'],
-                                     overrides=proj.get(u'overrides', {}),
-                                     checkout=checkout,
-                                     checkout_opts=proj.get(u'checkout_opts',
-                                                            {})))
-
-    return slot
-
+    return Slot.fromDict(data)
 
 def getSlot(name, configdir=os.curdir):
     '''
