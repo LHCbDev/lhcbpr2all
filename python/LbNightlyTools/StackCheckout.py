@@ -140,8 +140,7 @@ class Script(LbUtils.Script.PlainScript):
         dashboard.publish(cfg)
 
         with chdir(build_dir):
-            verbose = self.options.log_level in ('DEBUG', 'VERBOSE')
-            slot.checkout(projects=opts.projects, verbose=verbose,
+            slot.checkout(projects=opts.projects,
                           ignore_errors=opts.ignore_checkout_errors)
 
             if not cfg.get('no_patch'):

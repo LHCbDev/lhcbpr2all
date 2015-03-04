@@ -920,7 +920,7 @@ class DataProject(Project):
 
         # separate checkout arguments from build arguments
         co_kwargs = dict([(key, value) for key, value in kwargs.iteritems()
-                          if key in ('verbose', 'export')])
+                          if key in ('export')])
         b_kwargs = dict([(key, value) for key, value in kwargs.iteritems()
                          if key in ('verbose', 'jobs')])
 

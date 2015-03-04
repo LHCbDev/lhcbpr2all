@@ -198,6 +198,117 @@ def retry_tee_call(*args, **kwargs):
                                 .format(args[0], retry))
         return result
 
+def log_call(*args, **kwargs):
+    '''
+    Wrapper for Popen to run a command and collect the output.
+
+    The arguments are those of Popen, with the addition of
+    @param logger: a logging.Logger instance to be used to print messages
+                  [default: default logger].
+    @param log_level: level the output of the command should use
+                      [default: logging.DEBUG]
+
+    @return: tuple with return code, stdout and stderr
+
+    Example:
+    >>> import logging
+    >>> logging.basicConfig(level=logging.INFO)
+    >>> log_call(['echo hello'], shell=True, logger=logging.getLogger('hi'),
+    ... log_level=logging.INFO)
+    INFO:hi:hello
+    (0, 'hello\\n', '')
+    '''
+    from subprocess import Popen, PIPE
+    import select
+    import errno
+
+    log = kwargs.pop('logger', logging).log
+    log_level = kwargs.pop('log_level', logging.DEBUG)
+
+    if 'stdout' not in kwargs:
+        kwargs['stdout'] = PIPE
+    if 'stderr' not in kwargs:
+        kwargs['stderr'] = PIPE
+
+    proc = Popen(*args, **kwargs)
+
+    # code inspired (mostly copied) from subprocess module
+    poller = select.poll()
+    files = {proc.stdout.fileno(): proc.stdout,
+             proc.stderr.fileno(): proc.stderr}
+    out = []
+    err = []
+    output = {proc.stdout.fileno(): out,
+              proc.stderr.fileno(): err}
+    spilled_output = {proc.stdout.fileno(): '',
+                      proc.stderr.fileno(): ''}
+
+    select_POLLIN_POLLPRI = select.POLLIN | select.POLLPRI
+
+    poller.register(proc.stdout, select_POLLIN_POLLPRI)
+    poller.register(proc.stderr, select_POLLIN_POLLPRI)
+
+    def close_unregister_and_remove(fd):
+        poller.unregister(fd)
+        files[fd].close()
+        files.pop(fd)
+
+    while files:
+        try:
+            ready = poller.poll()
+        except select.error, e:
+            if e.args[0] == errno.EINTR:
+                continue
+            raise
+        for fd, mode in ready:
+            if mode & select_POLLIN_POLLPRI:
+                data = os.read(fd, 4096)
+                if not data:
+                    close_unregister_and_remove(fd)
+                output[fd].append(data)
+                data = spilled_output[fd] + data
+                spilled_output[fd] = ''
+                for line in data.splitlines(True):
+                    if line.endswith('\n'):
+                        log(log_level, line.rstrip())
+                    else:
+                        spilled_output[fd] += line
+            else:
+                # Ignore hang up or errors.
+                close_unregister_and_remove(fd)
+    out = ''.join(out)
+    err = ''.join(err)
+    retcode = proc.wait()
+
+    return retcode, out, err
+
+def retry_log_call(*args, **kwargs):
+    '''
+    Replacement for log_call() that can retry if the command fails.
+    To enable the retries, pass the keyword argument 'retry' setting it to the
+    number of timed to try.
+
+    For example:
+
+    >>> retry_log_call(['false'], retry=3)
+    Traceback (most recent call last):
+    ...
+    RuntimeError: the command ['false'] failed 3 times
+    '''
+    if 'retry' not in kwargs:
+        # no retry
+        return log_call(*args, **kwargs)
+    else:
+        retry = kwargs.pop('retry')
+        for _count in range(retry):
+            result = log_call(*args, **kwargs)
+            if result[0] == 0:
+                break
+        else: # Note: else of the 'for' block
+            raise RuntimeError('the command {0} failed {1} times'
+                                .format(args[0], retry))
+        return result
+
 def ensureDirs(dirs):
     '''
     Ensure that the specified directories exist, creating them if needed.

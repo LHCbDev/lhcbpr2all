@@ -18,13 +18,13 @@ import shutil
 import os
 
 from subprocess import Popen, PIPE
-from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs
+from LbNightlyTools.Utils import retry_log_call, log_call, ensureDirs
 
 __log__ = logging.getLogger(__name__)
 
 def _merge_outputs(outputs):
     '''
-    Helper function to merge the tuples returned by tee_call.
+    Helper function to merge the tuples returned by log_call.
 
     >>> _merge_outputs([(1, 'a\\n', ''), (0, 'b\\n', '')])
     (1, 'a\\nb\\n', '')
@@ -37,8 +37,7 @@ def _merge_outputs(outputs):
             ''.join(step[1] for step in outputs),
             ''.join(step[2] for step in outputs))
 
-def getpack(desc, recursive_head=None, export=False,
-            protocol=None, verbose=False):
+def getpack(desc, recursive_head=None, export=False, protocol=None):
     '''
     Checkout the project described by the Project instance 'desc'.
     '''
@@ -72,25 +71,23 @@ def getpack(desc, recursive_head=None, export=False,
         os.makedirs(rootdir)
 
     __log__.debug('checking out %s', desc)
-    outputs = [retry_tee_call(cmd, cwd=rootdir, retry=3, verbose=verbose)]
+    outputs = [retry_log_call(cmd, cwd=rootdir, retry=3)]
 
     if hasattr(desc, 'overrides') and desc.overrides:
         __log__.debug('overriding packages')
         for package, version in desc.overrides.items():
             if version:
                 cmd = getpack_cmd + [package, version]
-                outputs.append(retry_tee_call(cmd, cwd=prjroot, retry=3,
-                                              verbose=verbose))
+                outputs.append(retry_log_call(cmd, cwd=prjroot, retry=3))
             else:
-                if verbose:
-                    print 'Removing', package
+                __log__.debug('removing %s', package)
                 outputs.append((0, 'Removing %s\n' % package, ''))
                 shutil.rmtree(join(prjroot, package), ignore_errors=True)
 
     __log__.debug('checkout of %s completed in %s', desc, prjroot)
     return _merge_outputs(outputs)
 
-def ignore(desc, export=False, verbose=False):
+def ignore(desc, export=False):
     '''
     Special checkout function used to just declare a project version in the
     configuration but do not perform the checkout, so that it's picked up from
@@ -99,7 +96,7 @@ def ignore(desc, export=False, verbose=False):
     __log__.info('checkout not requested for %s', desc)
     return (0, 'checkout not requested for %s' % desc, '')
 
-def git(desc, url, commit='master', export=False, verbose=False):
+def git(desc, url, commit='master', export=False):
     '''
     Checkout from a git repository.
     '''
@@ -110,7 +107,7 @@ def git(desc, url, commit='master', export=False, verbose=False):
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
     call(['git', 'clone', '--no-checkout', url, dest])
     if not export:
@@ -152,14 +149,14 @@ def git(desc, url, commit='master', export=False, verbose=False):
     __log__.debug('checkout of %s completed in %s', desc, dest)
     return _merge_outputs(outputs)
 
-def svn(desc, url, export=False, verbose=False):
+def svn(desc, url, export=False):
     '''
     Checkout from an svn repository.
     '''
     __log__.debug('checking out %s from %s', desc, url)
     dest = desc.baseDir
-    output = tee_call(['svn', 'checkout' if not export else 'export',
-                       url, dest], verbose=verbose)
+    output = log_call(['svn', 'checkout' if not export else 'export',
+                       url, dest])
     makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(makefile):
         f = open(makefile, 'w')
@@ -170,7 +167,7 @@ def svn(desc, url, export=False, verbose=False):
     __log__.debug('checkout of %s completed in %s', desc, dest)
     return output
 
-def copy(desc, src, export=False, verbose=False):
+def copy(desc, src, export=False):
     '''
     Copy the content of a directory.
     '''
@@ -186,14 +183,13 @@ def copy(desc, src, export=False, verbose=False):
     __log__.debug('copy of %s completed in %s', desc, dest)
     return (0, 'copied %s from %s' % (desc, src), '')
 
-def untar(desc, src, export=False, verbose=False):
+def untar(desc, src, export=False):
     '''
     Unpack a tarball in the current directory (assuming that the tarball already
     contains the <PROJECT>/<PROJECT>_<version> directories).
     '''
     __log__.debug('unpacking %s', src)
-    output = tee_call(['tar', '-x', '-f', src],
-                      verbose=verbose)
+    output = log_call(['tar', '-x', '-f', src])
     dest = desc.baseDir
     if not os.path.isdir(dest):
         raise RuntimeError('the tarfile %s does not contain %s',
@@ -207,8 +203,7 @@ def untar(desc, src, export=False, verbose=False):
     return output
 
 def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
-          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc',
-          verbose=False):
+          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc'):
     '''
     Special hybrid checkout needed to release DIRAC.
     '''
@@ -231,7 +226,7 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
     __log__.debug('checking out project %s', desc)
     call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
@@ -313,11 +308,11 @@ tests:
     return _merge_outputs(outputs)
 
 
-def lhcbdirac(desc, export=False, verbose=False):
+def lhcbdirac(desc, export=False):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
-    from os.path import normpath, join, isdir, basename
+    from os.path import join, isdir, basename
     if desc.version.lower() == 'head':
         url = 'http://svn.cern.ch/guest/dirac/LHCbDIRAC/trunk/LHCbDIRAC'
     else:
@@ -337,7 +332,7 @@ def lhcbdirac(desc, export=False, verbose=False):
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
     __log__.debug('checking out project %s', desc)
     call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
@@ -382,7 +377,7 @@ def lhcbdirac(desc, export=False, verbose=False):
     return _merge_outputs(outputs)
 
 
-def lhcbgrid(desc, url=None, export=False, verbose=False):
+def lhcbgrid(desc, url=None, export=False):
     '''
     Special hybrid checkout needed to release LHCbGrid.
     '''
@@ -398,7 +393,7 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
     dest = desc.baseDir
     __log__.debug('fixing requirements files')
@@ -409,7 +404,7 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
 
 
 GAUDI_GIT_URL = 'http://git.cern.ch/pub/gaudi'
-def gaudi(proj, url=GAUDI_GIT_URL, export=False, verbose=False):
+def gaudi(proj, url=GAUDI_GIT_URL, export=False):
     '''
     Wrapper around the git function for Gaudi.
     '''
@@ -420,11 +415,11 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, verbose=False):
         commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
     else:
         commit = proj.version
-    return git(proj, url, commit, export, verbose)
+    return git(proj, url, commit, export)
 
 
 LIT_GIT_URL = 'http://git.cern.ch/pub/LHCbIntegrationTests'
-def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False, verbose=False):
+def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False):
     '''
     Wrapper around the git function for LHCbIntegrationTests.
     '''
@@ -432,7 +427,7 @@ def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False, verbose=False):
         commit = 'master'
     else:
         commit = proj.version
-    return git(proj, url, commit, export, verbose)
+    return git(proj, url, commit, export)
 
 
 # set default checkout method
