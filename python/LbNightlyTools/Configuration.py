@@ -953,7 +953,8 @@ class Slot(object):
     Generic nightly build slot.
     '''
     __metaclass__ = _SlotMeta
-    __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc')
+    __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc',
+                 'platforms')
     __projects__ = []
     __env__ = []
 
@@ -968,6 +969,7 @@ class Slot(object):
         @param disabled: if True the slot should not be used in the nightly
                          builds
         @param desc: description of the slot
+        @param platforms: list of platform ids the slot should be built for
         '''
         self._name = name
         if projects is None:
@@ -980,6 +982,8 @@ class Slot(object):
         if desc is None:
             desc = (self.__doc__ or '<no description>').strip()
         self.desc = desc
+
+        self.platforms = kwargs.get('platforms')
 
         # add this slot to the global list of slots
         global slots
@@ -1002,6 +1006,8 @@ class Slot(object):
                                         for cont in self.projects
                                         if isinstance(cont, DataProject)))
         data['packages'] = pkgs
+        if self.platforms:
+            data['platforms'] = self.platforms
 
         return data
 
@@ -1025,6 +1031,8 @@ class Slot(object):
         slot = cls(name=data.get('slot', None), projects=containers.values(),
                    env=data.get('env', []),
                    desc=data.get('description'))
+        slot.platforms = data.get('platforms', data.get('default_platforms'))
+
 
         if data.get('USE_CMT'):
             slot.build_tool = 'cmt'
