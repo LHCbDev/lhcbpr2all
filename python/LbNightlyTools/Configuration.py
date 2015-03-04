@@ -990,11 +990,12 @@ class Slot(object):
         Return a dictionary describing the slot, suitable to conversion to JSON.
         '''
         from itertools import chain
-        data = {'name': self.name,
+        data = {'slot': self.name,
                 'description': self.desc,
                 'projects': [proj.toDict() for proj in self.projects],
                 'disabled': self.disabled,
-                'build_tool': self.build_tool.__class__.__name__}
+                'build_tool': self.build_tool.__class__.__name__,
+                'env': self.env}
 
         pkgs = list(chain.from_iterable([pack.toDict()
                                          for pack in cont.packages]
