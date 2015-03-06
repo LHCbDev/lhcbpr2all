@@ -8,14 +8,22 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
+# Uncomment to disable the tests.
+#__test__ = False
+
 import json
 
 from LbNightlyTools.tests.utils import processFile, processFileWithName
 
-# Uncomment to disable the tests.
-#__test__ = False
-
 from LbNightlyTools import Configuration
+
+from LbNightlyTools.tests.test_config_load import TEST_XML, assert_equals
+
+def config_parse_xml_check(name, expected):
+    load = lambda path: Configuration.load('{0}#{1}'.format(path, name))
+    found = processFile(TEST_XML, load)
+    assert_equals(found, expected)
+
 
 def test_loadJSON():
     'Configuration.load(json_file)'
@@ -28,7 +36,7 @@ def test_loadJSON():
                              "dependencies": ["Gaudi"]}]}
 
     found = processFile(json.dumps(expected), Configuration.load)
-    assert found == expected
+    assert_equals(found, expected)
 
 def test_loadJSON_2():
     'Configuration.load(json_with_slot)'
@@ -42,146 +50,7 @@ def test_loadJSON_2():
 
     found = processFileWithName(json.dumps(expected), 'special-slot.json', Configuration.load)
     expected['slot'] = 'special-slot'
-    assert found == expected
-
-TEST_XML = u'''
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="configuration.xsd">
-    <general>
-        <ignore>
-            <error value="distcc["/>
-            <error value="assert (error"/>
-            <warning value="__shadow__::__"/>
-            <warning value="was hidden"/>
-        </ignore>
-    </general>
-    <slot name="lhcb-lcg-head" description="lhcb-lcg-head - head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6" use_cmake="false">
-        <cmtprojectpath>
-            <path value="dir1"/>
-            <path value="dir2/%DAY%"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc5-gcc43-dbg"/>
-            <platform name="i686-slc5-gcc43-opt"/>
-            <platform name="x86_64-slc6-gcc46-opt"/>
-            <platform name="x86_64-slc6-gcc46-dbg"/>
-            <platform name="x86_64-slc6-gcc47-opt"/>
-            <platform name="x86_64-slc6-clang32-opt"/>
-        </platforms>
-        <waitfor flag="/afs/cern.ch/sw/lcg/app/nightlies/dev/%DAY%/isDone-%PLATFORM%"/>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <projects>
-            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-                <dependence project="LCGCMT" tag="LCGCMT_preview"/>
-            </project>
-            <project name="Online" tag="ONLINE_HEAD" headofeverything="true"/>
-            <project name="LHCb" tag="LHCB_HEAD" headofeverything="true">
-                <change package="Det/DetDescSvc" value="v2r2"/>
-                <addon package="Tools/EventIndexer" value="HEAD"/>
-            </project>
-            <project name="Lbcom" tag="LBCOM_HEAD" headofeverything="true"/>
-            <project name="Boole" tag="BOOLE_HEAD" headofeverything="true"/>
-            <project name="Rec" tag="REC_HEAD" headofeverything="true"/>
-            <project name="Brunel" tag="BRUNEL_HEAD" headofeverything="true"/>
-        </projects>
-    </slot>
-    <slot name="lhcb-lcg-test" description="a test" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
-        <cmtprojectpath>
-            <path value="dir1"/>
-            <path value="dir2/%DAY%"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc47-opt"/>
-            <platform name="x86_64-slc6-clang32-opt"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <projects>
-            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
-            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-            </project>
-        </projects>
-    </slot>
-    <slot name="lhcb-compatibility-x" description="lhcb-compatibility-x - testing released software against latest database tags" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
-        <paths>
-            <path value="%BUILDROOT%/nightlies/%SLOT%/%DAY%/%CMTCONFIG%" name="builddir"/>
-            <path value="%BUILDROOT%/builders/%SLOT%" name="buildersdir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/%SLOT%/%DAY%" name="releasedir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/www/logs/%SLOT%" name="wwwdir"/>
-        </paths>
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
-            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
-            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc5-gcc43-opt"/>
-            <platform name="x86_64-slc5-gcc43-dbg"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
-        <projects>
-            <project name="Brunel" tag="BRUNEL_v37r8p4"/>
-            <project name="Moore" tag="MOORE_v10r2p4"/>
-            <project name="DaVinci" tag="DAVINCI_v26r3p3"/>
-        </projects>
-    </slot>
-    <slot name="lhcb-headofeverything" description="testing headofeverything override flag" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
-        <paths>
-            <path value="%BUILDROOT%/nightlies/%SLOT%/%DAY%/%CMTCONFIG%" name="builddir"/>
-            <path value="%BUILDROOT%/builders/%SLOT%" name="buildersdir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/%SLOT%/%DAY%" name="releasedir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/www/logs/%SLOT%" name="wwwdir"/>
-        </paths>
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
-            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
-            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc47-opt"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
-        <projects>
-            <project name="Brunel" tag="BRUNEL_HEAD" headofeverything="false"/>
-            <project name="Moore" tag="MOORE_v10r2p4" headofeverything="true"/>
-        </projects>
-    </slot>
-    <slot name="lhcb-sim" description="testing Geant4 special case">
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
-            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
-            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc48-opt"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
-        <projects>
-            <project name="Geant4" tag="GEANT4_HEAD" />
-            <project name="Gauss" tag="GAUSS_HEAD" />
-        </projects>
-    </slot>
-    <slot name="lhcb-cmake" description="CMake-enabled slot" use_cmake="true">
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc49-opt"/>
-        </platforms>
-        <projects>
-            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
-            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-            </project>
-        </projects>
-    </slot>
-</configuration>
-'''
+    assert_equals(found, expected)
 
 def test_loadXML():
     'Configuration.load(xml)'
@@ -228,13 +97,7 @@ def test_loadXML():
                 'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
                 'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
                 }
-
-    load = lambda path: Configuration.load(path+"#lhcb-lcg-head")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    config_parse_xml_check('lhcb-lcg-head', expected)
 
 def test_loadXML_2():
     'Configuration.load(xml) [with LCGCMT_preview]'
@@ -244,6 +107,7 @@ def test_loadXML_2():
                 'projects': [{'name': 'LCGCMT',
                               'version': 'preview',
                               'checkout': 'ignore',
+                              'disabled': True,
                               'overrides': {}},
                              {'name': 'Gaudi',
                               'version': 'HEAD',
@@ -257,13 +121,7 @@ def test_loadXML_2():
                 'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
                 'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
                 }
-
-    load = lambda path: Configuration.load(path+"#lhcb-lcg-test")
-    found = processFile(TEST_XML, load)
-    #from pprint import pprint
-    #pprint(found)
-    #pprint(expected)
-    assert found == expected
+    config_parse_xml_check('lhcb-lcg-test', expected)
 
 def test_loadXML_3():
     'Configuration.load(xml) [with lhcb-compatibility*]'
@@ -292,13 +150,7 @@ def test_loadXML_3():
                 'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
                 'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
                 }
-
-    load = lambda path: Configuration.load(path+"#lhcb-compatibility-x")
-    found = processFile(TEST_XML, load)
-    #from pprint import pprint
-    #pprint(found)
-    #pprint(expected)
-    assert found == expected
+    config_parse_xml_check('lhcb-compatibility-x', expected)
 
 def test_loadXML_4():
     'Configuration.load(xml) [with lhcb-headofeverything]'
@@ -324,13 +176,7 @@ def test_loadXML_4():
                 'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
                 'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
                 }
-
-    load = lambda path: Configuration.load(path+"#lhcb-headofeverything")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    config_parse_xml_check('lhcb-headofeverything', expected)
 
 def test_loadXML_5():
     'Configuration.load(xml) [with lhcb-sim]'
@@ -355,13 +201,7 @@ def test_loadXML_5():
                 'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
                 'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
                 }
-
-    load = lambda path: Configuration.load(path+"#lhcb-sim")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    config_parse_xml_check('lhcb-sim', expected)
 
 def test_loadXML_6():
     'Configuration.load(xml) [with CMake]'
@@ -371,6 +211,7 @@ def test_loadXML_6():
                 'projects': [{'name': 'LCGCMT',
                               'version': 'preview',
                               'checkout': 'ignore',
+                              'disabled': True,
                               'overrides': {}},
                              {'name': 'Gaudi',
                               'version': 'HEAD',
@@ -381,10 +222,4 @@ def test_loadXML_6():
                 'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
                 'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
                 }
-
-    load = lambda path: Configuration.load(path+"#lhcb-cmake")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    config_parse_xml_check('lhcb-cmake', expected)

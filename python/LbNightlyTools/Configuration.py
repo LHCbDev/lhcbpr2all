@@ -125,7 +125,7 @@ class Project(object):
     Describe a project to be checked out, built and tested.
     '''
     __metaclass__ = _ProjectMeta
-    __checkout__ = 'default'
+    __checkout__ = None
     def __init__(self, name, version, **kwargs):
         '''
         @param name: name of the project
@@ -144,6 +144,8 @@ class Project(object):
                          for the configuration
         @param env: override the environment for the project
         @param build_tool: build method used for the project
+        @param with_shared: if True, the project requires packing of data
+                            generated at build time in the source tree
         '''
         self.name = name
         self.version = 'HEAD' if version.upper() == 'HEAD' else version
@@ -156,13 +158,26 @@ class Project(object):
         self._deps = kwargs.get('dependencies', [])
         self.env = kwargs.get('env', [])
 
+        # Get the checkout method using:
+        #  - checkout parameter
+        #  - __checkout__ class property
+        #  - name of the project
+        #  - default
         from CheckoutMethods import getMethod as getCheckoutMethod
-        self._checkout = getCheckoutMethod(kwargs.get('checkout',
-                                                      self.__checkout__))
+        if 'checkout' in kwargs:
+            self._checkout = getCheckoutMethod(kwargs['checkout'])
+        elif self.__checkout__:
+            self._checkout = getCheckoutMethod(self.__checkout__)
+        else:
+            try:
+                self._checkout = getCheckoutMethod(self.name.lower())
+            except:
+                self._checkout = getCheckoutMethod()
 
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
+        self.with_shared = kwargs.get('with_shared', False)
 
         self.build_results = None
 
@@ -178,10 +193,19 @@ class Project(object):
                 'checkout': self._checkout.__name__,
                 'checkout_opts': self.checkout_opts,
                 'disabled': self.disabled,
-                'env': self.env}
+                'env': self.env,
+                'with_shared': self.with_shared}
         if not self.slot:
             data['build_tool'] = self.build_tool.__class__.__name__
         return data
+
+    @classmethod
+    def fromDict(cls, data):
+        '''
+        Create a Project instance from a dictionary like the one returned by
+        Project.toDict().
+        '''
+        return cls(**data)
 
     def __eq__(self, other):
         '''Equality operator.'''
@@ -756,6 +780,14 @@ class _ContainedList(object):
         setattr(element, self.__container_member__, self.container)
         return self._elements.append(element)
 
+    def extend(self, iterable):
+        '''
+        Extend list by appending elements from the iterable.
+        '''
+        for element in iterable:
+            self.append(element)
+
+
     def __delitem__(self, key):
         '''
         Item removal that disconnect the element from the container.
@@ -954,7 +986,8 @@ class Slot(object):
     '''
     __metaclass__ = _SlotMeta
     __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc',
-                 'platforms')
+                 'platforms', 'error_exceptions', 'warning_exceptions',
+                 'preconditions')
     __projects__ = []
     __env__ = []
 
@@ -970,6 +1003,9 @@ class Slot(object):
                          builds
         @param desc: description of the slot
         @param platforms: list of platform ids the slot should be built for
+        @param warning_exceptions: list of regex of warnings that should be
+                                   ignored
+        @param error_exceptions: list of regex of errors that should be ignored
         '''
         self._name = name
         if projects is None:
@@ -985,6 +1021,11 @@ class Slot(object):
 
         self.platforms = kwargs.get('platforms')
 
+        self.error_exceptions = kwargs.get('error_exceptions', [])
+        self.warning_exceptions = kwargs.get('warning_exceptions', [])
+
+        self.preconditions = kwargs.get('preconditions', [])
+
         # add this slot to the global list of slots
         global slots
         slots[name] = self
@@ -999,7 +1040,11 @@ class Slot(object):
                 'projects': [proj.toDict() for proj in self.projects],
                 'disabled': self.disabled,
                 'build_tool': self.build_tool.__class__.__name__,
-                'env': self.env}
+                'env': self.env,
+                'error_exceptions': self.error_exceptions,
+                'warning_exceptions': self.warning_exceptions,
+                'preconditions': self.preconditions,
+                }
 
         pkgs = list(chain.from_iterable([pack.toDict()
                                          for pack in cont.packages]
@@ -1033,19 +1078,16 @@ class Slot(object):
                    desc=data.get('description'))
         slot.platforms = data.get('platforms', data.get('default_platforms'))
 
-
         if data.get('USE_CMT'):
             slot.build_tool = 'cmt'
         if 'build_tool' in data:
             slot.build_tool = data['build_tool']
 
-        for proj in data.get('projects', []):
-            checkout = proj.get('checkout')
-            slot.projects.append(Project(proj['name'], proj['version'],
-                                         overrides=proj.get('overrides', {}),
-                                         checkout=checkout,
-                                         checkout_opts=proj.get('checkout_opts',
-                                                                {})))
+        slot.projects.extend(map(Project.fromDict, data.get('projects', [])))
+
+        slot.error_exceptions = data.get('error_exceptions', [])
+        slot.warning_exceptions = data.get('warning_exceptions', [])
+        slot.preconditions = data.get('preconditions', [])
 
         return slot
 
@@ -1053,7 +1095,9 @@ class Slot(object):
         '''
         Equality operator.
         '''
-        elems = ('__class__', 'name', 'projects', 'env', 'disabled')
+        elems = ('__class__', 'name', 'projects', 'env', 'disabled',
+                 'desc', 'platforms', 'error_exceptions', 'warning_exceptions',
+                 'preconditions')
         for elem in elems:
             if getattr(self, elem) != getattr(other, elem):
                 return False
@@ -1069,7 +1113,10 @@ class Slot(object):
         Allow pickling.
         '''
         dct = dict((elem, getattr(self, elem))
-                    for elem in ('_projects', 'env', 'disabled'))
+                    for elem in ('_projects', 'env', 'disabled', 'desc',
+                                 'platforms', 'error_exceptions',
+                                 'warning_exceptions',
+                                 'preconditions'))
         dct['_name'] = self._name
         dct['build_tool'] = self._build_tool.__class__.__name__
         return dct
@@ -1331,6 +1378,7 @@ def loadFromOldXML(source, slot):
                          'overrides': overrides}
             if proj.attrib.get('disabled', 'false').lower() != 'false':
                 proj_data['checkout'] = 'ignore'
+                proj_data['disabled'] = True
             else:
                 # look for a project-specific checkout method
                 if hasattr(LbNightlyTools.CheckoutMethods, name.lower()):

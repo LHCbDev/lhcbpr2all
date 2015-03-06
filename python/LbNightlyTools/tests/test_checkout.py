@@ -88,15 +88,23 @@ def test_Project():
     assert p.name == 'Gaudi'
     assert p.version == 'v23r5'
     assert p.overrides == {}
-    assert p._checkout == CheckoutMethods.default
+    assert p._checkout == CheckoutMethods.gaudi
     assert p.baseDir == 'GAUDI/GAUDI_v23r5'
     assert str(p) == 'Gaudi v23r5'
+
+    p = Project('LHCb', 'v38r5')
+    assert p.name == 'LHCb'
+    assert p.version == 'v38r5'
+    assert p.overrides == {}
+    assert p._checkout == CheckoutMethods.default
+    assert p.baseDir == 'LHCB/LHCB_v38r5'
+    assert str(p) == 'LHCb v38r5'
 
     p = Project('Gaudi', 'head')
     assert p.name == 'Gaudi'
     assert p.version == 'HEAD'
     assert p.overrides == {}
-    assert p._checkout == CheckoutMethods.default
+    assert p._checkout == CheckoutMethods.gaudi
     assert p.baseDir == 'GAUDI/GAUDI_HEAD'
     assert str(p) == 'Gaudi HEAD'
 
@@ -203,7 +211,7 @@ def test_parseConfigFile():
 
     try:
         s = doCall({'projects':[{"name": "Gaudi"}]})
-    except KeyError:
+    except (KeyError, TypeError):
         pass
 
 def test_checkout():
