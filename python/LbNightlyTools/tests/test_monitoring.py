@@ -13,10 +13,14 @@
 #__test__ = False
 
 import os
+import nose
 from pprint import pprint
 from LbNightlyTools import Monitoring
+from LbNightlyTools.tests.utils import which
 
 def test_getDirInfos():
+    if not which('fs'):
+        raise nose.SkipTest
     if os.path.exists('/afs/cern.ch/lhcb/software'):
         infos = Monitoring.getDirInfos('/afs/cern.ch/lhcb/software')
         pprint(infos)

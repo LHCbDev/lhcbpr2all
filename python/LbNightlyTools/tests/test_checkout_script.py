@@ -18,12 +18,13 @@ import os
 import shutil
 import re
 import json
+import nose
 
 from subprocess import call
 from tempfile import mkdtemp
 from os.path import normpath, join, isfile
 from LbNightlyTools.Utils import ensureDirs
-from LbNightlyTools.tests.utils import TemporaryDir
+from LbNightlyTools.tests.utils import TemporaryDir, which
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
@@ -107,6 +108,8 @@ def test_only_projects_conf():
         assert retval == 0
 
 def test_only_packages_conf():
+    if not which('getpack'):
+        raise nose.SkipTest
     with TemporaryDir(chdir=True):
         with open('test.json', 'w') as cfg:
             conf_data = {'packages': [{'name': 'WG/CharmConfig',
@@ -118,6 +121,8 @@ def test_only_packages_conf():
 def test_lbcore_664():
     '''https://its.cern.ch/jira/browse/LBCORE-664
     '''
+    if not which('getpack'):
+        raise nose.SkipTest
     configfile = join(_testdata, 'testing-slot-lbcore-664.json')
     with TemporaryDir(chdir=True):
         StackCheckout.Script().run(['--ignore-checkout-errors',
