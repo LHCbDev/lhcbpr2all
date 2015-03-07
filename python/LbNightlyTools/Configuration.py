@@ -19,6 +19,7 @@ import logging
 from LbNightlyTools.Utils import (applyenv, tee_call, ensureDirs,
                                   shallow_copytree, IgnorePackageVersions,
                                   find_path, write_patch)
+from LbNightlyTools import CheckoutMethods
 from collections import OrderedDict
 
 __log__ = logging.getLogger(__name__)
@@ -102,8 +103,13 @@ class _ProjectMeta(type):
         dct['build_tool'] = _BuildToolProperty()
         if 'name' in dct:
             dct['__project_name__'] = dct.pop('name')
-        if 'checkout' in dct and isinstance(dct['checkout'], basestring):
-            dct['__checkout__'] = dct.pop('checkout')
+        if 'checkout' in dct:
+            if isinstance(dct['checkout'], basestring):
+                dct['__checkout__'] = dct.pop('checkout')
+            else:
+                reclog = RecordLogger(CheckoutMethods.__log__)
+                dct['checkout'] = reclog(dct['checkout'])
+
         return type.__new__(cls, name, bases, dct)
 
     def __call__(self, *args, **kwargs):
@@ -119,6 +125,47 @@ class _ProjectMeta(type):
             # we prepend the class name to the arguments.
             args = (name,) + args
         return type.__call__(self, *args, **kwargs)
+
+
+class RecordLogger(object):
+    '''
+    Decorator to collect the log messages of a Logger instance in a data member
+    of the instance.
+
+    @param logger: Logger instance or name (default: use the root Logger)
+    @param data_member: name of the property of the instance bound to the method
+                        where to record the log (default: method name + '_log')
+    '''
+    def __init__(self, logger='', data_member=None):
+        '''
+        Initialize the decorator.
+        '''
+        if isinstance(logger, basestring):
+            logger = logging.getLogger(logger)
+        self.logger = logger
+        self.data_member = data_member
+    def __call__(self, method):
+        '''
+        Decorate the method.
+        '''
+        from functools import wraps
+        logger = self.logger
+        data_member = self.data_member or (method.__name__ + '_log')
+
+        @wraps(method)
+        def recorder(self, *args, **kwargs):
+            from StringIO import StringIO
+            data = StringIO()
+            hdlr = logging.StreamHandler(data)
+            logger.addHandler(hdlr)
+
+            result = method(self, *args, **kwargs)
+
+            setattr(self, data_member, data.getvalue())
+            logger.removeHandler(hdlr)
+            return result
+        return recorder
+
 
 class Project(object):
     '''

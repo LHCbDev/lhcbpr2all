@@ -1192,7 +1192,16 @@ class BuildReporter(object):
 
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
-        if exists(join(self.summary_dir, 'checkout_job_url.txt')):
+        if exists(join(self.summary_dir, 'checkout.log')):
+            def checkout_log():
+                from itertools import cycle
+                from xml.sax.saxutils import escape
+                cl = cycle(('even', 'odd'))
+                for l in open(join(self.summary_dir, 'checkout.log')):
+                    yield u'<div class="{0}">{1}</div>\n'.format(cl.next(),
+                                                                 escape(l))
+            checkout_lines = checkout_log()
+        elif exists(join(self.summary_dir, 'checkout_job_url.txt')):
             checkout_fmt = u'<a href="{0}console">available on ''Jenkins</a>\n'
             jenkins_co_url = (open(join(self.summary_dir,
                                         'checkout_job_url.txt'))
