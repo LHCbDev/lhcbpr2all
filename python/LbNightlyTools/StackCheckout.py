@@ -154,6 +154,15 @@ class Script(LbUtils.Script.PlainScript):
             # this, implicitly, updates the dependencies of projects
             cfg['projects'] = slot.toDict()['projects']
 
+        # write the checkout log of projects to dedicated files
+        for project in slot.projects:
+            if hasattr(project, 'checkout_log'):
+                __log__.debug('writing checkout log for %s', project)
+                co_logfile = join(artifacts_dir,
+                                  '.'.join((project.name, 'checkout.log')))
+                with open(co_logfile, 'w') as co_log:
+                    co_log.write(project.checkout_log)
+
         def containers():
             '''
             Generator for the container projects in the slot.
