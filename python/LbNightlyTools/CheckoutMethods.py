@@ -18,13 +18,31 @@ import shutil
 import os
 
 from subprocess import Popen, PIPE
-from LbNightlyTools.Utils import retry_tee_call, tee_call, ensureDirs
+from LbNightlyTools.Utils import (retry_log_call as _retry_log_call,
+                                  log_call as _log_call, ensureDirs)
 
 __log__ = logging.getLogger(__name__)
+__log__.setLevel(logging.DEBUG)
+
+def retry_log_call(*args, **kwargs):
+    '''
+    Helper to send log messages of retry_log_call to __log__ by default.
+    '''
+    if 'logger' not in kwargs:
+        kwargs['logger'] = __log__.getChild(args[0][0].replace('.', '_'))
+    return _retry_log_call(*args, **kwargs)
+
+def log_call(*args, **kwargs):
+    '''
+    Helper to send log messages of log_call to __log__ by default.
+    '''
+    if 'logger' not in kwargs:
+        kwargs['logger'] = __log__.getChild(args[0][0].replace('.', '_'))
+    return _log_call(*args, **kwargs)
 
 def _merge_outputs(outputs):
     '''
-    Helper function to merge the tuples returned by tee_call.
+    Helper function to merge the tuples returned by log_call.
 
     >>> _merge_outputs([(1, 'a\\n', ''), (0, 'b\\n', '')])
     (1, 'a\\nb\\n', '')
@@ -37,12 +55,12 @@ def _merge_outputs(outputs):
             ''.join(step[1] for step in outputs),
             ''.join(step[2] for step in outputs))
 
-def getpack(desc, recursive_head=None, export=False,
-            protocol=None, verbose=False):
+def getpack(desc, recursive_head=None, export=False, protocol=None):
     '''
     Checkout the project described by the Project instance 'desc'.
     '''
     from os.path import normpath, join
+    log = __log__.getChild('getpack')
     protocol = protocol or os.environ.get('GETPACK_PROTOCOL', 'anonymous')
     getpack_cmd = ['getpack', '--batch', '--no-config',
                    '--no-eclipse', '--branches',
@@ -68,79 +86,79 @@ def getpack(desc, recursive_head=None, export=False,
     cmd.extend([desc.name, desc.version])
 
     if not os.path.exists(rootdir):
-        __log__.debug('creating %s', rootdir)
+        log.debug('creating %s', rootdir)
         os.makedirs(rootdir)
 
-    __log__.debug('checking out %s', desc)
-    outputs = [retry_tee_call(cmd, cwd=rootdir, retry=3, verbose=verbose)]
+    log.debug('checking out %s', desc)
+    outputs = [retry_log_call(cmd, cwd=rootdir, retry=3)]
 
     if hasattr(desc, 'overrides') and desc.overrides:
-        __log__.debug('overriding packages')
+        log.debug('overriding packages')
         for package, version in desc.overrides.items():
             if version:
                 cmd = getpack_cmd + [package, version]
-                outputs.append(retry_tee_call(cmd, cwd=prjroot, retry=3,
-                                              verbose=verbose))
+                outputs.append(retry_log_call(cmd, cwd=prjroot, retry=3))
             else:
-                if verbose:
-                    print 'Removing', package
+                log.debug('removing %s', package)
                 outputs.append((0, 'Removing %s\n' % package, ''))
                 shutil.rmtree(join(prjroot, package), ignore_errors=True)
 
-    __log__.debug('checkout of %s completed in %s', desc, prjroot)
+    log.debug('checkout of %s completed in %s', desc, prjroot)
     return _merge_outputs(outputs)
 
-def ignore(desc, export=False, verbose=False):
+def ignore(desc, export=False):
     '''
     Special checkout function used to just declare a project version in the
     configuration but do not perform the checkout, so that it's picked up from
     the release area.
     '''
-    __log__.info('checkout not requested for %s', desc)
+    log = __log__.getChild('ignore')
+    log.info('checkout not requested for %s', desc)
     return (0, 'checkout not requested for %s' % desc, '')
 
-def git(desc, url, commit='master', export=False, verbose=False):
+def git(desc, url, commit='master', export=False):
     '''
     Checkout from a git repository.
     '''
-    __log__.debug('checking out %s from %s (%s)', desc, url, commit)
+    log = __log__.getChild('git')
+    log.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = desc.baseDir
-    __log__.debug('cloning git repository %s', url)
+    log.debug('cloning git repository %s', url)
 
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
     call(['git', 'clone', '--no-checkout', url, dest])
     if not export:
-        __log__.debug('checkout commit %s for %s', commit, desc)
+        log.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
         for subdir, version in desc.overrides.iteritems():
             if version is None:
-                __log__.debug('removing %s', subdir)
+                log.debug('removing %s', subdir)
                 shutil.rmtree(path=os.path.join(dest, subdir),
                               ignore_errors=True)
             else:
-                __log__.debug('checking out commit %s for dir %s',
+                log.debug('checking out commit %s for dir %s',
                               version, subdir)
                 call(['git', 'checkout', version, subdir], cwd=dest)
     else:
         # FIXME: the outputs of git archive is not collected
-        __log__.debug('extracting the list of branches')
+        log.debug('extracting the list of branches')
         proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
         branches = set(branch[2:].rstrip()
                        for branch in proc.communicate()[0].splitlines())
         if 'remotes/origin/' + commit in branches:
             commit = 'origin/' + commit
-        __log__.debug('export commit %s for %s', commit, desc)
+        log.debug('export commit %s for %s', commit, desc)
         p1 = Popen(['git', 'archive', commit],
                    cwd=dest, stdout=PIPE)
         p2 = Popen(['tar', '--extract', '--file', '-'],
                    cwd=dest, stdin=p1.stdout)
         p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
         if p2.wait() or p1.wait():
-            __log__.warning('problems exporting commit %s for %s', commit, desc)
+            log.warning('problems exporting commit %s for %s', commit, desc)
         shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
@@ -149,32 +167,34 @@ def git(desc, url, commit='master', export=False, verbose=False):
         f = open(os.path.join(dest, 'toolchain.cmake'), 'w')
         f.write('include($ENV{LBUTILSROOT}/data/toolchain.cmake)\n')
         f.close()
-    __log__.debug('checkout of %s completed in %s', desc, dest)
+    log.debug('checkout of %s completed in %s', desc, dest)
     return _merge_outputs(outputs)
 
-def svn(desc, url, export=False, verbose=False):
+def svn(desc, url, export=False):
     '''
     Checkout from an svn repository.
     '''
-    __log__.debug('checking out %s from %s', desc, url)
+    log = __log__.getChild('svn')
+    log.debug('checking out %s from %s', desc, url)
     dest = desc.baseDir
-    output = tee_call(['svn', 'checkout' if not export else 'export',
-                       url, dest], verbose=verbose)
+    output = log_call(['svn', 'checkout' if not export else 'export',
+                       url, dest])
     makefile = os.path.join(dest, 'Makefile')
     if not os.path.exists(makefile):
         f = open(makefile, 'w')
         f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
         f.close()
     else:
-        __log__.debug('using original Makefile')
-    __log__.debug('checkout of %s completed in %s', desc, dest)
+        log.debug('using original Makefile')
+    log.debug('checkout of %s completed in %s', desc, dest)
     return output
 
-def copy(desc, src, export=False, verbose=False):
+def copy(desc, src, export=False):
     '''
     Copy the content of a directory.
     '''
-    __log__.debug('copying %s from %s', desc, src)
+    log = __log__.getChild('copy')
+    log.debug('copying %s from %s', desc, src)
     dest = desc.baseDir
     ensureDirs([os.path.dirname(dest)])
     shutil.copytree(os.path.join(src, os.curdir), dest)
@@ -183,17 +203,17 @@ def copy(desc, src, export=False, verbose=False):
         f = open(top_makefile, 'w')
         f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
         f.close()
-    __log__.debug('copy of %s completed in %s', desc, dest)
+    log.debug('copy of %s completed in %s', desc, dest)
     return (0, 'copied %s from %s' % (desc, src), '')
 
-def untar(desc, src, export=False, verbose=False):
+def untar(desc, src, export=False):
     '''
     Unpack a tarball in the current directory (assuming that the tarball already
     contains the <PROJECT>/<PROJECT>_<version> directories).
     '''
-    __log__.debug('unpacking %s', src)
-    output = tee_call(['tar', '-x', '-f', src],
-                      verbose=verbose)
+    log = __log__.getChild('untar')
+    log.debug('unpacking %s', src)
+    output = log_call(['tar', '-x', '-f', src])
     dest = desc.baseDir
     if not os.path.isdir(dest):
         raise RuntimeError('the tarfile %s does not contain %s',
@@ -203,16 +223,16 @@ def untar(desc, src, export=False, verbose=False):
         f = open(top_makefile, 'w')
         f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
         f.close()
-    __log__.debug('unpacking of %s from %s completed', desc, src)
+    log.debug('unpacking of %s from %s completed', desc, src)
     return output
 
 def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
-          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc',
-          verbose=False):
+          export=False, etc='/afs/cern.ch/lhcb/software/releases/DIRAC/etc'):
     '''
     Special hybrid checkout needed to release DIRAC.
     '''
     from os.path import normpath, join, isdir, exists, basename, dirname
+    log = __log__.getChild('dirac')
 
     if commit is None:
         commit = desc.version
@@ -231,35 +251,35 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
-    __log__.debug('checking out project %s', desc)
+    log.debug('checking out project %s', desc)
     call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
     for pkg in ('DiracPolicy', 'DiracConfig', 'DiracSys'):
-        __log__.debug('checking out package %s', pkg)
+        log.debug('checking out package %s', pkg)
         call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
 
     dest = normpath(join(prjroot, 'DIRAC'))
-    __log__.debug('cloning git repository %s', url)
+    log.debug('cloning git repository %s', url)
     call(['git', 'clone', '--no-checkout', url, dest])
     if not export:
-        __log__.debug('checkout commit %s for %s', commit, desc)
+        log.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
     else:
         # FIXME: the outputs of git archive is not collected
-        __log__.debug('export commit %s for %s', commit, desc)
+        log.debug('export commit %s for %s', commit, desc)
         p1 = Popen(['git', 'archive', commit],
                    cwd=dest, stdout=PIPE)
         p2 = Popen(['tar', '--extract', '--file', '-'],
                    cwd=dest, stdin=p1.stdout)
         p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
         if p2.wait() or p1.wait():
-            __log__.warning('problems exporting commit %s for %s', commit, desc)
+            log.warning('problems exporting commit %s for %s', commit, desc)
         shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
-    __log__.debug('checkout of %s completed in %s', desc, prjroot)
+    log.debug('checkout of %s completed in %s', desc, prjroot)
 
-    __log__.debug('starting post-checkout step for %s', desc)
-    __log__.debug('deploying scripts')
+    log.debug('starting post-checkout step for %s', desc)
+    log.debug('deploying scripts')
     scripts_dir = join(prjroot, 'scripts')
     if not isdir(scripts_dir):
         os.makedirs(scripts_dir)
@@ -268,7 +288,7 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
             if 'scripts' in dirs:
                 dirs.remove('scripts')
         elif 'scripts' in dirs:
-            __log__.debug('  - %s', root)
+            log.debug('  - %s', root)
             # we are only interested in the content of the scripts directories
             dirs[:] = ['scripts']
         elif basename(root) == 'scripts':
@@ -281,24 +301,24 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
                 shutil.copyfile(join(root, f), dst)
                 os.chmod(dst, 0755) # ensure that the new file is executable
 
-    __log__.debug('generate cmt dirs')
+    log.debug('generate cmt dirs')
     # loop over the directories in the DIRAC directory (excluding . and ..)
     for cmt in [join(dest, pkg, 'cmt')
                 for pkg in os.listdir(dest)
                 if pkg[0] != '.' and isdir(join(dest, pkg))]:
         if not exists(cmt):
-            __log__.debug('creating %s', cmt)
+            log.debug('creating %s', cmt)
             os.makedirs(cmt)
-            #__log__.debug('writing version.cmt')
+            #log.debug('writing version.cmt')
             with open(join(cmt, 'version.cmt'), 'w') as f:
                 f.write(desc.version + '\n')
-            #__log__.debug('writing requirements')
+            #log.debug('writing requirements')
             with open(join(cmt, 'requirements'), 'w') as f:
                 f.write('package %s\nuse DiracPolicy *\n' %
                         basename(dirname(cmt)))
-    __log__.debug('populate etc directory')
+    log.debug('populate etc directory')
     shutil.copytree(etc, join(prjroot, 'etc'))
-    __log__.debug('prepare dummy Makefile')
+    log.debug('prepare dummy Makefile')
     with open(join(prjroot, 'Makefile'), 'w') as f:
         f.write('''
 all:
@@ -313,11 +333,12 @@ tests:
     return _merge_outputs(outputs)
 
 
-def lhcbdirac(desc, export=False, verbose=False):
+def lhcbdirac(desc, export=False):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
-    from os.path import normpath, join, isdir, basename
+    from os.path import join, isdir, basename
+    log = __log__.getChild('lhcbdirac')
     if desc.version.lower() == 'head':
         url = 'http://svn.cern.ch/guest/dirac/LHCbDIRAC/trunk/LHCbDIRAC'
     else:
@@ -337,32 +358,32 @@ def lhcbdirac(desc, export=False, verbose=False):
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
-    __log__.debug('checking out project %s', desc)
+    log.debug('checking out project %s', desc)
     call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
     for pkg in ('LHCbDiracPolicy', 'LHCbDiracConfig', 'LHCbDiracSys'):
-        __log__.debug('checking out package %s', pkg)
+        log.debug('checking out package %s', pkg)
         call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
 
-    __log__.debug('checking out %s', url)
+    log.debug('checking out %s', url)
     call(['svn', 'checkout' if not export else 'export', url , dest])
-    __log__.debug('creating version.cmt files')
+    log.debug('creating version.cmt files')
     for root, dirs, files in os.walk(dest):
         if basename(root) == 'cmt':
             dirs[:] = [] # stop recursion
             if 'version.cmt' not in files:
-                __log__.debug('  writing %s/version.cmt', root)
+                log.debug('  writing %s/version.cmt', root)
                 open(join(root, 'version.cmt'), 'w').write('v*\n')
 
-    __log__.debug('starting post-checkout step for %s', desc)
-    __log__.debug('deploying scripts')
+    log.debug('starting post-checkout step for %s', desc)
+    log.debug('deploying scripts')
     scripts_dir = join(prjroot, 'scripts')
     if not isdir(scripts_dir):
         os.makedirs(scripts_dir)
     for root, dirs, files in os.walk(dest):
         if 'scripts' in dirs:
-            __log__.debug('  - %s', root)
+            log.debug('  - %s', root)
             # we are only interested in the content of the scripts directories
             dirs[:] = ['scripts']
         elif basename(root) == 'scripts':
@@ -375,17 +396,18 @@ def lhcbdirac(desc, export=False, verbose=False):
                 shutil.copyfile(join(root, f), dst)
                 os.chmod(dst, 0755) # ensure that the new file is executable
 
-    __log__.debug('patching Makefile')
+    log.debug('patching Makefile')
     with open(join(prjroot, 'Makefile'), 'a') as f:
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 
     return _merge_outputs(outputs)
 
 
-def lhcbgrid(desc, url=None, export=False, verbose=False):
+def lhcbgrid(desc, url=None, export=False):
     '''
     Special hybrid checkout needed to release LHCbGrid.
     '''
+    log = __log__.getChild('lhcbgrid')
     if url is None:
         if desc.version.lower() == 'head':
             url = 'http://svn.cern.ch/guest/lhcb/LHCbGrid/trunk'
@@ -398,10 +420,10 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
-        outputs.append(tee_call(*args, verbose=verbose, **kwargs))
+        outputs.append(log_call(*args, **kwargs))
 
     dest = desc.baseDir
-    __log__.debug('fixing requirements files')
+    log.debug('fixing requirements files')
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)
 
@@ -409,7 +431,7 @@ def lhcbgrid(desc, url=None, export=False, verbose=False):
 
 
 GAUDI_GIT_URL = 'http://git.cern.ch/pub/gaudi'
-def gaudi(proj, url=GAUDI_GIT_URL, export=False, verbose=False):
+def gaudi(proj, url=GAUDI_GIT_URL, export=False):
     '''
     Wrapper around the git function for Gaudi.
     '''
@@ -420,11 +442,11 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, verbose=False):
         commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
     else:
         commit = proj.version
-    return git(proj, url, commit, export, verbose)
+    return git(proj, url, commit, export)
 
 
 LIT_GIT_URL = 'http://git.cern.ch/pub/LHCbIntegrationTests'
-def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False, verbose=False):
+def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False):
     '''
     Wrapper around the git function for LHCbIntegrationTests.
     '''
@@ -432,7 +454,7 @@ def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False, verbose=False):
         commit = 'master'
     else:
         commit = proj.version
-    return git(proj, url, commit, export, verbose)
+    return git(proj, url, commit, export)
 
 
 # set default checkout method

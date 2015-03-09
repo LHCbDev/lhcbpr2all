@@ -1192,7 +1192,18 @@ class BuildReporter(object):
 
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
-        if exists(join(self.summary_dir, 'checkout_job_url.txt')):
+        checkout_logfile = join(self.summary_dir, os.pardir, os.pardir,
+                                self.project.name + '.checkout.log')
+        if exists(checkout_logfile):
+            def checkout_log():
+                from itertools import cycle
+                from xml.sax.saxutils import escape
+                cl = cycle(('even', 'odd'))
+                for l in open(checkout_logfile):
+                    yield u'<div class="{0}">{1}</div>\n'.format(cl.next(),
+                                                                 escape(l))
+            checkout_lines = list(checkout_log())
+        elif exists(join(self.summary_dir, 'checkout_job_url.txt')):
             checkout_fmt = u'<a href="{0}console">available on ''Jenkins</a>\n'
             jenkins_co_url = (open(join(self.summary_dir,
                                         'checkout_job_url.txt'))
@@ -1397,7 +1408,7 @@ class BuildReporter(object):
         logfile_links.append({'id': 'checkout',
                               'f': env_size,
                               'l': env_size + max(0, checkout_size-1),
-                              'desc': 'Show getpack log'})
+                              'desc': 'Show checkout log'})
         offset = env_size + checkout_size
 
         special_sections = set(['configure', "'global'",
