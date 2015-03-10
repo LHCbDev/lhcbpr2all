@@ -19,7 +19,6 @@ import logging
 from LbNightlyTools.Utils import (applyenv, tee_call, ensureDirs,
                                   shallow_copytree, IgnorePackageVersions,
                                   find_path, write_patch)
-from LbNightlyTools import CheckoutMethods
 from collections import OrderedDict
 
 __log__ = logging.getLogger(__name__)
@@ -99,6 +98,7 @@ class _ProjectMeta(type):
         '''
         Instrument Project classes.
         '''
+        from . import CheckoutMethods
         dct['__build_tool__'] = dct.get('build_tool')
         dct['build_tool'] = _BuildToolProperty()
         if 'name' in dct:
@@ -107,8 +107,9 @@ class _ProjectMeta(type):
             if isinstance(dct['checkout'], basestring):
                 dct['__checkout__'] = dct.pop('checkout')
             else:
+                timelog = log_timing(CheckoutMethods.__log__)
                 reclog = RecordLogger(CheckoutMethods.__log__)
-                dct['checkout'] = reclog(dct['checkout'])
+                dct['checkout'] = reclog(timelog(dct['checkout']))
 
         return type.__new__(cls, name, bases, dct)
 
@@ -165,6 +166,28 @@ class RecordLogger(object):
             logger.removeHandler(hdlr)
             return result
         return recorder
+
+
+def log_timing(logger='', level=logging.DEBUG):
+    '''
+    Decorator to add log messages about the time a method takes.
+    '''
+    if isinstance(logger, basestring):
+        logger = logging.getLogger(logger)
+    def decorate(method):
+        from functools import wraps
+        @wraps(method)
+        def wrapper(*args, **kwargs):
+            from datetime import datetime
+            start_time = datetime.now()
+            logger.log(level, 'Started at: %s', start_time)
+            result = method(*args, **kwargs)
+            end_time = datetime.now()
+            logger.log(level, 'Completed at: %s', end_time)
+            logger.log(level, 'Elapsed time: %s', end_time - start_time)
+            return result
+        return wrapper
+    return decorate
 
 
 class Project(object):
