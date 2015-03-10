@@ -19,6 +19,7 @@ import logging
 from LbNightlyTools.Utils import (applyenv, tee_call, ensureDirs,
                                   shallow_copytree, IgnorePackageVersions,
                                   find_path, write_patch)
+from LbNightlyTools import CheckoutMethods, BuildMethods
 from collections import OrderedDict
 
 __log__ = logging.getLogger(__name__)
@@ -98,7 +99,6 @@ class _ProjectMeta(type):
         '''
         Instrument Project classes.
         '''
-        from . import CheckoutMethods, BuildMethods
         dct['__build_tool__'] = dct.get('build_tool')
         dct['build_tool'] = _BuildToolProperty()
         if 'name' in dct:
@@ -694,6 +694,8 @@ class Package(object):
         '''Non-equality operator.'''
         return not (self == other)
 
+    @RecordLogger(CheckoutMethods.__log__)
+    @log_timing(CheckoutMethods.__log__)
     def checkout(self, **kwargs):
         '''
         Helper function to call the checkout method.
@@ -712,24 +714,27 @@ class Package(object):
         else:
             return os.path.join(self.name, self.version)
 
+    @RecordLogger(BuildMethods.__log__)
+    @log_timing(BuildMethods.__log__)
     def build(self, **kwargs):
         '''
         Build the package and return the return code of the build process.
         '''
+        from .BuildMethods import __log__ as log, log_call
         base = self.baseDir
         if os.path.exists(os.path.join(base, 'Makefile')):
-            __log__.info('building %s (make)', self)
-            return tee_call(['make'], cwd=base, **kwargs)
+            log.info('building %s (make)', self)
+            return log_call(['make'], cwd=base, **kwargs)
         elif os.path.exists(os.path.join(base, 'cmt', 'requirements')):
-            __log__.info('building %s (cmt make)', self)
+            log.info('building %s (cmt make)', self)
             # CMT is very sensitive to these variables (better to unset them)
             env = dict((key, value) for key, value in os.environ.items()
                         if key not in ('PWD', 'CWD', 'CMTSTRUCTURINGSTYLE'))
             base = os.path.join(base, 'cmt')
 
-            tee_call(['cmt', 'config'], cwd=base, env=env, **kwargs)
-            return tee_call(['cmt', 'make'], cwd=base, env=env, **kwargs)
-        __log__.info('%s does not require build', self)
+            log_call(['cmt', 'config'], cwd=base, env=env, **kwargs)
+            return log_call(['cmt', 'make'], cwd=base, env=env, **kwargs)
+        log.info('%s does not require build', self)
         return (0, '%s does not require build' % self, '')
 
     def getVersionLinks(self):
@@ -977,11 +982,12 @@ class DataProject(Project):
         Special checkout method to create a valid local copy of a DataProject
         using an existing one as a baseline (cloning it with symlinks).
         '''
-        __log__.debug('create packages directories')
+        from .CheckoutMethods import __log__ as log
+        log.debug('create packages directories')
         ensureDirs([os.path.dirname(package.baseDir)
                     for package in self.packages])
 
-        __log__.debug('create shallow clone of %s', self.name)
+        log.debug('create shallow clone of %s', self.name)
         ignore = IgnorePackageVersions(self.packages)
         path = find_path(self.baseDir)
         if path:
@@ -996,15 +1002,15 @@ class DataProject(Project):
         co_kwargs = dict([(key, value) for key, value in kwargs.iteritems()
                           if key in ('export')])
         b_kwargs = dict([(key, value) for key, value in kwargs.iteritems()
-                         if key in ('verbose', 'jobs')])
+                         if key in ('jobs')])
 
-        __log__.info('checkout data packages in %s', self.name)
+        log.info('checkout data packages in %s', self.name)
         outputs = [package.checkout(**co_kwargs) for package in self.packages]
 
-        __log__.info('building data packages in %s', self.name)
+        log.info('building data packages in %s', self.name)
         outputs += [package.build(**b_kwargs) for package in self.packages]
 
-        __log__.debug('create symlinks')
+        log.debug('create symlinks')
         for package in self.packages:
             for link in package.getVersionLinks():
                 __log__.debug('creating symlink %s', link)
