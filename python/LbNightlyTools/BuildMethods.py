@@ -15,9 +15,18 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import logging
-from LbNightlyTools.Utils import tee_call
+from LbNightlyTools.Utils import log_call as _log_call
 
 __log__ = logging.getLogger(__name__)
+__log__.setLevel(logging.DEBUG)
+
+def log_call(*args, **kwargs):
+    '''
+    Helper to send log messages of log_call to __log__ by default.
+    '''
+    if 'logger' not in kwargs:
+        kwargs['logger'] = __log__.getChild(args[0][0].replace('.', '_'))
+    return _log_call(*args, **kwargs)
 
 
 class BuildResults(object):
@@ -46,14 +55,12 @@ class make(object):
         @param proj: Project instance to build
         @param jobs: number of parallel build processes [default: 1]
         @param max_load: maximum allowed load beyond which no new process are started
-        @param verbose: echo the build output [default: False]
         @param env: dictionary used to override environment variables from the
                     project configuration
         @param args: list of extra arguments to pass to make
         '''
         jobs = kwargs.get('jobs')
         max_load = kwargs.get('max_load')
-        verbose = kwargs.get('verbose')
 
         env = proj.environment()
         env.update(kwargs.get('env', {}))
@@ -71,7 +78,7 @@ class make(object):
         cmd.append(target)
 
         __log__.debug('running %s', ' '.join(cmd))
-        output = tee_call(cmd, env=env, cwd=proj.baseDir, verbose=verbose)
+        output = log_call(cmd, env=env, cwd=proj.baseDir)
         __log__.debug('command exited with code %d', output[0])
 
         return BuildResults(proj, *output)
@@ -219,18 +226,21 @@ class no_build(object):
         '''
         Build method.
         '''
+        __log__.debug('no build for %s', proj)
         return BuildResults(proj, 0, 'no build for %s' % proj, '')
 
     def clean(self, proj, **kwargs):
         '''
         Clean method.
         '''
+        __log__.debug('no clean for %s', proj)
         return BuildResults(proj, 0, 'no clean for %s' % proj, '')
 
     def test(self, proj, **kwargs):
         '''
         Test method.
         '''
+        __log__.debug('no test for %s', proj)
         return BuildResults(proj, 0, 'no test for %s' % proj, '')
 
 
@@ -242,8 +252,8 @@ class echo(object):
         '''
         Helper.
         '''
-        output =' '.join([target, str(proj), str(kwargs)])
-        print output
+        output = ' '.join([target, str(proj), str(kwargs)])
+        __log__.debug(output)
         return BuildResults(proj, 0, output, '')
 
     def build(self, proj, **kwargs):

@@ -98,7 +98,7 @@ class _ProjectMeta(type):
         '''
         Instrument Project classes.
         '''
-        from . import CheckoutMethods
+        from . import CheckoutMethods, BuildMethods
         dct['__build_tool__'] = dct.get('build_tool')
         dct['build_tool'] = _BuildToolProperty()
         if 'name' in dct:
@@ -110,6 +110,11 @@ class _ProjectMeta(type):
                 timelog = log_timing(CheckoutMethods.__log__)
                 reclog = RecordLogger(CheckoutMethods.__log__)
                 dct['checkout'] = reclog(timelog(dct['checkout']))
+        timelog = log_timing(BuildMethods.__log__)
+        reclog = RecordLogger(BuildMethods.__log__)
+        for method in ('build', 'clean', 'test'):
+            if method in dct:
+                dct[method] = reclog(timelog(dct[method]))
 
         return type.__new__(cls, name, bases, dct)
 
@@ -323,7 +328,6 @@ class Project(object):
         '''
         Build the project.
         @param jobs: number of parallel jobs to use [default: cpu count + 1]
-        @param verbose: if True, print the output of the build while running
         '''
         if 'jobs' not in kwargs:
             from multiprocessing import cpu_count
