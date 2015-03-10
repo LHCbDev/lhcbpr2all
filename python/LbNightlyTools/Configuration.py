@@ -478,11 +478,11 @@ class Project(object):
                               cmakelists)
                 return
 
-            with open(cmakelists, 'w') as f:
-                f.write(newdata)
-
-            if patchfile:
-                write_patch(patchfile, data, newdata, cmakelists)
+            if newdata != data:
+                with open(cmakelists, 'w') as f:
+                    f.write(newdata)
+                if patchfile:
+                    write_patch(patchfile, data, newdata, cmakelists)
 
     def _fixCMakeToolchain(self, patchfile=None):
         '''
@@ -519,11 +519,11 @@ class Project(object):
                               toolchain)
                 return
 
-            with open(toolchain, 'w') as f:
-                f.write(newdata)
-
-            if patchfile:
-                write_patch(patchfile, data, newdata, toolchain)
+            if newdata != data:
+                with open(toolchain, 'w') as f:
+                    f.write(newdata)
+                if patchfile:
+                    write_patch(patchfile, data, newdata, toolchain)
 
     def _fixCMake(self, patchfile=None):
         '''
@@ -559,11 +559,11 @@ class Project(object):
                         line = ' '.join(tokens) + '\n'
                 newdata.append(line)
 
-            with open(project_cmt, 'w') as f:
-                f.writelines(newdata)
-
-            if patchfile:
-                write_patch(patchfile, data, newdata, project_cmt)
+            if newdata != data:
+                with open(project_cmt, 'w') as f:
+                    f.writelines(newdata)
+                if patchfile:
+                    write_patch(patchfile, data, newdata, project_cmt)
 
         # find the container package
         requirements = join(self.baseDir, self.name + 'Release',
