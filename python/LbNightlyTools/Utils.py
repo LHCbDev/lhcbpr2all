@@ -212,10 +212,14 @@ def log_call(*args, **kwargs):
 
     Example:
     >>> import logging
-    >>> logging.basicConfig(level=logging.INFO)
-    >>> log_call(['echo hello'], shell=True, logger=logging.getLogger('hi'),
-    ... log_level=logging.INFO)
-    INFO:hi:hello
+    >>> import sys
+    >>> logger = logging.getLogger('hi')
+    >>> logger.addHandler(logging.StreamHandler(sys.stdout))
+    >>> logger.setLevel(logging.INFO)
+    >>> log_call(['echo hello'], shell=True, logger=logging.getLogger('hi'), log_level=logging.DEBUG)
+    (0, 'hello\\n', '')
+    >>> log_call(['echo hello'], shell=True, logger=logging.getLogger('hi'), log_level=logging.INFO)
+    hello
     (0, 'hello\\n', '')
     '''
     from subprocess import Popen, PIPE
