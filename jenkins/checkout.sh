@@ -29,6 +29,11 @@ if [ "${slot}" = "lhcb-release" ] ; then
   fi
 fi
 
+# this allow to bypass the configurations in SVN
+if [ -e slot-config.json ] ; then
+  cp -f -v slot-config.json configs/${slot}.json
+fi
+
 if [ -e configs/${slot}.json ] ; then
   config_file=configs/${slot}.json
 else
