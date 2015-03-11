@@ -72,6 +72,15 @@ class Script(LbUtils.Script.PlainScript):
                                help='stop the checkout if there is a failure')
         self.parser.set_defaults(ignore_checkout_errors=True)
 
+    def parseOpts(self, args):
+        '''
+        Override PlainScript logging settings.
+        '''
+        LbUtils.Script.PlainScript.parseOpts(self, args)
+        # set the level to the handlers too
+        for hdlr in self.log.handlers:
+            hdlr.setLevel(self.log.level)
+
     def packname(self, element):
         '''
         Return the filename of the archive (package) of the given project.
