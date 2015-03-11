@@ -110,6 +110,7 @@ def main(*argv):
         for i, test_params in enumerate(ready):
             open(output_file.format(i), 'w').write(str(test_params) + '\n')
             print output_file.format(i), 'written.'
+            print test_params
         print len(ready), 'test jobs to start.'
 
     # store the still pending builds
