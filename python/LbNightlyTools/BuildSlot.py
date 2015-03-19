@@ -777,6 +777,10 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                  'we try to produce one',
                                  manifest_file)
                 from LbNightlyTools.Release import createManifestFile
+                # ensure that the destination directory exists, in case
+                # of builds that failed very badly
+                if not os.path.exists(os.path.dirname(manifest_file)):
+                    os.makedirs(os.path.dirname(manifest_file))
                 with open(manifest_file, 'w') as manif:
                     manif.write(createManifestFile(proj.name, proj.version,
                                                    self.platform,
