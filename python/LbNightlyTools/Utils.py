@@ -245,7 +245,7 @@ class Dashboard(object):
                 new_data.update(data)
                 self.db[name] = new_data
             except (Unauthorized, ServerError), ex:
-                self._log.warning('could not send %s: ', name, ex)
+                self._log.warning('could not send %s: %s', name, ex)
 
     def dropBuild(self, slot, build_id, platform=None):
         '''
