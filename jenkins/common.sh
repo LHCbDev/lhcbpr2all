@@ -42,6 +42,11 @@ echo Workspace: $WORKSPACE
 echo Artifacts dir: $ARTIFACTS_DIR
 echo ===================================================================
 
+# FIXME: workaround for LBCORE-769
+if ( echo $platform | grep -q slc5 ) ; then
+  export PATH=/afs/cern.ch/sw/lcg/external/Python/2.6.5p2/x86_64-slc5-gcc46-opt/bin:$PATH
+fi
+
 if [ -n "${set_config}" ] ; then
   # FIXME: this is usually set by the "group login" script, but it is not
   #        called on lxbuild (it is needed to get the right ICC environment)
