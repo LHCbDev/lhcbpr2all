@@ -42,9 +42,11 @@ echo Workspace: $WORKSPACE
 echo Artifacts dir: $ARTIFACTS_DIR
 echo ===================================================================
 
+LbScriptsVersion=dev
+
 # FIXME: workaround for LBCORE-769
 if ( echo $platform | grep -q slc5 ) ; then
-  export PATH=/afs/cern.ch/sw/lcg/external/Python/2.6.5p2/x86_64-slc5-gcc46-opt/bin:$PATH
+  LbScriptsVersion=LBSCRIPTS_v8r3
 fi
 
 if [ -n "${set_config}" ] ; then
@@ -53,7 +55,7 @@ if [ -n "${set_config}" ] ; then
   export GROUP_DIR=/afs/cern.ch/group/z5
   export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
   # FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
   export CMTCONFIG=${platform}
   # FIXME: path to the new gdb should be implicit in the build/run-time
   #        environment
@@ -63,7 +65,7 @@ if [ -n "${set_config}" ] ; then
   # FIXME: we need to get the latest compilers wrappers until we release LbScripts
   export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
 else
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
 fi
 
 # FIXME: with gcc49 we do not get the right Python with LbLogin
