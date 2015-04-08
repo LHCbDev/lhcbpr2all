@@ -174,9 +174,10 @@ class cmake(make):
                             cache_entries=kwargs.pop('cache_entries', None))
 
         env = kwargs.pop('env', {})
+        preload_file = os.path.join(os.getcwd(), self._cache_preload_file(proj))
         env.update({'USE_CMAKE': '1',
                     'USE_MAKE': '1',
-                    'CMAKEFLAGS': '-C' + self._cache_preload_file(proj)})
+                    'CMAKEFLAGS': '-C' + preload_file})
         return make._make(self, target, proj, env=env, **kwargs)
 
     def build(self, proj, **kwargs):
