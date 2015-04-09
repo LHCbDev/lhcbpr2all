@@ -95,8 +95,16 @@ def test_one_ready():
         expected_params = JobParams(slot=slot,
                                     slot_build_id=build_id,
                                     project=project,
-                                    platforms=platform,
+                                    platform=platform,
                                     os_label=os_label)
+        print '------- test-0.txt -------'
+        import sys
+        sys.stdout.writelines(open('test-0.txt'))
+        print '--------------------------'
+        print '-------  expected  -------'
+        print expected_params
+        print '--------------------------'
+
         assert open('test-0.txt').read() == (str(expected_params) + '\n')
 
 def _test_only_projects_conf():
