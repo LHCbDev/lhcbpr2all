@@ -27,10 +27,11 @@ __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 import os
 import sys
 import glob
-import re
+import json
 from sets import Set
 from xml.etree.ElementTree import parse
 from LbNightlyTools.Utils import JobParams
+from os.path import splitext, basename
 
 def main(*argv):
     '''
@@ -56,12 +57,24 @@ def main(*argv):
 
     output_file = argv[0]
 
-    #TODO : check if the slot is disable in the json file
-    slots = Set(re.search('configs/(.+?).json',el).group(1) for el in glob.glob('configs/lhcb-*.json'))
+    slots = Set()
+
+    files = glob.glob('configs/lhcb-*.json')
+
+
+    for file_name in files:
+        with open(file_name) as data_file:
+            data = json.load(data_file)
+            if (not 'disabled' in data) or data['disabled'] == False:
+                if u'slot' in data:
+                    slots.add(data['slot'])
+                else:
+                    slots.add(splitext(basename(file_name))[0])
+
 
 
     xmlParse = parse('configs/configuration.xml')
-    slots = slots | Set(el.get('name') for el in xmlParse.findall("slot[@disabled='false']"))
+    slots = slots | Set(el.get('name') for el in xmlParse.findall("slot") if el not in xmlParse.findall("slot[@disabled='true']"))
     print '\n'.join(slots)
 
     ready = []
