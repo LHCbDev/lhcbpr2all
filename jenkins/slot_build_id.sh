@@ -16,6 +16,8 @@ export HOME=$PWD
 # Set common environment
 . $(dirname $0)/common.sh
 
-if [ -z ${slot_build_id} ] ; then
+if [ -z "${slot_build_id}" ] ; then
     slot_build_id=${BUILD_NUMBER}
 fi
+
+echo ${slot_build_id}
