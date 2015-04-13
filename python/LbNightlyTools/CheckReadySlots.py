@@ -27,7 +27,10 @@ __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 import os
 import sys
 import glob
+import re
+from sets import Set
 from xml.etree.ElementTree import parse
+from LbNightlyTools.Utils import JobParams
 
 def main(*argv):
     '''
@@ -53,12 +56,21 @@ def main(*argv):
 
     output_file = argv[0]
 
-    files = glob.glob('configs/lhcb-*.json')
-    print '\n'.join(files)
+    #TODO : check if the slot is disable in the json file
+    slots = Set(re.search('configs/(.+?).json',el).group(1) for el in glob.glob('configs/lhcb-*.json'))
 
 
     xmlParse = parse('configs/configuration.xml')
-    print '\n'.join(el.get('name') for el in xmlParse.findall("slot[@disabled='false']"))
+    slots = slots | Set(el.get('name') for el in xmlParse.findall("slot[@disabled='false']"))
+    print '\n'.join(slots)
+
+    ready = []
+
+    for slot in slots:
+        ready.append(JobParams(slot=slot))
 
 
+    for i, test_params in enumerate(ready):
+            open(output_file.format(i), 'w').write(str(test_params) + '\n')
+            print output_file.format(i), 'written.'
 
