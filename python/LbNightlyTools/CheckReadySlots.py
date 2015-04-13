@@ -9,17 +9,9 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 '''
-Simple script to poll for expected builds and report which of them are ready
-to be tested.
-
-Given an "inbox" directory, retrieve the list of new expected builds, update the
-global list and check which builds are ready, then create a parameter file for
-each build that is ready to be tested, with the parameters
-- slot
-- slot_build_id
-- project
-- platform
-- os_label
+Simple script to extract slot who need to be compile
+Create one file for each slot. Each file contains parameters for the next job.
+Actualy we only avec the slot name in parameter in files
 
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
