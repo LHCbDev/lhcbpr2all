@@ -11,7 +11,7 @@
 '''
 Simple script to extract slot who need to be compile
 Create one file for each slot. Each file contains parameters for the next job.
-Actualy we only avec the slot name in parameter in files
+Now we only have the slot name in parameter in files
 
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
