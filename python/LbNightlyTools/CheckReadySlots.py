@@ -16,8 +16,6 @@ Now we only have the slot name in parameter in files
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
-import os
-import sys
 import glob
 import json
 from sets import Set
@@ -25,63 +23,58 @@ from xml.etree.ElementTree import parse
 from LbNightlyTools.Utils import JobParams
 from os.path import splitext, basename
 
-def main(*argv):
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
     '''
-    Main script function.
+        TODO : Explain the script
     '''
-    if not argv:
-        prog = os.path.basename(sys.argv[0])
-        argv = sys.argv[1:]
-    else:
-        prog = __name__
+    __usage__ = '%prog [options] <format_output_file.txt>'
+    __version__ = ''
 
-    usage = ('Usage: {0} output_file_format\n'
-             'Example:\n'
-             '\t{0} "slot-param-{{}}.txt"').format(prog)
+    def main(self):
+        """ User code place holder """
 
-    if '-h' in argv or '--help' in argv:
-        print usage
-        sys.exit(0)
+        self.log.info('Start of extraction of slot enable')
 
-    if len(argv) != 1:
-        print >>sys.stderr, usage
-        sys.exit(1)
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
 
-    output_file = argv[0]
+        output_file = self.args[0]
 
-    slots = Set()
+        slots = Set()
 
-    #get all json files for slot configuration
-    files = glob.glob('configs/lhcb-*.json')
+        #get all json files for slot configuration
+        files = glob.glob('configs/lhcb-*.json')
 
 
-    for file_name in files:
-        with open(file_name) as data_file:
-            data = json.load(data_file)
-            #check if slot is not disable
-            if (not 'disabled' in data) or data['disabled'] == False:
-                #extract attribute slot if exist
-                if u'slot' in data:
-                    slots.add(data['slot'])
-                # if not extract slot name from filename
-                else:
-                    slots.add(splitext(basename(file_name))[0])
+        for file_name in files:
+            with open(file_name) as data_file:
+                data = json.load(data_file)
+                #check if slot is not disable
+                if (not 'disabled' in data) or data['disabled'] == False:
+                    #extract attribute slot if exist
+                    if 'slot' in data:
+                        slots.add(data['slot'])
+                    # if not extract slot name from filename
+                    else:
+                        slots.add(splitext(basename(file_name))[0])
 
 
 
-    xmlParse = parse('configs/configuration.xml')
-    #Extract all slots name from configuration who doesn't have attribute disabled to true
-    slots = slots | Set(el.get('name') for el in xmlParse.findall("slot") if el not in xmlParse.findall("slot[@disabled='true']"))
-    print '\n'.join(slots)
+        xmlParse = parse('configs/configuration.xml')
+        #Extract all slots name from configuration who doesn't have attribute disabled to true
+        slots = slots | Set(el.get('name') for el in xmlParse.findall("slot") if el not in xmlParse.findall("slot[@disabled='true']"))
 
-    ready = []
+        ready = []
 
-    #Init parameters for each slot
-    for slot in slots:
-        ready.append(JobParams(slot=slot))
+        #Init parameters for each slot
+        for slot in slots:
+            ready.append(JobParams(slot=slot))
 
-    #Create a file that contain JobParams for each slot
-    for i, test_params in enumerate(ready):
-            open(output_file.format(i), 'w').write(str(test_params) + '\n')
-            print output_file.format(i), 'written.'
+        #Create a file that contain JobParams for each slot
+        for i, test_params in enumerate(ready):
+                open(output_file.format(i), 'w').write(str(test_params) + '\n')
 
+        self.log.info('End of extraction of slot enable')
+
+        return 0

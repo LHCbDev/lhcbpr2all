@@ -9,5 +9,9 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-from LbNightlyTools.CheckReadySlots import main
-main()
+import LbUtils.Log
+LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
+
+from LbNightlyTools.CheckReadySlots import Script
+import sys
+sys.exit(Script().run())

@@ -18,4 +18,4 @@ export HOME=$PWD
 
 export CMTCONFIG=$platform
 
-lbn-check-ready-slots 'slot-param-{0}.txt'
+lbn-check-ready-slots --verbose 'slot-param-{0}.txt'
