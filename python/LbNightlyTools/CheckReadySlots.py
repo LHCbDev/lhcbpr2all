@@ -17,6 +17,7 @@ Now we only have the slot name in parameter in files
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
 import glob
+import os
 import json
 from sets import Set
 from xml.etree.ElementTree import parse
@@ -31,23 +32,14 @@ class Script(LbUtils.Script.PlainScript):
     __usage__ = '%prog [options] <format_output_file.txt>'
     __version__ = ''
 
-    def main(self):
-        """ User code place holder """
-
-        self.log.info('Starting extraction of all enable slot')
-
-        if len(self.args) != 1:
-            self.parser.error('wrong number of arguments')
-
-        output_file = self.args[0]
+    def extractFromJson(self, file_format_json):
+        self.log.info('Extract slots from %s files', file_format_json)
 
         slots = Set()
 
-
-        self.log.info('Extract slots from configs/lhcb-*.json files')
-
         #get all json files for slot configuration
-        files = glob.glob('configs/lhcb-*.json')
+        files = glob.glob(file_format_json)
+
 
         for file_name in files:
             with open(file_name) as data_file:
@@ -63,23 +55,49 @@ class Script(LbUtils.Script.PlainScript):
                     slots.add(slot_name)
                     self.log.debug('Add %s to the slot list from %s', slot_name, file_name)
 
-        self.log.info('Extract slots from configs/configuration.xml')
+        self.log.info('%s slots from %s', len(slots), file_format_json)
 
-        xmlParse = parse('configs/configuration.xml')
-        #Extract all slots name from configuration who doesn't have attribute disabled to true
-        self.log.debug('Get slot from configs/configuration.xml')
-        slots = slots | Set(el.get('name') for el in xmlParse.findall("slot") if el not in xmlParse.findall("slot[@disabled='true']"))
+        return slots
 
-        ready = []
+    def extractFromXml(self, config_file):
+        self.log.info('Extract slots from %s', config_file)
 
-        #Create a file that contain JobParams for each slot
+        slots = Set()
+
+        try:
+            xmlParse = parse(config_file)
+            #Extract all slots name from configuration who doesn't have attribute disabled to true
+            self.log.debug('Get slot from %s', config_file)
+            slots = Set(el.get('name') for el in xmlParse.findall("slot") if el not in xmlParse.findall("slot[@disabled='true']"))
+            self.log.info('%s slots from %s', len(slots), config_file)
+
+        except:
+            self.log.warning('Can''t find or open %s', config_file)
+
+        return slots
+
+    def writeFiles(self, slots, output_file):
         for slot in slots:
             output_file_name = output_file.format(slot)
-            ready.append(JobParams(slot=slot))
             open(output_file_name, 'w').write(str(JobParams(slot=slot)) + '\n')
             self.log.debug('%s written', output_file_name)
+
         self.log.info('%s slots to start', len(slots))
 
+
+    def main(self):
+
+        self.log.info('Starting extraction of all enable slot')
+
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
+
+        output_file = self.args[0]
+
+        slots = self.extractFromJson('configs/lhcb-*.json') | self.extractFromXml('configs/configuration.xml')
+
+        #Create a file that contain JobParams for each slot
+        self.writeFiles(slots, output_file)
 
         self.log.info('End of extraction of all enable slot')
 
