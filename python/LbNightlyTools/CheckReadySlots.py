@@ -17,7 +17,6 @@ Now we only have the slot name in parameter in files
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
 import glob
-import os
 import json
 from sets import Set
 from xml.etree.ElementTree import parse
