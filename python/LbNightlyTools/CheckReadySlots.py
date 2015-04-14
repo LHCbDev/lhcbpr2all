@@ -34,7 +34,7 @@ class Script(LbUtils.Script.PlainScript):
     def main(self):
         """ User code place holder """
 
-        self.log.info('Start of extraction of slot enable')
+        self.log.info('Starting extraction of all enable slot')
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -43,9 +43,11 @@ class Script(LbUtils.Script.PlainScript):
 
         slots = Set()
 
+
+        self.log.info('Extract slots from configs/lhcb-*.json files')
+
         #get all json files for slot configuration
         files = glob.glob('configs/lhcb-*.json')
-
 
         for file_name in files:
             with open(file_name) as data_file:
@@ -54,27 +56,31 @@ class Script(LbUtils.Script.PlainScript):
                 if (not 'disabled' in data) or data['disabled'] == False:
                     #extract attribute slot if exist
                     if 'slot' in data:
-                        slots.add(data['slot'])
+                        slot_name = data['slot']
                     # if not extract slot name from filename
                     else:
-                        slots.add(splitext(basename(file_name))[0])
+                        slot_name = splitext(basename(file_name))[0]
+                    slots.add(slot_name)
+                    self.log.debug('Add %s to the slot list from %s', slot_name, file_name)
 
-
+        self.log.info('Extract slots from configs/configuration.xml')
 
         xmlParse = parse('configs/configuration.xml')
         #Extract all slots name from configuration who doesn't have attribute disabled to true
+        self.log.debug('Get slot from configs/configuration.xml')
         slots = slots | Set(el.get('name') for el in xmlParse.findall("slot") if el not in xmlParse.findall("slot[@disabled='true']"))
 
         ready = []
 
-        #Init parameters for each slot
-        for slot in slots:
-            ready.append(JobParams(slot=slot))
-
         #Create a file that contain JobParams for each slot
-        for i, test_params in enumerate(ready):
-                open(output_file.format(i), 'w').write(str(test_params) + '\n')
+        for slot in slots:
+            output_file_name = output_file.format(slot)
+            ready.append(JobParams(slot=slot))
+            open(output_file_name, 'w').write(str(JobParams(slot=slot)) + '\n')
+            self.log.debug('%s written', output_file_name)
+        self.log.info('%s slots to start', len(slots))
 
-        self.log.info('End of extraction of slot enable')
+
+        self.log.info('End of extraction of all enable slot')
 
         return 0
