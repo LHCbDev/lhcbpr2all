@@ -41,18 +41,22 @@ class Script(LbUtils.Script.PlainScript):
 
 
         for file_name in files:
-            with open(file_name) as data_file:
-                data = json.load(data_file)
-                #check if slot is not disable
-                if (not 'disabled' in data) or data['disabled'] == False:
-                    #extract attribute slot if exist
-                    if 'slot' in data:
-                        slot_name = data['slot']
-                    # if not extract slot name from filename
-                    else:
-                        slot_name = splitext(basename(file_name))[0]
-                    slots.add(slot_name)
-                    self.log.debug('Add %s to the slot list from %s', slot_name, file_name)
+            try:
+                with open(file_name) as data_file:
+                    data = json.load(data_file)
+                    #check if slot is not disable
+                    if (not 'disabled' in data) or data['disabled'] == False:
+                            #extract attribute slot if exist
+                        if 'slot' in data:
+                            slot_name = data['slot']
+                        # if not extract slot name from filename
+                        else:
+                            slot_name = splitext(basename(file_name))[0]
+                        slots.add(slot_name)
+                        self.log.debug('Add %s to the slot list from %s', slot_name, file_name)
+            except:
+                self.log.warning('Can''t find or open %s', file_name)
+
 
         self.log.info('%s slots from %s', len(slots), file_format_json)
 
