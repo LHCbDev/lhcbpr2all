@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -9,17 +9,9 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
+import LbUtils.Log
+LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
-
-# Set common environment
-. $(dirname $0)/common.sh
-
-export CMTCONFIG=$platform
-
-if [ -z "${slot_build_id}" ] ; then
-    slot_build_id=$(lbn-slot-build-id --verbose "lhcb-test")
-fi
-
-echo ${slot_build_id}
+from LbNightlyTools.SlotBuildId import Script
+import sys
+sys.exit(Script().run())
