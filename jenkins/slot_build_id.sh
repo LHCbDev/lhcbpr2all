@@ -19,7 +19,7 @@ export HOME=$PWD
 export CMTCONFIG=$platform
 
 if [ -z "${slot_build_id}" ] ; then
-    slot_build_id=$(lbn-slot-build-id --verbose "lhcb-test")
+    slot_build_id=$(lbn-slot-build-id --verbose "lhcb-test" "lhcb-dirac" "lhcb-colas")
 fi
 
 echo ${slot_build_id}

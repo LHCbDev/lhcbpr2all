@@ -22,16 +22,15 @@ class Script(LbUtils.Script.PlainScript):
     '''
         TODO : Explain the script
     '''
-    __usage__ = '%prog [options] <slot1>'
+    __usage__ = '%prog [options] <slot1> <slot2> <slot3> ...'
     __version__ = ''
     def main(self):
 
-        if len(self.args) != 1:
+        if len(self.args) < 1:
             self.parser.error('wrong number of arguments')
 
-        slot_name = self.args[0]
         slot_id_file = 'configs/slot_id.xml'
-        res = -1
+
         try:
             xmlParse = parse(slot_id_file)
 
@@ -39,26 +38,31 @@ class Script(LbUtils.Script.PlainScript):
             self.log.error('Can''t find or open %s', slot_id_file)
             sys.exit(1)
 
+        res = {}
         root = xmlParse.getroot()
-        slots = root.findall("slot[@name='"+slot_name+"']")
-        if len(slots):
-            slot = slots[0]
-            res = slot.get('current_id')
-            if not res:
-                self.log.error('no attribute current_id on the slot %s', slot_name)
-                sys.exit(2)
-            res = int(res)+1
-            slot.set('current_id', str(res))
-        else:
-            res = 1
-            slot = Element('slot')
-            slot.set('name', slot_name)
-            slot.set('current_id', str(res))
-            root.append(slot)
-            self.log.info('Creation du slot %s dans slot_id.xml', slot_name)
+
+        for slot_name in self.args:
+            slots = root.findall("slot[@name='"+slot_name+"']")
+
+            if len(slots):
+                slot = slots[0]
+                slot_id = slot.get('current_id')
+                if not slot_id:
+                    self.log.error('no attribute current_id on the slot %s', slot_name)
+                    sys.exit(2)
+                slot_id = int(slot_id)+1
+                slot.set('current_id', str(slot_id))
+            else:
+                slot_id = 1
+                slot = Element('slot')
+                slot.set('name', slot_name)
+                slot.set('current_id', str(slot_id))
+                root.append(slot)
+                self.log.info('Creation du slot %s dans slot_id.xml', slot_name)
+
+            res[slot_name] = slot_id
 
         xmlParse.write(slot_id_file)
 
 
-        print res
-        return 0
+        return res

@@ -14,4 +14,5 @@ LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_form
 
 from LbNightlyTools.SlotBuildId import Script
 import sys
-sys.exit(Script().run())
+res = Script().run()
+print res.values()[0]
