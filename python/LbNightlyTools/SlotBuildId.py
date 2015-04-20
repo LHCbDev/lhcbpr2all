@@ -35,12 +35,13 @@ def indent(elem, level=0):
             elem.tail = i
 
 def getIds(slots):
-    #slot_id_dir = os.environ['JENKINS_HOME']+'/nightlies/'+os.environ['flavours']
-    slot_id_dir = 'configs/'
+    slot_id_dir = os.environ['JENKINS_HOME']+'/nightlies/'+os.environ['flavours']
+    #slot_id_dir = 'configs'
     slot_id_file = os.path.join(slot_id_dir, 'slot_id.xml')
 
     if not os.path.exists(slot_id_dir):
         os.makedirs(slot_id_dir)
+        logging.info('Directory %s created', slot_id_dir)
 
     if os.path.isfile(slot_id_file):
         try:
@@ -52,6 +53,7 @@ def getIds(slots):
             sys.exit(1)
     else:
         os.open(slot_id_file, os.O_CREAT, 0644)
+        logging.info('File %s created', slot_id_file)
         root = ET.Element('slot_id')
         xmlParse = ET.ElementTree(root)
 
