@@ -13,7 +13,7 @@
 #__test__ = False
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
-from LbNightlyTools import CheckReadySlots
+from LbNightlyTools import EnabledSlots
 
 import os
 import re
@@ -38,7 +38,7 @@ def teardown():
 def test_wrong_number_argument():
     with TemporaryDir(chdir=True):
         try:
-            CheckReadySlots.Script().run(['slot-param-{0}.txt','other_param'])
+            EnabledSlots.Script().run(['slot-param-{0}.txt','other_param'])
             assert False, 'Script should have exited'
         except SystemExit, x:
             assert x.code != 0
@@ -48,7 +48,7 @@ def test_wrong_number_argument():
 def test_no_data():
 
     with TemporaryDir(chdir=True):
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 0
 
@@ -57,7 +57,7 @@ def test_no_file():
 
     with TemporaryDir(chdir=True):
         os.makedirs('./configs')
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 0
 
@@ -75,9 +75,9 @@ def test_one_file_json_chmod_111():
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
         os.chmod('configs/lhcb-TEST.json', 0111)
-        slots = CheckReadySlots.Script().extractFromJson('lhcb-*.json')
-        CheckReadySlots.Script().writeFiles(slots, 'slot-param-{0}.txt')
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        slots = EnabledSlots.Script().extractFromJson('lhcb-*.json')
+        EnabledSlots.Script().writeFiles(slots, 'slot-param-{0}.txt')
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST.json'))
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 0
@@ -96,7 +96,7 @@ def test_one_file_json_disabled_flase():
         os.makedirs('./configs')
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST.json'))
         assert json.load(open('configs/lhcb-TEST.json')) == conf_data
@@ -116,7 +116,7 @@ def test_one_file_json_disabled_true():
         os.makedirs('./configs')
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST.json'))
         assert json.load(open('configs/lhcb-TEST.json')) == conf_data
@@ -135,7 +135,7 @@ def test_one_file_json_no_disabled():
         os.makedirs('./configs')
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST.json'))
         assert json.load(open('configs/lhcb-TEST.json')) == conf_data
@@ -154,7 +154,7 @@ def test_one_file_json_no_slot():
         os.makedirs('./configs')
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST.json'))
         assert json.load(open('configs/lhcb-TEST.json')) == conf_data
@@ -181,7 +181,7 @@ def test_two_file_json():
             slot_file.write(json.dumps(conf_data1))
         with open('configs/lhcb-TEST2.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data2))
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST1.json'))
         assert exists(join('configs/lhcb-TEST2.json'))
@@ -202,7 +202,7 @@ def test_one_job_xml_disbaled_false():
         os.makedirs('./configs')
         with open('configs/configuration.xml', 'w') as cfg_file:
             cfg_file.write(test_xml)
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/configuration.xml'))
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 1
@@ -220,7 +220,7 @@ def test_one_job_xml_disabled_true():
         os.makedirs('./configs')
         with open('configs/configuration.xml', 'w') as cfg_file:
             cfg_file.write(test_xml)
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/configuration.xml'))
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 0
@@ -238,7 +238,7 @@ def test_one_job_xml_no_disabled():
         os.makedirs('./configs')
         with open('configs/configuration.xml', 'w') as cfg_file:
             cfg_file.write(test_xml)
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/configuration.xml'))
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 1
@@ -258,7 +258,7 @@ def test_two_job_xml():
         os.makedirs('./configs')
         with open('configs/configuration.xml', 'w') as cfg_file:
             cfg_file.write(test_xml)
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/configuration.xml'))
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 2
@@ -286,7 +286,7 @@ def test_same_job_xml_and_json():
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
 
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/configuration.xml'))
         assert exists(join('configs/lhcb-TEST.json'))
@@ -315,7 +315,7 @@ def test_different_job_xml_and_json():
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
 
-        retval = CheckReadySlots.Script().run(['slot-param-{0}.txt'])
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/configuration.xml'))
         assert exists(join('configs/lhcb-TEST.json'))

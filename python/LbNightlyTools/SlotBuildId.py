@@ -14,55 +14,75 @@ Script to get and set current slot_build_id of a slot
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
+import logging
+import os
 import sys
-from xml.etree.ElementTree import parse, Element
+import xml.etree.ElementTree as ET
 
-import LbUtils.Script
-class Script(LbUtils.Script.PlainScript):
-    '''
-        TODO : Explain the script
-    '''
-    __usage__ = '%prog [options] <slot1> <slot2> <slot3> ...'
-    __version__ = ''
-    def main(self):
+def indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 
-        if len(self.args) < 1:
-            self.parser.error('wrong number of arguments')
+def getIds(slots):
+    #slot_id_dir = os.environ['JENKINS_HOME']+'/nightlies/'+os.environ['flavours']
+    slot_id_dir = 'configs/'
+    slot_id_file = os.path.join(slot_id_dir, 'slot_id.xml')
 
-        slot_id_file = 'configs/slot_id.xml'
+    if not os.path.exists(slot_id_dir):
+        os.makedirs(slot_id_dir)
 
+    if os.path.isfile(slot_id_file):
         try:
-            xmlParse = parse(slot_id_file)
+            xmlParse = ET.parse(slot_id_file)
+            root = xmlParse.getroot()
 
         except:
-            self.log.error('Can''t find or open %s', slot_id_file)
+            logging.error('Can''t find or open %s', slot_id_file)
             sys.exit(1)
+    else:
+        os.open(slot_id_file, os.O_CREAT, 0644)
+        root = ET.Element('slot_id')
+        xmlParse = ET.ElementTree(root)
 
-        res = {}
-        root = xmlParse.getroot()
+    res = {}
+    add_slot = False
 
-        for slot_name in self.args:
-            slots = root.findall("slot[@name='"+slot_name+"']")
+    all_slots = dict((el.get('name'), el) for el in root.findall("slot"))
+    for slot_name in slots:
+        slot = all_slots.get(slot_name)
 
-            if len(slots):
-                slot = slots[0]
-                slot_id = slot.get('current_id')
-                if not slot_id:
-                    self.log.error('no attribute current_id on the slot %s', slot_name)
-                    sys.exit(2)
-                slot_id = int(slot_id)+1
-                slot.set('current_id', str(slot_id))
-            else:
-                slot_id = 1
-                slot = Element('slot')
-                slot.set('name', slot_name)
-                slot.set('current_id', str(slot_id))
-                root.append(slot)
-                self.log.info('Creation du slot %s dans slot_id.xml', slot_name)
+        if slot is not None:
+            slot_id = slot.get('last_id')
+            if not slot_id:
+                logging.error('No attribute current_id on the slot %s', slot_name)
+                sys.exit(2)
+            slot_id = int(slot_id)+1
+            slot.set('last_id', str(slot_id))
+        else:
+            slot_id = 1
+            slot = ET.Element('slot')
+            slot.set('name', slot_name)
+            slot.set('last_id', str(slot_id))
+            root.append(slot)
+            add_slot = True
+            logging.info('Slot %s created in %s', slot_name, slot_id_file)
 
-            res[slot_name] = slot_id
+        res[slot_name] = slot_id
 
-        xmlParse.write(slot_id_file)
+    if add_slot:
+        indent(root)
 
+    xmlParse.write(slot_id_file)
 
-        return res
+    return res
