@@ -12,6 +12,7 @@
 # Uncomment to disable the tests.
 #__test__ = False
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
+__test_mode__ = True
 
 from LbNightlyTools import EnabledSlots
 
@@ -29,6 +30,8 @@ _env_bk = dict(os.environ)
 def setup():
     global _env_bk
     _env_bk = dict(os.environ)
+    os.environ['JENKINS_HOME'] = 'JENKINS_HOME'
+    os.environ['flavour'] = 'flavour'
 
 def teardown():
     global _env_bk
@@ -38,7 +41,7 @@ def teardown():
 def test_wrong_number_argument():
     with TemporaryDir(chdir=True):
         try:
-            EnabledSlots.Script().run(['slot-param-{0}.txt','other_param'])
+            EnabledSlots.Script().run([])
             assert False, 'Script should have exited'
         except SystemExit, x:
             assert x.code != 0
@@ -321,3 +324,17 @@ def test_different_job_xml_and_json():
         assert exists(join('configs/lhcb-TEST.json'))
         assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 2
 
+def test_one_job_param():
+
+    with TemporaryDir(chdir=True):
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt', 'lhcb-test'])
+        assert retval == 0
+        assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 1
+
+
+def test_two_job_param():
+
+    with TemporaryDir(chdir=True):
+        retval = EnabledSlots.Script().run(['slot-param-{0}.txt', 'lhcb-test', 'lhcb-test2'])
+        assert retval == 0
+        assert len([x for x in os.listdir('.') if re.match(r'^slot-param-.*\.txt', x)]) == 2
