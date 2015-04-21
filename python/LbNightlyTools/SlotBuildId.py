@@ -35,7 +35,7 @@ def indent(elem, level=0):
             elem.tail = i
 
 def getIds(slots):
-    slot_id_dir = os.environ['JENKINS_HOME']+'/nightlies/'+os.environ['flavour']
+    slot_id_dir = os.path.join(os.environ['JENKINS_HOME'], 'nightlies', os.environ['flavour'])
     #slot_id_dir = 'configs'
     slot_id_file = os.path.join(slot_id_dir, 'slot_id.xml')
 
