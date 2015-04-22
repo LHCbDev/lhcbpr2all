@@ -79,7 +79,7 @@ def get_ids(slots):
             slot_file_build_number = os.path.join(os.environ['JENKINS_HOME'],
                                                   'jobs',
                                                   slot_name,
-                                                  '    ')
+                                                  'nextBuildNumber')
             if os.path.isfile(slot_file_build_number):
                 slot_id = int(open(slot_file_build_number).read())
             else:
