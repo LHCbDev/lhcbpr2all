@@ -16,4 +16,9 @@ export HOME=$PWD
 # Set common environment
 . $(dirname $0)/common.sh
 
-lbn-enabled-slots --verbose 'slot-param-{0}.txt' ${slots}
+if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
+  # Get the slot configuration files from Subversion
+  lbn-get-configs
+fi
+
+lbn-enabled-slots --verbose 'slot-params-{0}.txt' ${slots}
