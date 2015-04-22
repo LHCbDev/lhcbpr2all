@@ -41,7 +41,7 @@ def get_ids(slots):
                                'nightlies',
                                os.environ['flavour'])
     # slot_id_dir = 'configs'
-    slot_id_file = os.path.join(slot_id_dir, 'slot_id.xml')
+    slot_id_file = os.path.join(slot_id_dir, 'slot_ids.xml')
 
     if not os.path.exists(slot_id_dir):
         os.makedirs(slot_id_dir)
@@ -76,7 +76,14 @@ def get_ids(slots):
             slot_id = int(slot_id)+1
             slot.set('last_id', str(slot_id))
         else:
-            slot_id = 1
+            slot_file_build_number = os.path.join(os.environ['JENKINS_HOME'],
+                                                  'jobs',
+                                                  slot_name,
+                                                  '    ')
+            if os.path.isfile(slot_file_build_number):
+                slot_id = int(open(slot_file_build_number).read())
+            else:
+                slot_id = 1
             slot = ET.Element('slot')
             slot.set('name', slot_name)
             slot.set('last_id', str(slot_id))
