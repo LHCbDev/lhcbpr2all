@@ -78,8 +78,8 @@ def test_one_file_json_chmod_111():
         with open('configs/lhcb-TEST.json', 'w') as slot_file:
             slot_file.write(json.dumps(conf_data))
         os.chmod('configs/lhcb-TEST.json', 0111)
-        slots = EnabledSlots.Script().extractFromJson('lhcb-*.json')
-        EnabledSlots.Script().writeFiles(slots, 'slot-param-{0}.txt')
+        slots = EnabledSlots.Script().extract_from_json('lhcb-*.json')
+        EnabledSlots.Script().write_files(slots, 'slot-param-{0}.txt')
         retval = EnabledSlots.Script().run(['slot-param-{0}.txt'])
         assert retval == 0
         assert exists(join('configs/lhcb-TEST.json'))
