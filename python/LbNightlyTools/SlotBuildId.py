@@ -19,6 +19,7 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
+
 def indent(elem, level=0):
     i = "\n" + level*"  "
     if len(elem):
@@ -34,9 +35,12 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
-def getIds(slots):
-    slot_id_dir = os.path.join(os.environ['JENKINS_HOME'], 'nightlies', os.environ['flavour'])
-    #slot_id_dir = 'configs'
+
+def get_ids(slots):
+    slot_id_dir = os.path.join(os.environ['JENKINS_HOME'],
+                               'nightlies',
+                               os.environ['flavour'])
+    # slot_id_dir = 'configs'
     slot_id_file = os.path.join(slot_id_dir, 'slot_id.xml')
 
     if not os.path.exists(slot_id_dir):
@@ -45,8 +49,8 @@ def getIds(slots):
 
     if os.path.isfile(slot_id_file):
         try:
-            xmlParse = ET.parse(slot_id_file)
-            root = xmlParse.getroot()
+            xml_parse = ET.parse(slot_id_file)
+            root = xml_parse.getroot()
 
         except:
             logging.error('Can''t find or open %s', slot_id_file)
@@ -55,7 +59,7 @@ def getIds(slots):
         os.open(slot_id_file, os.O_CREAT, 0644)
         logging.info('File %s created', slot_id_file)
         root = ET.Element('slot_id')
-        xmlParse = ET.ElementTree(root)
+        xml_parse = ET.ElementTree(root)
 
     res = {}
     add_slot = False
@@ -67,7 +71,7 @@ def getIds(slots):
         if slot is not None:
             slot_id = slot.get('last_id')
             if not slot_id:
-                logging.error('No attribute current_id on the slot %s', slot_name)
+                logging.error('No current_id on the slot %s', slot_name)
                 sys.exit(2)
             slot_id = int(slot_id)+1
             slot.set('last_id', str(slot_id))
@@ -85,6 +89,6 @@ def getIds(slots):
     if add_slot:
         indent(root)
 
-    xmlParse.write(slot_id_file)
+    xml_parse.write(slot_id_file)
 
     return res
