@@ -109,12 +109,14 @@ class _ProjectMeta(type):
             else:
                 timelog = log_timing(CheckoutMethods.__log__)
                 reclog = RecordLogger(CheckoutMethods.__log__)
-                dct['checkout'] = reclog(timelog(dct['checkout']))
+                info = log_enter_step('checking out')
+                dct['checkout'] = info(reclog(timelog(dct['checkout'])))
         timelog = log_timing(BuildMethods.__log__)
         reclog = RecordLogger(BuildMethods.__log__)
         for method in ('build', 'clean', 'test'):
             if method in dct:
-                dct[method] = reclog(timelog(dct[method]))
+                info = log_enter_step(method + 'ing')
+                dct[method] = info(reclog(timelog(dct[method])))
 
         return type.__new__(cls, name, bases, dct)
 
@@ -192,6 +194,17 @@ def log_timing(logger='', level=logging.DEBUG):
             logger.log(level, 'Completed at: %s', end_time)
             logger.log(level, 'Elapsed time: %s', end_time - start_time)
             return result
+        return wrapper
+    return decorate
+
+def log_enter_step(msg=None):
+    def decorate(method):
+        from functools import wraps
+        @wraps(method)
+        def wrapper(*args, **kwargs):
+            __log__.info(msg + ' %s', args[0])
+            __log__.debug('  with args %s, %s', args[1:], kwargs)
+            return method(*args, **kwargs)
         return wrapper
     return decorate
 
@@ -319,10 +332,8 @@ class Project(object):
         '''
         Helper function to call the checkout method.
         '''
-        __log__.info('checking out %s', self)
         opts = dict(self.checkout_opts)
         opts.update(kwargs)
-        __log__.debug('  with args %s', opts)
         return self._checkout(self, **opts)
 
     def build(self, **kwargs):
@@ -330,11 +341,9 @@ class Project(object):
         Build the project.
         @param jobs: number of parallel jobs to use [default: cpu count + 1]
         '''
-        __log__.info('building %s', self)
         if 'jobs' not in kwargs:
             from multiprocessing import cpu_count
             kwargs['jobs'] = cpu_count() + 1
-        __log__.debug('  with args %s', kwargs)
         self.build_results = self.build_tool.build(self, **kwargs)
         return self.build_results
 
