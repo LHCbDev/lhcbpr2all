@@ -330,9 +330,11 @@ class Project(object):
         Build the project.
         @param jobs: number of parallel jobs to use [default: cpu count + 1]
         '''
+        __log__.info('building %s', self)
         if 'jobs' not in kwargs:
             from multiprocessing import cpu_count
             kwargs['jobs'] = cpu_count() + 1
+        __log__.debug('  with args %s', kwargs)
         self.build_results = self.build_tool.build(self, **kwargs)
         return self.build_results
 
