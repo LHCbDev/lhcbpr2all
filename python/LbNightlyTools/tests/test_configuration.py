@@ -314,6 +314,25 @@ def test_custom_projects():
     s = SpecialGaudi('HEAD')
     assert s.name == 'Special', s.name
 
+def test_custom_projects_2():
+    from LbNightlyTools.CheckoutMethods import ignore
+
+    class CustomProject(Project):
+        checkout = 'ignore'
+
+    p = CustomProject('LHCb', 'HEAD')
+    assert p.name == 'LHCb'
+    assert p.version == 'HEAD'
+    assert p._checkout == ignore, (p._checkout, ignore)
+
+    class LHCb(CustomProject):
+        pass
+
+    p = LHCb('HEAD')
+    assert p.name == 'LHCb'
+    assert p.version == 'HEAD'
+    assert p._checkout == ignore, (p._checkout, ignore)
+
 def test_dataproject():
     # test empty constructor
     DBASE()

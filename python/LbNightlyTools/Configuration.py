@@ -120,12 +120,13 @@ class _ProjectMeta(type):
 
     def __call__(self, *args, **kwargs):
         '''
-        Use the class name as project name in classes derived from Project.
+        Use the class name as project name in classes derived from Project
+        (if it does not end by 'Project').
         '''
         name = None
         if hasattr(self, '__project_name__'):
             name = self.__project_name__
-        elif self.__name__ != 'Project':
+        elif not self.__name__.endswith('Project'):
             name = self.__name__
         if name:
             # we prepend the class name to the arguments.
