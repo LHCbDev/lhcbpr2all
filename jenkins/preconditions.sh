@@ -18,4 +18,4 @@ export HOME=$PWD
 
 export CMTCONFIG=$platform
 
-lbn-check-preconditions --verbose ${config_file}
+lbn-preconditions --verbose ${config_file}
