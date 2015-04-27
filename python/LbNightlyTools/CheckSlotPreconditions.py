@@ -20,14 +20,6 @@ import os
 from LbNightlyTools.Configuration import load
 from LbNightlyTools.Utils import JobParams
 
-def parseConfigFile(path):
-    '''
-    Extract required information from the configuration file.
-    '''
-    data = load(path)
-    return data.get(u'preconditions', [])
-
-
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -72,6 +64,7 @@ class Script(LbUtils.Script.PlainScript):
                                      slot_build_id=os.environ['slot_build_id'],
                                      platform=platform,
                                      os_label=os_label,
+                                     preconditions=preconds
                                      )) + '\n')
             self.log.debug('%s written', output_file_name)
 

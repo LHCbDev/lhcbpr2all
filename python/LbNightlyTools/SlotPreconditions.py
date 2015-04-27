@@ -88,7 +88,11 @@ class Script(LbUtils.Script.PlainScript):
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
-        preconds = parseConfigFile(self.args[0])
+        if os.environ.has_key('preconditions') \
+        and os.environ['preconditions'] != '':
+            preconds = dict(os.environ.has_key('preconditions'))
+        else:
+            preconds = parseConfigFile(self.args[0])
 
         from LbNightlyTools.Utils import setDayNamesEnv
         setDayNamesEnv()
