@@ -65,7 +65,7 @@ class Script(LbUtils.Script.PlainScript):
 
 
         for platform in platforms:
-            os_label = platform.split('-')[1]
+            os_label = platform.split('-')[1]+'-build'
             output_file_name = output_file.format(os.environ['slot'], platform)
             open(output_file_name, 'w') \
                 .write(str(JobParams(slot=os.environ['slot'],
