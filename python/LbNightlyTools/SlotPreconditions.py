@@ -90,7 +90,7 @@ class Script(LbUtils.Script.PlainScript):
 
         if os.environ.has_key('preconditions') \
         and os.environ['preconditions'] != '':
-            preconds = dict(os.environ.has_key('preconditions'))
+            preconds = dict(os.environ['preconditions'])
         else:
             preconds = parseConfigFile(self.args[0])
 
