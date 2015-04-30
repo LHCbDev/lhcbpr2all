@@ -8,7 +8,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-from platform import platform
 '''
 Module containing the classes and functions used to check if a slot have
 preconditions and write files with parameters for next jobs in Jenkins
@@ -19,14 +18,6 @@ import os
 
 from LbNightlyTools.Configuration import load
 from LbNightlyTools.Utils import JobParams
-
-def parseConfigFile(path):
-    '''
-    Extract required information from the configuration file.
-    '''
-    data = load(path)
-    return data.get(u'preconditions', [])
-
 
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
@@ -54,8 +45,10 @@ class Script(LbUtils.Script.PlainScript):
         data = load(self.args[0])
         preconds = data.get(u'preconditions', [])
         if preconds:
+            self.log.info('Find precondition for %s', os.environ['slot'])
             output_file = 'slot-precondition-{0}-{1}.txt'
         else:
+            self.log.info('No precondition for %s', os.environ['slot'])
             output_file = 'slot-build-{0}-{1}.txt'
 
         if os.environ.has_key('platforms') and os.environ['platforms'] != '':
