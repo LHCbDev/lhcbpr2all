@@ -10,12 +10,4 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
-
-# Set common environment
-. $(dirname $0)/common.sh
-
-. lbn-rsync-get-config
-
-lbn-preconditions --verbose ${config_file}
+lbn-manage-rsync --verbose --get-sources --source "${RSYNC_DIR}" --destination "${ARTIFACTS_DIR}"

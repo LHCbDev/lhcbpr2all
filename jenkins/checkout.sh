@@ -64,5 +64,9 @@ if [ "${flavour}" = "release" ] ; then
   fi
 fi
 
+lbn-rsync-push-artifact
+
+lbn-check-preconditions --verbose ${config_file}
+
 # Cleaning up
 rm -rf tmp

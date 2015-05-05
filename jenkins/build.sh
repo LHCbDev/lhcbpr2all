@@ -18,6 +18,11 @@ export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \
 set_config=1
 . $(dirname $0)/common.sh
 
+. lbn-rsync-get-config
+lbn-rsync-get-sources
+
+exit 0
+
 day=$(date +%a)
 timestamp=$(date -I)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
