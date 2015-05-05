@@ -14,30 +14,34 @@ Contains scripts fo push or get artifact with rsync
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
 import os
+import logging
 import LbUtils.Script
 
 from socket import gethostname
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs
 
-def get_cmd_rsync(src, dest, includes = [], excludes = []):
+def execute_rsync(src, dest, includes = [], excludes = [], extra_param = []):
 
-    cmd = ['rsync', '-P', '--archive', '--whole-file',
+    cmd = ['rsync', '--archive', '--whole-file',
            '--partial-dir=.rsync-partial.%s.%d' %
            (gethostname(), os.getpid()),
            '--delay-updates', '--rsh=ssh']
 
-    if includes:
-        for include in includes:
-            cmd.append('--include=%s' % include)
+    for param in extra_param:
+        cmd.append(param)
 
-    if excludes:
-        for exclude in excludes:
-            cmd.append('--exclude=%s' % exclude)
+    for include in includes:
+        cmd.append('--include=%s' % include)
+
+    for exclude in excludes:
+        cmd.append('--exclude=%s' % exclude)
 
     cmd.append(src)
     cmd.append(dest)
 
-    return cmd
+    logging.info("Rsync call : %s", cmd)
+
+    return call(cmd)
 
 class Script(LbUtils.Script.PlainScript):
 
@@ -60,6 +64,11 @@ class Script(LbUtils.Script.PlainScript):
                                action='store_true',
                                dest='get_sources',
                                help='Synchronize sources files')
+
+        self.parser.add_option('--progress',
+                               action='store_true',
+                               dest='progress',
+                               help='Shows progress during rsync')
 
         self.parser.add_option('-d', '--destination',
                                action='store',
@@ -91,6 +100,7 @@ class Script(LbUtils.Script.PlainScript):
 
         includes_param = []
         excludes_param = []
+        extra_param = []
 
         if opts.get_config:
             includes_param.append("*.json")
@@ -101,17 +111,18 @@ class Script(LbUtils.Script.PlainScript):
             includes_param.append("checkout_job_url.txt")
             excludes_param = ["*"]
 
+        if opts.progress:
+            extra_param = ['--progress']
+
         if ':' in opts.destination:
             host, path = opts.destination.split(':', 1)
             call(['ssh', host, 'mkdir -pv "%s"' % path])
         else:
             ensureDirs([opts.destination])
 
-        cmd = get_cmd_rsync(
+        return execute_rsync(
             opts.source + '/',
             opts.destination,
             includes_param,
-            excludes_param)
-
-        self.log.info("Rsync call : " + " ".join(cmd))
-        return call(cmd)
+            excludes_param,
+            extra_param)

@@ -10,9 +10,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-utils=$(dirname $0)/utils
+. $(dirname $0)/utils.sh
 
-# Set common environment
-. $utils/set_common.sh
-. $utils/get_config_file.sh
-. $utils/execute_preconditions.sh
+set_common
+get_config_file
+execute_preconditions

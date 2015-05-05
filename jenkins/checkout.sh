@@ -10,13 +10,13 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-utils=$(dirname $0)/utils
+. $(dirname $0)/utils.sh
 
 # Set common environment
-. $utils/set_common.sh
-. $utils/get_configs_folder.sh
-. $utils/checkout_slot.sh
-. $utils/push_artifact.sh
-. $utils/check_preconditions.sh
+set_common
+get_configs_folder
+checkout_slot
+push_artifact
+check_preconditions
 
 

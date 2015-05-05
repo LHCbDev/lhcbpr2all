@@ -27,6 +27,7 @@ import json
 from LbNightlyTools import Configuration
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
 from LbNightlyTools.Utils import Dashboard
+from RsyncArtifact import execute_rsync
 
 from string import Template
 from socket import gethostname
@@ -1013,13 +1014,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 else:
                     ensureDirs([self.script.options.rsync_dest])
 
-                cmd = ['rsync', '--archive', '--whole-file',
-                       '--partial-dir=.rsync-partial.%s.%d' %
-                       (gethostname(), os.getpid()),
-                       '--delay-updates', '--rsh=ssh',
-                       self.script.artifacts_dir + '/',
-                       self.script.options.rsync_dest]
-                self.retcode = call(cmd)
+                self.retcode = execute_rsync(self.script.artifacts_dir + '/',
+                                             self.script.options.rsync_dest)
             def wait(self):
                 '''
                 Block until the subprocess exits and return its exit code.

@@ -10,10 +10,9 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-utils=$(dirname $0)/utils
+. $(dirname $0)/utils.sh
 
-# Set common environment
-. $utils/set_common.sh --build
-. $utils/get_config_file.sh
-. $utils/get_sources.sh
-. $utils/build_slot.sh
+set_common --build
+get_config_file
+get_sources
+build_slot

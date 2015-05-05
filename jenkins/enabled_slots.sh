@@ -10,12 +10,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+. $(dirname $0)/utils.sh
 
-utils=$(dirname $0)/utils
-
-# Set common environment
-. ${utils}/set_common.sh
-. ${utils}/get_configs_folder.sh
-. ${utils}/extract_enabled_slots.sh
+set_common
+get_configs_folder
+extract_enabled_slots

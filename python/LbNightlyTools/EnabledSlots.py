@@ -88,11 +88,15 @@ class Script(LbUtils.Script.PlainScript):
         # get_id = lambda slot: get_ids([slot]])[slot]
         for slot in slots:
             output_file_name = output_file.format(slot)
+            slot_build_id=slot_ids[slot]
             open(output_file_name, 'w') \
                 .write(str(JobParams(slot=slot,
-                                     slot_build_id=slot_ids[slot]
+                                     slot_build_id=slot_build_id
                                      )) + '\n')
-            self.log.debug('%s written', output_file_name)
+            self.log.info('%s written for slot %s with build id %s',
+                          output_file_name,
+                          slot,
+                          slot_build_id)
 
         self.log.info('%s slots to start', len(slots))
 
