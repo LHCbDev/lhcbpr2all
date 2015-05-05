@@ -559,8 +559,8 @@ ${extraRequires}
         packonly = pack.split("/")[-1]
         p = getPackage(packonly)
 
-        # Now parsing the version, including possible '*'
-        if ver == '*':
+        # Now parsing the version, including possible '*' and 'v*'
+        if ver in ('*', 'v*'):
             (major, minor, patch, gpatch) = ('*', None, None, None)
         else:
             _txt_version_style = r'v([0-9\*]+)r([0-9\*]+)(?:p([0-9\*]+))?(?:g([0-9\*]+))?'
