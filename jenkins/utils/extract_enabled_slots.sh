@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -10,4 +10,11 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-lbn-manage-rsync --verbose --source "${ARTIFACTS_DIR}" --destination "${RSYNC_DIR}"
+# Script to launch enabled_slots python script
+
+if [ "$SET_COMMON" != "true" -o "$GET_CONFIGS_FOLDER" != "true" ] ; then
+    echo "ERROR : $0 need SET_COMMON and GET_CONFIGS_FOLDER set with true"
+    exit 1
+fi
+
+lbn-enabled-slots --verbose 'slot-params-{0}.txt' ${slots}

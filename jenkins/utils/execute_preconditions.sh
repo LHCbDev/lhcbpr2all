@@ -10,12 +10,9 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+if [ "$SET_COMMON" != "true" -o "$GET_CONFIG_FILE" != "true" ] ; then
+    echo "ERROR : $0 need SET_COMMON and GET_CONFIG_FILE set with true"
+    exit 1
+fi
 
-utils=$(dirname $0)/utils
-
-# Set common environment
-. ${utils}/set_common.sh
-. ${utils}/get_configs_folder.sh
-. ${utils}/extract_enabled_slots.sh
+lbn-preconditions --verbose ${config_file}

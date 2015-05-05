@@ -10,12 +10,12 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+if [ "$SET_COMMON" != "true" ] ; then
+    echo "ERROR : $0 need SET_COMMON set with true"
+    exit 1
+fi
 
-utils=$(dirname $0)/utils
+lbn-manage-rsync --verbose --get-sources --source "${RSYNC_DIR}" --destination "${ARTIFACTS_DIR}"
 
-# Set common environment
-. ${utils}/set_common.sh
-. ${utils}/get_configs_folder.sh
-. ${utils}/extract_enabled_slots.sh
+
+export GET_SOURCES="true"

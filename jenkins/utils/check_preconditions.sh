@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -10,4 +10,11 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-lbn-manage-rsync --verbose --get-sources --source "${RSYNC_DIR}" --destination "${ARTIFACTS_DIR}"
+# Script to launch check_preconditions python script
+
+if [ "$SET_COMMON" != "true" -o "$CONFIG_FILE_CHECKOUT" != "true" ] ; then
+    echo "ERROR : $0 need SET_COMMON and CONFIG_FILE_CHECKOUT set with true"
+    exit 1
+fi
+
+lbn-check-preconditions --verbose ${config_file_checkout}

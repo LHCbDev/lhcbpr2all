@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -10,12 +10,11 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+# simple wrapper script to check out the current nightly slots configurations
 
-utils=$(dirname $0)/utils
+if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
+  # Get the slot configuration files from Subversion
+  lbn-get-configs
+fi
 
-# Set common environment
-. ${utils}/set_common.sh
-. ${utils}/get_configs_folder.sh
-. ${utils}/extract_enabled_slots.sh
+export GET_CONFIGS_FOLDER=true

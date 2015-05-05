@@ -10,12 +10,9 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+utils=$(dirname $0)/utils
 
 # Set common environment
-. $(dirname $0)/common.sh
-
-. lbn-rsync-get-config
-
-lbn-preconditions --verbose ${config_file}
+. $utils/set_common.sh
+. $utils/get_config_file.sh
+. $utils/execute_preconditions.sh
