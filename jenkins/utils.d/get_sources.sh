@@ -5,7 +5,7 @@ function get_sources {
 	exit 1
     fi
 
-    lbn-manage-rsync --verbose --get-sources --progress --source "${RSYNC_DIR}/" --destination "${ARTIFACTS_DIR}"
+    lbn-manage-rsync --verbose --get-sources --progress --source "${RSYNC_DIR}" --destination "${ARTIFACTS_DIR}"
 
 
     export GET_SOURCES="true"
