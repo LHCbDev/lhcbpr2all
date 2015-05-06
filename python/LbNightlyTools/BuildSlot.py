@@ -1008,7 +1008,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     self.retcode = 0
             def run(self):
 
-                self.retcode = execute_rsync(self.script.artifacts_dir + '/',
+                self.retcode = execute_rsync(self.script.artifacts_dir,
                                              self.script.options.rsync_dest)
             def wait(self):
                 '''

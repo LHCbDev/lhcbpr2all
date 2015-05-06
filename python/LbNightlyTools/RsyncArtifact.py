@@ -36,8 +36,8 @@ def execute_rsync(src, dest, includes = [], excludes = [], extra_param = []):
     for exclude in excludes:
         cmd.append('--exclude=%s' % exclude)
 
-    cmd.append(src)
-    cmd.append(dest)
+    cmd.append(src + '/')
+    cmd.append(dest + '/')
 
     # create destination directory, if missing
     if ':' in dest:
@@ -71,12 +71,12 @@ class Script(LbUtils.Script.PlainScript):
                                action='store_true',
                                dest='get_sources',
                                help='Synchronize sources files')
-
+        '''
         self.parser.add_option('--progress',
                                action='store_true',
                                dest='progress',
                                help='Shows progress during rsync')
-
+        '''
         self.parser.add_option('-d', '--destination',
                                action='store',
                                help='Destination folder')
@@ -118,11 +118,11 @@ class Script(LbUtils.Script.PlainScript):
             includes_param.append("checkout_job_url.txt")
             excludes_param = ["*"]
 
-        if opts.progress:
+        if self.log.level <= logging.INFO:
             extra_param = ['--progress']
 
         return execute_rsync(
-            opts.source + '/',
+            opts.source,
             opts.destination,
             includes_param,
             excludes_param,
