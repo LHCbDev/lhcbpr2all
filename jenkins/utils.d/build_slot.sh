@@ -38,7 +38,7 @@ function build_slot {
 	ssh "${RSYNC_SERVER}" "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
 	submit_opt="--submit --flavour ${flavour}"
-	rsync_opt="--rsync-dest '${RSYNC_DIR}'"
+	rsync_opt="--rsync-dest ${RSYNC_DIR}"
     fi
 
 # Notify the system of the builds that need to be tested.
