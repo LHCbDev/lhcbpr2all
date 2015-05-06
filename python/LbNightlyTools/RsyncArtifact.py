@@ -39,6 +39,13 @@ def execute_rsync(src, dest, includes = [], excludes = [], extra_param = []):
     cmd.append(src)
     cmd.append(dest)
 
+    # create destination directory, if missing
+    if ':' in dest:
+        host, path = dest.split(':', 1)
+        call(['ssh', host, 'mkdir -pv "%s"' % path])
+    else:
+        ensureDirs([dest])
+
     logging.info("Rsync call : %s", cmd)
 
     return call(cmd)
@@ -113,12 +120,6 @@ class Script(LbUtils.Script.PlainScript):
 
         if opts.progress:
             extra_param = ['--progress']
-
-        if ':' in opts.destination:
-            host, path = opts.destination.split(':', 1)
-            call(['ssh', host, 'mkdir -pv "%s"' % path])
-        else:
-            ensureDirs([opts.destination])
 
         return execute_rsync(
             opts.source + '/',

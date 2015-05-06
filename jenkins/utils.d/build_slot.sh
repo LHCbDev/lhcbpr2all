@@ -9,7 +9,7 @@ function build_slot {
 
     day=$(date +%a)
     timestamp=$(date -I)
-    deploybase=$(dirname /data/${ARTIFACTS_DIR})
+    deploybase=$(dirname ${RSYNC_WORKDIR})
 
 # special hack to get a dev version of the CMake configuration files
     export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH
@@ -35,10 +35,10 @@ function build_slot {
     if [ "$JENKINS_MOCK" != "true" ] ; then
   # create moving symlinks in the artifacts deployment directory (ASAP)
   # (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
-	ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
+	ssh "${RSYNC_SERVER}" "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
 
 	submit_opt="--submit --flavour ${flavour}"
-	rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+	rsync_opt="--rsync-dest '${RSYNC_DIR}'"
     fi
 
 # Notify the system of the builds that need to be tested.
@@ -58,7 +58,7 @@ function build_slot {
     fi
 
     if [ "$JENKINS_MOCK" != "true" ] ; then
-	rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+	push_artifact
     fi
 
 # if possible and requested, generate glimpse indexes and upload them to buildlhcb
@@ -71,7 +71,7 @@ function build_slot {
 		time lbn-rpm --glimpse --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
 	    fi
 	    if [ "$JENKINS_MOCK" != "true" ] ; then
-		rsync --archive --whole-file --partial-dir=.rsync-partial.$(hostname).$$ --delay-updates --rsh=ssh "${ARTIFACTS_DIR}/" "buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+		push_artifact
 	    fi
 	fi
     fi

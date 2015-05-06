@@ -1007,12 +1007,6 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 else:
                     self.retcode = 0
             def run(self):
-                # create destination directory, if missing
-                if ':' in self.script.options.rsync_dest:
-                    host, path = self.script.options.rsync_dest.split(':', 1)
-                    call(['ssh', host, 'mkdir -pv "%s"' % path])
-                else:
-                    ensureDirs([self.script.options.rsync_dest])
 
                 self.retcode = execute_rsync(self.script.artifacts_dir + '/',
                                              self.script.options.rsync_dest)

@@ -30,9 +30,9 @@ function set_common {
 
     export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${flavour}/${slot}/${slot_build_id}}
     mkdir -p ${ARTIFACTS_DIR}
-    export RSYNC_SERVER=${RSYNC_SERVER:-*********} # TODO
-    export RSYNC_WORKDIR=${RSYNC_WORKDIR:-*********} # TODO
-    export RSYNC_DIR=${RSYNC_DIR:-${RSYNC_SERVER}:${RSYNC_WORKDIR}/${flavour}/${slot}/${slot_build_id}}
+    export RSYNC_SERVER=${RSYNC_SERVER:-buildlhcb.cern.ch}
+    export RSYNC_WORKDIR=${RSYNC_WORKDIR:-/data/${ARTIFACTS_DIR}}
+    export RSYNC_DIR=${RSYNC_DIR:-${RSYNC_SERVER}:${RSYNC_WORKDIR}}
     export TMPDIR=${WORKSPACE}/tmp
     mkdir -p ${TMPDIR}
 
