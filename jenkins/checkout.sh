@@ -15,8 +15,17 @@
 # Set common environment
 set_common
 get_configs_folder
-checkout_slot
+checkout_slot \
+    "${flavour}" \
+    "${slot}" \
+    "${slot_build_id}" \
+    "${ARTIFACTS_DIR}" \
+    "${build_tool}" \
+    "${platforms}" \
+    "${packages_list}" \
+    "${peojects_list}"
+
 push_artifact "${ARTIFACTS_DIR}" "${flavour}" "${slot}" "${slot_build_id}"
-check_preconditions
+check_preconditions "${config_file_checkout}"
 
 

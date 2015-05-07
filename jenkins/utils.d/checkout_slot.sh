@@ -1,4 +1,22 @@
 function checkout_slot {
+    
+    local USAGE="checkout_slot flavour slot slot_build_id directory [build_tool platforms packages_list projects_list]"
+
+    if [ $# < 4 ] ; then
+	echo "ERROR : Usage : ${USAGE}"
+	exit 1
+    fi
+
+    local flavour=$1
+    local slot=$2
+    local slot_build_id=$3
+    local directory=$4
+
+    local build_tool=$5
+    local platforms=$6
+    local packages_list=$7
+    local projects_list=$8
+   
 
     if [ "$SET_COMMON" != "true" -o "$GET_CONFIGS_FOLDER" != "true" ] ; then
 	echo "ERROR : $0 need SET_COMMON and GET_CONFIGS_FOLDER set with true"
@@ -35,7 +53,7 @@ function checkout_slot {
 	ignore_error_opt=--no-ignore-checkout-errors
     fi
 
-    lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${submit_opt} ${ignore_error_opt} ${config_file_checkout}
+    lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}" ${submit_opt} ${ignore_error_opt} ${config_file_checkout}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting
@@ -45,9 +63,9 @@ function checkout_slot {
 
     if [ "${flavour}" = "release" ] ; then
   # Now preparing the RPM with the project source
-	time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file_checkout}
+	time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}"  ${config_file_checkout}
 	if [ -n "${packages_list}" ] ; then
-	    time lbn-rpm --datapkg --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file_checkout}
+	    time lbn-rpm --datapkg --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}"  ${config_file_checkout}
 	fi
     fi
 

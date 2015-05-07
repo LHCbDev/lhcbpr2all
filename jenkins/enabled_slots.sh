@@ -14,4 +14,4 @@
 
 set_common
 get_configs_folder
-extract_enabled_slots
+extract_enabled_slots "${flavour}" "${slots}"

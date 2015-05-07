@@ -14,4 +14,4 @@
 
 set_common
 get_config_file "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
-execute_preconditions
+execute_preconditions "${config_file}"
