@@ -5,12 +5,12 @@ function get_config_file {
 	exit 1
     fi
 
-    SOURCES="${RSYNC_DIR}"
+    SOURCE="${RSYNC_DIR}"
     if [ -d "${RSYNC_WORKDIR}" ] ; then
-	SOURCES="${RSYNC_WORKDIR}"
+	SOURCE="${RSYNC_WORKDIR}"
     fi
 
-    lbn-manage-rsync --verbose --get-config --source "${SOURCES}" --destination "${ARTIFACTS_DIR}"
+    lbn-manage-rsync --verbose --get-config "${SOURCE}" "${ARTIFACTS_DIR}"
 
     if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
 	export config_file=${ARTIFACTS_DIR}/${slot}.json

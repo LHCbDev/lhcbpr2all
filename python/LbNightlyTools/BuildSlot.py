@@ -27,7 +27,7 @@ import json
 from LbNightlyTools import Configuration
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
 from LbNightlyTools.Utils import Dashboard
-from RsyncArtifact import execute_rsync
+from LbNightlyTools.RsyncManager import execute_rsync
 
 from string import Template
 from socket import gethostname

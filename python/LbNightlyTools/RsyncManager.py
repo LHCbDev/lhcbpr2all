@@ -52,7 +52,7 @@ def execute_rsync(src, dest, includes = [], excludes = [], extra_param = []):
 
 class Script(LbUtils.Script.PlainScript):
 
-    __usage__ = '%prog [options]'
+    __usage__ = '%prog [options] source destination'
     __version__ = ''
 
     def defineOpts(self):
@@ -71,19 +71,6 @@ class Script(LbUtils.Script.PlainScript):
                                action='store_true',
                                dest='get_sources',
                                help='Synchronize sources files')
-        '''
-        self.parser.add_option('--progress',
-                               action='store_true',
-                               dest='progress',
-                               help='Shows progress during rsync')
-        '''
-        self.parser.add_option('-d', '--destination',
-                               action='store',
-                               help='Destination folder')
-
-        self.parser.add_option('-s', '--source',
-                               action='store',
-                               help='Source folder')
 
         self.parser.set_defaults(get_config=False,
                                  get_sources=False,
@@ -92,18 +79,13 @@ class Script(LbUtils.Script.PlainScript):
 
     def main(self):
 
-        if len(self.args) != 0:
+        if len(self.args) != 2:
             self.parser.error('wrong number of arguments')
 
         opts = self.options
 
-        if not opts.source:
-            self.log.error("Source folder needs to be defined with -s or --source")
-            return 1
-
-        if not opts.destination:
-            self.log.error("Destination folder needs to be defined with -d or --destination")
-            return 1
+        source = self.args[0]
+        destination =  self.args[1]
 
         includes_param = []
         excludes_param = []
@@ -122,8 +104,8 @@ class Script(LbUtils.Script.PlainScript):
             extra_param = ['--progress']
 
         return execute_rsync(
-            opts.source,
-            opts.destination,
+            source,
+            destination,
             includes_param,
             excludes_param,
             extra_param)

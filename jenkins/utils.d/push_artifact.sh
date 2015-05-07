@@ -5,6 +5,6 @@ function push_artifact {
 	exit 1
     fi
 
-    lbn-manage-rsync --verbose --source "${ARTIFACTS_DIR}" --destination "${RSYNC_DIR}"
+    lbn-manage-rsync --verbose "${ARTIFACTS_DIR}" "${RSYNC_DIR}"
 
 }
