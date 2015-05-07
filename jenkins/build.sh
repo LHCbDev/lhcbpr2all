@@ -13,6 +13,6 @@
 . $(dirname $0)/utils.sh
 
 set_common --build
-get_config_file
-get_sources
+get_config_file "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
+get_sources "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
 build_slot

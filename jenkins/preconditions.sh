@@ -13,5 +13,5 @@
 . $(dirname $0)/utils.sh
 
 set_common
-get_config_file
+get_config_file "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
 execute_preconditions

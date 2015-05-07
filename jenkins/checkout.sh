@@ -16,7 +16,7 @@
 set_common
 get_configs_folder
 checkout_slot
-push_artifact
+push_artifact "${ARTIFACTS_DIR}" "${flavour}" "${slot}" "${slot_build_id}"
 check_preconditions
 
 

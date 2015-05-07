@@ -58,7 +58,7 @@ function build_slot {
     fi
 
     if [ "$JENKINS_MOCK" != "true" ] ; then
-	push_artifact
+	push_artifact "${ARTIFACTS_DIR}" "${flavour}" "${slot}" "${slot_build_id}"
     fi
 
 # if possible and requested, generate glimpse indexes and upload them to buildlhcb
@@ -71,7 +71,7 @@ function build_slot {
 		time lbn-rpm --glimpse --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}"  ${config_file}
 	    fi
 	    if [ "$JENKINS_MOCK" != "true" ] ; then
-		push_artifact
+		push_artifact "${ARTIFACTS_DIR}" "${flavour}" "${slot}" "${slot_build_id}"
 	    fi
 	fi
     fi

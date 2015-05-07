@@ -1,21 +1,25 @@
 function get_config_file {
 
-    if [ "$SET_COMMON" != "true" ] ; then
-	echo "ERROR : $0 need SET_COMMON set with true"
+    USAGE="get_config_file flavour slot slot_build_id directory_dest"
+
+    if [ $# != 4 ] ; then
+	echo "ERROR : Usage : ${USAGE}"
 	exit 1
     fi
 
-    SOURCE="${RSYNC_DIR}"
-    if [ -d "${RSYNC_WORKDIR}" ] ; then
-	SOURCE="${RSYNC_WORKDIR}"
-    fi
+    flavour="$1"
+    slot="$2"
+    slot_build_id="$3"
+    DESTINATION="$4"
 
-    lbn-manage-rsync --verbose --get-config "${SOURCE}" "${ARTIFACTS_DIR}"
+    SOURCE=$(get_remote_directory "$flavour" "$slot" "$slot_build_id")
 
-    if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
-	export config_file=${ARTIFACTS_DIR}/${slot}.json
+    lbn-manage-rsync --verbose --get-config "${SOURCE}" "${DESTINATION}"
+
+    if [ -e ${DESTINATION}/${slot}.json ] ; then
+	export config_file=${DESTINATION}/${slot}.json
     else
-	export config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
+	export config_file=${DESTINATION}/configuration.xml#${slot}
     fi
 
     export GET_CONFIG_FILE="true"
