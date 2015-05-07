@@ -15,4 +15,4 @@
 set_common --build
 get_config_file "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
 get_sources "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
-build_slot
+build_slot "${flavour}" "${slot}" "${slot_build_id}" "${platform}" "${ARTIFACTS_DIR}" "${os_label}"

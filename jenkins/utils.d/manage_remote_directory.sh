@@ -21,3 +21,18 @@ function get_remote_directory {
 
     echo "${RSYNC_DIR}"
 }
+
+function create_alias {
+
+    local day=$(date +%a)
+    local timestamp=$(date -I)
+    local RSYNC_DIR="${RSYNC_WORKDIR}/${flavour}/${slot}"
+
+    local COMMAND="mkdir -pv ${RSYNC_DIR} ; ln -svfT ${slot_build_id} ${RSYNC_DIR}/${day} ; ln -svfT ${slot_build_id} ${RSYNC_DIR}/${timestamp}"
+
+    if [ ! -d "${RSYNC_WORKDIR}" ] ; then
+	local COMMAND="ssh ${RSYNC_SERVER} ${COMMAND} || true"
+    fi
+
+    ${COMMAND}
+}
