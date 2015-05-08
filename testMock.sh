@@ -1,9 +1,11 @@
 #!/bin/bash
 
 
-export platform=${CMTCONFIG:-x86_64-slc6-gcc48-opt}
-export slots="lhcb-test-new-config"
+export platform_checkout=${CMTCONFIG:-x86_64-slc6-gcc48-opt}
+export slots="lhcb-test-new-config lhcb-compatibility"
 #export slots="lhcb-compatibility"
+
+#export platforms="x86_64-slc6-gcc48-opt x86_64-slc6-gcc48-dbg"
 
 #Clean all
 jenkins/mock.sh mock/clean_rsync None master
@@ -23,7 +25,7 @@ for file in ${files}; do
 	slot=${file%.txt*}
 	slot=${slot#*slot-params-}
 	slots="${slots} ${slot}"
-	jenkins/mock.sh checkout ${slot} ${platform}
+	jenkins/mock.sh checkout ${slot} ${platform_checkout}
 	files_preconditions="${files_preconditions} `ls slot-precondition-*.txt`"
 	files_build="${files_build} `ls slot-*.txt`"
 	jenkins/mock.sh mock/clean_checkout ${slot} ${platform}
@@ -53,7 +55,6 @@ for slot in ${slots}; do
 		platform=${platform#*${slot}-}
 		rm ${file}
 		jenkins/mock.sh build ${slot} ${platform}
-		exit 0
 		jenkins/mock.sh mock/clean_build ${slot} ${platform}
 	done
 done

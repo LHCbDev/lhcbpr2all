@@ -8,13 +8,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
+from platform import platform
 '''
 Module containing the classes and functions used to check if a slot have
 preconditions and write files with parameters for next jobs in Jenkins
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
-
-import os
 
 from LbNightlyTools.Configuration import load
 from LbNightlyTools.Utils import JobParams
@@ -32,37 +31,50 @@ class Script(LbUtils.Script.PlainScript):
         {"preconditions": [{"name": "waitForFile",
                             "args": {"path": "path/to/file"}}]}
     '''
-    __usage__ = '%prog [options] <config.json>'
+    __usage__ = '%prog [options] <config.json> <slot> <slot_build_id>'
     __version__ = ''
+
+    def defineOpts(self):
+
+        self.parser.add_option('--platforms',
+                               action='store',
+                               help='Platforms to build the slot')
+
+        self.parser.set_defaults(platforms="")
 
     def main(self):
         '''
         Script main function.
         '''
-        if len(self.args) != 1:
+        if len(self.args) != 3:
             self.parser.error('wrong number of arguments')
 
+        opts = self.options
+
         data = load(self.args[0])
+        slot = self.args[1]
+        slot_build_id = self.args[2]
+
         preconds = data.get(u'preconditions', [])
         if preconds:
-            self.log.info('Find precondition for %s', os.environ['slot'])
+            self.log.info('Find precondition for %s', slot)
             output_file = 'slot-precondition-{0}-{1}.txt'
         else:
-            self.log.info('No precondition for %s', os.environ['slot'])
+            self.log.info('No precondition for %s', slot)
             output_file = 'slot-build-{0}-{1}.txt'
 
-        if os.environ.has_key('platforms') and os.environ['platforms'] != '':
-            platforms = os.environ['platforms'].split()
-        else:
+        platforms = opts.platforms.strip().split()
+
+        if not platforms:
             platforms = data.get(u'default_platforms', [])
 
 
         for platform in platforms:
             os_label = platform.split('-')[1]+'-build'
-            output_file_name = output_file.format(os.environ['slot'], platform)
+            output_file_name = output_file.format(slot, platform)
             open(output_file_name, 'w') \
-                .write(str(JobParams(slot=os.environ['slot'],
-                                     slot_build_id=os.environ['slot_build_id'],
+                .write(str(JobParams(slot=slot,
+                                     slot_build_id=slot_build_id,
                                      platform=platform,
                                      os_label=os_label,
                                      )) + '\n')

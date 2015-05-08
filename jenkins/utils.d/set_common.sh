@@ -12,7 +12,7 @@ function set_common {
     done
 
     export HOME=$PWD
-
+    export CMTCONFIG=${platform}
 # default (backward-compatible) build flavour
     if [ "${flavour}" == "" ] ; then
 	export flavour=nightly
@@ -58,7 +58,7 @@ function set_common {
 	export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
   # FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
 	. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
-	export CMTCONFIG=${platform}
+  #	export CMTCONFIG=${platform}
   # FIXME: path to the new gdb should be implicit in the build/run-time
   #        environment
   # See https://its.cern.ch/jira/browse/LBCORE-151
