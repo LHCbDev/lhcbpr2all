@@ -14,18 +14,28 @@
 
 # Set common environment
 set_common
-get_configs_folder
+
+get_configs_folder --dest-dir "configs"
+
 checkout_slot \
     "${flavour}" \
     "${slot}" \
     "${slot_build_id}" \
-    "${ARTIFACTS_DIR}" \
-    "${build_tool}" \
-    "${platforms}" \
-    "${packages_list}" \
-    "${peojects_list}"
+    --config-dir "configs" \
+    --dest-dir "${ARTIFACTS_DIR}" \
+    ${build_tool:+--build-tool "${build_tool}"} \
+    ${paltforms:+--platforms "${platforms}"} \
+    ${packages_list:+--packages-list "${packages_list}"} \
+    ${projects_list:+--projects-list "${projects_list}"}
 
-push_artifact "${ARTIFACTS_DIR}" "${flavour}" "${slot}" "${slot_build_id}"
-check_preconditions "${config_file_checkout}" "${slot}" "${slot_build_id}" "${platforms}"
+push_artifact \
+    "${ARTIFACTS_DIR}" \
+    "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")"
+
+check_preconditions \
+    "${config_file_checkout}" \
+    "${slot}" \
+    "${slot_build_id}" \
+    ${platforms:+--platforms "${platforms}"}
 
 

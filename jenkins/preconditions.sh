@@ -13,5 +13,10 @@
 . $(dirname $0)/utils.sh
 
 set_common
-get_config_file "${flavour}" "${slot}" "${slot_build_id}" "${ARTIFACTS_DIR}"
+
+get_artifact \
+    --get-config \
+    "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
+    "${ARTIFACTS_DIR}"
+
 execute_preconditions "${config_file}"

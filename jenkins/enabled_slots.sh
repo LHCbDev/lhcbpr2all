@@ -13,5 +13,10 @@
 . $(dirname $0)/utils.sh
 
 set_common
-get_configs_folder
-extract_enabled_slots "${flavour}" "${slots}"
+
+get_configs_folder --dest-dir "configs"
+
+extract_enabled_slots \
+    "${flavour}" \
+    ${slots:+--slots "${slots}"} \
+    --config-dir "configs"

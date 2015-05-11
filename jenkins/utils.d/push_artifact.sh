@@ -11,20 +11,48 @@
 
 function push_artifact {
 
-    local USAGE="push_artifact directory_src flavour slot slot_build_id "
+    local DESCRIPTION="DESCRIPTION : \
+Function to push an artifact in a remote directory"
+    local USAGE="USAGE : \
+push_artifact source destination"
 
-    if [ $# != 4 ] ; then
-	echo "ERROR : Usage : ${USAGE}"
-	exit 1
-    fi
+	local nb_param=0
 
-    local SOURCE="$1"
-    local flavour="$2"
-    local slot="$3"
-    local slot_build_id="$4"
+    while (( "$#" )); do
+		if [[ "$1" =~ 	^- ]] ; then
+			case "$1" in
+				"-h" | "--help")
+					echo ${DESCRIPTION}
+					echo ${USAGE}
+					exit 0;;
+				*)
+					echo "ERROR : Option $1 unknow in $0"
+					echo ${USAGE}
+					exit 2
+			esac
+		else
+			case "${nb_param}" in
+				"0")
+					local source="$1" ;;
+				"1")
+					local destination="$1" ;;
+				*)
+					echo "ERROR : Too much parameter"
+					echo ${USAGE}
+					exit 1
+			esac
+			local nb_param=$((nb_param+1))
+		fi
 
-    local DESTINATION=$(get_remote_directory "$flavour" "$slot" "$slot_build_id")
+		shift
+    done
 
-    lbn-manage-remote --verbose "${SOURCE}" "${DESTINATION}"
+	if [ "${nb_param}" != "2" ] ; then
+		echo "ERROR : Need more parameter"
+		echo ${USAGE}
+		exit 1
+	fi
+
+    lbn-manage-remote --verbose "${source}" "${destination}"
 
 }

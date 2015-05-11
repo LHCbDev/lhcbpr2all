@@ -15,6 +15,7 @@ Now we only have the slot name in parameter in files
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
+import os
 import glob
 import json
 from xml.etree.ElementTree import parse
@@ -32,6 +33,18 @@ class Script(LbUtils.Script.PlainScript):
     '''
     __usage__ = '%prog [options] flavour <output_file.txt> [<slot1> <slot2> ...]'
     __version__ = ''
+
+    def defineOpts(self):
+        self.parser.add_option('--config-dir',
+                               action='store',
+                               help='Directoryto find configurations files')
+
+        self.parser.add_option('--slots',
+                               action='store',
+                               help='Slots to activate')
+
+        self.parser.set_defaults(config_dir=".",
+                                 slots=None)
 
     def extract_from_json(self, file_format_json):
         self.log.info('Extract slots from %s files', file_format_json)
@@ -100,17 +113,20 @@ class Script(LbUtils.Script.PlainScript):
         self.log.info('%s slots to start', len(slots))
 
     def main(self):
-        if len(self.args) < 2:
+        if len(self.args) != 2:
             self.parser.error('wrong number of arguments')
+
+        opts = self.options
 
         flavour = self.args[0]
         output_file = self.args[1]
-        slots = self.args[2:]
 
-        if not slots:
+        if not opts.slots:
             self.log.info('Starting extraction of all enable slot')
-            slots = self.extract_from_json('configs/lhcb-*.json') | \
-                self.extract_from_xml('configs/configuration.xml')
+            slots = self.extract_from_json(os.path.join(opts.config_dir,'lhcb-*.json')) | \
+                self.extract_from_xml(os.path.join(opts.config_dir,'configuration.xml'))
+        else:
+            slots=opts.slots.strip().split(' ');
 
         # Create a file that contain JobParams for each slot
         self.write_files(slots, flavour, output_file)

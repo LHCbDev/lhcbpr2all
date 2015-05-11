@@ -11,10 +11,10 @@
 ###############################################################################
 
 export platform_checkout=${CMTCONFIG:-x86_64-slc6-gcc48-opt}
-export slots="lhcb-test-new-config lhcb-compatibility"
+export slots="lhcb-test-new-config" # lhcb-compatibility"
 #export slots="lhcb-compatibility"
 
-#export platforms="x86_64-slc6-gcc48-opt x86_64-slc6-gcc48-dbg"
+export platforms="x86_64-slc6-gcc48-opt x86_64-slc6-gcc48-dbg"
 
 #Clean all
 jenkins/mock.sh mock/clean_rsync None master
@@ -37,7 +37,7 @@ for file in ${files}; do
 	jenkins/mock.sh checkout ${slot} ${platform_checkout}
 	files_preconditions="${files_preconditions} `ls slot-precondition-*.txt`"
 	files_build="${files_build} `ls slot-*.txt`"
-	jenkins/mock.sh mock/clean_checkout ${slot} ${platform}
+	jenkins/mock.sh mock/clean_checkout ${slot} ${platform_checkout}
 done
 
 for file in ${files_preconditions}; do

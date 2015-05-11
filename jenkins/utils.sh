@@ -10,7 +10,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-for i in $(dirname $0)/utils.d/*.sh ; do
+for i in "${DIR}"/utils.d/*.sh ; do
     . "$i"
 done
