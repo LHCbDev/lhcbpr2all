@@ -1,3 +1,14 @@
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+
 function build_slot {
 
     local USAGE="build_slot flavour slot slot_build_id platform directory [os_label]"
@@ -18,8 +29,6 @@ function build_slot {
 	echo "ERROR : $0 need SET_COMMON, SET_SPECIAL_CONFIG, GET_SOURCES and GET_CONFIG_FILE set with true"
 	exit 1
     fi
-
-    export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
 
 # special hack to get a dev version of the CMake configuration files
     export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH

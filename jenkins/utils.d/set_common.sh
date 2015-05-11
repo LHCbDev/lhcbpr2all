@@ -1,10 +1,25 @@
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+
+#
+# Common set up for all the Jenkins scripts
+#
+
 function set_common {
 
     special_config=false
 
     for i in "$@" ; do
 	case "$i" in
-	    "--build" )
+	    "--build" | "--test" )
 		special_config=true ;;
 	    * )
 		echo "WARNING : Parameter $i unknow in $0"
@@ -52,6 +67,7 @@ function set_common {
     fi
 
     if [ "${special_config}" == "true" ] ; then
+	export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
   # FIXME: this is usually set by the "group login" script, but it is not
   #        called on lxbuild (it is needed to get the right ICC environment)
 	export GROUP_DIR=/afs/cern.ch/group/z5
