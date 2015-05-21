@@ -46,7 +46,7 @@ fi
 if [ "$JENKINS_MOCK" != "true" ] ; then
   # create moving symlinks in the artifacts deployment directory (ASAP)
   # (ignore errors, see <https://its.cern.ch/jira/browse/LBCORE-153>)
-  ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp}" || true
+  ssh buildlhcb.cern.ch "mkdir -pv ${deploybase} ; ln -svfT ${slot_build_id} ${deploybase}/${day} ; ln -svfT ${slot_build_id} ${deploybase}/${timestamp} ; ln -svfT ${slot_build_id} ${deploybase}/Today" || true
 
   submit_opt="--submit --flavour ${flavour}"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
@@ -74,7 +74,7 @@ fi
 
 # if possible and requested, generate glimpse indexes and upload them to buildlhcb
 if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
-    if which glimpseindex &> /dev/null ; then 
+    if which glimpseindex &> /dev/null ; then
       # clean up the build dir before indexing
       lbn-build --verbose --clean --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" --clean ${config_file}
 	  time lbn-index --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${ARTIFACTS_DIR}" ${config_file}
