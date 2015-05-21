@@ -61,6 +61,8 @@ if [ -n "${set_config}" ] ; then
   #        environment
   # See https://its.cern.ch/jira/browse/LBCORE-151
   export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
+  # COMPILER_PATH (set by LbLogin --no-cache) create troubles
+  unset COMPILER_PATH
 
   # FIXME: we need to get the latest compilers wrappers until we release LbScripts
   export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
