@@ -192,6 +192,11 @@ e.g. %prog -o tmp.spec OnlineFarmMeta 1.0.0 MOOREONLINE_v23r4_x86_64_slc6_gcc48_
                           default = None,
                           action="store",
                           help="File name for the generated specfile [default output to stdout]")
+        parser.add_option('-t', '--fromtag',
+                          dest="tag",
+                          default = None,
+                          action="store",
+                          help="Take the project versions tagged as specified in the conf DB (instead of command line)")
  
         return parser
 
@@ -233,7 +238,20 @@ e.g. %prog -o tmp.spec OnlineFarmMeta 1.0.0 MOOREONLINE_v23r4_x86_64_slc6_gcc48_
         # Extracting info from filename
         project = self.args[0]
         version = self.args[1]
-        requires = self.args[2:]
+
+        if  self.options.tag:
+            try:
+                from LbRelease.SoftConfDB.SoftConfDB import SoftConfDB
+                db = SoftConfDB()
+                projects = db.listTag(self.options.tag.upper())
+                requires = []
+                for (p,v,f) in projects:
+                    requires.append("_".join([p.upper(), v, f.replace("-", "_")]))
+            except:
+                print "Could not access SoftConfDB, exiting"
+                return 2
+        else:
+            requires = self.args[2:]
 
         self.log.warning("Generating Meta RPM for %s %s" % (project, version))
 
