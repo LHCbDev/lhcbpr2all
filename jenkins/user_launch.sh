@@ -16,7 +16,7 @@ set_common
 
 get_configs_folder --dest-dir "configs"
 
-extract_enabled_slots \
+manage_user_launch \
     "${flavour}" \
     "${slots}"} \
     ${slot_build_id:+--slot-build-id "${slot_build_id}"} \
