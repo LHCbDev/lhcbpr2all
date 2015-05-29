@@ -90,7 +90,7 @@ class Script(LbUtils.Script.PlainScript):
             return 1
 
         # Create a file that contain JobParams for each slot
-        self.write_files(slots, flavour, output_file, opts.rebuild_last, opts.slot_build_id)
+        self.write_files(slots, flavour, output_file, opts.rebuild_last_id, opts.slot_build_id)
 
         self.log.info('End of manage user launch')
 
