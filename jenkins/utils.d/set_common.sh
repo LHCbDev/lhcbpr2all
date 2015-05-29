@@ -13,12 +13,12 @@
 # Common set up for all the Jenkins scripts
 #
 
-	DESCRIPTION="DESCRIPTION : \
-Function to define common set up for all the Jenckins scripts"
-	USAGE="USAGE : \
-set_common [--build] [--test]"
-
 function set_common {
+
+	local DESCRIPTION="DESCRIPTION : \
+Function to define common set up for all the Jenckins scripts"
+	local USAGE="USAGE : \
+set_common [--build] [--test]"
 
 	local special_config=false
 

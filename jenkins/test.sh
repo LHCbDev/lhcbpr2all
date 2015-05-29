@@ -10,13 +10,10 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# Clean LD_LIBRARY_PATH of /gcc/ entries
-# (see comment on issue LBCORE-109 http://cern.ch/go/PLQ7)
-export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
+. $(dirname $0)/utils.sh
 
-# Set common environment
-set_config=1
-. $(dirname $0)/common.sh
+set_common --build
+
 
 day=$(date +%a)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})

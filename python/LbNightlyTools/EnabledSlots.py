@@ -31,13 +31,13 @@ class Script(LbUtils.Script.PlainScript):
     This file contain the slot name and the slot build id
     The slot build id is extract with the function get_ids
     '''
-    __usage__ = '%prog [options] flavour <output_file.txt> [<slot1> <slot2> ...]'
+    __usage__ = '%prog [options] flavour output_file.txt'
     __version__ = ''
 
     def defineOpts(self):
         self.parser.add_option('--config-dir',
                                action='store',
-                               help='Directoryto find configurations files')
+                               help='Directory to find configurations files')
 
         self.parser.add_option('--slots',
                                action='store',

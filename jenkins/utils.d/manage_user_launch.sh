@@ -9,38 +9,38 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-function extract_enabled_slots {
+function manage_user_launch {
 
-	local DESCRIPTION="DESCRIPTION : \
-Function to extract all enabled slots from configs file"
+    local DESCRIPTION="DESCRIPTION : \
+Function to manage slot launch by user"
     local USAGE="USAGE : \
-extract_enabled_slots flavour
-		[--config-dir <dir>]
-		[--slots <slots>]"
+manage_user_launch flavour slots
+		[--slot-build-id <id>]
+		[--no-checkout]
+		[--rebuild-last-id]"
 
-	local nb_param=0
-	local slots=""
+    local nb_param=0
+    local slot_build_id_opt=""
+    local no_checkout_opt=""
+    local rebuild_last_id_opt=""
 
     while (( "$#" )); do
 		if [[ "$1" =~ 	^- ]] ; then
 			case "$1" in
-				"--config-dir")
+				"--slot-build-id")
 					if [[ "$2" = "" || "$2" =~ ^- ]] ; then
 						echo "ERROR : Option $1 need an argument"
 						exit 3
 					else
-						local config_dir_opt="--config-dir $2"
+						local slot_build_id_opt="--slot-build-id $2"
 					fi
 					shift ;;
 
-				"--slots")
-					if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-						echo "ERROR : Option $1 need an argument"
-						exit 3
-					else
-						slots="$2"
-					fi
-					shift ;;
+				"--no-checkout")
+					local no_checkout_opt="--no-checkout" ;;
+
+				"--rebuild-last-id")
+					local rebuild_last_id_opt="--rebuild-last-id" ;;
 
 				"-h" | "--help")
 					echo ${DESCRIPTION}
@@ -55,6 +55,8 @@ extract_enabled_slots flavour
 			case "${nb_param}" in
 				"0")
 					local flavour="$1" ;;
+				"1")
+					local slots="$1" ;;
 				*)
 					echo "ERROR : Too much parameter"
 					echo ${USAGE}
@@ -66,18 +68,18 @@ extract_enabled_slots flavour
 		shift
     done
 
-	if [ "${nb_param}" != "1" ] ; then
+	if [ "${nb_param}" != "2" ] ; then
 		echo "ERROR : Need more parameter"
 		echo ${USAGE}
 		exit 1
 	fi
-
-    if [ "$SET_COMMON" != "true" -o "$GET_CONFIGS_FOLDER" != "true" ] ; then
-		echo "ERROR : $0 need SET_COMMON and GET_CONFIGS_FOLDER set with true"
+ 
+    if [ "${slot_build_id_opt}" != "" -a "${rebuild_last_id_opt}" != "" ] ; then
+		echo "ERROR : $0 can't accept --slot-build-id and --rebuild-last-id"
 		exit 1
     fi
 
-    lbn-enabled-slots --verbose ${config_dir_opt} "${flavour}" "slot-params-{0}.txt" ${slots:+--slots "${slots}"}
+    lbn-user-launch --verbose "${flavour}" "slot-params-{0}.txt" "${slots}" ${slot_build_id_opt} ${no_checkout_opt} ${rebuild_last_id_opt}
 
 }
 
