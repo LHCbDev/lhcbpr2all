@@ -18,7 +18,7 @@ get_configs_folder --dest-dir "configs"
 
 manage_user_launch \
     "${flavour}" \
-    "${slots}"} \
+    "${slots}" \
     ${slot_build_id:+--slot-build-id "${slot_build_id}"} \
     ${rebuild_last_id:+--rebuild-last-id} \
     ${no_checkout:+--no-checkout}
