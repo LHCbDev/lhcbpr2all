@@ -11,6 +11,9 @@
 
 function checkout_slot {
     
+    loglevel_opt="--debug"
+
+    
     local DESCRIPTION="DESCRIPTION : \
 Function to checkout a specific slot"
     local USAGE="USAGE : \
@@ -162,7 +165,7 @@ checkout_slot flavour slot slot_build_id
 	    ignore_error_opt=--no-ignore-checkout-errors
 	fi
 
-	lbn-checkout --verbose --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${submit_opt} ${ignore_error_opt} ${config_file_checkout}
+	lbn-checkout ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${submit_opt} ${ignore_error_opt} ${config_file_checkout}
 
 # We need to copy the configuration at the end because
 # StachCkeckout.py cleans the artifacts before starting
@@ -172,9 +175,9 @@ checkout_slot flavour slot slot_build_id
 
 	if [ "${flavour}" = "release" ] ; then
 	  # Now preparing the RPM with the project source
-	    time lbn-rpm --shared --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
+	    time lbn-rpm --shared ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
 	    if [ -n "${packages_list}" ] ; then
-		time lbn-rpm --datapkg --verbose  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
+		time lbn-rpm --datapkg ${loglevel_opt}  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
 	    fi
 	fi
 
