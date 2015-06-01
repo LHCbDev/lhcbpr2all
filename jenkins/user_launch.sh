@@ -17,7 +17,7 @@ set_common
 get_configs_folder --dest-dir "configs"
 
 if [ "${rebuild_last_id}" == "true" ] ; then
-    {rebuild_last_id_opt="--rebuild-last-id"
+    rebuild_last_id_opt="--rebuild-last-id"
 fi
 
 if [ "${no_checkout}" == "true" ] ; then
