@@ -39,8 +39,6 @@ if [ "${no_checkout}" != "true" ] ; then
 	"$(get_remote_directory "$flavour" "$slot" "$slot_build_id")"
 fi
 
-fi
-
 check_preconditions \
     "${config_file_checkout}" \
     "${slot}" \

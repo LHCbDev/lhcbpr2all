@@ -23,98 +23,98 @@ checkout_slot flavour slot slot_build_id
 		[--peojects-list <projects>]
 		[--no-checkout]"
 
-	local nb_param=0
-	local config_dir="."
-	local dest_dir="."
-	local no_checkout=false ;;
+    local nb_param=0
+    local config_dir="."
+    local dest_dir="."
+    local no_checkout=false
 
-	while (( "$#" )); do
-	    if [[ "$1" =~ 	^- ]] ; then
-		case "$1" in
-		    "--config-dir")
-			if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-			    echo "ERROR : Option $1 need an argument"
-			    exit 3
-			else
-			    local config_dir="$2"
-			fi
-			shift ;;
+    while (( "$#" )); do
+	if [[ "$1" =~ 	^- ]] ; then
+	    case "$1" in
+		"--config-dir")
+		    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+			echo "ERROR : Option $1 need an argument"
+			exit 3
+		    else
+			local config_dir="$2"
+		    fi
+		    shift ;;
 
-		    "--dest-dir")
-			if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-			    echo "ERROR : Option $1 need an argument"
-			    exit 3
-			else
-			    local dest_dir="$2"
-			fi
-			shift ;;
+		"--dest-dir")
+		    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+			echo "ERROR : Option $1 need an argument"
+			exit 3
+		    else
+			local dest_dir="$2"
+		    fi
+		    shift ;;
 
-		    "--build-tool")
-			if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-			    echo "ERROR : Option $1 need an argument"
-			    exit 3
-			else
-			    local build_tool="$2"
-			fi
-			shift ;;
+		"--build-tool")
+		    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+			echo "ERROR : Option $1 need an argument"
+			exit 3
+		    else
+			local build_tool="$2"
+		    fi
+		    shift ;;
 
-		    "--platforms")
-			if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-			    echo "ERROR : Option $1 need an argument"
-			    exit 3
-			else
-			    local platforms="$2"
-			fi
-			shift ;;
+		"--platforms")
+		    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+			echo "ERROR : Option $1 need an argument"
+			exit 3
+		    else
+			local platforms="$2"
+		    fi
+		    shift ;;
 
-		    "--packages-list")
-			if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-			    echo "ERROR : Option $1 need an argument"
-			    exit 3
-			else
-			    local packages_list="$2"
-			fi
-			shift ;;
+		"--packages-list")
+		    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+			echo "ERROR : Option $1 need an argument"
+			exit 3
+		    else
+			local packages_list="$2"
+		    fi
+		    shift ;;
 
-		    "--projects-list")
-			if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-			    echo "ERROR : Option $1 need an argument"
-			    exit 3
-			else
-			    local projects_list="$2"
-			fi
-			shift ;;
+		"--projects-list")
+		    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+			echo "ERROR : Option $1 need an argument"
+			exit 3
+		    else
+			local projects_list="$2"
+		    fi
+		    shift ;;
 
-		    "--no-checkout")
-			local no_checkout=true ;;
+		"--no-checkout")
+		    local no_checkout=true ;;
 
-		    "-h" | "--help")
-			echo ${DESCRIPTION}
-			echo ${USAGE}
-			exit 0;;
-		    *)
-			echo "ERROR : Option $1 unknow in $0"
-			echo ${USAGE}
-			exit 2
-		esac
-	    else
-		case "${nb_param}" in
-		    "0")
-			local flavour="$1" ;;
-		    "1")
-			local slot="$1" ;;
-		    "2")
-			local slot_build_id="$1" ;;
-		    *)
-			echo "ERROR : Too much parameter"
-			echo ${USAGE}
-			exit 1
-		esac
-		local nb_param=$((nb_param+1))
-	    fi
+		"-h" | "--help")
+		    echo ${DESCRIPTION}
+		    echo ${USAGE}
+		    exit 0;;
+		*)
+		    echo "ERROR : Option $1 unknow in $0"
+		    echo ${USAGE}
+		    exit 2
+	    esac
+	else
+	    case "${nb_param}" in
+		"0")
+		    local flavour="$1" ;;
+		"1")
+		    local slot="$1" ;;
+		"2")
+		    local slot_build_id="$1" ;;
+		*)
+		    echo "ERROR : Too much parameter"
+		    echo ${USAGE}
+		    exit 1
+	    esac
+	    local nb_param=$((nb_param+1))
+	fi
 
-	    shift
-	done
+	shift
+    done
 
     if [ "${no_checkout}" != "true" ]; then
 	if [ "${nb_param}" != "3" ] ; then
