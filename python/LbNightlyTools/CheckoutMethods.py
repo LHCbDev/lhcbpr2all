@@ -396,7 +396,7 @@ def gaudi(desc, rootdir='.'):
     Wrapper to git for Gaudi.
     '''
     if 'url' not in desc.checkout_opts:
-        desc.checkout_opts['url'] = 'http://git.cern.ch/pub/gaudi'
+        desc.checkout_opts['url'] = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
     if 'commit' not in desc.checkout_opts:
         if desc.version.lower() == 'head':
             desc.checkout_opts['commit'] = 'master'

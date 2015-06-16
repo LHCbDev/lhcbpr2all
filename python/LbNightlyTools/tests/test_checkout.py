@@ -222,7 +222,7 @@ def test_checkout():
         assert not exists(join(tmpdir, 'BRUNEL', 'BRUNEL_HEAD', 'Rec', 'Brunel', 'cmt', 'requirements'))
 
         CheckoutMethods.git(ProjectDesc('Gaudi', 'v23r6',
-                                        checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
+                                        checkout_opts={'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
                                                        'commit': 'GAUDI/GAUDI_v23r6'}),
                             tmpdir)
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
@@ -239,7 +239,7 @@ def test_checkout():
 
 
         CheckoutMethods.git(ProjectDesc('Gaudi', 'HEAD',
-                                        checkout_opts={'url': 'http://git.cern.ch/pub/gaudi'}),
+                                        checkout_opts={'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git'}),
                             tmpdir)
         check([join('GAUDI', 'GAUDI_HEAD', join(*x))
                for x in [('Makefile',),
@@ -306,7 +306,7 @@ def test_checkout_export():
                                'BrunelSys', '.svn'))
 
         CheckoutMethods.git(ProjectDesc('Gaudi', 'v23r6',
-                                        checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
+                                        checkout_opts={'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
                                                        'commit': 'GAUDI/GAUDI_v23r6',
                                                        'export': True}),
                             tmpdir)

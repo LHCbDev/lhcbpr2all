@@ -114,7 +114,7 @@ def _test_only_projects_conf():
                                        'version': 'HEAD',
                                        'checkout': 'git',
                                        'checkout_opts':
-                                        {'url': 'http://git.cern.ch/pub/gaudi'}}
+                                        {'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git'}}
                                       ]}
             cfg.write(json.dumps(conf_data))
         retval = StackCheckout.Script().run(['test.json'])
