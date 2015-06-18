@@ -62,6 +62,18 @@ router.register(
     base_name="compare-jobs"
 )
 
+router.register(
+    r"trends", 
+    views.TrendsViewSet,
+    base_name = "trends"
+)
+
+router.register(
+    r"histograms",
+    views.HistogramsViewSet,
+    base_name = "histograms"
+)
+
 # router.register(
 #     r"active/options", views.ActiveOptionViewSet,
 #     base_name="options-active"

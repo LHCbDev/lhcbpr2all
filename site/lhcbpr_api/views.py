@@ -18,6 +18,9 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from rest_framework.decorators import detail_route, list_route
 
+from operator import itemgetter
+from lhcbpr_api.services import *
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -382,4 +385,135 @@ class CompareJobsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
         if 'contains' in self.request.query_params:
             result['contains'] = self.request.query_params['contains']
 
+        return result
+
+class TrendsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
+    serializer_class = TrendsSerializer
+    
+    def get_queryset(self):
+        context = self.get_serializer_context()
+        results = JobResultsService().get_results_per_attr_per_version(context)
+        
+        for result_index in range(0, len(results)):
+            for version_index in range(0, len(results[result_index]['values'])):
+                current_version = results[result_index]['values'][version_index]['version']
+                numbers = results[result_index]['values'][version_index]['results']
+                count = float(len(numbers))
+                average = sum(numbers) / count
+                deviation = 0
+                for n in numbers:
+                    deviation = deviation + abs(average - n)
+                deviation = deviation / count
+                results[result_index]['values'][version_index] = {
+                    'version': current_version,
+                    'average': average,
+                    'deviation': deviation
+                }
+            results[result_index]['values'] = sorted(results[result_index]['values'], key = itemgetter('version'))
+
+        return results
+
+    def get_serializer_context(self):
+        result = {"app": None, "options": None, "request": self.request}
+        if 'app' in self.request.query_params:
+            result["app"] = [int(id) for id in self.request.query_params['app'].split(',')]
+        if 'options' in self.request.query_params:
+            result["options"] = [int(id) for id in self.request.query_params['options'].split(',')]
+        if 'attr_filter' in self.request.query_params:
+            result['attr_filter'] = self.request.query_params['attr_filter']
+        return result
+
+class HistogramsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
+    serializer_class = HistogramsSerializer
+    
+    def get_queryset(self):
+        context = self.get_serializer_context()
+        results = JobResultsService().get_results_per_attr_per_version(context)
+        if len(results) > 0:
+            context_min = context['min']
+            context_max = context['max']
+            context_intervals = context['intervals']
+            if not context_intervals:
+                context_intervals = 25
+            # Remove values less than context_min or greater than context_max
+            for result_index in range(0, len(results)):
+                for version_index in range(0, len(results[result_index]['values'])):
+                    numbers = results[result_index]['values'][version_index]['results']
+                    if context_min:
+                        numbers = [ i for i in numbers if i >= context_min ]
+                    if context_max:
+                        numbers = [ i for i in numbers if i <= context_max ]
+                    results[result_index]['values'][version_index]['results'] = numbers
+            # Compute min, max values and the interval width for each attribute
+            for result_index in range(0, len(results)):
+                min_value = 9999999
+                max_value = 0
+                # if len(results[result_index]['values'][0]['results']) > 0:
+                #     min_value = results[result_index]['values'][0]['results'][0]
+                #     max_value = min_value
+                for version_index in range(0, len(results[result_index]['values'])):
+                    numbers = results[result_index]['values'][version_index]['results']
+                    if len(numbers) > 0:
+                        temp = min(numbers)
+                        if temp < min_value:
+                            min_value = temp
+                        temp = max(numbers)
+                        if temp > max_value:
+                            max_value = temp
+                results[result_index]['min_value'] = min_value
+                results[result_index]['max_value'] = max_value
+                results[result_index]['interval_width'] = (max_value - min_value) / float(context_intervals - 1)
+            # Compute jobs number per interval
+            for result_index in range(0, len(results)):
+                interval_width = results[result_index]['interval_width']
+                min_value = results[result_index]['min_value']
+                if interval_width > 0:
+                    for version_index in range(0, len(results[result_index]['values'])):
+                        current_version = results[result_index]['values'][version_index]['version']
+                        numbers = results[result_index]['values'][version_index]['results']
+                        jobs = [ 0 for i in range(0, int(context_intervals)) ]
+                        for n in numbers:
+                            job_index = n - min_value
+                            job_index = job_index / interval_width
+                            job_index = int(job_index)
+                            jobs[job_index] += 1
+                        results[result_index]['values'][version_index] = {
+                            'version': current_version,
+                            'jobs': jobs
+                        }
+                else:
+                    for version_index in range(0, len(results[result_index]['values'])):
+                        current_version = results[result_index]['values'][version_index]['version']
+                        jobs = [ 0 for i in range(0, int(context_intervals)) ]
+                        results[result_index]['values'][version_index] = {
+                            'version': current_version,
+                            'jobs': jobs
+                        }
+        return results
+
+    def get_serializer_context(self):
+        result = {
+            'request': self.request,
+            'app': None,
+            'options': None, 
+            'versions': None,
+            'min': None,
+            'max': None,
+            'intervals': None,
+            'attr_filter': None
+        }
+        if 'app' in self.request.query_params:
+            result['app'] = [int(id) for id in self.request.query_params['app'].split(',')]
+        if 'options' in self.request.query_params:
+            result['options'] = [int(id) for id in self.request.query_params['options'].split(',')]
+        if 'versions' in self.request.query_params:
+            result['versions'] = [int(id) for id in self.request.query_params['versions'].split(',')]
+        if 'min' in self.request.query_params:
+            result['min'] = float(self.request.query_params['min'])
+        if 'max' in self.request.query_params:
+            result['max'] = float(self.request.query_params['max'])
+        if 'intervals' in self.request.query_params:
+            result['intervals'] = float(self.request.query_params['intervals'])
+        if 'attr_filter' in self.request.query_params:
+            result['attr_filter'] = self.request.query_params['attr_filter']
         return result
