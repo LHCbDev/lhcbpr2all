@@ -46,7 +46,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Script main function.
         '''
-        if len(self.args) != 3:
+        if len(self.args) != 4:
             self.parser.error('wrong number of arguments')
 
         opts = self.options
@@ -54,6 +54,7 @@ class Script(LbUtils.Script.PlainScript):
         data = load(self.args[0])
         slot = self.args[1]
         slot_build_id = self.args[2]
+        flavour = self.args[3]
 
         preconds = data.get(u'preconditions', [])
         if preconds:
@@ -69,8 +70,12 @@ class Script(LbUtils.Script.PlainScript):
             platforms = data.get(u'default_platforms', [])
 
 
+        label = '-build'
+        if (flavour == 'release'):
+            label = '-release'
+
         for platform in platforms:
-            os_label = platform.split('-')[1]+'-build'
+            os_label = platform.split('-')[1]+label
             output_file_name = output_file.format(slot, platform)
             open(output_file_name, 'w') \
                 .write(str(JobParams(slot=slot,
