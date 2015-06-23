@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -9,9 +9,9 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-import LbUtils.Log
-LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
-from LbNightlyTools.CheckSlotPreconditions import Script
-import sys
-sys.exit(Script().run())
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+for i in "${DIR}"/utils.d/*.sh ; do
+    . "$i"
+done

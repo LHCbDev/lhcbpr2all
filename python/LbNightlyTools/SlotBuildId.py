@@ -36,10 +36,10 @@ def indent(elem, level=0):
             elem.tail = i
 
 
-def get_ids(slots):
+def get_ids(slots, flavour):
     slot_id_dir = os.path.join(os.environ['JENKINS_HOME'],
                                'nightlies',
-                               os.environ['flavour'])
+                               flavour)
     # slot_id_dir = 'configs'
     slot_id_file = os.path.join(slot_id_dir, 'slot_ids.xml')
 
@@ -97,5 +97,46 @@ def get_ids(slots):
         indent(root)
 
     xml_parse.write(slot_id_file)
+
+    return res
+
+def get_last_ids(slots, flavour):
+    slot_id_dir = os.path.join(os.environ['JENKINS_HOME'],
+                               'nightlies',
+                               flavour)
+    # slot_id_dir = 'configs'
+    slot_id_file = os.path.join(slot_id_dir, 'slot_ids.xml')
+
+    if os.path.isfile(slot_id_file):
+        try:
+            xml_parse = ET.parse(slot_id_file)
+            root = xml_parse.getroot()
+
+        except:
+            logging.error('Can''t find or open %s', slot_id_file)
+            sys.exit(1)
+    else:
+        logging.error('get_last_ids need %s to work', slot_id_file)
+        sys.exit(2)
+
+    res = {}
+
+    all_slots = dict((el.get('name'), el) for el in root.findall("slot"))
+    for slot_name in slots:
+        slot = all_slots.get(slot_name)
+
+        if slot is not None:
+            slot_id = slot.get('last_id')
+            if not slot_id:
+                logging.error('No current_id on the slot %s', slot_name)
+                sys.exit(3)
+            slot_id = int(slot_id)
+        else:
+            logging.error('Slot %s have no entrie in %s',
+                          slot_name,
+                          slot_id_file)
+            sys.exit(4)
+
+        res[slot_name] = slot_id
 
     return res

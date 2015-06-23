@@ -10,15 +10,14 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+. $(dirname $0)/utils.sh
 
-# Set common environment
-. $(dirname $0)/common.sh
+set_common
 
-if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
-  # Get the slot configuration files from Subversion
-  lbn-get-configs
-fi
+get_configs_folder --dest-dir "configs"
 
-lbn-enabled-slots --verbose 'slot-params-{0}.txt' ${slots}
+extract_enabled_slots \
+    "${flavour}" \
+    ${slots:+--slots "${slots}"} \
+    --config-dir "configs"
+

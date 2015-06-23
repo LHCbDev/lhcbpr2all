@@ -31,6 +31,9 @@ export LHCB_NIGHTLY_MAX_THREADS=1
 
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${flavour}/${slot}/${slot_build_id}}
 mkdir -p ${ARTIFACTS_DIR}
+export RSYNC_SERVER=${RSYNC_SERVER:-*********} # TODO
+export RSYNC_WORKDIR=${RSYNC_WORKDIR:-*********} # TODO
+export RSYNC_DIR=${RSYNC_DIR:-${RSYNC_SERVER}:${RSYNC_WORKDIR}/${flavour}/${slot}/${slot_build_id}}
 export TMPDIR=${WORKSPACE}/tmp
 mkdir -p ${TMPDIR}
 
@@ -78,12 +81,6 @@ fi
 # FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)
 if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
   . SetupProject.sh LCGCMT 66 Python
-fi
-
-if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
-  config_file=${ARTIFACTS_DIR}/${slot}.json
-else
-  config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
 fi
 
 if klist -5 > /dev/null 2>&1 ; then

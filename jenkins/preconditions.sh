@@ -10,12 +10,13 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+. $(dirname $0)/utils.sh
 
-# Set common environment
-. $(dirname $0)/common.sh
+set_common
 
-export CMTCONFIG=$platform
+get_artifact \
+    --get-config \
+    "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
+    "${ARTIFACTS_DIR}"
 
-lbn-check-preconditions --verbose ${config_file}
+execute_preconditions "${config_file}"

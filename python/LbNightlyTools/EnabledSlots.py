@@ -15,6 +15,7 @@ Now we only have the slot name in parameter in files
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
+import os
 import glob
 import json
 from xml.etree.ElementTree import parse
@@ -30,8 +31,20 @@ class Script(LbUtils.Script.PlainScript):
     This file contain the slot name and the slot build id
     The slot build id is extract with the function get_ids
     '''
-    __usage__ = '%prog [options] <output_file.txt> [<slot1> <slot2> ...]'
+    __usage__ = '%prog [options] flavour output_file.txt'
     __version__ = ''
+
+    def defineOpts(self):
+        self.parser.add_option('--config-dir',
+                               action='store',
+                               help='Directory to find configurations files')
+
+        self.parser.add_option('--slots',
+                               action='store',
+                               help='Slots to activate')
+
+        self.parser.set_defaults(config_dir=".",
+                                 slots=None)
 
     def extract_from_json(self, file_format_json):
         self.log.info('Extract slots from %s files', file_format_json)
@@ -83,17 +96,16 @@ class Script(LbUtils.Script.PlainScript):
 
         return slots
 
-    def write_files(self, slots, output_file):
-        slot_ids = get_ids(slots)
-        # get_id = lambda slot: get_ids([slot]])[slot]
+    def write_files(self, slots, flavour, output_file):
+        slot_ids = get_ids(slots, flavour)
         for slot in slots:
-            slot_build_id=slot_ids[slot]
             output_file_name = output_file.format(slot)
+            slot_build_id=slot_ids[slot]
             open(output_file_name, 'w') \
                 .write(str(JobParams(slot=slot,
                                      slot_build_id=slot_build_id
                                      )) + '\n')
-            self.log.info('%s written for slot %s with build_id %s',
+            self.log.info('%s written for slot %s with build id %s',
                           output_file_name,
                           slot,
                           slot_build_id)
@@ -101,19 +113,23 @@ class Script(LbUtils.Script.PlainScript):
         self.log.info('%s slots to start', len(slots))
 
     def main(self):
-        if len(self.args) < 1:
+        if len(self.args) != 2:
             self.parser.error('wrong number of arguments')
 
-        output_file = self.args[0]
-        slots = self.args[1:]
+        opts = self.options
 
-        if not slots:
+        flavour = self.args[0]
+        output_file = self.args[1]
+
+        if not opts.slots:
             self.log.info('Starting extraction of all enable slot')
-            slots = self.extract_from_json('configs/lhcb-*.json') | \
-                self.extract_from_xml('configs/configuration.xml')
+            slots = self.extract_from_json(os.path.join(opts.config_dir,'lhcb-*.json')) | \
+                self.extract_from_xml(os.path.join(opts.config_dir,'configuration.xml'))
+        else:
+            slots=opts.slots.strip().split(' ');
 
         # Create a file that contain JobParams for each slot
-        self.write_files(slots, output_file)
+        self.write_files(slots, flavour, output_file)
 
         self.log.info('End of extraction of all enable slot')
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/bash
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -9,9 +9,24 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-import LbUtils.Log
-LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
-from LbNightlyTools.CheckSlotPreconditions import Script
-import sys
-sys.exit(Script().run())
+. $(dirname $0)/utils.sh
+
+set_common
+
+get_configs_folder --dest-dir "configs"
+
+if [ "${rebuild_last_id}" == "true" ] ; then
+    rebuild_last_id_opt="--rebuild-last-id"
+fi
+
+if [ "${no_checkout}" == "true" ] ; then
+    no_checkout_opt="--no-checkout"
+fi
+
+manage_user_launch \
+    "${flavour}" \
+    "${slots}" \
+    ${slot_build_id:+--slot-build-id "${slot_build_id}"} \
+    ${rebuild_last_id_opt} \
+    ${no_checkout_opt}
