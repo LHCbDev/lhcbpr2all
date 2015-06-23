@@ -98,7 +98,6 @@ class JemallocHandler(BaseHandler):
           methodname = f[-1]
           methodlost = float(f[0])
           self.saveFloat(methodname, methodlost, "Memory diff in method", "Jemalloc")
-          self.saveFloat(methodname + "_per", float(f[1]), "Memory diff in method %", "Jemalloc")
          
       # Get the display in postscript
       processPprofPs(data, basefile, comparefile, "jemalloc.ps")
