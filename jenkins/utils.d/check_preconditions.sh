@@ -48,6 +48,8 @@ check_preconditions config_file slot slot_build_id
 					local slot="$1" ;;
 				"2")
 					local slot_build_id="$1" ;;
+				"3")
+					local flavour="$1" ;;
 				*)
 					echo "ERROR : Too much parameter"
 					echo ${USAGE}
@@ -59,7 +61,7 @@ check_preconditions config_file slot slot_build_id
 		shift
     done
 
-	if [ "${nb_param}" != "3" ] ; then
+	if [ "${nb_param}" != "4" ] ; then
 		echo "ERROR : Need more parameter"
 		echo ${USAGE}
 		exit 1
@@ -70,6 +72,6 @@ check_preconditions config_file slot slot_build_id
 		exit 1
     fi
 
-	lbn-check-preconditions --verbose "${config}" "$slot" "$slot_build_id" ${platforms:+--platforms "${platforms}"}
+	lbn-check-preconditions --verbose "${config}" "$slot" "$slot_build_id" "$flavour" ${platforms:+--platforms "${platforms}"}
 
 }
