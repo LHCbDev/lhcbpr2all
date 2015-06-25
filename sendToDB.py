@@ -8,7 +8,7 @@ logger = logging.getLogger('sendToDB.py')
 
 diracStorageElementName = 'StatSE'
 
-diracStorageElementFolder = 'uploaded'
+diracStorageElementFolder = '/lhcb/uploaded'
 
 def sendViaDiracStorageElement(zipFile):
     head, tailzipFile = os.path.split(zipFile)
