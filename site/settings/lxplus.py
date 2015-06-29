@@ -1,3 +1,3 @@
 from common import *
 
-STATIC_URL = '/amazurov/lhcbpr-api/static/'
+STATIC_URL = '/test-lhcb-pr2/api/static/'
