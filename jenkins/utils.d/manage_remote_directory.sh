@@ -103,8 +103,9 @@ create_alias"
     local COMMAND="mkdir -pv ${RSYNC_DIR} ; ln -svfT ${slot_build_id} ${RSYNC_DIR}/${day} ; ln -svfT ${slot_build_id} ${RSYNC_DIR}/${timestamp} ; ln -svfT ${slot_build_id} ${RSYNC_DIR}/Today"
 
     if [ ! -d "${RSYNC_WORKDIR}" ] ; then
-		local COMMAND="ssh ${RSYNC_SERVER} ${COMMAND} || true"
+	ssh ${RSYNC_SERVER} "${COMMAND}" || true
+    else
+	sh -c "${COMMAND}" || true
     fi
 
-    ${COMMAND}
 }
