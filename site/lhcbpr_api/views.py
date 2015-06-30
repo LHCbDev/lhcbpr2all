@@ -387,14 +387,19 @@ class CompareJobsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
 
         return result
 
-class TrendsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
-    serializer_class = TrendsSerializer
-    
-    def get_queryset(self):
-        context = self.get_serializer_context()
-        results = JobResultsService().get_results_per_attr_per_version(context)
-        
-        for result_index in range(0, len(results)):
+class TrendsViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        logger.info('Trends started')
+        context = self.get_serializer_context(request)
+        logger.info('Context is read')
+        logger.info('Retrieving results from service')
+        service = JobResultsService()
+        results = service.get_results_per_attr_per_version(context)
+        total_count = service.get_attrs_count(context)
+
+        logger.info('Looping over {0} results'.format(len(results)))        
+        for result_index in range(len(results)):
             for version_index in range(0, len(results[result_index]['values'])):
                 current_version = results[result_index]['values'][version_index]['version']
                 numbers = results[result_index]['values'][version_index]['results']
@@ -410,25 +415,40 @@ class TrendsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
                     'deviation': deviation
                 }
             results[result_index]['values'] = sorted(results[result_index]['values'], key = itemgetter('version'))
+        logger.info('Sending results')
+        logger.info(len(results))
+        return Response({
+            'count': total_count,
+            'results': results
+        })
 
-        return results
-
-    def get_serializer_context(self):
-        result = {"app": None, "options": None, "request": self.request}
-        if 'app' in self.request.query_params:
-            result["app"] = [int(id) for id in self.request.query_params['app'].split(',')]
-        if 'options' in self.request.query_params:
-            result["options"] = [int(id) for id in self.request.query_params['options'].split(',')]
-        if 'attr_filter' in self.request.query_params:
-            result['attr_filter'] = self.request.query_params['attr_filter']
+    def get_serializer_context(self, request):
+        result = {
+            "app": None, 
+            "options": None, 
+            "request": request,
+            "page": 1,
+            "page_size": 10
+        }
+        if 'app' in request.query_params:
+            result["app"] = [int(id) for id in request.query_params['app'].split(',')]
+        if 'options' in request.query_params:
+            result["options"] = [int(id) for id in request.query_params['options'].split(',')]
+        if 'attr_filter' in request.query_params:
+            result['attr_filter'] = request.query_params['attr_filter']
+        if 'page' in request.query_params:
+            result['page'] = int(request.query_params['page'])
+        if 'page_size' in request.query_params:
+            result['page_size'] = int(request.query_params['page_size'])
         return result
 
-class HistogramsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
-    serializer_class = HistogramsSerializer
+class HistogramsViewSet(viewsets.ViewSet):
     
-    def get_queryset(self):
-        context = self.get_serializer_context()
-        results = JobResultsService().get_results_per_attr_per_version(context)
+    def list(self, request):
+        context = self.get_serializer_context(request)
+        service = JobResultsService()
+        results = service.get_results_per_attr_per_version(context)
+        total_count = service.get_attrs_count(context)
         if len(results) > 0:
             context_min = context['min']
             context_max = context['max']
@@ -489,31 +509,40 @@ class HistogramsViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
                             'version': current_version,
                             'jobs': jobs
                         }
-        return results
+        return Response({
+            'results': results,
+            'count': total_count
+        })
 
-    def get_serializer_context(self):
+    def get_serializer_context(self, request):
         result = {
-            'request': self.request,
+            'request': request,
             'app': None,
             'options': None, 
             'versions': None,
             'min': None,
             'max': None,
             'intervals': None,
-            'attr_filter': None
+            'attr_filter': None,
+            'page': 1, 
+            'page_size': 10
         }
-        if 'app' in self.request.query_params:
-            result['app'] = [int(id) for id in self.request.query_params['app'].split(',')]
-        if 'options' in self.request.query_params:
-            result['options'] = [int(id) for id in self.request.query_params['options'].split(',')]
-        if 'versions' in self.request.query_params:
-            result['versions'] = [int(id) for id in self.request.query_params['versions'].split(',')]
-        if 'min' in self.request.query_params:
-            result['min'] = float(self.request.query_params['min'])
-        if 'max' in self.request.query_params:
-            result['max'] = float(self.request.query_params['max'])
-        if 'intervals' in self.request.query_params:
-            result['intervals'] = float(self.request.query_params['intervals'])
-        if 'attr_filter' in self.request.query_params:
-            result['attr_filter'] = self.request.query_params['attr_filter']
+        if 'app' in request.query_params:
+            result['app'] = [int(id) for id in request.query_params['app'].split(',')]
+        if 'options' in request.query_params and request.query_params['options'] != '':
+            result['options'] = [int(id) for id in request.query_params['options'].split(',')]
+        if 'versions' in request.query_params and request.query_params['versions'] != '':
+            result['versions'] = [int(id) for id in request.query_params['versions'].split(',')]
+        if 'min' in request.query_params:
+            result['min'] = float(request.query_params['min'])
+        if 'max' in request.query_params:
+            result['max'] = float(request.query_params['max'])
+        if 'intervals' in request.query_params:
+            result['intervals'] = float(request.query_params['intervals'])
+        if 'attr_filter' in request.query_params:
+            result['attr_filter'] = request.query_params['attr_filter']
+        if 'page' in request.query_params:
+            result['page'] = int(request.query_params['page'])
+        if 'page_size' in request.query_params:
+            result['page_size'] = int(request.query_params['page_size'])
         return result
