@@ -9,23 +9,30 @@ class JobResultsService:
     # Returns job results grouped by attribute and by version
     # [ {id:attr_id, name:attr_name, values:[ { version:version_name, results:[ result1, ... ] }, ... ]}, ... ]
     def get_results_per_attr_per_version(self, context, only_numeric = True):
-        queryset = JobResult.objects
+        logger.info('Service called !')
+        attrs_ids = Attribute.objects
+        if 'attr_filter' in context and context['attr_filter']:
+            attrs_ids = attrs_ids.filter(name__icontains = context['attr_filter'])
+        if only_numeric:
+            attrs_ids = attrs_ids.filter(dtype__in = ['Float', 'Integer'])
+        offset = context['page_size'] * (context['page'] - 1)
+        limit = context['page_size']
+        attrs_ids = [ i['id'] for i in attrs_ids.values('id')[offset:limit] ]
+        if len(attrs_ids) < 1:
+            return [];
+        queryset = JobResult.objects.filter(attr__id__in = attrs_ids)
         if 'app' in context and context['app']:
             queryset = queryset.filter(job__job_description__application_version__application__id__in = context['app'])
         if 'options' in context and context['options']:
             queryset = queryset.filter(job__job_description__option__id__in = context['options'])
         if 'versions' in context and context['versions']:
             queryset = queryset.filter(job__job_description__application_version__id__in = context['versions'])
-        if 'attr_filter' in context and context['attr_filter']:
-            queryset = queryset.filter(attr__name__contains = context['attr_filter'])
-        if only_numeric:
-            queryset = queryset.filter(attr__dtype__in = ['Float', 'Integer'])
             
         queryset = queryset.select_related(
             'attr__name', 
             'job__job_description__application_version__version'
         )
-        queryset = queryset.order_by('attr__id')
+        queryset = queryset.order_by('attr__id', 'job__job_description__application_version__version')
         queryset = queryset.values(
             'attr__id', 
             'attr__name',
@@ -33,13 +40,18 @@ class JobResultsService:
             'resultinteger',
             'resultfloat'
         )
+        logger.info('Queryset Construction done')
 
         results = []
         current_attr_id = None
         current_result_index = -1
         current_version = None
         current_version_index = -1
+        logger.info('Looping over Queryset')
+        i = 1
         for item in queryset:
+            # logger.info('Handeling item {0}'.format(i))
+            i = i + 1
             # If new attribute, add it
             if item['attr__id'] != current_attr_id:
                 results.append({
@@ -66,3 +78,11 @@ class JobResultsService:
                 results[current_result_index]['values'][current_version_index]['results'].append(item['resultinteger'] / 1000.0)
         
         return results
+
+    def get_attrs_count(self, context):
+        attrs = Attribute.objects
+        if 'attr_filter' in context and context['attr_filter']:
+            attrs = attrs.filter(name__icontains = context['attr_filter'])
+        count = attrs.count()
+        logger.info("Attributes count is {0}".format(count))
+        return count
