@@ -241,7 +241,7 @@ class ActiveApplicationViewSet(viewsets.ViewSet):
     @list_route()
     def options(self, request, pk):
         id_field = 'job_description__option__id'
-        name_field = 'job_description__option__content'
+        name_field = 'job_description__option__description'
 
         versions = []
         if 'versions' in request.query_params and request.query_params['versions']:
