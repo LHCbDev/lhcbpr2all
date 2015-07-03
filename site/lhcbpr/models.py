@@ -9,6 +9,9 @@ class Host(models.Model):
 
     def __unicode__(self):
         return self.hostname
+
+    class Meta:
+        managed = False
  
 class Application(models.Model):
     appName = models.CharField(max_length=50)
@@ -16,6 +19,7 @@ class Application(models.Model):
     
     class Meta:
         unique_together = ('appName', 'appVersion',)
+        managed = False
 
     def __unicode__(self):
         return '{0}  {1}'.format(self.appName, self.appVersion)
@@ -27,12 +31,18 @@ class Options(models.Model):
     def __unicode__(self):
         return self.description
 
+    class Meta:
+        managed = False
+
 class SetupProject(models.Model):
     content = models.CharField(max_length=200)
     description = models.CharField(max_length=200)
     
     def __unicode__(self):
         return self.description
+
+    class Meta:
+        managed = False
 
 class JobDescription(models.Model):
     application = models.ForeignKey(Application, related_name='jobdescriptions', db_index = False)
@@ -42,11 +52,17 @@ class JobDescription(models.Model):
     def __unicode__(self):
         return '{0} (id)   {1}  {2}  {3}'.format(self.id ,self.application.appName, self.application.appVersion, self.options.description)
 
+    class Meta:
+        managed = False
+
 class Platform(models.Model):
     cmtconfig = models.CharField(max_length=100)
     
     def __unicode__(self):
         return self.cmtconfig
+
+    class Meta:
+        managed = False
 
 class Requested_platform(models.Model):
     jobdescription = models.ForeignKey(JobDescription, db_index = False)
@@ -54,6 +70,9 @@ class Requested_platform(models.Model):
     
     def __unicode__(self):
         return '{0} (job_description_id)   ---   {1}'.format(self.jobdescription.id, self.cmtconfig)
+
+    class Meta:
+        managed = False
     
 class Job(models.Model):
     host = models.ForeignKey(Host,null=True, related_name='jobs', db_index = False)
@@ -68,6 +87,9 @@ class Job(models.Model):
         return '{0} (id) -- {1} (job_description_id)  ---  {2}  ---  {3}  ---  {4} --- {5}'.format(
                     self.id, self.jobDescription.id, self.time_end, 
                     self.platform.cmtconfig, self.host.hostname, self.success)
+
+    class Meta:
+        managed = False
     
 class Handler(models.Model):
     name = models.CharField(max_length=50)
@@ -75,6 +97,9 @@ class Handler(models.Model):
     
     def __unicode__(self):
         return self.name
+
+    class Meta:
+        managed = False
     
 class JobHandler(models.Model):
     jobDescription = models.ForeignKey(JobDescription, db_index = False)
@@ -82,6 +107,9 @@ class JobHandler(models.Model):
     
     def __unicode__(self):
         return '{0} (job_description_id) -- -- {1}'.format(self.jobDescription.id, self.handler)
+
+    class Meta:
+        managed = False
  
 class JobAttribute(models.Model):
     name = models.CharField(max_length=500)
@@ -91,6 +119,9 @@ class JobAttribute(models.Model):
     
     def __unicode__(self):
         return '{0} (id)  {1}  --  {2}  {3}'.format(self.id, self.name, self.type, self.description)
+
+    class Meta:
+        managed = False
     
 class JobResults(models.Model):
     job = models.ForeignKey(Job, related_name='jobresults')
@@ -98,15 +129,27 @@ class JobResults(models.Model):
     
     def __unicode__(self):
         return '{0} (job_id) --- {1} (jobAttribute_id)'.format(self.job.id, self.jobAttribute.id)
+
+    class Meta:
+        managed = False
     
 class ResultString(JobResults):
     data = models.CharField(max_length=100)
+
+    class Meta:
+        managed = False
     
 class ResultFloat(JobResults):
     data = models.FloatField()  
+
+    class Meta:
+        managed = False
     
 class ResultInt(JobResults):
     data = models.IntegerField()
+
+    class Meta:
+        managed = False
 
 #custom path to save the files in format MEDIA_ROOT/job_description_id/job_id/filename    
 def content_file_name(instance, filename):
@@ -115,10 +158,16 @@ def content_file_name(instance, filename):
 class ResultFile(JobResults):
     file = models.FileField(upload_to=content_file_name,blank=True)
 
+    class Meta:
+        managed = False
+
 class HandlerResult(models.Model):
     job = models.ForeignKey(Job, db_index = False)
     handler = models.ForeignKey(Handler, db_index = False)
     success = models.BooleanField()
+
+    class Meta:
+        managed = False
     
     def __unicode__(self):
         return '{0} (job_id) {1} --- {2}'.format(self.job.id, self.handler.name, self.success)
@@ -128,3 +177,6 @@ class AddedResults(models.Model):
     
     def __unicode__(self):
         return self.identifier
+
+    class Meta:
+        managed = False

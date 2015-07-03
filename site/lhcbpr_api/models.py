@@ -60,7 +60,6 @@ class ApplicationVersion(models.Model):
 
     @staticmethod
     def get_slot_and_number(slot_string):
-        print "SASHA ", slot_string
         if '.'  in slot_string:
             delim = '.'
         else: 
@@ -208,7 +207,7 @@ class AttributeGroup(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
 class Attribute(models.Model):
-    name = models.CharField(max_length=500, unique=True)
+    name = models.CharField(max_length=512, db_index=True)
     dtype = models.CharField(max_length=10, choices=DATA_TYPE_CHOICES)
     description = models.CharField(max_length=500)
     groups = models.ManyToManyField(AttributeGroup, related_name='attributes')
@@ -264,6 +263,40 @@ class ResultString(JobResult):
 
 class ResultFile(JobResult):
     data = models.FileField()
+
+class ResultStringSync(models.Model):
+    jobresult_ptr_id=models.IntegerField()
+    data = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = "lhcbpr_api_resultstring"
+
+class ResultIntegerSync(models.Model):
+    jobresult_ptr_id=models.IntegerField()
+    data = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = "lhcbpr_api_resultinteger"
+
+class ResultFloatSync(models.Model):
+    jobresult_ptr_id=models.IntegerField()
+    data = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = "lhcbpr_api_resultfloat"
+
+class ResultFileSync(models.Model):
+    jobresult_ptr_id=models.IntegerField()
+    data = models.TextField()
+
+    class Meta:
+        managed = False
+        db_table = "lhcbpr_api_resultfile"
+
+
 
 
 # custom path to save the files in format

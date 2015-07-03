@@ -2,6 +2,8 @@ from django.core.management.base import BaseCommand
 import lhcbpr.models as v1
 import lhcbpr_api.models
 from lhcbpr_api.models import *
+from django.db import connection
+from django.db import IntegrityError
 
 import logging
 logger = logging.getLogger(__name__)
@@ -9,69 +11,67 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Synchronize with v1 database"
 
+    applications = {}
+    options = {}
+    setups = {}
+    descriptions = {}
+    platforms = {}
+    handlers = {}
+    job_handlers = {}
+    hosts = {}
+    groups = {}
+    attributes = {}
 
     def handle(self, *args, **options):
         # Applications
 
         for app_source in v1.Application.objects.using('v1').all():
-            self._application(app_source)
+            Command.applications[app_source.id] = self._application(app_source)
  
         # Options
         for option_source in v1.Options.objects.using('v1').all():
-            self._option(option_source)
+            Command.options[option_source.id] = self._option(option_source)
   
         # Setup project
         for setup_source in v1.SetupProject.objects.using('v1').all():
-            self._setup_project(setup_source)
+            Command.setups[setup_source.id] = self._setup_project(setup_source)
 
         # Job descriptions
         for jd_source in v1.JobDescription.objects.using('v1').all():
-            self._job_description(jd_source)
+            Command.descriptions[jd_source.id] = self._job_description(jd_source)
             
 
         # Platform
         for pl_source in v1.Platform.objects.using('v1').all():
-            self._platform(pl_source)
+            Command.platforms[pl_source.id] = self._platform(pl_source)
 
         # Handler
         for handler_source in v1.Handler.objects.using('v1').all():
-            self._handler(handler_source)
+            Command.handlers[handler_source.id] = self._handler(handler_source)
 
         # JobHandler
         for jh_source in v1.JobHandler.objects.using('v1').all():
-            self._job_handler(jh_source)
+            Command.job_handlers[jh_source.id] = self._job_handler(jh_source)
 
 
         # Host
         for host_source in v1.Host.objects.using('v1').all():
-            self._host(host_source)
+            Command.hosts[host_source.id] = self._host(host_source)
 
-        # Job
-        njobs = v1.Job.objects.using('v1').count()
-        logger.info("Number of jobs in V1 %d" % njobs)
-        for job_source in v1.Job.objects.using('v1').order_by('-time_start'):
-            self._job(job_source)
-            njobs -= 1
-            logger.info("Jobs to process: %d" % njobs) 
-   
+        # Attributes
+        for attr_source in v1.JobAttribute.objects.using('v1').iterator():
+            if attr_source.name not in Command.attributes:
+                Command.attributes[attr_source.name] = self._job_attribute(attr_source)
 
-        # Attribute groups
-        # for ja_source in v1.JobAttribute.objects.using('v1').all():
-        #     self._job_attribute(ja_source)
 
-        # Attribute groups
-        # for group_source in v1.JobAttribute.objects.using('v1').values_list('group', flat=True).distinct():
-        #     self._group(group_source)
+    
+        self._jobs();
+        self._job_results();
 
 
     def _application(self, app_source):
-        app_target = Application.objects.filter(name=app_source.appName)
-        if not app_target:
-            app_target = Application.objects.create(    name=app_source.appName)
-            app_target.save()
-        else:
-            app_target = app_target[0]
-
+        app_target, created = Application.objects.get_or_create(name=app_source.appName)
+        
         app_version_target = ApplicationVersion.objects.filter(
             version=app_source.appVersion, application=app_target)
         
@@ -91,11 +91,7 @@ class Command(BaseCommand):
                 else:
                     slotname = app_source.appVersion
                 if slotname:    
-                    slots = Slot.objects.filter(name=slotname)
-                    if not slots:
-                        slot = Slot.objects.create(name=slotname)
-                    else:
-                        slot = slots[0]
+                    slot, created = Slot.objects.get_or_create(name=slotname)
 
             app_version_target = ApplicationVersion.objects.create(
                 version=app_source.appVersion,
@@ -105,196 +101,171 @@ class Command(BaseCommand):
                 is_nightly=is_nightly
             )
             app_version_target.save()
+
         else:
             app_version_target = app_version_target[0]
 
-        return app_version_target
+        return app_version_target.id
 
     def _option(self, option_source):
-        option_target = Option.objects.filter(
-            old_id=option_source.id
+        option_target, created = Option.objects.get_or_create(
+            old_id=option_source.id,
+            content=option_source.content,
+            description=option_source.description
         )
-        if not option_target:
-            option_target = Option.objects.create(
-                content=option_source.content,
-                description=option_source.description,
-                old_id=option_source.id
-            )
-            option_target.save()
-        else:
-           option_target = option_target[0] 
-        return option_target
+        return option_target.id
 
     def _setup_project(self, setup_source):
-        setup_target = SetupProject.objects.filter(
+        setup_target, created = SetupProject.objects.get_or_create(
+            content=setup_source.content,
+            description=setup_source.description,
             old_id=setup_source.id
         )
-        if not setup_target:
-            setup_target = SetupProject.objects.create(
-                content=setup_source.content,
-                description=setup_source.description,
-                old_id=setup_source.id
-            )
-            setup_target.save()
-        else:
-            setup_target = setup_target[0]
-        return setup_target
+        return setup_target.id
 
     def _job_description(self, jd_source):
-        jd_target = JobDescription.objects.filter(old_id=jd_source.id)
-        if not jd_target:
-            ver = self._application(jd_source.application)
-            opt = self._option(jd_source.options)
-            if jd_source.setup_project:
-                setup = SetupProject.objects.filter(old_id=jd_source.setup_project.id)[0]
-            else:
-                setup = None
-            jd_target = JobDescription.objects.create(application_version=ver, option=opt, setup_project=setup, old_id=jd_source.id)
-            jd_target.save()
+        if jd_source.setup_project:
+            setup_id = Command.setups[jd_source.setup_project_id]
         else:
-            jd_target = jd_target[0]
-        return jd_target
+            setup_id = None
+
+        jd_target, created = JobDescription.objects.get_or_create(
+            old_id=jd_source.id,
+            application_version_id=Command.applications[jd_source.application_id], 
+            option_id=Command.options[jd_source.options_id],
+            setup_project_id=setup_id
+        )
+        return jd_target.id
 
     def _platform(self, pl_source):
-        if not pl_source:
-            return None
-
-        pl_target = Platform.objects.filter(old_id=pl_source.id)
-        if not pl_target:
-            pl_target = Platform.objects.create(
-                cmtconfig=pl_source.cmtconfig,
-                old_id=pl_source.id)
-            pl_target.save()
-        else:
-            pl_target = pl_target[0]
-
-        return pl_target
+        pl_target, created = Platform.objects.get_or_create(
+            cmtconfig=pl_source.cmtconfig,
+            old_id=pl_source.id
+        )
+        return pl_target.id
 
     def _handler(self, handler_source):
-        handler_target = Handler.objects.filter(old_id=handler_source.id)
-        if not handler_target:
-            handler_target = Handler.objects.create(
-                name=handler_source.name,
-                description=handler_source.description,
-                old_id=handler_source.id
-            )
-            handler_target.save()
-        else:
-            handler_target = handler_target[0]
-        return handler_target
+        handler_target, created = Handler.objects.get_or_create(
+            old_id=handler_source.id,
+            name=handler_source.name,
+            description=handler_source.description
+        )
+        return handler_target.id
 
     def _job_handler(self, jh_source):
  
-        jh_target = JobHandler.objects.filter(old_id=jh_source.id)
-        if not jh_target:
-            jd = self._job_description(jh_source.jobDescription)
-            handler = self._handler(jh_source.handler)
-
-            jh_target = JobHandler.objects.create(
-                job_description=jd,
-                handler=handler,
-                old_id=jh_source.id
-            )
-            jh_target.save()
-        else:
-            jh_target = jh_target[0]
-        return jh_target
+        jh_target, created = JobHandler.objects.get_or_create(
+            old_id=jh_source.id,
+            job_description_id=Command.descriptions[jh_source.jobDescription_id],
+            handler_id=Command.handlers[jh_source.handler_id]
+        )
+        return jh_target.id
 
     def _host(self, host_source):
-        if not host_source:
-            return None
+        host_target, created = Host.objects.get_or_create(
+            hostname=host_source.hostname,
+            cpu_info=host_source.cpu_info,
+            memory_info=host_source.memoryinfo,
+            old_id=host_source.id
+        )
+     
+        return host_target.id
 
-        host_target = Host.objects.filter(old_id=host_source.id)
-        if not host_target:
-            host_target = Host.objects.create(
-                hostname=host_source.hostname,
-                cpu_info=host_source.cpu_info,
-                memory_info=host_source.memoryinfo,
-                old_id=host_source.id
-            )
-            host_target.save()
-        else:
-            host_target = host_target[0]
-        return host_target
-
-    def _job(self, job_source):
-        job_target = Job.objects.filter(old_id=job_source.id)
-        if not job_target:
-            host = self._host(job_source.host)
-            job_description = self._job_description(job_source.jobDescription)
-            platform = self._platform(job_source.platform)
-
-            job_target = Job.objects.create(
-                host=host,
-                job_description=job_description,
-                platform=platform,
+    def _jobs(self):
+        njobs = v1.Job.objects.using('v1').count()
+        logger.info("Number of jobs in V1 %d" % njobs)
+        jobs = []
+        for job_source in v1.Job.objects.using('v1').order_by('-time_start').iterator():
+            if (len(jobs) % 1000 == 0):
+                Job.objects.bulk_create(jobs)
+                jobs = []
+            njobs -= 1
+            logger.info("Jobs to process: %d" % njobs) 
+        
+            job_target = Job(
+                id=job_source.id,
+                host_id= Command.hosts[job_source.host_id],
+                job_description_id= Command.descriptions[job_source.jobDescription_id],
+                platform_id=Command.platforms[job_source.platform_id],
                 time_start=job_source.time_start,
                 time_end=job_source.time_end,
                 status=job_source.status,
-                is_success=job_source.success,
-                old_id=job_source.id)
-            job_target.save()
-            for jr_source in job_source.jobresults.all():
-                self._job_result(jr_source, job_target)
-
-        else:
-            job_target = job_target[0]
-        return job_target
-
-    def _group(self, group_source):
-        if not group_source:
-            return None
-
-        group_target = AttributeGroup.objects.filter(name=group_source)
-        if not group_target:
-            group_target = AttributeGroup.objects.create(
-                name=group_source
+                is_success=True if job_source.success else False
             )
-            group_target.save()
-        else:
-            group_target = group_target[0]
-        return group_target
+            jobs.append(job_target)
+
+        Job.objects.bulk_create(jobs)
 
     def _job_attribute(self, ja_source):
-        if not ja_source:
-            return None
-
-        ja_target = Attribute.objects.filter(old_id=ja_source.id)
+        if ja_source.group:
+            group_id = Command.groups.get(ja_source.group, None)
+            if  not group_id :
+                group, created = AttributeGroup.objects.get_or_create(name=ja_source.group)
+                group_id = group.id
+                Command.groups[ja_source.group] = group_id
+        else:
+            group_id = None
+        
+        ja_target = Attribute.objects.filter(name=ja_source.name)
         if not ja_target:
-            group = self._group(ja_source.group)
             ja_target = Attribute.objects.create(
                 name=ja_source.name,
                 dtype=ja_source.type,
-                description=ja_source.description,
-                old_id=ja_source.id)
-            if group:
-                ja_target.groups.add(group)
-            ja_target.save()
+                description=ja_source.description
+            )
+
+            if group_id:
+                ja_target.groups.add(group_id)
         else:
             ja_target = ja_target[0]
-        return ja_target
+            
+        return (ja_target.id, ja_target.dtype)
 
-    def _job_result(self, jr_source, job):
-        if not jr_source:
-            return None
-
-        attr = self._job_attribute(jr_source.jobAttribute)
-
-        if attr.dtype == "String":
-            source = v1.ResultString
-        if attr.dtype == "Float":
-            source = v1.ResultFloat
-        if attr.dtype == "File":
-            source = v1.ResultFile
-        if attr.dtype == "Integer":
-            source = v1.ResultInt
-        target_class = getattr(lhcbpr_api.models, "Result"+attr.dtype)
-        jr_target = target_class(job=job, attr=attr)
+    def _job_results(self):
+        objs  = []
+        count = 0
+        max_jr = 0
+        for jr in v1.JobResults.objects.using('v1').order_by('-id').values("id", "job_id", "jobAttribute__name").iterator():
+            if len(objs) == 100000:
+                logger.info("Processed %d results" % count)
+                JobResult.objects.bulk_create(objs)
+                objs = []
+            if max_jr == 0:
+                max_jr = jr['id']
+            count += 1
+            objs.append(JobResult(id=jr['id'], job_id=jr['job_id'], attr_id=Command.attributes[jr[ "jobAttribute__name"]][0]))
+        JobResult.objects.bulk_create(objs)
         
-        attr_source = source.objects.using('v1').filter(job=jr_source.job, jobAttribute=jr_source.jobAttribute)
-        if attr_source:
-            attr_source = attr_source[0]
-            jr_target.data = attr_source.file if attr.dtype == "File" else attr_source.data
-            jr_target.save()
-        else:
-            logger.error(jr_source)
+        failed = [] 
+        exists = {}
+        for t in ["Float", "File", "Integer", "String"]:
+            source_type = "Int" if t == "Integer" else t
+            field = 'file' if t == "File" else "data"
+
+            source_class = getattr(v1, "Result" + source_type)
+            target_class = getattr(lhcbpr_api.models, "Result%sSync" % t)
+            
+            #table_name = "lhcbpr_api_Result%s" % t 
+            objs = []
+            count = 0
+  
+            q = source_class.objects.using('v1').filter(jobresults_ptr_id__lt=max_jr).select_related('jobAttribute__name').values_list('jobresults_ptr_id', field,'jobAttribute__name')
+            for value in q.iterator():
+                if len(objs) == 1000000:
+                    target_class.objects.bulk_create(objs)
+                    objs = []
+                    logger.info("Inserted %d records to %s results" % (count, t))
+
+                if value[0] not in exists:
+                    objs.append(target_class(jobresult_ptr_id=value[0], data=value[1]))
+                else:
+                    logger.warning("jobresults_ptr_id already exists: %d" % value[0])
+                    failed.append(value[0])
+                exists[value[0]] = True
+                count += 1
+            
+            target_class.objects.bulk_create(objs)
+
+
+        if failed:
+            logger.warning("Duplicates of  jobresults_ptr_id: %s" % str(failed))
