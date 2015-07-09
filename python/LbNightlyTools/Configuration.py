@@ -1590,6 +1590,7 @@ def getSlot(name, configdir=os.curdir):
     for func, args in attempts:
         try:
             slot = func(*args)
+            __log__.debug('using slot %s from %s', name, args[0])
             break
         except (RuntimeError, IOError):
             pass # it's not in the XML, let's try the other methods
