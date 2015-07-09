@@ -15,7 +15,9 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import logging
+from datetime import datetime
 from LbNightlyTools.Utils import log_call as _log_call
+
 
 __log__ = logging.getLogger(__name__)
 __log__.setLevel(logging.DEBUG)
@@ -33,7 +35,8 @@ class BuildResults(object):
     '''
     Class used to analyze the build reports of projects.
     '''
-    def __init__(self, project, returncode, stdout, stderr):
+    def __init__(self, project, returncode, stdout, stderr,
+                 started, completed=None):
         '''
         Initialize the instance with raw data from the build.
         '''
@@ -41,6 +44,8 @@ class BuildResults(object):
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
+        self.started = started
+        self.completed = completed or datetime.now()
 
 
 class make(object):
@@ -78,10 +83,12 @@ class make(object):
         cmd.append(target)
 
         __log__.debug('running %s', ' '.join(cmd))
+        started = datetime.now()
         output = log_call(cmd, env=env, cwd=proj.baseDir)
+        completed = datetime.now()
         __log__.debug('command exited with code %d', output[0])
 
-        return BuildResults(proj, *output)
+        return BuildResults(proj, *(output + (started, completed)))
 
     def build(self, proj, **kwargs):
         '''
@@ -191,7 +198,9 @@ class cmake(make):
 
         output = (output[1].returncode, # use the build return code
                   ''.join(step.stdout for step in output),
-                  ''.join(step.stderr for step in output))
+                  ''.join(step.stderr for step in output),
+                  output[0].started,
+                  output[-1].completed)
 
         return BuildResults(proj, *output)
 
@@ -213,7 +222,9 @@ class cmake(make):
                   for target in ('configure', 'test')]
         output = (output[-1].returncode, # use the test return code
                   ''.join(step.stdout for step in output),
-                  ''.join(step.stderr for step in output))
+                  ''.join(step.stderr for step in output),
+                  output[0].started,
+                  output[-1].completed)
 
         return BuildResults(proj, *output)
 
@@ -228,21 +239,24 @@ class no_build(object):
         Build method.
         '''
         __log__.debug('no build for %s', proj)
-        return BuildResults(proj, 0, 'no build for %s' % proj, '')
+        return BuildResults(proj, 0, 'no build for %s' % proj,
+                            '', datetime.now())
 
     def clean(self, proj, **kwargs):
         '''
         Clean method.
         '''
         __log__.debug('no clean for %s', proj)
-        return BuildResults(proj, 0, 'no clean for %s' % proj, '')
+        return BuildResults(proj, 0, 'no clean for %s' % proj,
+                            '', datetime.now())
 
     def test(self, proj, **kwargs):
         '''
         Test method.
         '''
         __log__.debug('no test for %s', proj)
-        return BuildResults(proj, 0, 'no test for %s' % proj, '')
+        return BuildResults(proj, 0, 'no test for %s' % proj,
+                            '', datetime.now())
 
 
 class echo(object):
@@ -255,7 +269,8 @@ class echo(object):
         '''
         output = ' '.join([target, str(proj), str(kwargs)])
         __log__.debug(output)
-        return BuildResults(proj, 0, output, '')
+        return BuildResults(proj, 0, output,
+                            '', datetime.now())
 
     def build(self, proj, **kwargs):
         '''
