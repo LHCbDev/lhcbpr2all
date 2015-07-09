@@ -140,6 +140,9 @@ class Script(LbUtils.Script.PlainScript):
         platforms = os.environ.get('platforms', '').strip().split()
         if platforms:
             cfg['platforms'] = platforms
+        # record the Jenkins build URL if available
+        if 'BUILD_URL' in os.environ:
+            cfg['build_url'] = os.environ['BUILD_URL']
         dashboard = Dashboard(credentials=None,
                               dumpdir=join(artifacts_dir, 'db'),
                               submit=opts.submit,
@@ -207,6 +210,9 @@ class Script(LbUtils.Script.PlainScript):
                  cwd=build_dir, checksum='md5', dereference=False,
                  exclude=[p.baseDir for p in packages])
 
+        donetime = datetime.now()
+        cfg['completed'] = donetime.isoformat()
+
         # Save a copy as metadata for tools like lbn-install
         with codecs.open(join(artifacts_dir, 'slot-config.json'),
                          'w', 'utf-8') as config_dump:
@@ -216,5 +222,5 @@ class Script(LbUtils.Script.PlainScript):
         dashboard.publish(cfg)
 
         self.log.info('sources ready for build (time taken: %s).',
-                      datetime.now() - starttime)
+                      donetime - starttime)
         return 0
