@@ -29,10 +29,10 @@ else
   # Selection of the input for the files to be tested
   # Check if input_flavour or flavour have been defined
   if [ "$input_flavour" = "" ] ; then
-  	if [ "$flavour" = "" ] ; then
-    	echo "The env variable flavour needs to be defined"
+    if [ "$flavour" = "" ] ; then
+      echo "The env variable flavour needs to be defined"
     else
-    	input_flavour=$flavour
+      input_flavour=$flavour
     fi
   fi
 
@@ -50,11 +50,11 @@ fi
 # Now checking what to run
 used_test_runner="default"
 if [ "${testrunner}" != "" ] && [ "${testrunner}" != "None"  ] ; then
-	used_test_runner=${testrunner}
+  used_test_runner=${testrunner}
 fi
 
 if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
-	export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
+  export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
 fi
 
 # And run it...

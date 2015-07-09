@@ -22,21 +22,21 @@ if [ "${no_checkout}" == "true" ] ; then
 fi
 
     checkout_slot \
-	"${flavour}" \
-	"${slot}" \
-	"${slot_build_id}" \
-	--config-dir "configs" \
-	--dest-dir "${ARTIFACTS_DIR}" \
-	${build_tool:+--build-tool "${build_tool}"} \
-	${paltforms:+--platforms "${platforms}"} \
-	${packages_list:+--packages-list "${packages_list}"} \
-	${projects_list:+--projects-list "${projects_list}"} \
-	${no_checkout_opt}
+        "${flavour}" \
+        "${slot}" \
+        "${slot_build_id}" \
+        --config-dir "configs" \
+        --dest-dir "${ARTIFACTS_DIR}" \
+        ${build_tool:+--build-tool "${build_tool}"} \
+        ${paltforms:+--platforms "${platforms}"} \
+        ${packages_list:+--packages-list "${packages_list}"} \
+        ${projects_list:+--projects-list "${projects_list}"} \
+        ${no_checkout_opt}
 
 if [ "${no_checkout}" != "true" -a "${JENKINS_MOCK}" != "true"] ; then
     push_artifact \
-	"${ARTIFACTS_DIR}" \
-	"$(get_remote_directory "$flavour" "$slot" "$slot_build_id")"
+        "${ARTIFACTS_DIR}" \
+        "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")"
 fi
 
 check_preconditions \
