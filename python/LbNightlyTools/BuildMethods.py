@@ -74,6 +74,11 @@ class make(object):
                    for key, value in env.iteritems()
                    if value is not None)
 
+        cmd_kwargs = {'env': env,
+                     'cwd': proj.baseDir}
+        if 'stderr' in kwargs:
+            cmd_kwargs['stderr'] = kwargs['stderr']
+
         cmd = ['make']
         if jobs:
             cmd.append('-j%d' % jobs)
@@ -84,7 +89,7 @@ class make(object):
 
         __log__.debug('running %s', ' '.join(cmd))
         started = datetime.now()
-        output = log_call(cmd, env=env, cwd=proj.baseDir)
+        output = log_call(cmd, **cmd_kwargs)
         completed = datetime.now()
         __log__.debug('command exited with code %d', output[0])
 
