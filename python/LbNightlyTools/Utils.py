@@ -222,7 +222,7 @@ def log_call(*args, **kwargs):
     hello
     (0, 'hello\\n', '')
     '''
-    from subprocess import Popen, PIPE
+    from subprocess import Popen, PIPE, STDOUT
     import select
     import errno
 
@@ -238,19 +238,24 @@ def log_call(*args, **kwargs):
 
     # code inspired (mostly copied) from subprocess module
     poller = select.poll()
-    files = {proc.stdout.fileno(): proc.stdout,
-             proc.stderr.fileno(): proc.stderr}
-    out = []
-    err = []
-    output = {proc.stdout.fileno(): out,
-              proc.stderr.fileno(): err}
-    spilled_output = {proc.stdout.fileno(): '',
-                      proc.stderr.fileno(): ''}
 
     select_POLLIN_POLLPRI = select.POLLIN | select.POLLPRI
+    out = []
+    err = []
+
+    files = dict((x.fileno(), x)
+                 for x in (proc.stdout, proc.stderr)
+                 if x)
+    output = {proc.stdout.fileno(): out}
+    if proc.stderr:
+        output[proc.stderr.fileno()] = err
+    spilled_output = dict((x.fileno(), '')
+                          for x in (proc.stdout, proc.stderr)
+                          if x)
 
     poller.register(proc.stdout, select_POLLIN_POLLPRI)
-    poller.register(proc.stderr, select_POLLIN_POLLPRI)
+    if proc.stderr:
+        poller.register(proc.stderr, select_POLLIN_POLLPRI)
 
     def close_unregister_and_remove(fd):
         poller.unregister(fd)
