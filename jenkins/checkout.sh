@@ -33,7 +33,7 @@ fi
         ${projects_list:+--projects-list "${projects_list}"} \
         ${no_checkout_opt}
 
-if [ "${no_checkout}" != "true" -a "${JENKINS_MOCK}" != "true"] ; then
+if [ "${no_checkout}" != "true" -a "${JENKINS_MOCK}" != "true" ] ; then
     push_artifact \
         "${ARTIFACTS_DIR}" \
         "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")"
