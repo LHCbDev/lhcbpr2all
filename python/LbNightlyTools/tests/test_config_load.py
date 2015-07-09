@@ -102,7 +102,8 @@ def test_loadJSON_2():
                          "version": "v23r5"},
                         {"name": "LHCb",
                          "version": "v32r5",
-                         "dependencies": ["Gaudi"]}]}
+                         "dependencies": ["Gaudi"]}],
+            'cmake_cache': {'KEY': 'VALUE'}}
     expected = {'slot': 'special-slot',
                 'projects':[{"name": u"Gaudi",
                              "version": u"v23r5",
@@ -110,15 +111,19 @@ def test_loadJSON_2():
                             {"name": u"LHCb",
                              "version": u"v32r5",
                              "dependencies": [u"Gaudi"]}],
-                'build_tool': 'cmake'}
+                'build_tool': 'cmake',
+                'cmake_cache': {'KEY': 'VALUE'}}
     add_defaults(expected)
 
     with TemporaryDir() as path:
         filepath = os.path.join(path, 'special-slot.json')
         with open(filepath, 'w') as f:
             f.write(json.dumps(data))
-        found = Configuration.getSlot('special-slot', path).toDict()
+        slot = Configuration.getSlot('special-slot', path)
+        found = slot.toDict()
 
+    assert_equals(slot.cache_entries, expected['cmake_cache'])
+    print ''
     assert_equals(found, expected)
 
 

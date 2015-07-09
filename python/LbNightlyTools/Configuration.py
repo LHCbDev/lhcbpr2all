@@ -1079,7 +1079,7 @@ class Slot(object):
     __metaclass__ = _SlotMeta
     __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc',
                  'platforms', 'error_exceptions', 'warning_exceptions',
-                 'preconditions')
+                 'preconditions', 'cache_entries')
     __projects__ = []
     __env__ = []
 
@@ -1098,6 +1098,7 @@ class Slot(object):
         @param warning_exceptions: list of regex of warnings that should be
                                    ignored
         @param error_exceptions: list of regex of errors that should be ignored
+        @param cache_entries: dictionary of CMake cache variables to preset
         '''
         self._name = name
         if projects is None:
@@ -1118,6 +1119,8 @@ class Slot(object):
 
         self.preconditions = kwargs.get('preconditions', [])
 
+        self.cache_entries = kwargs.get('cache_entries', {})
+
         # add this slot to the global list of slots
         global slots
         slots[name] = self
@@ -1137,6 +1140,8 @@ class Slot(object):
                 'warning_exceptions': self.warning_exceptions,
                 'preconditions': self.preconditions,
                 }
+        if self.cache_entries:
+            data['cmake_cache'] = self.cache_entries
 
         pkgs = list(chain.from_iterable([pack.toDict()
                                          for pack in cont.packages]
@@ -1180,6 +1185,8 @@ class Slot(object):
         slot.error_exceptions = data.get('error_exceptions', [])
         slot.warning_exceptions = data.get('warning_exceptions', [])
         slot.preconditions = data.get('preconditions', [])
+
+        slot.cache_entries = data.get('cmake_cache', [])
 
         return slot
 
