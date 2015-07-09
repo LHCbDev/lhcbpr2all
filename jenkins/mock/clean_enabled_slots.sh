@@ -10,22 +10,7 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-. $(dirname $0)/utils.sh
 
-set_common --build
-
-if [ "$JENKINS_MOCK" != "true" ] ; then
-    get_artifact \
-        --get-config \
-        --get-sources \
-        "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
-        "${ARTIFACTS_DIR}"
-fi
-
-build_slot \
-    "${flavour}" \
-    "${slot}" \
-    "${slot_build_id}" \
-    "${platform}" \
-    --build-dir "${ARTIFACTS_DIR}" \
-    ${os_label:+--os-label "${os_label}"}
+rm -f slot-params-*.txt
+rm -f enabled_slots.sh.*.env
+rm -rf artifacts ${JENKINS_HOME} tmp

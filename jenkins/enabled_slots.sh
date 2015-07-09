@@ -12,20 +12,12 @@
 
 . $(dirname $0)/utils.sh
 
-set_common --build
+set_common
 
-if [ "$JENKINS_MOCK" != "true" ] ; then
-    get_artifact \
-        --get-config \
-        --get-sources \
-        "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
-        "${ARTIFACTS_DIR}"
-fi
+get_configs_folder --dest-dir "configs"
 
-build_slot \
+extract_enabled_slots \
     "${flavour}" \
-    "${slot}" \
-    "${slot_build_id}" \
-    "${platform}" \
-    --build-dir "${ARTIFACTS_DIR}" \
-    ${os_label:+--os-label "${os_label}"}
+    ${slots:+--slots "${slots}"} \
+    --config-dir "configs"
+

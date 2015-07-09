@@ -46,6 +46,9 @@ export JOB_NAME=${JOB_NAME:-nightly-test-slot-build-platform}
 guessed_label=${platform#*-}
 guessed_label=${guessed_label%%-*}
 export os_label=${os_label:-${guessed_label}}
+export JENKINS_HOME=${JENKINS_HOME:-jenkins_home}
+export RSYNC_SERVER=${RSYNC_SERVER:-${USERNAME}@${HOSTNAME}}
+export RSYNC_WORKDIR=${RSYNC_WORKDIR:-$(cd $(dirname $0)/.. ;pwd)/rsync}
 # this variable might be used inside the Jenkins scripts to avoid some ops
 export JENKINS_MOCK=true
 

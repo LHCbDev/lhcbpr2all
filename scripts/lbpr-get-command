@@ -161,6 +161,12 @@ if [ -f /afs/cern.ch/lhcb/group/rich/vol4/jonrob/scripts/new-valgrind.sh ]; then
  source /afs/cern.ch/lhcb/group/rich/vol4/jonrob/scripts/new-valgrind.sh
 fi
 
+# Adding jemalloc for the perf jobs
+if [ -d /opt/dirac/lhcbpr/sw/jemalloc-3.6.0/lib ]; then
+  export LD_LIBRARY_PATH=/opt/dirac/lhcbpr/sw/jemalloc-3.6.0/lib:$LD_LIBRARY_PATH
+fi
+
+echo $LD_LIBRARY_PATH
 # Now running the test itself
 set -o pipefail
 date +"%%Y-%%m-%%d,%%T" > start.txt

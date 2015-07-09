@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python
 ###############################################################################
 # (c) Copyright 2013 CERN                                                     #
 #                                                                             #
@@ -9,23 +9,9 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
+import LbUtils.Log
+LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
-. $(dirname $0)/utils.sh
-
-set_common --build
-
-if [ "$JENKINS_MOCK" != "true" ] ; then
-    get_artifact \
-        --get-config \
-        --get-sources \
-        "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
-        "${ARTIFACTS_DIR}"
-fi
-
-build_slot \
-    "${flavour}" \
-    "${slot}" \
-    "${slot_build_id}" \
-    "${platform}" \
-    --build-dir "${ARTIFACTS_DIR}" \
-    ${os_label:+--os-label "${os_label}"}
+from LbNightlyTools.SlotPreconditions import Script
+import sys
+sys.exit(Script().run())

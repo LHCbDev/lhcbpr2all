@@ -10,13 +10,10 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# Clean LD_LIBRARY_PATH of /gcc/ entries
-# (see comment on issue LBCORE-109 http://cern.ch/go/PLQ7)
-export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
+. $(dirname $0)/utils.sh
 
-# Set common environment
-set_config=1
-. $(dirname $0)/common.sh
+set_common --build
+
 
 day=$(date +%a)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
@@ -32,10 +29,10 @@ else
   # Selection of the input for the files to be tested
   # Check if input_flavour or flavour have been defined
   if [ "$input_flavour" = "" ] ; then
-  	if [ "$flavour" = "" ] ; then
-    	echo "The env variable flavour needs to be defined"
+    if [ "$flavour" = "" ] ; then
+      echo "The env variable flavour needs to be defined"
     else
-    	input_flavour=$flavour
+      input_flavour=$flavour
     fi
   fi
 
@@ -53,11 +50,11 @@ fi
 # Now checking what to run
 used_test_runner="default"
 if [ "${testrunner}" != "" ] && [ "${testrunner}" != "None"  ] ; then
-	used_test_runner=${testrunner}
+  used_test_runner=${testrunner}
 fi
 
 if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
-	export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
+  export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
 fi
 
 # And run it...

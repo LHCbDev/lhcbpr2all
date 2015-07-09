@@ -258,7 +258,7 @@ def test_checkout():
 
         Project('Gaudi', 'v23r6',
                 checkout=CheckoutMethods.git,
-                checkout_opts=dict(url='http://git.cern.ch/pub/gaudi',
+                checkout_opts=dict(url='https://gitlab.cern.ch/gaudi/Gaudi.git',
                                    commit='GAUDI/GAUDI_v23r6')).checkout()
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))
                for x in [('Makefile',),
@@ -270,7 +270,7 @@ def test_checkout():
 
 
         Project('Gaudi', 'HEAD',
-                checkout=CheckoutMethods.git).checkout(url='http://git.cern.ch/pub/gaudi')
+                checkout=CheckoutMethods.git).checkout(url='https://gitlab.cern.ch/gaudi/Gaudi.git')
         check([join('GAUDI', 'GAUDI_HEAD', join(*x))
                for x in [('Makefile',),
                          ('CMakeLists.txt',),
@@ -339,7 +339,7 @@ def test_checkout_export():
 
         Project('Gaudi', 'v23r6',
                 checkout='git',
-                checkout_opts={'url': 'http://git.cern.ch/pub/gaudi',
+                checkout_opts={'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
                                'commit': 'GAUDI/GAUDI_v23r6',
                                'export': True}).checkout()
         check([join('GAUDI', 'GAUDI_v23r6', join(*x))

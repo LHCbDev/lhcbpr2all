@@ -28,6 +28,7 @@ from LbNightlyTools import Configuration
 from LbNightlyTools.Configuration import sortedByDeps
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
 from LbNightlyTools.Utils import Dashboard
+from LbNightlyTools.RsyncManager import execute_rsync
 
 from string import Template
 from socket import gethostname
@@ -738,6 +739,10 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                  'we try to produce one',
                                  manifest_file)
                 from LbNightlyTools.Release import createManifestFile
+                # ensure that the destination directory exists, in case
+                # of builds that failed very badly
+                if not os.path.exists(os.path.dirname(manifest_file)):
+                    os.makedirs(os.path.dirname(manifest_file))
                 with open(manifest_file, 'w') as manif:
                     manif.write(createManifestFile(proj.name, proj.version,
                                                    self.platform,
@@ -963,20 +968,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 else:
                     self.retcode = 0
             def run(self):
-                # create destination directory, if missing
-                if ':' in self.script.options.rsync_dest:
-                    host, path = self.script.options.rsync_dest.split(':', 1)
-                    call(['ssh', host, 'mkdir -pv "%s"' % path])
-                else:
-                    ensureDirs([self.script.options.rsync_dest])
 
-                cmd = ['rsync', '--archive', '--whole-file',
-                       '--partial-dir=.rsync-partial.%s.%d' %
-                       (gethostname(), os.getpid()),
-                       '--delay-updates', '--rsh=ssh',
-                       self.script.artifacts_dir + '/',
-                       self.script.options.rsync_dest]
-                self.retcode = call(cmd)
+                self.retcode = execute_rsync(self.script.artifacts_dir,
+                                             self.script.options.rsync_dest)
             def wait(self):
                 '''
                 Block until the subprocess exits and return its exit code.
@@ -1149,6 +1143,8 @@ class BuildReporter(object):
                 found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
                 if found:
                     style_cls = found.group(1).lower()
+                elif re.search(r'\*\*\* Break \*\*\*', line, re.IGNORECASE):
+                    style_cls = 'error'
                 if (line.startswith('Scanning dependencies') or
                     line.startswith('Linking ')):
                     style_cls = 'cmake_message'
@@ -1281,7 +1277,7 @@ class BuildReporter(object):
         from collections import deque
 
         w_exp = re.compile(r'\bwarning\b|\bSyntaxWarning:', re.IGNORECASE)
-        e_exp = re.compile(r'\berror\b', re.IGNORECASE)
+        e_exp = re.compile(r'\berror\b|\*\*\* Break \*\*\*', re.IGNORECASE)
         #cExp = re.compile(r'cov-|(Coverity (warning|error|message))',
         #                  re.IGNORECASE)
 

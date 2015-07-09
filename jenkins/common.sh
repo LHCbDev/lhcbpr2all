@@ -31,6 +31,9 @@ export LHCB_NIGHTLY_MAX_THREADS=1
 
 export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${flavour}/${slot}/${slot_build_id}}
 mkdir -p ${ARTIFACTS_DIR}
+export RSYNC_SERVER=${RSYNC_SERVER:-*********} # TODO
+export RSYNC_WORKDIR=${RSYNC_WORKDIR:-*********} # TODO
+export RSYNC_DIR=${RSYNC_DIR:-${RSYNC_SERVER}:${RSYNC_WORKDIR}/${flavour}/${slot}/${slot_build_id}}
 export TMPDIR=${WORKSPACE}/tmp
 mkdir -p ${TMPDIR}
 
@@ -42,23 +45,32 @@ echo Workspace: $WORKSPACE
 echo Artifacts dir: $ARTIFACTS_DIR
 echo ===================================================================
 
+LbScriptsVersion=dev
+
+# FIXME: workaround for LBCORE-769
+if ( echo $platform | grep -q slc5 ) ; then
+  LbScriptsVersion=LBSCRIPTS_v8r3
+fi
+
 if [ -n "${set_config}" ] ; then
   # FIXME: this is usually set by the "group login" script, but it is not
   #        called on lxbuild (it is needed to get the right ICC environment)
   export GROUP_DIR=/afs/cern.ch/group/z5
   export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
   # FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
   export CMTCONFIG=${platform}
   # FIXME: path to the new gdb should be implicit in the build/run-time
   #        environment
   # See https://its.cern.ch/jira/browse/LBCORE-151
   export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
+  # COMPILER_PATH (set by LbLogin --no-cache) create troubles
+  unset COMPILER_PATH
 
   # FIXME: we need to get the latest compilers wrappers until we release LbScripts
   export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
 else
-  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
+  . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
 fi
 
 # FIXME: with gcc49 we do not get the right Python with LbLogin
@@ -71,16 +83,10 @@ if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; the
   . SetupProject.sh LCGCMT 66 Python
 fi
 
-if [ -e ${ARTIFACTS_DIR}/${slot}.json ] ; then
-  config_file=${ARTIFACTS_DIR}/${slot}.json
-else
-  config_file=${ARTIFACTS_DIR}/configuration.xml#${slot}
-fi
-
 if klist -5 > /dev/null 2>&1 ; then
   kinit -R
   klist -5
 fi
 
 set -xe
-. setup.sh
+. ./setup.sh

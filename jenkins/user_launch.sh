@@ -12,20 +12,21 @@
 
 . $(dirname $0)/utils.sh
 
-set_common --build
+set_common
 
-if [ "$JENKINS_MOCK" != "true" ] ; then
-    get_artifact \
-        --get-config \
-        --get-sources \
-        "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
-        "${ARTIFACTS_DIR}"
+get_configs_folder --dest-dir "configs"
+
+if [ "${rebuild_last_id}" == "true" ] ; then
+    rebuild_last_id_opt="--rebuild-last-id"
 fi
 
-build_slot \
+if [ "${no_checkout}" == "true" ] ; then
+    no_checkout_opt="--no-checkout"
+fi
+
+manage_user_launch \
     "${flavour}" \
-    "${slot}" \
-    "${slot_build_id}" \
-    "${platform}" \
-    --build-dir "${ARTIFACTS_DIR}" \
-    ${os_label:+--os-label "${os_label}"}
+    "${slots}" \
+    ${slot_build_id:+--slot-build-id "${slot_build_id}"} \
+    ${rebuild_last_id_opt} \
+    ${no_checkout_opt}

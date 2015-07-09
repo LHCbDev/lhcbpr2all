@@ -12,6 +12,6 @@
 import LbUtils.Log
 LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
-from LbNightlyTools.SlotPreconditions import Script
+from LbNightlyTools.CheckSlotPreconditions import Script
 import sys
 sys.exit(Script().run())
