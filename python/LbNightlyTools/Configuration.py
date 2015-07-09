@@ -1345,17 +1345,27 @@ class Slot(object):
                                 for project_name in sortedByDeps(deps)]
                 if not project.disabled]
 
+    def buildGen(self, **kwargs):
+        '''
+        Generator to build projects in the slot, one by one.
+
+        @param projects: optional list of projects to build [default: all]
+
+        @return: tuples (project_name, build_result)
+        '''
+        for project in self._projects_by_deps(kwargs.pop('projects', None)):
+            if not project.disabled:
+                yield (project.name,
+                       project.build(cache_entries=self.cache_entries,
+                                     **kwargs))
+
     def build(self, **kwargs):
         '''
         Build projects in the slot.
 
         @param projects: optional list of projects to build [default: all]
         '''
-        results = OrderedDict()
-        for project in self._projects_by_deps(kwargs.pop('projects', None)):
-            if not project.disabled:
-                results[project.name] = project.build(**kwargs)
-        return results
+        return OrderedDict(self.buildGen(**kwargs))
 
     def clean(self, **kwargs):
         '''
@@ -1368,17 +1378,24 @@ class Slot(object):
             results[project.name] = project.clean(**kwargs)
         return results
 
+    def testGen(self, **kwargs):
+        '''
+        Generator to test projects in the slot, one by one.
+
+        @param projects: optional list of projects to build [default: all]
+        '''
+        for project in self._projects_by_deps(kwargs.pop('projects', None)):
+            yield (project.name,
+                   project.test(cache_entries=self.cache_entries,
+                                **kwargs))
+
     def test(self, **kwargs):
         '''
         Test projects in the slot.
 
         @param projects: optional list of projects to build [default: all]
         '''
-        results = OrderedDict()
-        for project in self._projects_by_deps(kwargs.pop('projects', None)):
-            results[project.name] = project.test(**kwargs)
-        return results
-
+        return OrderedDict(self.testGen(**kwargs))
 
 def extractVersion(tag):
     '''
