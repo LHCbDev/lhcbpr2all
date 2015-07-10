@@ -23,9 +23,7 @@ import socket
 import threading
 import codecs
 
-from LbNightlyTools.Configuration import getSlot, parse as parseConfig
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
-from LbNightlyTools.Utils import Dashboard
 from LbNightlyTools.RsyncManager import execute_rsync
 
 from string import Template
@@ -67,6 +65,34 @@ def listAllFiles(path, excl=None):
                 yield join(root, f)
         dirs[:] = [d for d in dirs if not excl(d)]
 
+def wipeDir(path):
+    '''
+    Helper function to remove a directory.
+    '''
+    # FIXME: this can be done asynchronously
+    __log__.info('Removing directory %s', path)
+    if os.path.exists(path):
+        shutil.rmtree(path)
+        ensureDirs([path])
+
+def unpackArtifacts(src, dest):
+    '''
+    Helper function to unpack the artifacts in src to the build
+    directory dest.
+    '''
+    # FIXME: this can be done asynchronously
+    __log__.info('Unpacking artifacts from %s to %s', src, dest)
+    for f in os.listdir(src):
+        if f.endswith('.tar.bz2'):
+            f = os.path.join(src, f)
+            __log__.info('  unpacking %s', f)
+            # do not overwrite existing sources when unpacking
+            # (we must preserve user changes, anyway we have the
+            # --clean option)
+            call(['tar', '-x',
+                  '--no-overwrite-dir', '--keep-old-files',
+                  '-f', f], cwd=dest)
+
 def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     '''
     Generate the binary tarball name for a project.
@@ -91,13 +117,11 @@ def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     return packname
 
 
-import LbUtils.Script
-class Script(LbUtils.Script.PlainScript):
+from LbNightlyTools.ScriptsCommon import BaseScript
+class Script(BaseScript):
     '''
     Script to build the projects in a slot configuration.
     '''
-    __usage__ = '%prog [options] <slot name or config file>'
-    __version__ = ''
 
     # unavoidable or fake warnings
     # pylint: disable=E1002,W0201
@@ -144,74 +168,21 @@ class Script(LbUtils.Script.PlainScript):
                                                   addDashboardOptions)
 
         addBasicOptions(self.parser)
-
         self.defineBuildOptions()
-
         addBuildDirOptions(self.parser)
-
         addDeploymentOptions(self.parser)
-
         addDashboardOptions(self.parser)
 
     def _setup(self):
         '''
         Initialize variables.
         '''
-        from os.path import basename, exists
-        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
-
-        opts = self.options
-
-        if exists(self.args[0].split('#')[0]):
-            self.slot = parseConfig(self.args[0])
-        else:
-            self.slot = getSlot(self.args[0],
-                           'configs' if exists('configs') else os.curdir)
-
-        from LbNightlyTools.Utils import setDayNamesEnv
-        setDayNamesEnv()
-
-        # FIXME: we need something better
-        self.platform = os.environ['CMTCONFIG']
+        BaseScript._setup(self)
 
         self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
                                           r'(\.git)|(\.svn)|'
                                           r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
                                           ).format(self.platform))
-
-        self.starttime = datetime.now()
-
-        expandTokensInOptions(opts, ['build_id', 'artifacts_dir', 'rsync_dest'],
-                              slot=self.slot.name)
-
-        self.build_dir = join(os.getcwd(), 'build')
-        self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
-
-        # ensure that we have the artifacts directory for the sources
-        ensureDirs([self.artifacts_dir, self.build_dir])
-
-        # template data to be reported in every JSON file
-        self.json_tmpl = {'slot': self.slot.name,
-                          'build_id': int(os.environ.get('slot_build_id', 0)),
-                          'platform': self.platform}
-
-        self.dashboard = Dashboard(credentials=None,
-                                   dumpdir=os.path.join(self.artifacts_dir,
-                                                        'db'),
-                                   submit=opts.submit,
-                                   flavour=opts.flavour)
-        if opts.projects:
-            opts.projects = set(p.strip().lower()
-                                for p in opts.projects.split(','))
-        else:
-            opts.projects = None
-
-        if opts.deploy_dir:
-            # ensure that the deployment dir ends with the slot name...
-            if basename(opts.deploy_dir) != self.slot.name:
-                opts.deploy_dir = join(opts.deploy_dir, self.slot.name)
-            # ... and that the directory exists
-            ensureDirs([opts.deploy_dir])
 
     def dump_json(self, data):
         '''
@@ -295,25 +266,10 @@ class Script(LbUtils.Script.PlainScript):
         tarballs, cleaning it before if requested.
         '''
         if self.options.clean:
-            # FIXME: this can be done asynchronously
-            self.log.info('Cleaning build directory.')
-            if os.path.exists(self.build_dir):
-                shutil.rmtree(self.build_dir)
-                ensureDirs([self.build_dir])
+            wipeDir(self.build_dir)
 
         if not self.options.no_unpack:
-            # FIXME: this can be done asynchronously
-            self.log.info('Preparing build directory...')
-            for f in os.listdir(self.artifacts_dir):
-                if f.endswith('.tar.bz2'):
-                    f = os.path.join(self.artifacts_dir, f)
-                    self.log.info('  unpacking %s', f)
-                    # do not overwrite existing sources when unpacking
-                    # (we must preserve user changes, anyway we have the
-                    # --clean option)
-                    call(['tar', '-x',
-                          '--no-overwrite-dir', '--keep-old-files',
-                          '-f', f], cwd=self.build_dir)
+            unpackArtifacts(self.artifacts_dir, self.build_dir)
 
         def dumpConfSummary():
             '''Create special summary file used by SetupProject.'''
@@ -359,25 +315,6 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         # keep a list of the files in the source directories before the build
         for proj in self.slot.activeProjects:
             self._recordSourcesLists(proj, 'sources.list')
-
-    def _summaryDir(self, proj, *subdirs):
-        '''
-        Return the path to the summary directory for a given project.
-
-        If extra arguments are given, the output is equivalent to
-        os.path.join(self._summaryDir(proj), level1, level2).
-        '''
-        return join(self.artifacts_dir, 'summaries.' + self.platform,
-                    proj.name, *subdirs)
-
-    def _buildDir(self, proj, *subdirs):
-        '''
-        Return the path to the build directory for a given project.
-
-        If extra arguments are given, the output is equivalent to
-        os.path.join(self._buildDir(proj), level1, level2).
-        '''
-        return join(self.build_dir, proj.baseDir, *subdirs)
 
     def _recordSourcesLists(self, proj, name):
         '''
@@ -470,11 +407,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         with chdir(self.build_dir):
             for proj, result in self.slot.buildGen(projects=opts.projects,
                                                    stderr=STDOUT):
-                # get the project instance
-                proj = getattr(self.slot, proj)
                 summary_dir = self._summaryDir(proj)
-
                 ensureDirs([summary_dir])
+
                 if result.returncode != 0:
                     self.log.warning('build exited with code %d',
                                      result.returncode)

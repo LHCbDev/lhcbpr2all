@@ -16,7 +16,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import os
 import re
 import logging
-from LbNightlyTools.Utils import (applyenv, tee_call, ensureDirs,
+from LbNightlyTools.Utils import (applyenv, ensureDirs,
                                   shallow_copytree, IgnorePackageVersions,
                                   find_path, write_patch)
 from LbNightlyTools import CheckoutMethods, BuildMethods
@@ -1289,7 +1289,7 @@ class Slot(object):
         '''
         results = OrderedDict()
         for project in self.activeProjects:
-            if projects is None or project.name.lower() in projects:
+            if projects is None or project.name in projects:
                 try:
                     results[project.name] = project.checkout(**kwargs)
                 except RuntimeError, x:
@@ -1355,7 +1355,7 @@ class Slot(object):
         '''
         for project in self._projects_by_deps(kwargs.pop('projects', None)):
             if not project.disabled:
-                yield (project.name,
+                yield (project,
                        project.build(cache_entries=self.cache_entries,
                                      **kwargs))
 
@@ -1365,7 +1365,8 @@ class Slot(object):
 
         @param projects: optional list of projects to build [default: all]
         '''
-        return OrderedDict(self.buildGen(**kwargs))
+        return OrderedDict((proj.name, result)
+                           for proj, result in self.buildGen(**kwargs))
 
     def clean(self, **kwargs):
         '''
@@ -1385,7 +1386,7 @@ class Slot(object):
         @param projects: optional list of projects to build [default: all]
         '''
         for project in self._projects_by_deps(kwargs.pop('projects', None)):
-            yield (project.name,
+            yield (project,
                    project.test(cache_entries=self.cache_entries,
                                 **kwargs))
 
@@ -1395,7 +1396,8 @@ class Slot(object):
 
         @param projects: optional list of projects to build [default: all]
         '''
-        return OrderedDict(self.testGen(**kwargs))
+        return OrderedDict((proj.name, result)
+                           for proj, result in self.testGen(**kwargs))
 
 def extractVersion(tag):
     '''
