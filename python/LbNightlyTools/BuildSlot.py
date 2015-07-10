@@ -93,9 +93,9 @@ def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
-    Script to build and test all the projects described in a configuration file.
+    Script to build the projects in a slot configuration.
     '''
-    __usage__ = '%prog [options] <config.json>'
+    __usage__ = '%prog [options] <slot name or config file>'
     __version__ = ''
 
     # unavoidable or fake warnings
@@ -106,15 +106,6 @@ class Script(LbUtils.Script.PlainScript):
         '''
         from optparse import OptionGroup
         group = OptionGroup(self.parser, "Build Options")
-
-        group.add_option('--clean',
-                         action='store_true',
-                         help='purge the build directory before building')
-
-        group.add_option('--no-clean',
-                         action='store_false', dest='clean',
-                         help='do not purge the build directory before '
-                              'building')
 
         group.add_option('-j', '--jobs',
                          action='store', type='int',
@@ -128,10 +119,6 @@ class Script(LbUtils.Script.PlainScript):
                               '$LBN_LOAD_AVERAGE or N of cores x %g)'
                               % LOAD_AVERAGE_SCALE)
 
-        group.add_option('--no-unpack',
-                         action='store_true',
-                         help='assume that the sources are already present')
-
         group.add_option('--coverity',
                          action='store_true',
                          help='enable special Coverity static analysis on the '
@@ -142,46 +129,26 @@ class Script(LbUtils.Script.PlainScript):
             load_average = float(os.environ['LBN_LOAD_AVERAGE'])
         else:
             load_average = cpu_count()*LOAD_AVERAGE_SCALE
-        self.parser.set_defaults(clean=False,
-                                 jobs=1,
+        self.parser.set_defaults(jobs=1,
                                  load_average=load_average,
-                                 no_distcc=False,
                                  coverity=False)
-
-    def defineDeploymentOptions(self):
-        '''
-        Add report-specific options to the parser.
-        '''
-        from optparse import OptionGroup
-        group = OptionGroup(self.parser, "Deployment Options")
-
-        group.add_option('--deploy-reports-to',
-                         action='store', metavar='DEST_DIR', dest='deploy_dir',
-                         help='if the destination directory is specified, the '
-                              'old-style summaries are deployed to that '
-                              'directory as soon as they are produced')
-
-        group.add_option('--rsync-dest',
-                         action='store', metavar='DEST',
-                         help='deploy artifacts to this location using rsync '
-                              '(accepts the same format specification as '
-                              '--build-id)')
-
-        self.parser.add_option_group(group)
-        self.parser.set_defaults(deploy_dir=None,
-                                 rsync_dest=None)
 
     def defineOpts(self):
         '''
         Prepare the option parser.
         '''
         from LbNightlyTools.ScriptsCommon import (addBasicOptions,
+                                                  addBuildDirOptions,
+                                                  addDeploymentOptions,
                                                   addDashboardOptions)
 
         addBasicOptions(self.parser)
 
         self.defineBuildOptions()
-        self.defineDeploymentOptions()
+
+        addBuildDirOptions(self.parser)
+
+        addDeploymentOptions(self.parser)
 
         addDashboardOptions(self.parser)
 

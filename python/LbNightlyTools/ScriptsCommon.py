@@ -38,6 +38,54 @@ def addBasicOptions(parser):
                         artifacts_dir='artifacts')
     return parser
 
+def addBuildDirOptions(parser):
+    '''
+    Add build directory specific options to the parser.
+    '''
+    from optparse import OptionGroup
+    group = OptionGroup(parser, "Build Dir Options")
+
+    group.add_option('--clean',
+                     action='store_true',
+                     help='purge the build directory before building')
+
+    group.add_option('--no-clean',
+                     action='store_false', dest='clean',
+                     help='do not purge the build directory before '
+                          'building')
+
+    group.add_option('--no-unpack',
+                     action='store_true',
+                     help='assume that the sources are already present')
+
+    parser.add_option_group(group)
+    parser.set_defaults(clean=False,
+                        no_unpack=False)
+    return parser
+
+def addDeploymentOptions(parser):
+    '''
+    Add report-specific options to the parser.
+    '''
+    from optparse import OptionGroup
+    group = OptionGroup(parser, "Deployment Options")
+
+    group.add_option('--deploy-reports-to',
+                     action='store', metavar='DEST_DIR', dest='deploy_dir',
+                     help='if the destination directory is specified, the '
+                          'old-style summaries are deployed to that '
+                          'directory as soon as they are produced')
+
+    group.add_option('--rsync-dest',
+                     action='store', metavar='DEST',
+                     help='deploy artifacts to this location using rsync '
+                          '(accepts the same format specification as '
+                          '--build-id)')
+
+    parser.add_option_group(group)
+    parser.set_defaults(deploy_dir=None,
+                        rsync_dest=None)
+    return parser
 
 def addDashboardOptions(parser):
     '''
