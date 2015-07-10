@@ -113,6 +113,12 @@ class make(object):
         '''
         return self._make('test', proj, **kwargs)
 
+    def __str__(self):
+        '''
+        Conversion to string.
+        '''
+        return 'make'
+
 
 class cmt(make):
     '''
@@ -144,6 +150,12 @@ class cmt(make):
         kwargs.pop('max_load', None)
         kwargs.pop('jobs', None)
         return self._make('test', proj, **kwargs)
+
+    def __str__(self):
+        '''
+        Conversion to string.
+        '''
+        return 'CMT'
 
 
 class cmake(make):
@@ -233,6 +245,12 @@ class cmake(make):
 
         return BuildResults(proj, *output)
 
+    def __str__(self):
+        '''
+        Conversion to string.
+        '''
+        return 'CMake'
+
 
 class no_build(object):
     '''
@@ -263,6 +281,11 @@ class no_build(object):
         return BuildResults(proj, 0, 'no test for %s' % proj,
                             '', datetime.now())
 
+    def __str__(self):
+        '''
+        Conversion to string.
+        '''
+        return 'no-build'
 
 class echo(object):
     '''
@@ -294,6 +317,12 @@ class echo(object):
         Test method.
         '''
         return self._report('test', proj,**kwargs)
+
+    def __str__(self):
+        '''
+        Conversion to string.
+        '''
+        return 'echo'
 
 
 default = cmake
