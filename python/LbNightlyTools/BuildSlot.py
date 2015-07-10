@@ -22,18 +22,16 @@ import time
 import socket
 import threading
 import codecs
-import json
 
-from LbNightlyTools import Configuration
-from LbNightlyTools.Configuration import sortedByDeps
-from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, setenv
+from LbNightlyTools.Configuration import getSlot, parse as parseConfig
+from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
 from LbNightlyTools.Utils import Dashboard
 from LbNightlyTools.RsyncManager import execute_rsync
 
 from string import Template
-from socket import gethostname
 from datetime import datetime
 from collections import defaultdict
+from os.path import join
 
 try:
     from collections import OrderedDict
@@ -57,93 +55,12 @@ COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'),
 
 LOAD_AVERAGE_SCALE = 1.2
 
-def genProjectXml(name, projects):
-    '''
-    Take a list of ProjDesc instances and return the XML string usable to
-    configure subprojects in CDash.
-    '''
-    versions = dict([(p.name, str(p)) for p in projects])
-
-    xml = [u'<Project name="{0}">'.format(name)]
-    for proj in projects:
-        xml.append(u'  <SubProject name="{0}">'.format(proj))
-        for dep in proj.deps:
-            xml.append(u'    <Dependency name="{0}"/>'.format(versions[dep]))
-        xml.append(u'  </SubProject>')
-    xml.append(u'</Project>\n')
-
-    return u'\n'.join(xml)
-
-def genSlotConfig(config):
-    '''
-    Generate SlotConfig.cmake, needed by the CTest build script.
-
-    @return: the data to be written to the file
-    '''
-    projects = config[u'projects']
-
-    cmake = ['set(slot %(slot)s)' % config,
-             'set(config $ENV{CMTCONFIG})',
-             'set(projects %s)' % ' '.join([p[u'name']
-                                            for p in projects])]
-
-    for proj in projects:
-        cmake.append('set(%(name)s_version %(version)s)' % proj)
-
-    for proj in projects:
-        cmake.append('set(%s_dependencies %s)' %
-                     (proj[u'name'], ' '.join(proj.get(u'dependencies', []))))
-
-    if u'warning_exceptions' in config:
-        cmake.append('set(CTEST_CUSTOM_WARNING_EXCEPTION '
-                     '${CTEST_CUSTOM_WARNING_EXCEPTION}')
-        for ex in config[u'warning_exceptions']:
-            cmake.append('    "%s"' %
-                         ex.replace('\\', '\\\\').replace('"', r'\"'))
-        cmake.append('    )\n')
-
-    if u'error_exceptions' in config:
-        cmake.append('set(CTEST_CUSTOM_ERROR_EXCEPTION '
-                     '${CTEST_CUSTOM_ERROR_EXCEPTION}')
-        for ex in config[u'error_exceptions']:
-            cmake.append('    "%s"' %
-                         ex.replace('\\', '\\\\').replace('"', r'\"'))
-        cmake.append('    )\n')
-
-    return '\n'.join(cmake)
-
-class ProjDesc():
-    '''
-    Description of the project to build.
-    '''
-    # pylint: disable=R0903
-    def __init__(self, desc_dict):
-        self.name = desc_dict[u'name']
-        self.version = desc_dict[u'version']
-        self.deps = desc_dict.get(u'dependencies', [])
-        self.dir = os.path.join(self.name.upper(),
-                                '{0}_{1}'.format(self.name.upper(),
-                                                 self.version))
-        cov_version = self.version.lower()
-        if cov_version == 'head':
-            cov_version = 'trunk' # we use 'trunk' instead of 'head' in Coverity
-        self.coverity_stream = desc_dict.get(u'coverity_stream',
-                                             '{0}_{1}'.format(self.name.lower(),
-                                                              cov_version))
-        self.with_shared = desc_dict.get(u'with_shared', False)
-
-    def __str__(self):
-        return '{0} {1}'.format(self.name, self.version)
-
-OLD_BUILD_ID = '{slot}.{today}_{project}_{version}-{platform}'
-
 def listAllFiles(path, excl=None):
     '''
     Return the list of all files in a directory and in its subdirectories.
     '''
     if excl is None:
         excl = lambda _: False
-    from os.path import join
     for root, dirs, files in os.walk(path):
         for f in files:
             if not excl(f):
@@ -211,11 +128,6 @@ class Script(LbUtils.Script.PlainScript):
                               '$LBN_LOAD_AVERAGE or N of cores x %g)'
                               % LOAD_AVERAGE_SCALE)
 
-        group.add_option('--no-distcc',
-                         action='store_true',
-                         help='prevent use of distcc (used by default if '
-                              'present on the system)')
-
         group.add_option('--no-unpack',
                          action='store_true',
                          help='assume that the sources are already present')
@@ -235,54 +147,6 @@ class Script(LbUtils.Script.PlainScript):
                                  load_average=load_average,
                                  no_distcc=False,
                                  coverity=False)
-
-    def defineTestOptions(self):
-        '''
-        Add test-specific options to the parser.
-        '''
-        from optparse import OptionGroup
-        group = OptionGroup(self.parser, "Test Options")
-
-        group.add_option('--with-tests',
-                         action='store_true',
-                         help='run the tests after the build')
-
-        group.add_option('--tests-only',
-                         action='store_true',
-                         help='run the tests without building')
-
-        group.add_option('--test-suite',
-                         action='store',
-                         help='specify a test suite to launch '
-                              '[default: all test]')
-
-        group.add_option('--timeout',
-                         metavar='SECONDS',
-                         action='store', type='int',
-                         help='set a global timeout on all tests '
-                              '(default: %default)')
-
-        group.add_option('--test-regex',
-                         dest='tests',
-                         metavar='TEST_REGEX',
-                         action='append',
-                         help='regular expressions used to match the names of '
-                              'the tests to run')
-
-        group.add_option('--label',
-                         dest='labels',
-                         metavar='LABEL_REGEX',
-                         action='append',
-                         help='regular expressions used to match the labels of '
-                              'the tests to run')
-
-        self.parser.add_option_group(group)
-        self.parser.set_defaults(with_tests=False,
-                                 tests_only=False,
-                                 test_suite=None,
-                                 timeout=600,
-                                 labels=[],
-                                 tests=[])
 
     def defineDeploymentOptions(self):
         '''
@@ -307,32 +171,6 @@ class Script(LbUtils.Script.PlainScript):
         self.parser.set_defaults(deploy_dir=None,
                                  rsync_dest=None)
 
-    def defineCDashOptions(self):
-        '''
-        Add CDash-specific options to the parser.
-        '''
-        from optparse import OptionGroup
-        group = OptionGroup(self.parser, "CDash Options")
-
-        models = ['Nightly', 'Experimental', 'Continuous']
-        group.add_option('--model',
-                         action='store', type='choice', choices=models,
-                         help='build model: {0} (default: {0[0]}).'
-                              .format(models))
-
-        group.add_option('--cdash-submit',
-                         action='store_true',
-                         help='submit the results to CDash server')
-
-        group.add_option('--no-cdash-submit',
-                         action='store_false', dest='cdash_submit',
-                         help='do not submit the results to CDash server '
-                              '(default)')
-
-        self.parser.add_option_group(group)
-        self.parser.set_defaults(model=models[0],
-                                 cdash_submit=False)
-
     def defineOpts(self):
         '''
         Prepare the option parser.
@@ -343,24 +181,24 @@ class Script(LbUtils.Script.PlainScript):
         addBasicOptions(self.parser)
 
         self.defineBuildOptions()
-        self.defineTestOptions()
         self.defineDeploymentOptions()
 
         addDashboardOptions(self.parser)
-
-        self.defineCDashOptions()
-
 
     def _setup(self):
         '''
         Initialize variables.
         '''
-        from os.path import join, dirname, basename
+        from os.path import basename, exists
         from LbNightlyTools.ScriptsCommon import expandTokensInOptions
 
         opts = self.options
 
-        self.config = Configuration.load(self.args[0])
+        if exists(self.args[0].split('#')[0]):
+            self.slot = parseConfig(self.args[0])
+        else:
+            self.slot = getSlot(self.args[0],
+                           'configs' if exists('configs') else os.curdir)
 
         from LbNightlyTools.Utils import setDayNamesEnv
         setDayNamesEnv()
@@ -368,10 +206,15 @@ class Script(LbUtils.Script.PlainScript):
         # FIXME: we need something better
         self.platform = os.environ['CMTCONFIG']
 
+        self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
+                                          r'(\.git)|(\.svn)|'
+                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
+                                          ).format(self.platform))
+
         self.starttime = datetime.now()
 
         expandTokensInOptions(opts, ['build_id', 'artifacts_dir', 'rsync_dest'],
-                              slot=self.config[u'slot'])
+                              slot=self.slot.name)
 
         self.build_dir = join(os.getcwd(), 'build')
         self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
@@ -380,7 +223,7 @@ class Script(LbUtils.Script.PlainScript):
         ensureDirs([self.artifacts_dir, self.build_dir])
 
         # template data to be reported in every JSON file
-        self.json_tmpl = {'slot': self.config['slot'],
+        self.json_tmpl = {'slot': self.slot.name,
                           'build_id': int(os.environ.get('slot_build_id', 0)),
                           'platform': self.platform}
 
@@ -389,32 +232,6 @@ class Script(LbUtils.Script.PlainScript):
                                                         'db'),
                                    submit=opts.submit,
                                    flavour=opts.flavour)
-
-        self.log.info("Preparing CTest scripts and configurations.")
-        # load CTest script templates
-        filename = join(dirname(__file__), 'CTest{0}.template.cmake')
-        self.ctest_config = Template(open(filename.format('Config')).read())
-        self.ctest_script = Template(open(filename.format('Script')).read())
-
-        self.config_cmake = genSlotConfig(self.config)
-
-        # prepare the cache to give to CMake: add the launcher rules commands,
-        # followed by what is found in the configuration (if present)
-        launcher_cmd = 'lbn-wrapcmd <CMAKE_CURRENT_BINARY_DIR> <TARGET_NAME>'
-        cache_entries = ([('GAUDI_RULE_LAUNCH_%s' % n, launcher_cmd)
-                          for n in ('COMPILE', 'LINK', 'CUSTOM')] +
-                         self.config.get(u'cmake_cache', {}).items())
-        preload_lines = ['set(%s "%s" CACHE STRING "override")' % item
-                          for item in cache_entries]
-        self.cache_preload = '\n'.join(preload_lines)
-
-        self.projects = OrderedDict([(p.name, p)
-                                     for p in map(ProjDesc,
-                                                  self.config.get(u'projects',
-                                                                  []))])
-        deps = OrderedDict([(p.name, p.deps) for p in self.projects.values()])
-        self.sorted_projects = [self.projects[p] for p in sortedByDeps(deps)]
-
         if opts.projects:
             opts.projects = set(p.strip().lower()
                                 for p in opts.projects.split(','))
@@ -423,36 +240,10 @@ class Script(LbUtils.Script.PlainScript):
 
         if opts.deploy_dir:
             # ensure that the deployment dir ends with the slot name...
-            if basename(opts.deploy_dir) != self.config[u'slot']:
-                opts.deploy_dir = join(opts.deploy_dir, self.config[u'slot'])
+            if basename(opts.deploy_dir) != self.slot.name:
+                opts.deploy_dir = join(opts.deploy_dir, self.slot.name)
             # ... and that the directory exists
             ensureDirs([opts.deploy_dir])
-
-        # Prepare command lines for the build
-        cmd = ['ctest', '--timeout', str(opts.timeout)]
-        if opts.jobs != 1:
-            cmd.append('-DJOBS=%d' % opts.jobs)
-            if opts.load_average > 0:
-                cmd.append('-DMAX_LOAD=%g' % opts.load_average)
-
-        if not opts.cdash_submit:
-            cmd.append('-DNO_SUBMIT=TRUE')
-
-        if self.config.get(u'USE_CMT'):
-            cmd.append('-DUSE_CMT=TRUE')
-
-        if opts.no_distcc:
-            cmd.append('-DDISABLE_DISTCC=TRUE')
-
-        self.build_cmd = cmd + ['-DSTEP=BUILD', '-S', 'CTestScript.cmake']
-        self.test_cmd = cmd + ['-DSTEP=TEST', '-S', 'CTestScript.cmake']
-
-        log_level = self.log.getEffectiveLevel()
-        if log_level <= logging.INFO:
-            self.build_cmd.insert(1, '-VV')
-        if log_level <= logging.DEBUG:
-            self.test_cmd.insert(1, '-VV')
-
 
     def dump_json(self, data):
         '''
@@ -473,9 +264,8 @@ class Script(LbUtils.Script.PlainScript):
         '''
         self.log.debug('writing %s', path)
         ensureDirs([os.path.dirname(path)])
-        f = codecs.open(path, 'w', 'utf-8')
-        f.write(data)
-        f.close()
+        with codecs.open(path, 'w', 'utf-8') as f:
+            f.write(data)
 
     def writeBin(self, path, data):
         '''
@@ -486,9 +276,8 @@ class Script(LbUtils.Script.PlainScript):
         '''
         self.log.debug('writing (bin) %s', path)
         ensureDirs([os.path.dirname(path)])
-        f = open(path, 'wb')
-        f.write(data)
-        f.close()
+        with open(path, 'wb') as f:
+            f.write(data)
 
     def keepArtifact(self, src, dst=os.path.curdir, new_name=None):
         '''
@@ -512,7 +301,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         if not self.options.deploy_dir:
             return
-        from os.path import join, basename, isdir, isfile, islink
+        from os.path import basename, isdir, isfile, islink
         for filename in files:
             try:
                 dirname = join(self.options.deploy_dir, basename(filename))
@@ -538,12 +327,14 @@ class Script(LbUtils.Script.PlainScript):
         tarballs, cleaning it before if requested.
         '''
         if self.options.clean:
+            # FIXME: this can be done asynchronously
             self.log.info('Cleaning build directory.')
             if os.path.exists(self.build_dir):
                 shutil.rmtree(self.build_dir)
                 ensureDirs([self.build_dir])
 
         if not self.options.no_unpack:
+            # FIXME: this can be done asynchronously
             self.log.info('Preparing build directory...')
             for f in os.listdir(self.artifacts_dir):
                 if f.endswith('.tar.bz2'):
@@ -556,16 +347,11 @@ class Script(LbUtils.Script.PlainScript):
                           '--no-overwrite-dir', '--keep-old-files',
                           '-f', f], cwd=self.build_dir)
 
-        project_xml = genProjectXml(self.config[u'slot'], self.sorted_projects)
-        project_xml_name = os.path.join(self.build_dir, 'Project.xml')
-        self.write(project_xml_name, project_xml)
-        self.keepArtifact(project_xml_name)
-
         def dumpConfSummary():
             '''Create special summary file used by SetupProject.'''
             data = defaultdict(list)
             env = dict(decl.split('=', 1)
-                       for decl in self.config.get(u'env', []))
+                       for decl in self.slot.env)
             # collect the expanded values for  CMTPROJECTPATH and
             # CMAKE_PREFIX_PATH in the local environment
             for name in ('CMTPROJECTPATH', 'CMAKE_PREFIX_PATH'):
@@ -602,222 +388,41 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
         dumpConfSummary()
 
-    def _prepareProject(self, proj):
+        # keep a list of the files in the source directories before the build
+        for proj in self.slot.activeProjects:
+            self._recordSourcesLists(proj, 'sources.list')
+
+    def _summaryDir(self, proj, *subdirs):
         '''
-        Prepare a project directory for build or test.
+        Return the path to the summary directory for a given project.
+
+        If extra arguments are given, the output is equivalent to
+        os.path.join(self._summaryDir(proj), level1, level2).
         '''
-        from os.path import join
+        return join(self.artifacts_dir, 'summaries.' + self.platform,
+                    proj.name, *subdirs)
 
-        proj.build_dir = join(self.build_dir, proj.dir)
-        proj.enabled = os.path.exists(proj.build_dir)
-        if not proj.enabled:
-            self.log.debug('%s not found, imply %s disabled', proj.dir, proj)
-
-        proj.summary_dir = join(self.artifacts_dir,
-                                'summaries.' + self.platform,
-                                proj.name)
-        # use the ramdisk for Coverity intermediate dir if possible
-        if os.path.exists('/dev/shm'):
-            proj.coverity_int = join('/dev/shm/coverity.' + self.platform,
-                                     self.options.build_id, proj.name)
-        else:
-            proj.coverity_int = join(self.build_dir, 'coverity', proj.name)
-        proj.coverity_mod = join(proj.summary_dir, 'coverity', 'models')
-        proj.coverity_logs = join(proj.summary_dir, 'coverity', proj.name)
-
-        proj.old_build_id = OLD_BUILD_ID.format(slot=self.config[u'slot'],
-                                                today=os.environ['TODAY'],
-                                                project=proj.name.upper(),
-                                                version=proj.version,
-                                                platform=self.platform)
-
-        proj.started = proj.completed = proj.build_retcode = None
-
-        proj.packname = genPackageName(proj, self.platform,
-                                       build_id=self.options.build_id,
-                                       artifacts_dir=self.artifacts_dir)
-
-        if proj.enabled:
-            # write files only if the project is enabled
-            Configuration.save(join(proj.build_dir, 'SlotConfig.json'),
-                               self.config)
-
-            self.write(join(proj.build_dir, 'SlotConfig.cmake'),
-                       self.config_cmake)
-
-            if self.cache_preload:
-                self.write(join(proj.build_dir, 'cache_preload.cmake'),
-                           self.cache_preload + '\n')
-
-            self.write(join(proj.build_dir, 'CTestConfig.cmake'),
-                       self.ctest_config.substitute(self.config))
-
-            # prepare the INCLUDE argument for ctest_test()
-            tests = ' '.join('"{0}"'.format(l.replace('"', '\\"'))
-                             for l in self.options.tests)
-            if tests:
-                tests = 'INCLUDE ' + tests
-
-            # prepare the INCLUDE_LABEL argument for ctest_test()
-            labels = ' '.join('"{0}"'.format(l.replace('"', '\\"'))
-                              for l in self.options.labels)
-            if labels:
-                labels = 'INCLUDE_LABEL ' + labels
-
-            script_data = {'project': proj.name,
-                           'version': proj.version,
-                           'build_dir': self.build_dir,
-                           'site': gethostname(),
-                           'summary_dir': proj.summary_dir,
-                           'Model': self.options.model,
-                           'old_build_id': proj.old_build_id,
-                           'test_selection': tests + ' ' + labels}
-            self.write(join(proj.build_dir, 'CTestScript.cmake'),
-                       self.ctest_script.substitute(script_data))
-
-        return proj
-
-    def _buildProject(self, proj):
+    def _buildDir(self, proj, *subdirs):
         '''
-        Build a project of the slot.
+        Return the path to the build directory for a given project.
+
+        If extra arguments are given, the output is equivalent to
+        os.path.join(self._buildDir(proj), level1, level2).
         '''
-        from os.path import join
+        return join(self.build_dir, proj.baseDir, *subdirs)
 
-        if os.path.exists(proj.packname):
-            self.log.info('binary tarball for %s already present, skip build',
-                          proj)
-            return
-
-        build_cmd = self.build_cmd
-        if self.options.coverity:
-            # create all the directories that are missing
-            ensureDirs([proj.coverity_int, proj.coverity_mod,
-                        proj.coverity_logs])
-            build_cmd = ['cov-build', '--dir', proj.coverity_int] + build_cmd
-
-        def dumpFileListSummary(name):
-            '''
-            Dump the list of all the files in the project directory in the
-            summary file 'name'.
-            '''
-            file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
-                                        r'(\.git)|(\.svn)|'
-                                        r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
-                                        ).format(self.platform))
-
-            data = sorted(listAllFiles(proj.build_dir, file_excl_rex.match))
-            data.append('')
-            self.write(os.path.join(proj.summary_dir, name), '\n'.join(data))
-
-        dumpFileListSummary('sources.list')
-
-        self.log.info('building %s', proj.dir)
-        proj.started = datetime.now()
-        self.log.debug('cmd: %s', build_cmd)
-        proj.build_retcode = call(build_cmd, cwd=proj.build_dir,
-                                  timeout=4*60*60, # timeout of 4 hours
-                                  timeoutmsg='building %s' % proj.name)
-        if proj.build_retcode != 0:
-            self.log.warning('build exited with code %d', proj.build_retcode)
-        proj.completed = datetime.now()
-
-        dumpFileListSummary('sources_built.list')
-
-        # copy the file with the URL of the checkout job to the summaries
-        if os.path.exists(join(self.artifacts_dir, 'checkout_job_url.txt')):
-            shutil.copy(join(self.artifacts_dir, 'checkout_job_url.txt'),
-                        proj.summary_dir)
-
-        # The lhcb-release slot is used to build RPMs, which requires the
-        # manifest.xml file.
-        # If the build did not produce one, we try to generate it.
-        if self.config[u'slot'] == 'lhcb-release':
-            manifest_file = os.path.join(proj.build_dir, 'InstallArea',
-                                         self.platform, 'manifest.xml')
-            if not os.path.exists(manifest_file):
-                self.log.warning('%s not generated by the build, '
-                                 'we try to produce one',
-                                 manifest_file)
-                from LbNightlyTools.Release import createManifestFile
-                # ensure that the destination directory exists, in case
-                # of builds that failed very badly
-                if not os.path.exists(os.path.dirname(manifest_file)):
-                    os.makedirs(os.path.dirname(manifest_file))
-                with open(manifest_file, 'w') as manif:
-                    manif.write(createManifestFile(proj.name, proj.version,
-                                                   self.platform,
-                                                   proj.build_dir))
-
-        reporter = BuildReporter(proj.summary_dir, proj, self.platform,
-                                 self.config, proj.old_build_id)
-        self.deployReports(reporter.genOldSummaries())
-        self.dump_json(reporter.json())
-
-        self.log.info('packing %s', proj.dir)
-
-        pack([os.path.join(proj.dir, 'InstallArea')], proj.packname,
-             cwd=self.build_dir, checksum='md5')
-
-        if proj.with_shared:
-            shr_packname = genPackageName(proj, "shared",
-                                          build_id=self.options.build_id,
-                                          artifacts_dir=self.artifacts_dir)
-            to_pack_list = (set(open(join(proj.summary_dir,
-                                          'sources_built.list'))) -
-                            set(open(join(proj.summary_dir,
-                                          'sources.list'))))
-            pack([os.path.relpath(f.strip(), self.build_dir)
-                  for f in sorted(to_pack_list)],
-                 shr_packname, cwd=self.build_dir, checksum='md5')
-
-        return proj
-
-    def _coverityAnalysis(self, proj):
+    def _recordSourcesLists(self, proj, name):
         '''
-        Run the coverity analysis on a project.
-        '''
-        from os.path import join
-        # this call actually does not "submit" (commit-defects), it just
-        # run the analysis
-        self.log.info('running Coverity analysis from %s', proj.coverity_int)
-        call(['analyze-submit.sh', proj.coverity_int, proj.coverity_mod])
-        # keep a copy of the logs
-        for clf in ['log.txt', 'BUILD.metrics.xml', 'build-log.txt']:
-            shutil.copy2(join(proj.coverity_int, clf), proj.coverity_logs)
-        # collect models for use with the other projects
-        self.log.info('collecting Coverity models')
-        call(['cov-collect-models', '--dir', proj.coverity_int,
-              '-of', join(proj.coverity_mod, proj.name + '.xmldb')])
-        # ensure that there is no stale lock
-        # FIXME: is it needed?
-        try:
-            os.remove(join(proj.coverity_mod, proj.name + '.xmldb.lock'))
-        except:
-            pass
-        # commit defect to Coverity Integrity Manager
-        cov_commit_cmd = ['cov-commit-defects',
-                          '--host', 'lhcb-coverity.cern.ch',
-                          '--port', '8080',
-                          '--user', 'admin',
-                          '--stream', proj.coverity_stream]
-        # strip the project build directories when submitting
-        proj_build_dirs = [join(self.build_dir, p.dir) + '/'
-                           for p in self.sorted_projects]
-        # (this is an interesting trick to intersperse two lists)
-        from itertools import repeat
-        cov_commit_cmd += [val
-                           for pair in zip(repeat('--strip-path'),
-                                           proj_build_dirs)
-                           for val in pair]
-        cov_commit_cmd += open(join(proj.coverity_int,
-                                    'c', 'output',
-                                    'commit-args.txt')).read().split()
+        Record the list of files in the sources directories for a project.
 
-        tmpenv = {'COVERITY_PASSPHRASE':
-                  open(COV_PASSPHRASE_FILE).read().strip()}
-        tmpenv.update(os.environ)
-        self.log.info('committing results Coverity Integrity Manager')
-        call(cov_commit_cmd, env=tmpenv)
+        @param proj: project instance to scan
+        @param name: name of the file to write in the project summary dir
+        '''
+        # keep a list of the files in the source directories
+        data = sorted(listAllFiles(self._buildDir(proj),
+                                   self._file_excl_rex.match))
+        data.append('')
+        self.write(self._summaryDir(proj, name), '\n'.join(data))
 
     def main(self):
         '''
@@ -828,37 +433,20 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
         opts = self.options
 
-        # implied options:
-        # - we run the test if we ask for them in a way or another
-        opts.with_tests = opts.with_tests or opts.tests_only
-        # - do not run the tests if building for coverity
-        opts.with_tests = opts.with_tests and not opts.coverity
-        # - test-only and coverity cannot coexist
-        if opts.tests_only and opts.coverity:
-            self.parser.error('incompatible options --tests-only and '
-                              '--coverity')
-
+        if opts.coverity:
+            self.log.warning('Coverity analysis not implemented yet')
 
         self._setup()
 
-        if opts.submit and not opts.projects and not opts.tests_only:
+        if opts.submit and not opts.projects:
             # ensure that results for the current slot/build/platform are
             # not in the dashboard (useful in case of rebuild), but only
             # if we need to publish the results and it's not a partial build
-            # or a "test-only" run
             self.dashboard.dropBuild(slot=self.json_tmpl['slot'],
                                      build_id=self.json_tmpl['build_id'],
                                      platform=self.json_tmpl['platform'])
-        if not opts.tests_only:
-            self.dump_json({'type': 'job-start',
-                            'host': gethostname(),
-                            'build_number': os.environ.get('BUILD_NUMBER', 0),
-                            'started': self.starttime.isoformat()})
 
         self._prepareBuildDir()
-
-        # prepare special environment, if needed
-        setenv(self.config.get(u'env', []))
 
         class AsyncTask(threading.Thread):
             '''
@@ -879,81 +467,6 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 '''
                 self.join()
                 return self.retcode
-
-        class TestTask(AsyncTask):
-            '''
-            Asynchronously run the tests and deploy the test reports, if needed.
-
-            The special parameter reports is passed to deployReports.
-            '''
-            def __init__(self, *args, **kwargs):
-                self.reports = []
-                self.project = None
-                self.script = None
-
-                local_args = ['reports', 'project', 'script']
-                for arg in local_args:
-                    setattr(self, arg, kwargs.pop(arg, None))
-
-                self.artifacts_dir = self.script.artifacts_dir
-                self.config = self.script.config
-                self.platform = self.script.platform
-
-                self.cwd = kwargs.get('cwd', os.path.curdir)
-
-                self.started = self.completed = None
-
-                super(TestTask, self).__init__(*args, **kwargs)
-
-            def getTestSummary(self):
-                '''
-                Return the JSON object in the file summary.json in the reports, if
-                it exists, otherwise an empty list.
-                '''
-                cadidates = [os.path.join(self.project.summary_dir,
-                                          'html', 'summary.json')]
-                cadidates.extend([os.path.join(rep, 'summary.json')
-                                  for rep in self.reports])
-                for rep in cadidates:
-                    if os.path.exists(rep):
-                        return json.load(codecs.open(rep, 'r', 'utf-8'))
-                return []
-
-            def run(self):
-                self.started = datetime.now()
-                super(TestTask, self).run()
-                self.completed = datetime.now()
-                # generate the test summary JSON file for the new dashboard
-                self.script.dump_json({"type": "tests-result",
-                                       "project": self.project.name,
-                                       "started": self.started.isoformat(),
-                                       "completed": self.completed.isoformat(),
-                                       "results": self.getTestSummary()})
-                # Find the .new files in the project directory and copy them to
-                # the artifacts directory.
-                self.script.log.debug('looking for .new files')
-                from os.path import join, relpath
-                new_refs = listAllFiles(self.cwd)
-                for src in new_refs:
-                    if not src.endswith('.new'):
-                        continue
-                    dst = join(self.artifacts_dir,
-                               'newrefs.' + self.script.platform,
-                               self.project.name, relpath(src, self.cwd))
-                    dst = os.path.dirname(dst)
-                    try:
-                        self.script.keepArtifact(src, dst)
-                    except IOError:
-                        # ignore failures in the copy (not fatal)
-                        pass
-                # deploy the test reports if needed
-                self.script.deployReports(self.reports)
-
-            def __str__(self):
-                '''
-                Task description.
-                '''
-                return 'testing %s' % self.project
 
         class DeployArtifactsTask(threading.Thread):
             '''
@@ -985,70 +498,75 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 return 'deploy artifacts'
 
         jobs = []
-        for proj in self.sorted_projects:
-            # Consider only requested projects (if there was a selection)
-            if opts.projects and proj.name.lower() not in opts.projects:
-                continue # project not requested: skip
+        from subprocess import STDOUT
+        with chdir(self.build_dir):
+            for proj, result in self.slot.buildGen(projects=opts.projects,
+                                                   stderr=STDOUT):
+                # get the project instance
+                proj = getattr(self.slot, proj)
+                summary_dir = self._summaryDir(proj)
 
-            self._prepareProject(proj)
+                ensureDirs([summary_dir])
+                if result.returncode != 0:
+                    self.log.warning('build exited with code %d',
+                                     result.returncode)
 
-            if not proj.enabled:
-                self.log.warning('project %s disabled, skip build', proj)
-                continue
+                if self.slot.name == 'lhcb-release':
+                    manifest_file = self._buildDir(proj, 'InstallArea',
+                                                   self.platform,
+                                                   'manifest.xml')
+                    if not os.path.exists(manifest_file):
+                        self.log.warning('%s not generated by the build, '
+                                         'we try to produce one',
+                                         manifest_file)
+                        from LbNightlyTools.Release import createManifestFile
+                        # ensure that the destination directory exists, in case
+                        # of builds that failed very badly
+                        if not os.path.exists(os.path.dirname(manifest_file)):
+                            os.makedirs(os.path.dirname(manifest_file))
+                        with open(manifest_file, 'w') as manif:
+                            manif.write(createManifestFile(proj.name, proj.version,
+                                                           self.platform,
+                                                           proj.build_dir))
 
-            if not self.options.tests_only:
-                self._buildProject(proj)
-                if opts.rsync_dest:
-                    jobs.append(DeployArtifactsTask(self))
+                with open(join(summary_dir, 'build.log'), 'w') as f:
+                    f.write(result.stdout)
+                reporter = BuildReporter(summary_dir, proj.name,
+                                         self.platform,
+                                         self.slot, result)
+                self.deployReports(reporter.genOldSummaries())
+                self.dump_json(reporter.json())
 
-            if opts.coverity:
-                if proj.build_retcode != 0:
-                    self.log.error('cannot run Coverity analysis on a '
-                                   'failed build')
-                else:
-                    self._coverityAnalysis(proj)
-                # try in any case to remove the Coverity intermediate directory
-                # if it is on the ramdisk
-                if proj.coverity_int.startswith('/dev/shm'):
-                    self.log.debug('cleaning Coverity intermediate directory')
-                    shutil.rmtree(proj.coverity_int, ignore_errors=True)
-                    try:
-                        os.removedirs(os.path.dirname(proj.coverity_int))
-                    except os.error:
-                        self.log.warning("failed to clean %s",
-                                         proj.coverity_int)
+                self._recordSourcesLists(proj, 'sources_built.list')
 
+                self.log.info('packing %s', proj.baseDir)
 
-            if opts.with_tests:
-                self.log.info('testing (in background) %s', proj.dir)
-                job = TestTask(['nice'] + self.test_cmd,
-                               cwd=proj.build_dir,
-                               script=self,
-                               project=proj,
-                               reports=[os.path.join(proj.summary_dir,
-                                                     proj.old_build_id + suff)
-                                        for suff in ['-qmtest',
-                                                     '-qmtest.log']])
-                jobs.append(job)
+                pack([os.path.join(proj.baseDir, 'InstallArea')],
+                     genPackageName(proj, self.platform,
+                                    build_id=self.options.build_id,
+                                    artifacts_dir=self.artifacts_dir),
+                     cwd=self.build_dir, checksum='md5')
 
-        if opts.coverity:
-            # try again to clean the Coverity scratch space in the ramdisk
-            # (if it was ever created)
-            shutil.rmtree(os.path.join('/dev/shm/coverity.{0}'
-                                       .format(self.platform)),
-                          ignore_errors=True)
+                # FIXME
+                if proj.with_shared:
+                    shr_packname = genPackageName(proj, "shared",
+                                                  build_id=self.options.build_id,
+                                                  artifacts_dir=self.artifacts_dir)
+                    to_pack_list = (set(open(join(summary_dir,
+                                                  'sources_built.list'))) -
+                                    set(open(join(summary_dir,
+                                                  'sources.list'))))
+                    pack([os.path.relpath(f.strip(), self.build_dir)
+                          for f in sorted(to_pack_list)],
+                         shr_packname, cwd=self.build_dir, checksum='md5')
 
         if jobs:
-            self.log.info('waiting for pending tasks (tests, etc.)...')
+            self.log.info('waiting for pending tasks...')
             for i, j in enumerate(jobs):
                 self.log.info('- (%d/%d) %s', i+1, len(jobs), j)
                 j.wait()
 
         self.completetime = datetime.now()
-
-        if not opts.tests_only:
-            self.dump_json({'type': 'job-end',
-                            'completed': self.completetime.isoformat()})
 
         self.log.info('build completed in %s',
                       self.completetime - self.starttime)
@@ -1073,7 +591,7 @@ class BuildReporter(object):
     '''
     Class to analyze the build log of project and produce reports.
     '''
-    def __init__(self, summary_dir, project, platform, config, old_build_id):
+    def __init__(self, summary_dir, project, platform, slot, result):
         '''
         Initialize the instance.
 
@@ -1081,14 +599,12 @@ class BuildReporter(object):
         @param project: ProjDesc instance of the project
         @param platform: platform id
         @param config: configuration dictionary
-        @param old_build_id: build id used in the old nightly builds
         '''
-        from os.path import join
         self.summary_dir = summary_dir
         self.project = project
         self.platform = platform
-        self.config = config or {'slot': 'no-name'}
-        self.old_build_id = old_build_id
+        self.slot = slot
+        self.result = result
 
         self.build_log = join(self.summary_dir, 'build.log')
 
@@ -1111,13 +627,13 @@ class BuildReporter(object):
         e_count = sum(map(len, self.summary['error'].values()))
         data = {}
         data.update({"type": "build-result",
-                     "slot": self.config['slot'],
+                     "slot": self.slot.name,
                      "build_id": int(os.environ.get('slot_build_id', 0)),
-                     "project": self.project.name,
+                     "project": self.project,
                      "platform": self.platform,
-                     'started': self.project.started.isoformat(),
-                     'completed': self.project.completed.isoformat(),
-                     'retcode': self.project.build_retcode,
+                     'started': self.result.started.isoformat(),
+                     'completed': self.result.completed.isoformat(),
+                     'retcode': self.result.returncode,
                      "warnings": w_count,
                      "errors": e_count})
         return data
@@ -1128,7 +644,7 @@ class BuildReporter(object):
 
         @return: list of generated files and directories
         '''
-        from os.path import join, dirname, exists
+        from os.path import dirname, exists
         from itertools import islice
         import cgi
 
@@ -1159,18 +675,6 @@ class BuildReporter(object):
                                                        line or '&nbsp;')
             yield u'</html>\n'
 
-        report_files = []
-        def reportFileName(suff):
-            '''
-            Return the name of a report file given the suffix, and add it to
-            the list of report files.
-            '''
-            f = join(self.summary_dir, self.old_build_id + suff)
-            report_files.append(f)
-            return f
-
-        log_summary = reportFileName('-log.summary')
-
         if not os.path.exists(self.build_log):
             # very bad: the build log was not produced, let's create a dummy one
             f = open(self.build_log, 'w')
@@ -1178,18 +682,10 @@ class BuildReporter(object):
                     '(ctest failure?)\n')
             f.close()
 
-        full_log = reportFileName('.log')
-        shutil.copy(self.build_log, full_log)
-
-        # generate the small summary file with the counts of warnings
-        f = open(log_summary, 'w')
-        f.write(self._oldSummary())
-        f.close()
-
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
         checkout_logfile = join(self.summary_dir, os.pardir, os.pardir,
-                                self.project.name + '.checkout.log')
+                                self.project + '.checkout.log')
         if exists(checkout_logfile):
             def checkout_log():
                 from itertools import cycle
@@ -1199,35 +695,27 @@ class BuildReporter(object):
                     yield u'<div class="{0}">{1}</div>\n'.format(cl.next(),
                                                                  escape(l))
             checkout_lines = list(checkout_log())
-        elif exists(join(self.summary_dir, 'checkout_job_url.txt')):
+        elif exists(join(self.summary_dir, os.pardir, os.pardir,
+                         'checkout_job_url.txt')):
             checkout_fmt = u'<a href="{0}console">available on ''Jenkins</a>\n'
             jenkins_co_url = (open(join(self.summary_dir,
+                                        os.pardir, os.pardir,
                                         'checkout_job_url.txt'))
                               .read().strip())
             checkout_lines = [checkout_fmt.format(jenkins_co_url)]
         else:
             checkout_lines = [u'<div class="even">no checkout log</div>\n']
-        f = codecs.open(full_log, 'w', 'utf-8')
-        f.writelines(env_lines)
-        env_block_size = len(env_lines)
-        f.writelines(checkout_lines)
-        checkout_block_size = 1
-        f.writelines(codecs.open(self.build_log, 'r', 'utf-8',
-                                 errors='replace'))
-        f.close()
 
         # generate HTML summary main page
-        html_summary = reportFileName('-log.html')
+        html_summary = join(self.summary_dir, 'build_log.html')
         f = codecs.open(html_summary, 'w', 'utf-8')
-        f.write(self._oldHtml(env_block_size, checkout_block_size))
+        f.write(self._oldHtml(len(env_lines), len(checkout_lines)))
         f.close()
-        # make a copy with a simpler name
-        shutil.copy(html_summary, join(self.summary_dir, 'build_log.html'))
 
 
         # generate HTML log chunks
         # - convert the sections from (name, begin) -> (name, begin, end+1)
-        chunksdir = reportFileName('.log.chunks')
+        chunksdir = join(self.summary_dir, 'build_log.chunks')
         ensureDirs([chunksdir])
         sections = []
         for name, begin in self.summary['sections']:
@@ -1258,15 +746,11 @@ class BuildReporter(object):
             chunkfile.writelines(formatTxt(islice(logfile, end - begin), begin))
             chunkfile.close()
 
-        # FIXME: we should make a copy with a simpler name once the new
-        #        dashboard is in place
-        #shutil.copytree(chunksdir, join(self.summary_dir, 'build_log.chunks'))
-
         # copy the JavascriptCode
         shutil.copy(join(dirname(__file__), 'logFileJQ.js'),
                     join(self.summary_dir, 'logFileJQ.js'))
 
-        return report_files + [join(self.summary_dir, 'logFileJQ.js')]
+        return [join(self.summary_dir, 'logFileJQ.js')]
 
     def _parseLog(self):
         '''
@@ -1299,8 +783,8 @@ class BuildReporter(object):
                     self.count += 1
                 return m
 
-        w_exc = map(ExclusionCounter, self.config.get('warning_exceptions', []))
-        e_exc = map(ExclusionCounter, self.config.get('error_exceptions', []))
+        w_exc = map(ExclusionCounter, self.slot.warning_exceptions)
+        e_exc = map(ExclusionCounter, self.slot.error_exceptions)
         #cExc = []
 
         def excluded(line, excl):
@@ -1329,26 +813,26 @@ class BuildReporter(object):
         sections = [] # List of section descriptions: ('name', begin)
         i = -1
         logfile = codecs.open(self.build_log, 'r', 'utf-8', errors='replace')
-        current_section = 'build'
+        current_section = 'all'
         build_section_offset = -1
         for i, line in enumerate(logfile):
             context.append(line)
             linetype = getLineType(line)
             if linetype:
                 summary[linetype][line].append((i, list(context)))
-            if self.config.get('USE_CMT'):
+            if str(self.slot.build_tool) == 'CMT':
                 if line.startswith('# Building package'):
                     sections.append((line.split()[3], i-1))
             else:
                 if line.startswith('#### CMake'):
                     current_section = line.split()[2]
-                    if current_section != 'build':
+                    if current_section != 'all':
                         if sections and sections[-1][0].startswith('lines'):
                             j = i - build_section_offset
                             s = sections[-1]
                             sections[-1] = (s[0] + str(j-1), s[1])
                         sections.append((current_section, i))
-                if current_section == 'build':
+                if current_section == 'all':
                     if build_section_offset < 0:
                         build_section_offset = i
                     j = i - build_section_offset
@@ -1363,23 +847,6 @@ class BuildReporter(object):
         summary['sections'] = sections
         return summary
 
-    def _oldSummary(self):
-        '''
-        @return: content of the summary file used by the old dashboard.
-        '''
-        w_count = sum(map(len, self.summary['warning'].values()))
-        e_count = sum(map(len, self.summary['error'].values()))
-        timestamp = time.time()
-        data = ('{timestamp} ({ctime}) {slot} {project}_{version} {platform}\n'
-                .format(timestamp=timestamp,
-                        ctime=time.ctime(timestamp),
-                        slot=self.config[u'slot'],
-                        project=self.project.name.upper(),
-                        version=self.project.version,
-                        platform=self.platform))
-        data += ','.join(map(str, [w_count, e_count, 0, 0])) + '\n'
-        return data
-
     def _oldHtml(self, env_size=0, checkout_size=0):
         '''
         @param env_size: number of lines of the log file used for the
@@ -1389,7 +856,7 @@ class BuildReporter(object):
 
         @return: HTML report page of the build of a project.
         '''
-        from os.path import join, dirname
+        from os.path import dirname
         from json import dumps
         from itertools import cycle
         import cgi
@@ -1408,11 +875,12 @@ class BuildReporter(object):
         offset = env_size + checkout_size
 
         special_sections = set(['configure', "'global'",
-                                'install', 'post-install'])
+                                'install', 'unsafe-install', 'post-install'])
         for name, begin in self.summary['sections']:
             begin += offset
             logfile_links[-1]['l'] = begin - 1
-            desc = (('' if name in special_sections else 'Package ') +
+            desc = (('' if name in special_sections or name.startswith('lines')
+                     else 'Package ') +
                     ('<strong>%s</strong>' % name))
             logfile_links.append({'id': 'section%d' % begin,
                                   'f': begin,
@@ -1479,9 +947,8 @@ class BuildReporter(object):
         c_summ = formatList('coverity')
 
         return html.substitute(project=self.project,
-                               slot=self.config['slot'],
+                               slot=self.slot.name,
                                host=socket.gethostname(),
-                               old_build_id=self.old_build_id,
                                logfile_links=dumps(logfile_links, indent=2),
                                code_links=dumps(code_links, indent=2),
                                ignored_counts=dumps(ignored_counts, indent=2),
