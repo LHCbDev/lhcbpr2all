@@ -75,7 +75,7 @@ class make(object):
                    if value is not None)
 
         cmd_kwargs = {'env': env,
-                     'cwd': proj.baseDir}
+                      'cwd': proj.baseDir}
         if 'stderr' in kwargs:
             cmd_kwargs['stderr'] = kwargs['stderr']
 
@@ -156,6 +156,13 @@ class cmt(make):
         # ensure that tests are not run in parallel
         kwargs.pop('max_load', None)
         kwargs.pop('jobs', None)
+        env = kwargs.get('env', {})
+        if 'GAUDI_QMTEST_HTML_OUTPUT' not in env:
+            bin_dir = os.path.join(proj.baseDir,
+                                   'build.{CMTCONFIG}'.format(**env),
+                                   'html')
+            env['GAUDI_QMTEST_HTML_OUTPUT'] = bin_dir
+        kwargs['env'] = env
         return self._make('test', proj, **kwargs)
 
     def __str__(self):
