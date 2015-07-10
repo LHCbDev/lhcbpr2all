@@ -89,11 +89,18 @@ class make(object):
 
         __log__.debug('running %s', ' '.join(cmd))
         started = datetime.now()
-        output = log_call(cmd, **cmd_kwargs)
+        retcode, out, err = log_call(cmd, **cmd_kwargs)
         completed = datetime.now()
-        __log__.debug('command exited with code %d', output[0])
+        __log__.debug('command exited with code %d', retcode)
 
-        return BuildResults(proj, *(output + (started, completed)))
+        out = ('#### {0} {1} ####\n'
+               '# Start: {2}\n{3}'
+               '# End: {4}\n').format(self,
+                                      target,
+                                      started.isoformat(),
+                                      out,
+                                      completed.isoformat())
+        return BuildResults(proj, retcode, out, err, started, completed)
 
     def build(self, proj, **kwargs):
         '''
