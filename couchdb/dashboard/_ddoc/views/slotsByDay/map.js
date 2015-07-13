@@ -4,8 +4,10 @@ function(doc) {
 		for(var idx in doc.projects) {
 			var proj_data = {name: doc.projects[idx].name,
 							 version: doc.projects[idx].version};
-			if (doc.projects[idx].checkout == "ignore")
-				proj_data.disabled = true;
+			if (doc.projects[idx].disabled == undefined)
+				proj_data.disabled = doc.projects[idx].checkout == "ignore";
+			else
+				proj_data.disabled = doc.projects[idx].disabled;
 			projs.push(proj_data);
 		}
 		data = {"slot": doc.slot,

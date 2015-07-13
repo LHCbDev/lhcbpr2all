@@ -1,7 +1,12 @@
 function(doc) {
 	if (doc.type == "build-result" || doc.type == "tests-result") {
 		var k = [doc.slot, doc.build_id, doc.platform];
-		var data = {project: doc.project, completed: doc.completed};
+		var data = {
+				project: doc.project,
+				started: doc.started,
+				completed: doc.completed,
+				build_url: doc.build_url,
+		};
 		if (doc.type == "build-result") {
 			data.build = {warnings: doc.warnings,
 						  errors: doc.errors}
@@ -10,7 +15,7 @@ function(doc) {
 			for (var idx in doc.results) {
 				if (doc.results[idx].outcome != 'PASS' &&
 					doc.results[idx].outcome != 'UNTESTED' &&
-                                        doc.results[idx].outcome != 'SKIPPED')
+					doc.results[idx].outcome != 'SKIPPED')
 					data.tests.failed++;
 			}
 		}
