@@ -943,7 +943,8 @@ class DataProject(Project):
         '''
         data = {'name': self.name,
                 'version': self.version,
-                'checkout': 'ignore'}
+                'checkout': 'ignore',
+                'disabled': False}
         return data
 
     def __eq__(self, other):
