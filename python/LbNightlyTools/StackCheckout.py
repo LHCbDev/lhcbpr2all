@@ -130,9 +130,6 @@ class Script(BaseScript):
             else:
                 self.log.info('not patching the sources')
 
-            # this, implicitly, updates the dependencies of projects
-            cfg['projects'] = slot.toDict()['projects']
-
         # write the checkout log of projects to dedicated files
         for project in slot.projects:
             if hasattr(project, 'checkout_log'):
