@@ -32,7 +32,7 @@ class Script(BaseScript):
         Script main logic.
         '''
 
-        self._setup()
+        self._setup(json_type='tests-result')
 
         opts = self.options
 

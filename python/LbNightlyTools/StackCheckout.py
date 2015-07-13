@@ -81,16 +81,10 @@ class Script(BaseScript):
         packname.append('tar.bz2')
         return '.'.join(packname)
 
-    def _setup(self):
-        BaseScript._setup(self)
-        self.build_dir = join(os.getcwd(), 'tmp', 'checkout')
-        wipeDir(self.build_dir)
-        self.json_dir = join(self.artifacts_dir, 'db')
-        ensureDirs([self.build_dir, self.json_dir])
-
     def main(self):
         """ Main logic of the script """
-        self._setup()
+        self._setup(build_dir=join('tmp', 'checkout'),
+                    json_type='slot-config')
 
         opts = self.options
         slot = self.slot
@@ -100,23 +94,15 @@ class Script(BaseScript):
 
         # Prepare JSON doc for the database
         cfg = slot.toDict()
-        cfg['type'] = 'slot-config'
-        cfg['build_id'] = int(os.environ.get('slot_build_id', 0))
         cfg['date'] = os.environ.get('DATE', date.today().isoformat())
         cfg['started'] = self.starttime.isoformat()
         platforms = os.environ.get('platforms', '').strip().split()
         if platforms:
             cfg['platforms'] = platforms
-        # record the Jenkins build URL if available
-        if 'BUILD_URL' in os.environ:
-            cfg['build_url'] = os.environ['BUILD_URL']
-        dashboard = Dashboard(credentials=None,
-                              dumpdir=self.json_dir,
-                              submit=opts.submit,
-                              flavour=opts.flavour)
+
         # publish the configuration before the checkout
         # (but we have to update it later)
-        dashboard.publish(cfg)
+        self.dump_json(cfg)
 
         with chdir(self.build_dir):
             slot.checkout(projects=opts.projects,
@@ -182,10 +168,12 @@ class Script(BaseScript):
         # Save a copy as metadata for tools like lbn-install
         with codecs.open(join(self.artifacts_dir, 'slot-config.json'),
                          'w', 'utf-8') as config_dump:
-            json.dump(cfg, config_dump, indent=2)
+            data = dict(self.json_tmpl)
+            data.update(cfg)
+            json.dump(data, config_dump, indent=2)
 
         # publish the updated configuration JSON
-        dashboard.publish(cfg)
+        self.dump_json(cfg)
 
         self.log.info('sources ready for build (time taken: %s).',
                       donetime - self.starttime)

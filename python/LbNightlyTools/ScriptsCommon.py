@@ -159,7 +159,7 @@ class BaseScript(LbUtils.Script.PlainScript):
         for hdlr in self.log.handlers:
             hdlr.setLevel(self.log.level)
 
-    def _setup(self):
+    def _setup(self, build_dir=None, json_type=None):
         '''
         Initialize variables.
         '''
@@ -189,20 +189,30 @@ class BaseScript(LbUtils.Script.PlainScript):
         expandTokensInOptions(opts, ['build_id', 'artifacts_dir', 'rsync_dest'],
                               slot=self.slot.name)
 
-        self.build_dir = join(os.getcwd(), 'build')
+        self.build_dir = join(os.getcwd(),
+                              'build' if build_dir is None else build_dir)
         self.artifacts_dir = join(os.getcwd(), opts.artifacts_dir)
+        self.json_dir = join(self.artifacts_dir, 'db')
 
         # ensure that we have the artifacts directory for the sources
-        ensureDirs([self.artifacts_dir, self.build_dir])
+        ensureDirs([self.artifacts_dir, self.build_dir, self.json_dir])
 
         # template data to be reported in every JSON file
         self.json_tmpl = {'slot': self.slot.name,
-                          'build_id': int(os.environ.get('slot_build_id', 0)),
-                          'platform': self.platform}
+                          'build_id': int(os.environ.get('slot_build_id', 0))}
+        if json_type:
+            self.json_tmpl['type'] = json_type
+
+        # checkout is platform independent, the others require it
+        if json_type != 'slot-config':
+            self.json_tmpl['platform'] = self.platform
+
+        # record the Jenkins build URL if available
+        if 'BUILD_URL' in os.environ:
+            self.json_tmpl['build_url'] = os.environ['BUILD_URL']
 
         self.dashboard = Dashboard(credentials=None,
-                                   dumpdir=os.path.join(self.artifacts_dir,
-                                                        'db'),
+                                   dumpdir=self.json_dir,
                                    submit=opts.submit,
                                    flavour=opts.flavour)
         if opts.projects:
@@ -242,3 +252,13 @@ class BaseScript(LbUtils.Script.PlainScript):
         os.path.join(self._buildDir(proj), level1, level2).
         '''
         return os.path.join(self.build_dir, proj.baseDir, *subdirs)
+
+    def dump_json(self, data):
+        '''
+        Write a JSON file into the special artifacts 'db' directory.
+
+        @param data: mapping with the data to write
+        '''
+        output_data = dict(self.json_tmpl)
+        output_data.update(data)
+        self.dashboard.publish(output_data)

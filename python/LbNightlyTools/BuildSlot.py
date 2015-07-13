@@ -173,27 +173,6 @@ class Script(BaseScript):
         addDeploymentOptions(self.parser)
         addDashboardOptions(self.parser)
 
-    def _setup(self):
-        '''
-        Initialize variables.
-        '''
-        BaseScript._setup(self)
-
-        self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
-                                          r'(\.git)|(\.svn)|'
-                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
-                                          ).format(self.platform))
-
-    def dump_json(self, data):
-        '''
-        Write a JSON file into the special artifacts 'db' directory.
-
-        @param data: mapping with the data to write
-        '''
-        output_data = dict(self.json_tmpl)
-        output_data.update(data)
-        self.dashboard.publish(output_data)
-
     def write(self, path, data):
         '''
         Simple function to write some text (UTF-8) to a file.
@@ -341,7 +320,11 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         if opts.coverity:
             self.log.warning('Coverity analysis not implemented yet')
 
-        self._setup()
+        self._setup(json_type='build-result')
+        self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
+                                          r'(\.git)|(\.svn)|'
+                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
+                                          ).format(self.platform))
 
         if opts.submit and not opts.projects:
             # ensure that results for the current slot/build/platform are
@@ -528,17 +511,12 @@ class BuildReporter(object):
         '''
         w_count = sum(map(len, self.summary['warning'].values()))
         e_count = sum(map(len, self.summary['error'].values()))
-        data = {}
-        data.update({"type": "build-result",
-                     "slot": self.slot.name,
-                     "build_id": int(os.environ.get('slot_build_id', 0)),
-                     "project": self.project,
-                     "platform": self.platform,
-                     'started': self.result.started.isoformat(),
-                     'completed': self.result.completed.isoformat(),
-                     'retcode': self.result.returncode,
-                     "warnings": w_count,
-                     "errors": e_count})
+        data = {'project': self.project,
+                'started': self.result.started.isoformat(),
+                'completed': self.result.completed.isoformat(),
+                'retcode': self.result.returncode,
+                'warnings': w_count,
+                'errors': e_count}
         return data
 
     def genOldSummaries(self):
