@@ -16,6 +16,9 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import shutil
+import json
+import codecs
+from datetime import datetime
 
 from LbNightlyTools.Utils import chdir
 from LbNightlyTools.RsyncManager import execute_rsync
@@ -44,16 +47,27 @@ class Script(BaseScript):
 
         # run tests
         with chdir(self.build_dir):
-            for proj, _result in self.slot.testGen(projects=opts.projects):
+            def before(proj):
+                self.dump_json({'project': proj.name,
+                                'started': datetime.now().isoformat()})
+            for proj, _result in self.slot.testGen(projects=opts.projects, before=before):
                 html_src = self._buildDir(proj,
                                           'build.{}'.format(self.platform),
                                           'html')
+                summary_json = os.path.join(html_src, 'summary.json')
                 html_dst = self._summaryDir(proj, 'html')
                 if os.path.exists(html_dst):
                     shutil.rmtree(html_dst)
                 if os.path.exists(html_src):
                     shutil.copytree(html_src, html_dst)
-
+                try:
+                    results = json.load(codecs.open(summary_json,
+                                                    'rb', 'utf-8'))
+                except: # ignore errors reading summary file
+                    results = []
+                self.dump_json({'project': proj.name,
+                                'completed': datetime.now().isoformat(),
+                                'results': results})
         # FIXME: execute_rsync
 
         return 0
