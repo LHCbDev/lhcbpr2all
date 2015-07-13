@@ -213,32 +213,6 @@ class Script(BaseScript):
         ensureDirs([dst])
         shutil.copy(src, os.path.join(self.artifacts_dir, dst, new_name))
 
-    def deployReports(self, files):
-        '''
-        Helper function to copy the reports in the required directory.
-        '''
-        if not self.options.deploy_dir:
-            return
-        from os.path import basename, isdir, isfile, islink
-        for filename in files:
-            try:
-                dirname = join(self.options.deploy_dir, basename(filename))
-                if isdir(dirname):
-                    shutil.rmtree(dirname)
-                elif isfile(dirname) or islink(dirname):
-                    os.remove(dirname)
-                self.log.info('Copying %s to deployment directory %s',
-                              filename, dirname)
-                if isdir(filename):
-                    shutil.copytree(filename, dirname)
-                elif isfile(filename):
-                    shutil.copy2(filename, dirname)
-                else:
-                    self.log.warning('Cannot deploy %s (does it exist?)',
-                                     filename)
-            except os.error, err:
-                self.log.warning('Problems deploying %s: %s', filename, err)
-
     def _prepareBuildDir(self):
         '''
         Prepare the build directory unpacking all the available artifacts
@@ -424,7 +398,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 reporter = BuildReporter(summary_dir, proj.name,
                                          self.platform,
                                          self.slot, result)
-                self.deployReports(reporter.genOldSummaries())
+                reporter.genOldSummaries()
                 self.dump_json(reporter.json())
 
                 self._recordSourcesLists(proj, 'sources_built.list')
@@ -526,8 +500,6 @@ class BuildReporter(object):
     def genOldSummaries(self):
         '''
         Produce summary files compatible with the old dashboard.
-
-        @return: list of generated files and directories
         '''
         from os.path import dirname, exists
         from itertools import islice
@@ -634,8 +606,6 @@ class BuildReporter(object):
         # copy the JavascriptCode
         shutil.copy(join(dirname(__file__), 'logFileJQ.js'),
                     join(self.summary_dir, 'logFileJQ.js'))
-
-        return [join(self.summary_dir, 'logFileJQ.js')]
 
     def _parseLog(self):
         '''

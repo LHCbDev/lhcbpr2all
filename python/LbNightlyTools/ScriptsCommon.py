@@ -72,12 +72,6 @@ def addDeploymentOptions(parser):
     from optparse import OptionGroup
     group = OptionGroup(parser, "Deployment Options")
 
-    group.add_option('--deploy-reports-to',
-                     action='store', metavar='DEST_DIR', dest='deploy_dir',
-                     help='if the destination directory is specified, the '
-                          'old-style summaries are deployed to that '
-                          'directory as soon as they are produced')
-
     group.add_option('--rsync-dest',
                      action='store', metavar='DEST',
                      help='deploy artifacts to this location using rsync '
@@ -85,8 +79,7 @@ def addDeploymentOptions(parser):
                           '--build-id)')
 
     parser.add_option_group(group)
-    parser.set_defaults(deploy_dir=None,
-                        rsync_dest=None)
+    parser.set_defaults(rsync_dest=None)
     return parser
 
 def addDashboardOptions(parser):
@@ -163,7 +156,7 @@ class BaseScript(LbUtils.Script.PlainScript):
         '''
         Initialize variables.
         '''
-        from os.path import basename, exists, join
+        from os.path import exists, join
         from datetime import datetime
         from LbNightlyTools.Configuration import getSlot, parse as parseConfig
         from LbNightlyTools.Utils import ensureDirs, Dashboard
@@ -226,13 +219,6 @@ class BaseScript(LbUtils.Script.PlainScript):
                                   exc.args)
         else:
             opts.projects = None
-
-        if opts.deploy_dir:
-            # ensure that the deployment dir ends with the slot name...
-            if basename(opts.deploy_dir) != self.slot.name:
-                opts.deploy_dir = join(opts.deploy_dir, self.slot.name)
-            # ... and that the directory exists
-            ensureDirs([opts.deploy_dir])
 
     def _summaryDir(self, proj, *subdirs):
         '''
