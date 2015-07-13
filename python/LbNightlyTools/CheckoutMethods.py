@@ -131,6 +131,9 @@ def git(desc, url, commit='master', export=False):
         outputs.append(log_call(*args, **kwargs))
 
     call(['git', 'clone', '--no-checkout', url, dest])
+    if not os.path.exists(dest):
+        # ensure the destination directory exists even when the cloning fails
+        os.makedirs(dest)
     if not export:
         log.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
