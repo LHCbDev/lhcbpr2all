@@ -388,8 +388,12 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         jobs = []
         from subprocess import STDOUT
         with chdir(self.build_dir):
+            def record_start(proj):
+                self.dump_json({'project': proj.name,
+                                'started': datetime.now().isoformat()})
             for proj, result in self.slot.buildGen(projects=opts.projects,
-                                                   stderr=STDOUT):
+                                                   stderr=STDOUT,
+                                                   before=record_start):
                 summary_dir = self._summaryDir(proj)
                 ensureDirs([summary_dir])
 

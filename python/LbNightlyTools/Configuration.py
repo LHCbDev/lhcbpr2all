@@ -1353,8 +1353,11 @@ class Slot(object):
 
         @return: tuples (project_name, build_result)
         '''
+        before = kwargs.pop('before', None)
         for project in self._projects_by_deps(kwargs.pop('projects', None)):
             if not project.disabled:
+                if before:
+                    before(project)
                 yield (project,
                        project.build(cache_entries=self.cache_entries,
                                      **kwargs))
@@ -1385,9 +1388,13 @@ class Slot(object):
 
         @param projects: optional list of projects to build [default: all]
         '''
+        before = kwargs.pop('before', None)
         for project in self._projects_by_deps(kwargs.pop('projects', None)):
-            yield (project,
-                   project.test(cache_entries=self.cache_entries,
+            if not project.disabled:
+                if before:
+                    before(project)
+                yield (project,
+                       project.test(cache_entries=self.cache_entries,
                                 **kwargs))
 
     def test(self, **kwargs):
