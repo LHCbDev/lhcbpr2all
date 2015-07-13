@@ -16,11 +16,13 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import os
 import re
 import logging
+from datetime import datetime
+from collections import OrderedDict
+
 from LbNightlyTools.Utils import (applyenv, ensureDirs,
                                   shallow_copytree, IgnorePackageVersions,
                                   find_path, write_patch)
 from LbNightlyTools import CheckoutMethods, BuildMethods
-from collections import OrderedDict
 
 __log__ = logging.getLogger(__name__)
 
@@ -186,7 +188,6 @@ def log_timing(logger='', level=logging.DEBUG):
         from functools import wraps
         @wraps(method)
         def wrapper(*args, **kwargs):
-            from datetime import datetime
             start_time = datetime.now()
             logger.log(level, 'Started at: %s', start_time)
             result = method(*args, **kwargs)
@@ -726,13 +727,13 @@ class Package(object):
         else:
             return os.path.join(self.name, self.version)
 
-    @RecordLogger(BuildMethods.__log__)
-    @log_timing(BuildMethods.__log__)
+    @RecordLogger(CheckoutMethods.__log__)
+    @log_timing(CheckoutMethods.__log__)
     def build(self, **kwargs):
         '''
         Build the package and return the return code of the build process.
         '''
-        from .BuildMethods import __log__ as log, log_call
+        from .CheckoutMethods import __log__ as log, log_call
         base = self.baseDir
         if os.path.exists(os.path.join(base, 'Makefile')):
             log.info('building %s (make)', self)
@@ -970,6 +971,10 @@ class DataProject(Project):
         for key in state:
             setattr(self, key, state[key])
 
+    def __str__(self):
+        '''String representation of the project.'''
+        return self.name
+
     @property
     def baseDir(self):
         '''Name of the package directory (relative to the build directory).'''
@@ -1034,6 +1039,36 @@ class DataProject(Project):
 
         from CheckoutMethods import _merge_outputs
         return _merge_outputs(outputs)
+
+    def build(self, **kwargs):
+        '''
+        No build step for data packages.
+        '''
+        from BuildMethods import BuildResults
+        now = datetime.now()
+        return BuildResults(self, 0,
+                            '%s does not require build' % self,
+                            '', now, now)
+
+    def clean(self, **kwargs):
+        '''
+        No build step for data packages.
+        '''
+        from BuildMethods import BuildResults
+        now = datetime.now()
+        return BuildResults(self, 0,
+                            '%s does not require clean' % self,
+                            '', now, now)
+
+    def test(self, **kwargs):
+        '''
+        No test step for data packages.
+        '''
+        from BuildMethods import BuildResults
+        now = datetime.now()
+        return BuildResults(self, 0,
+                            '%s does not require test' % self,
+                            '', now, now)
 
 
 class DBASE(DataProject):
