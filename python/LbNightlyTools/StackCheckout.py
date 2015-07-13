@@ -8,7 +8,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-from LbNightlyTools.BuildSlot import wipeDir
 '''
 Module containing the classes and functions used to checkout a set of projects,
 fixing their dependencies to produce a consistent set.
@@ -22,9 +21,8 @@ import codecs
 from itertools import chain
 from datetime import date
 from os.path import join
-from LbNightlyTools.Utils import Dashboard, ensureDirs, chdir, pack
+from LbNightlyTools.Utils import chdir, pack
 from LbNightlyTools.Configuration import DataProject
-
 
 __log__ = logging.getLogger(__name__)
 
@@ -175,6 +173,9 @@ class Script(BaseScript):
         # publish the updated configuration JSON
         self.dump_json(cfg)
 
+        self.deploy_artifacts()
+
         self.log.info('sources ready for build (time taken: %s).',
                       donetime - self.starttime)
+
         return 0

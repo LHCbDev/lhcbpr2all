@@ -20,8 +20,7 @@ import json
 import codecs
 from datetime import datetime
 
-from LbNightlyTools.Utils import chdir
-from LbNightlyTools.RsyncManager import execute_rsync
+from LbNightlyTools.Utils import chdir, TaskQueue
 from LbNightlyTools.BuildSlot import unpackArtifacts, wipeDir
 
 from LbNightlyTools.ScriptsCommon import BaseScript
@@ -44,6 +43,11 @@ class Script(BaseScript):
             wipeDir(self.build_dir)
         if not opts.no_unpack:
             unpackArtifacts(self.artifacts_dir, self.build_dir)
+
+        if self.options.rsync_dest:
+            tasks = TaskQueue()
+        else:
+            tasks = None
 
         # run tests
         with chdir(self.build_dir):
@@ -68,6 +72,11 @@ class Script(BaseScript):
                 self.dump_json({'project': proj.name,
                                 'completed': datetime.now().isoformat(),
                                 'results': results})
-        # FIXME: execute_rsync
+                if tasks:
+                    tasks.add(self.deploy_artifacts)
+
+        if tasks:
+            self.log.debug('waiting for pending tasks')
+            tasks.join()
 
         return 0

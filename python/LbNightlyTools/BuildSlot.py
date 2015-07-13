@@ -18,13 +18,11 @@ import logging
 import shutil
 import os
 import re
-import time
 import socket
-import threading
 import codecs
 
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
-from LbNightlyTools.RsyncManager import execute_rsync
+from LbNightlyTools.Utils import TaskQueue
 
 from string import Template
 from datetime import datetime
@@ -310,56 +308,11 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
         self._prepareBuildDir()
 
-        class AsyncTask(threading.Thread):
-            '''
-            Simple wrapper around subprocess.call to execute it in a separate
-            thread.
-            '''
-            def __init__(self, *args, **kwargs):
-                super(AsyncTask, self).__init__()
-                self.args = args
-                self.kwargs = kwargs
-                self.retcode = -1
-                self.start()
-            def run(self):
-                self.retcode = call(*self.args, **self.kwargs)
-            def wait(self):
-                '''
-                Block until the subprocess exits and return its exit code.
-                '''
-                self.join()
-                return self.retcode
+        if self.options.rsync_dest:
+            tasks = TaskQueue()
+        else:
+            tasks = None
 
-        class DeployArtifactsTask(threading.Thread):
-            '''
-            Call asynchronously 'rsync' to deploy the build artifacts.
-            '''
-            def __init__(self, script):
-                self.script = script
-                if self.script.options.rsync_dest:
-                    self.retcode = -1
-                    super(DeployArtifactsTask, self).__init__()
-                    self.start()
-                else:
-                    self.retcode = 0
-            def run(self):
-
-                self.retcode = execute_rsync(self.script.artifacts_dir,
-                                             self.script.options.rsync_dest)
-            def wait(self):
-                '''
-                Block until the subprocess exits and return its exit code.
-                '''
-                if self.script.options.rsync_dest:
-                    self.join()
-                return self.retcode
-            def __str__(self):
-                '''
-                Task description.
-                '''
-                return 'deploy artifacts'
-
-        jobs = []
         from subprocess import STDOUT
         with chdir(self.build_dir):
             def record_start(proj):
@@ -424,30 +377,17 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                           for f in sorted(to_pack_list)],
                          shr_packname, cwd=self.build_dir, checksum='md5')
 
-        if jobs:
-            self.log.info('waiting for pending tasks...')
-            for i, j in enumerate(jobs):
-                self.log.info('- (%d/%d) %s', i+1, len(jobs), j)
-                j.wait()
+                if tasks:
+                    tasks.add(self.deploy_artifacts)
+
+        if tasks:
+            self.log.info('waiting for pending tasks')
+            tasks.join()
 
         self.completetime = datetime.now()
 
         self.log.info('build completed in %s',
                       self.completetime - self.starttime)
-
-        if opts.rsync_dest:
-            self.log.info('deploying artifacts...')
-            retcode = 1
-            for _ in range(5):
-                retcode = DeployArtifactsTask(self).wait()
-                if retcode == 0:
-                    self.log.info('... artifacts deployed')
-                    break
-                self.log.info('problems deploying artifacts, retrying...')
-                time.sleep(30)
-            else: # this "else" belong to "for count..."
-                self.log.error('artifacts deployment failed')
-                return retcode
 
         return 0
 

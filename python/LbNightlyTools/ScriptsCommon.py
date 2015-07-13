@@ -14,6 +14,8 @@ Common utility functions used in scripts.
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
+import logging
+from LbNightlyTools.RsyncManager import execute_rsync
 
 def addBasicOptions(parser):
     '''
@@ -248,3 +250,16 @@ class BaseScript(LbUtils.Script.PlainScript):
         output_data = dict(self.json_tmpl)
         output_data.update(data)
         self.dashboard.publish(output_data)
+
+    def deploy_artifacts(self):
+        '''
+        Deploy the artifacts to the remote host, if needed.
+        '''
+        if self.options.rsync_dest:
+            if self.log.level <= logging.DEBUG:
+                extra_param = ['--progress']
+            else:
+                extra_param = []
+            self.log.debug('deploying artifacts to %s', self.options.rsync_dest)
+            execute_rsync(self.artifacts_dir, self.options.rsync_dest,
+                          extra_param=extra_param)

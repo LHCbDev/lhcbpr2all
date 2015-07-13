@@ -555,6 +555,48 @@ class Dashboard(object):
                 yield (r[u'key'], v[u'slot'], v[u'build_id'])
 
 
+class TaskQueue(object):
+    '''
+    Simple class to schedule asynchronous operations.
+    '''
+    def __init__(self):
+        '''
+        Initialize the task queue and start the worker thread.
+        '''
+        from threading import Thread
+        from Queue import Queue
+        self.queue = Queue()
+        def worker(q):
+            'Worker main loop.'
+            while True:
+                action, args, kwargs = q.get()
+                action(*args, **kwargs)
+                q.task_done()
+        self.thread = Thread(target=worker, args=(self.queue,))
+        # do not wait for the thread when exiting the application
+        self.thread.daemon = True
+        self.thread.start()
+
+    def add(self, task, args=None, kwargs=None):
+        '''
+        Add a new task to the queue.
+
+        @param task: callable to be executed
+        @param args: positional arguments to pass to the task callable
+        @param kwargs: keyword arguments to pass to the task callable
+        '''
+        if args is None:
+            args = tuple()
+        if kwargs is None:
+            kwargs = {}
+        self.queue.put((task, args, kwargs))
+
+    def join(self):
+        '''
+        Waits until all the tasks completed.
+        '''
+        self.queue.join()
+
 
 class JenkinsTest(object):
     '''
