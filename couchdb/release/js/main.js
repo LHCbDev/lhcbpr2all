@@ -286,24 +286,28 @@ jQuery.fn.lbSlotTable = function(data) {
                     var summ = $('div[slot="' + key[0] + '"][build_id="' + key[1] + '"]' + ' tr[project="' + value.project + '"]' + ' td[platform="' + key[2] + '"]');
                     if (value.build) {
                         var b = summ.find('.build');
-                        b.html('<a href="' + buildURL(key[0], key[1], key[2], value.project) + '" target="_blank">build</a>');
-                        if (value.build.errors) {
-                            b.addClass('failure').append(' (' + value.build.errors + ')');
-                        } else if (value.build.warnings) {
-                            b.addClass('warning').append(' (' + value.build.warnings + ')');
-                        } else {
-                            b.addClass('success');
+                        if (value.completed) {
+                            b.html('<a href="' + buildURL(key[0], key[1], key[2], value.project) + '" target="_blank">build</a>');
+                            if (value.build.errors) {
+                                b.addClass('failure').append(' (' + value.build.errors + ')');
+                            } else if (value.build.warnings) {
+                                b.addClass('warning').append(' (' + value.build.warnings + ')');
+                            } else {
+                                b.addClass('success');
+                            }
                         }
                     }
                     if (value.tests) {
                         var t = summ.find('.tests');
-                        t.html('<a href="' + testsURL(key[0], key[1], key[2], value.project) + '" target="_blank">tests</a>');
-                        if (value.tests.failed) {
-                            t.addClass('failure').append(' (' + value.tests.failed + ')');
-                        } else if (!value.tests.total) {
-                            t.addClass('warning').append(' (0)');
-                        } else {
-                            t.addClass('success');
+                        if (value.completed) {
+                            t.html('<a href="' + testsURL(key[0], key[1], key[2], value.project) + '" target="_blank">tests</a>');
+                            if (value.tests.failed) {
+                                t.addClass('failure').append(' (' + value.tests.failed + ')');
+                            } else if (!value.tests.total) {
+                                t.addClass('warning').append(' (0)');
+                            } else {
+                                t.addClass('success');
+                            }
                         }
                     }
                     if (value.completed) {
