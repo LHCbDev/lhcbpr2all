@@ -104,6 +104,13 @@ def addDashboardOptions(parser):
     group.add_option('--flavour',
                      help='which build server to use (build flavour)')
 
+    group.add_option('--db-url',
+                     help='database server to use instead of the default one')
+
+    group.add_option('--db-name',
+                     help='override database name '
+                          '[default: nightlies-{flavour}]')
+
     parser.add_option_group(group)
     parser.set_defaults(submit=False, flavour='nightly')
     return parser
@@ -206,10 +213,21 @@ class BaseScript(LbUtils.Script.PlainScript):
         if 'BUILD_URL' in os.environ:
             self.json_tmpl['build_url'] = os.environ['BUILD_URL']
 
+        db_url, db_name = Dashboard.dbInfo(opts.flavour)
+        if opts.db_url:
+            db_url = opts.db_url
+            # ensure that the db_url ends with '/'
+            if not db_url.endswith('/'):
+                db_url += '/'
+            db_name = 'nightlies-{0}'.format(opts.flavour)
+        if opts.db_name:
+            db_name = opts.db_name
+
         self.dashboard = Dashboard(credentials=None,
                                    dumpdir=self.json_dir,
                                    submit=opts.submit,
-                                   flavour=opts.flavour)
+                                   flavour=opts.flavour,
+                                   db_info=(db_url, db_name))
         if opts.projects:
             proj_names = dict((proj.name.lower(), proj.name)
                               for proj in self.slot.projects)
