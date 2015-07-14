@@ -178,7 +178,8 @@ class XTerm2HTML(object):
             data.append('<div class="{}" id="l{}">'
                           .format(line_styles[self.line % 2], self.line))
 
-            self.log.debug('line %d: initial class %s', self.line, old_class)
+            if old_class:
+                self.log.debug('line %d: initial class %s', self.line, old_class)
 
             pos = 0
             while True:
@@ -214,6 +215,19 @@ class XTerm2HTML(object):
                 data.append('</span>')
             data.append('</div>\n')
         return ''.join(data)
+
+
+def convertFile(src, dst):
+    '''
+    Small helper to convert a text (ANSI) file to HTML.
+    '''
+    from os.path import basename
+    conv = XTerm2HTML()
+    with open(dst, 'w') as dst_file, open(src) as src_file:
+        dst_file.write(conv.head(title=basename(src)))
+        dst_file.write(conv.process(src_file.read()))
+        dst_file.write(conv.tail())
+
 
 # tests for special cases
 def test_special_cases():

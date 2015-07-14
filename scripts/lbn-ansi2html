@@ -12,9 +12,8 @@
 '''
 Script to convert a console output to html.
 '''
-
 import os
-from LbNightlyTools.HTMLUtils import XTerm2HTML
+from LbNightlyTools.HTMLUtils import convertFile
 from optparse import OptionParser
 
 parser = OptionParser(usage='%prog [options] <input> <output>')
@@ -24,8 +23,4 @@ try:
 except ValueError:
     parser.error('wrong number of arguments')
 
-conv = XTerm2HTML()
-with open(output, 'w') as dest, open(input) as src:
-    dest.write(conv.head(title=os.path.basename(input)))
-    dest.write(conv.process(src.read()))
-    dest.write(conv.tail())
+convertFile(input, output)
