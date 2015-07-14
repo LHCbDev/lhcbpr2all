@@ -347,9 +347,18 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                             manif.write(createManifestFile(proj.name, proj.version,
                                                            self.platform,
                                                            proj.build_dir))
-
-                with open(join(summary_dir, 'build.log'), 'w') as f:
-                    f.write(result.stdout)
+                if str(self.slot.build_tool) == 'CMake':
+                    from itertools import takewhile as twhile
+                    with open(join(summary_dir, 'build.log'), 'w') as f:
+                        f.writelines(twhile(lambda s:
+                                            not s.startswith('#### CMake all'),
+                                            result.stdout.splitlines(True)))
+                    call(['lbn-collect-build-logs', '--debug', '--append',
+                          self._buildDir(proj, 'build.%s' % self.platform),
+                          join(summary_dir, 'build.log')])
+                else:
+                    with open(join(summary_dir, 'build.log'), 'w') as f:
+                        f.write(result.stdout)
                 reporter = BuildReporter(summary_dir, proj.name,
                                          self.platform,
                                          self.slot, result)
