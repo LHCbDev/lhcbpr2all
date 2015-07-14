@@ -481,34 +481,12 @@ class BuildReporter(object):
 
         # copy the build log, prepending environment and checkout
         env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
-        checkout_logfile = join(self.summary_dir, os.pardir, os.pardir,
-                                self.project + '.checkout.log')
-        if exists(checkout_logfile):
-            def checkout_log():
-                from itertools import cycle
-                from xml.sax.saxutils import escape
-                cl = cycle(('even', 'odd'))
-                for l in open(checkout_logfile):
-                    yield u'<div class="{0}">{1}</div>\n'.format(cl.next(),
-                                                                 escape(l))
-            checkout_lines = list(checkout_log())
-        elif exists(join(self.summary_dir, os.pardir, os.pardir,
-                         'checkout_job_url.txt')):
-            checkout_fmt = u'<a href="{0}console">available on ''Jenkins</a>\n'
-            jenkins_co_url = (open(join(self.summary_dir,
-                                        os.pardir, os.pardir,
-                                        'checkout_job_url.txt'))
-                              .read().strip())
-            checkout_lines = [checkout_fmt.format(jenkins_co_url)]
-        else:
-            checkout_lines = [u'<div class="even">no checkout log</div>\n']
 
         # generate HTML summary main page
         html_summary = join(self.summary_dir, 'build_log.html')
         f = codecs.open(html_summary, 'w', 'utf-8')
-        f.write(self._oldHtml(len(env_lines), len(checkout_lines)))
+        f.write(self._oldHtml(len(env_lines)))
         f.close()
-
 
         # generate HTML log chunks
         # - convert the sections from (name, begin) -> (name, begin, end+1)
@@ -527,14 +505,6 @@ class BuildReporter(object):
             chunkname = join(chunksdir, chunkname)
             chunkfile = codecs.open(chunkname, 'w', 'utf-8')
             chunkfile.writelines(formatTxt(lines, offset))
-            chunkfile.close()
-            offset += len(lines)
-        for chunkname, lines in zip(['checkout'], [checkout_lines]):
-            chunkname = join(chunksdir, chunkname)
-            chunkfile = codecs.open(chunkname, 'w', 'utf-8')
-            chunkfile.write(u'<html>\n')
-            chunkfile.writelines(lines)
-            chunkfile.write(u'</html>\n')
             chunkfile.close()
             offset += len(lines)
         for _, begin, end in sections:
@@ -642,12 +612,10 @@ class BuildReporter(object):
         summary['sections'] = sections
         return summary
 
-    def _oldHtml(self, env_size=0, checkout_size=0):
+    def _oldHtml(self, env_size=0):
         '''
         @param env_size: number of lines of the log file used for the
                          environment dump
-        @param checkout_size: number of lines of the log file used for the
-                              checkout dump
 
         @return: HTML report page of the build of a project.
         '''
@@ -663,11 +631,7 @@ class BuildReporter(object):
         logfile_links.append({'id': 'env',
                               'f': 0, 'l': max(0, env_size-1),
                               'desc': 'Show details of environment'})
-        logfile_links.append({'id': 'checkout',
-                              'f': env_size,
-                              'l': env_size + max(0, checkout_size-1),
-                              'desc': 'Show checkout log'})
-        offset = env_size + checkout_size
+        offset = env_size
 
         special_sections = set(['configure', "'global'",
                                 'install', 'unsafe-install', 'post-install'])
