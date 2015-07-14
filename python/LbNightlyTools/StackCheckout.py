@@ -22,6 +22,7 @@ from itertools import chain
 from datetime import date
 from os.path import join
 from LbNightlyTools.Utils import chdir, pack
+from LbNightlyTools.HTMLUtils import XTerm2HTML
 from LbNightlyTools.Configuration import DataProject
 
 __log__ = logging.getLogger(__name__)
@@ -122,6 +123,11 @@ class Script(BaseScript):
                                   '.'.join((project.name, 'checkout.log')))
                 with open(co_logfile, 'w') as co_log:
                     co_log.write(project.checkout_log)
+                with open(co_logfile + '.html', 'w') as co_log:
+                    conv = XTerm2HTML()
+                    co_log.write(conv.head(title=os.path.basename(co_logfile)))
+                    co_log.write(conv.process(project.checkout_log))
+                    co_log.write(conv.tail())
 
         def containers():
             '''
