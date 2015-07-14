@@ -441,7 +441,7 @@ class BuildReporter(object):
         '''
         Produce summary files compatible with the old dashboard.
         '''
-        from os.path import dirname, exists
+        from os.path import dirname
         from itertools import islice
         import cgi
 

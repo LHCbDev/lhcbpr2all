@@ -222,7 +222,7 @@ def log_call(*args, **kwargs):
     hello
     (0, 'hello\\n', '')
     '''
-    from subprocess import Popen, PIPE, STDOUT
+    from subprocess import Popen, PIPE
     import select
     import errno
 
