@@ -133,7 +133,7 @@ class Script(BaseScript):
         group.add_option('-j', '--jobs',
                          action='store', type='int',
                          help='number of parallel jobs to use during the build '
-                              '(default: sequential build)')
+                              '(default: N of cores + 1)')
 
         group.add_option('-l', '--load-average',
                          action='store', type='float',
@@ -152,7 +152,7 @@ class Script(BaseScript):
             load_average = float(os.environ['LBN_LOAD_AVERAGE'])
         else:
             load_average = cpu_count()*LOAD_AVERAGE_SCALE
-        self.parser.set_defaults(jobs=1,
+        self.parser.set_defaults(jobs=cpu_count() + 1,
                                  load_average=load_average,
                                  coverity=False)
 
@@ -319,6 +319,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 self.dump_json({'project': proj.name,
                                 'started': datetime.now().isoformat()})
             for proj, result in self.slot.buildGen(projects=opts.projects,
+                                                   jobs=opts.jobs,
+                                                   max_load=opts.load_average,
                                                    stderr=STDOUT,
                                                    before=record_start):
                 summary_dir = self._summaryDir(proj)
