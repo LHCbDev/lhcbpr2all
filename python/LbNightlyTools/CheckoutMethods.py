@@ -465,9 +465,9 @@ def ganga(desc, rootdir='.'):
     '''
     __log__.debug('getting checkout script')
     script_url = 'svn+ssh://svn.cern.ch/reps/ganga/trunk/external/LHCbSetupProject/scripts/lhcb-prepare'
-    call(['svn', 'export', script_url], cwd=rootdir)
+    retry_log_call(['svn', 'export', script_url], cwd=rootdir)
     __log__.debug('running checkout script')
-    call([os.path.join(rootdir, 'lhcb-prepare'), '-d', rootdir, desc.version.lower()])
+    retry_log_call([os.path.join(rootdir, 'lhcb-prepare'), '-d', rootdir, desc.version.lower()])
 
     projdir = os.path.join(rootdir, desc.baseDir)
 
