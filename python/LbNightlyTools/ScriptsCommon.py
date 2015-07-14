@@ -142,6 +142,20 @@ def expandTokensInOptions(options, opt_names, **kwargs):
         except AttributeError:
             pass
 
+
+def findSlot(name):
+    '''
+    Helper to load a Slot configuration from filename or from slot name.
+    '''
+    from os.path import exists
+    from LbNightlyTools.Configuration import getSlot, parse as parseConfig
+    if exists(name.split('#')[0]):
+        return parseConfig(name)
+    else:
+        return getSlot(name,
+                       'configs' if exists('configs') else os.curdir)
+
+
 import LbUtils.Script
 class BaseScript(LbUtils.Script.PlainScript):
     '''
@@ -172,20 +186,15 @@ class BaseScript(LbUtils.Script.PlainScript):
         '''
         Initialize variables.
         '''
-        from os.path import exists, join
+        from os.path import join
         from datetime import datetime
-        from LbNightlyTools.Configuration import getSlot, parse as parseConfig
         from LbNightlyTools.Utils import ensureDirs, Dashboard
 
         opts = self.options
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
-        if exists(self.args[0].split('#')[0]):
-            self.slot = parseConfig(self.args[0])
-        else:
-            self.slot = getSlot(self.args[0],
-                           'configs' if exists('configs') else os.curdir)
+        self.slot = findSlot(self.args[0])
 
         from LbNightlyTools.Utils import setDayNamesEnv
         setDayNamesEnv()

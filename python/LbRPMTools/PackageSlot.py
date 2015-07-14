@@ -479,8 +479,10 @@ class Script(LbUtils.Script.PlainScript):
         builddir = os.path.join(os.getcwd(), 'build')
 
         # Now loading the slot configuration
-        from LbNightlyTools import Configuration
-        self.config = Configuration.load(self.args[0])
+        from LbNightlyTools.ScriptsCommon import findSlot
+        self.slot = findSlot(self.args[0])
+        # FIXME: to be ported to the new configuration classes
+        self.config = self.slot.toDict()
 
         expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
                               slot=self.config[u'slot'])
