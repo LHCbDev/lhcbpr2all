@@ -29,6 +29,12 @@ def addBasicOptions(parser):
                            'be a format string using the parameter '
                            '"slot" [default: %default]')
 
+    parser.add_option('--slot-build-id',
+                      action='store', type='int',
+                      help='numeric id of the build [default: '
+                           'taken from the slot configuration, '
+                           'the environment ${slot_build_id} or 0]')
+
     parser.add_option('--artifacts-dir',
                       action='store', metavar='DIR',
                       help='directory where to store the artifacts')
@@ -39,6 +45,7 @@ def addBasicOptions(parser):
                            ' [default: all]')
 
     parser.set_defaults(build_id='{slot}',
+                        slot_build_id=0,
                         artifacts_dir='artifacts')
     return parser
 
@@ -161,7 +168,7 @@ class BaseScript(LbUtils.Script.PlainScript):
         for hdlr in self.log.handlers:
             hdlr.setLevel(self.log.level)
 
-    def _setup(self, build_dir=None, json_type=None):
+    def _setup(self, build_dir=None, json_type=None, make_dirs=True):
         '''
         Initialize variables.
         '''
@@ -197,11 +204,17 @@ class BaseScript(LbUtils.Script.PlainScript):
         self.json_dir = join(self.artifacts_dir, 'db')
 
         # ensure that we have the artifacts directory for the sources
-        ensureDirs([self.artifacts_dir, self.build_dir, self.json_dir])
+        if make_dirs:
+            ensureDirs([self.artifacts_dir, self.build_dir, self.json_dir])
+
+        if opts.slot_build_id:
+            self.slot.build_id = self.opts.slot_build_id
+        elif not self.slot.build_id:
+            self.slot.build_id = int(os.environ.get('slot_build_id', 0))
 
         # template data to be reported in every JSON file
         self.json_tmpl = {'slot': self.slot.name,
-                          'build_id': int(os.environ.get('slot_build_id', 0))}
+                          'build_id': self.slot.build_id}
         if json_type:
             self.json_tmpl['type'] = json_type
 
@@ -213,21 +226,23 @@ class BaseScript(LbUtils.Script.PlainScript):
         if 'BUILD_URL' in os.environ:
             self.json_tmpl['build_url'] = os.environ['BUILD_URL']
 
-        db_url, db_name = Dashboard.dbInfo(opts.flavour)
-        if opts.db_url:
-            db_url = opts.db_url
-            # ensure that the db_url ends with '/'
-            if not db_url.endswith('/'):
-                db_url += '/'
-            db_name = 'nightlies-{0}'.format(opts.flavour)
-        if opts.db_name:
-            db_name = opts.db_name
+        if hasattr(opts, 'submit'):
+            db_url, db_name = Dashboard.dbInfo(opts.flavour)
+            if opts.db_url:
+                db_url = opts.db_url
+                # ensure that the db_url ends with '/'
+                if not db_url.endswith('/'):
+                    db_url += '/'
+                db_name = 'nightlies-{0}'.format(opts.flavour)
+            if opts.db_name:
+                db_name = opts.db_name
 
-        self.dashboard = Dashboard(credentials=None,
-                                   dumpdir=self.json_dir,
-                                   submit=opts.submit,
-                                   flavour=opts.flavour,
-                                   db_info=(db_url, db_name))
+            self.dashboard = Dashboard(credentials=None,
+                                       dumpdir=self.json_dir,
+                                       submit=opts.submit,
+                                       flavour=opts.flavour,
+                                       db_info=(db_url, db_name))
+
         if opts.projects:
             proj_names = dict((proj.name.lower(), proj.name)
                               for proj in self.slot.projects)
