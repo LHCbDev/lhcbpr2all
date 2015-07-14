@@ -1115,7 +1115,7 @@ class Slot(object):
     __metaclass__ = _SlotMeta
     __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc',
                  'platforms', 'error_exceptions', 'warning_exceptions',
-                 'preconditions', 'cache_entries')
+                 'preconditions', 'cache_entries', 'build_id')
     __projects__ = []
     __env__ = []
 
@@ -1135,6 +1135,7 @@ class Slot(object):
                                    ignored
         @param error_exceptions: list of regex of errors that should be ignored
         @param cache_entries: dictionary of CMake cache variables to preset
+        @param build_id: numeric id for the build
         '''
         self._name = name
         if projects is None:
@@ -1157,6 +1158,8 @@ class Slot(object):
 
         self.cache_entries = kwargs.get('cache_entries', {})
 
+        self.build_id = kwargs.get('build_id', 0)
+
         # add this slot to the global list of slots
         global slots
         slots[name] = self
@@ -1175,6 +1178,7 @@ class Slot(object):
                 'error_exceptions': self.error_exceptions,
                 'warning_exceptions': self.warning_exceptions,
                 'preconditions': self.preconditions,
+                'build_id': self.build_id,
                 }
         if self.cache_entries:
             data['cmake_cache'] = self.cache_entries
@@ -1223,6 +1227,8 @@ class Slot(object):
         slot.preconditions = data.get('preconditions', [])
 
         slot.cache_entries = data.get('cmake_cache', [])
+
+        slot.build_id = data.get('build_id', 0)
 
         return slot
 
