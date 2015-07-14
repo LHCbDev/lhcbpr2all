@@ -35,6 +35,9 @@ if (!$.cookie("filters")) {
 }
 var filters = JSON.parse($.cookie("filters"));
 
+function checkoutURL(slot, build_id, project) {
+    return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/' + project + '.checkout.log.html';
+}
 
 function buildURL(slot, build_id, platform, project) {
     return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/summaries.' + platform + '/' + project + '/build_log.html';
@@ -132,8 +135,18 @@ jQuery.fn.lbSlotTable = function(data) {
 
     // rows
     $.each(data.value.projects, function(idx, val) {
+        var proj_name = val.name;
+        if (!val.disabled) {
+            proj_name = '<a href="' +
+                checkoutURL(data.value.slot, data.value.build_id, val.name) +
+                '" title="show checkout log">' + val.name + '</a>';
+        }
+        var proj_vers = val.version;
+        if (proj_vers == 'None') {
+            proj_vers = '-';
+        }
         var tr = $('<tr project="' + val.name + '"/>')
-            .append('<th>' + val.name + '</th><th>' + val.version + '</th>');
+            .append('<th>' + proj_name + '</th><th>' + proj_vers + '</th>');
         if (val.disabled) {
             tr.addClass('disabled');
         }

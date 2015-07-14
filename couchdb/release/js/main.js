@@ -233,8 +233,18 @@ jQuery.fn.lbSlotTable = function(data) {
     tab.attr("id","build-"+data.value.build_id);
     // rows
     $.each(data.value.projects, function(idx, val) {
+        var proj_name = val.name;
+        if (!val.disabled) {
+            proj_name = '<a href="' +
+                checkoutURL(data.value.slot, data.value.build_id, val.name) +
+                '" title="show checkout log">' + val.name + '</a>';
+        }
+        var proj_vers = val.version;
+        if (proj_vers == 'None') {
+            proj_vers = '-';
+        }
         var tr = $('<tr project="' + val.name + '"/>')
-            .append('<th>' + val.name + '</th><th>' + val.version + '</th>');
+            .append('<th>' + proj_name + '</th><th>' + proj_vers + '</th>');
         if (val.disabled) {
             tr.addClass('disabled');
         }
