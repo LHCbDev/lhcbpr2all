@@ -36,7 +36,7 @@ checkout_slot flavour slot slot_build_id
             case "$1" in
                 "--config-dir")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local config_dir="$2"
@@ -45,7 +45,7 @@ checkout_slot flavour slot slot_build_id
 
                 "--dest-dir")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local dest_dir="$2"
@@ -54,7 +54,7 @@ checkout_slot flavour slot slot_build_id
 
                 "--build-tool")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local build_tool="$2"
@@ -63,7 +63,7 @@ checkout_slot flavour slot slot_build_id
 
                 "--platforms")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local platforms="$2"
@@ -72,7 +72,7 @@ checkout_slot flavour slot slot_build_id
 
                 "--packages-list")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local packages_list="$2"
@@ -81,7 +81,7 @@ checkout_slot flavour slot slot_build_id
 
                 "--projects-list")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local projects_list="$2"
@@ -96,7 +96,7 @@ checkout_slot flavour slot slot_build_id
                     echo ${USAGE}
                     exit 0;;
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo ${USAGE}
                     exit 2
             esac
@@ -109,7 +109,7 @@ checkout_slot flavour slot slot_build_id
                 "2")
                     local slot_build_id="$1" ;;
                 *)
-                    echo "ERROR : Too much parameter"
+                    echo "ERROR : Too many parameters"
                     echo ${USAGE}
                     exit 1
             esac
@@ -121,7 +121,7 @@ checkout_slot flavour slot slot_build_id
 
     if [ "${no_checkout}" != "true" ]; then
         if [ "${nb_param}" != "3" ] ; then
-            echo "ERROR : Need more parameter"
+            echo "ERROR : Need more parameters"
             echo ${USAGE}
             exit 1
         fi

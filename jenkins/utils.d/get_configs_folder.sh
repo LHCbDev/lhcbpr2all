@@ -12,7 +12,7 @@
 function get_configs_folder {
 
     DESCRIPTION="DESCRIPTION : \
-Function to get the confiig folder"
+Function to get the config folder"
     USAGE="USAGE : \
 get_config_folder [--dest-dir <dir>]"
 
@@ -23,7 +23,7 @@ get_config_folder [--dest-dir <dir>]"
             case "$1" in
                 "--dest-dir")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local dest_dir="$2"
@@ -35,7 +35,7 @@ get_config_folder [--dest-dir <dir>]"
                     echo ${USAGE}
                     exit 0;;
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo "${USAGE}"
                     exit 1
             esac

@@ -24,7 +24,7 @@ check_preconditions config_file slot slot_build_id
             case "$1" in
                 "--platforms")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local platforms="$2"
@@ -36,7 +36,7 @@ check_preconditions config_file slot slot_build_id
                     echo ${USAGE}
                     exit 0;;
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo ${USAGE}
                     exit 2
             esac
@@ -51,7 +51,7 @@ check_preconditions config_file slot slot_build_id
                 "3")
                     local flavour="$1" ;;
                 *)
-                    echo "ERROR : Too much parameter"
+                    echo "ERROR : Too many parameters"
                     echo ${USAGE}
                     exit 1
             esac
@@ -62,7 +62,7 @@ check_preconditions config_file slot slot_build_id
     done
 
     if [ "${nb_param}" != "4" ] ; then
-        echo "ERROR : Need more parameter"
+        echo "ERROR : Need more parameters"
         echo ${USAGE}
         exit 1
     fi

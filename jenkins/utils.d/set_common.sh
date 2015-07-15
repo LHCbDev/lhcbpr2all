@@ -34,7 +34,7 @@ set_common [--build] [--test]"
             exit 0;;
 
         *)
-            echo "ERROR : Option $1 unknow in $0"
+            echo "ERROR : Option $1 unknown in $0"
             echo "${USAGE}"
             exit 2
         esac
