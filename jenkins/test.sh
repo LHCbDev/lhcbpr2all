@@ -14,7 +14,6 @@
 
 set_common --build
 
-
 day=$(date +%a)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
