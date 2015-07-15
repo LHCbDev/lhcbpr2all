@@ -124,7 +124,7 @@ class Script(BaseScript):
                 with open(co_logfile, 'w') as co_log:
                     co_log.write(project.checkout_log)
                 with open(co_logfile + '.html', 'w') as co_log:
-                    conv = XTerm2HTML()
+                    conv = XTerm2HTML(show_line_no=True)
                     co_log.write(conv.head(title=os.path.basename(co_logfile)))
                     co_log.write(conv.process(project.checkout_log))
                     co_log.write(conv.tail())

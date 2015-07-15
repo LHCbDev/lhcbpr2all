@@ -41,11 +41,18 @@ HTML_STYLE = '''
 .xterm-bgcolor-6 {background-color: cyan;}
 .xterm-bgcolor-7 {background-color: white;}
 .even {font-family: monospace; white-space: pre-wrap;
-       border: 1pt solid WhiteSmoke;
+       border: 1px solid WhiteSmoke;
        background-color: WhiteSmoke;}
 .odd {font-family: monospace; white-space: pre-wrap;
-       border: 1pt solid white;
-       background-color: white;}
+      border: 1px solid white;
+      background-color: white;}
+a.lineno {width: 5ch;
+          display: inline-block;
+          text-align: right;
+          padding-right: 0.5em;
+          margin-right: 0.5em;
+          /*border-right: thin solid black;*/
+          /*background-color: lightcyan;*/}
 .stderr {background-color: PapayaWhip; font-style: italic;}
 .stderr .even {font-family: monospace; white-space: pre-wrap;
                border-color: Bisque;
@@ -77,7 +84,7 @@ class XTerm2HTML(object):
     ...                 conv.tail()])
     '''
 
-    def __init__(self, first_line=1):
+    def __init__(self, first_line=1, show_line_no=False):
         '''
         Initialize the conversion instance.
         An optional first_line can be provided if the output of the processing
@@ -87,6 +94,7 @@ class XTerm2HTML(object):
         self.current_code = ANSIStyle(0, 0, 0)
         self.line = first_line - 1
         self.log = logging.getLogger(self.__class__.__name__)
+        self.show_line_no = show_line_no
 
     def parse_code(self, code):
         '''
@@ -172,14 +180,19 @@ class XTerm2HTML(object):
 
         line_styles = ('even', 'odd')
 
+        line_start, line_end = ('<div class="{0}" id="l{1}">', '</div>\n')
+        if self.show_line_no:
+            line_start += '<a class="lineno" href="#l{1}">{1}</a>'
+
         data = []
         for self.line, line in enumerate(chunk.splitlines(), self.line + 1):
             old_class = self.current_class
-            data.append('<div class="{}" id="l{}">'
-                          .format(line_styles[self.line % 2], self.line))
+            data.append(line_start
+                        .format(line_styles[self.line % 2], self.line))
 
             if old_class:
-                self.log.debug('line %d: initial class %s', self.line, old_class)
+                self.log.debug('line %d: initial class %s',
+                               self.line, old_class)
 
             pos = 0
             while True:
@@ -213,7 +226,7 @@ class XTerm2HTML(object):
                     break
             if old_class:
                 data.append('</span>')
-            data.append('</div>\n')
+            data.append(line_end)
         return ''.join(data)
 
 
@@ -248,7 +261,7 @@ def test_special_cases():
 
 if __name__ == '__main__':
     import sys
-    conv = XTerm2HTML()
+    conv = XTerm2HTML(show_line_no='--show-line-no' in sys.argv)
     sys.stdout.write(conv.head(title='stdin'))
     sys.stdout.write(conv.process(sys.stdin.read()))
     sys.stdout.write(conv.tail())
