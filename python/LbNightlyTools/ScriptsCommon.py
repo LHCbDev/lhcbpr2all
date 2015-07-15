@@ -217,7 +217,7 @@ class BaseScript(LbUtils.Script.PlainScript):
             ensureDirs([self.artifacts_dir, self.build_dir, self.json_dir])
 
         if opts.slot_build_id:
-            self.slot.build_id = self.opts.slot_build_id
+            self.slot.build_id = self.options.slot_build_id
         elif not self.slot.build_id:
             self.slot.build_id = int(os.environ.get('slot_build_id', 0))
 
