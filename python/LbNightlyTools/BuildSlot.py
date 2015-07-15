@@ -356,6 +356,11 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     call(['lbn-collect-build-logs', '--debug', '--append',
                           self._buildDir(proj, 'build.%s' % self.platform),
                           join(summary_dir, 'build.log')])
+                elif str(self.slot.build_tool) == 'CMT':
+                    call(['lbn-collect-build-logs', '--debug', '--cmt',
+                          '--platform', self.platform,
+                          self._buildDir(proj),
+                          join(summary_dir, 'build.log')])
                 else:
                     with open(join(summary_dir, 'build.log'), 'w') as f:
                         f.write(result.stdout)

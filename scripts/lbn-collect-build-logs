@@ -18,7 +18,7 @@ import sys
 import os
 import logging
 
-def collect_logs(path):
+def collect_cmake_logs(path):
     '''
     Looks for files ending in '-build.log' in all the subdirs.
 
@@ -26,7 +26,7 @@ def collect_logs(path):
     @return: dictionary with the subdir as key (relative path) and the list of
              files (full path) as values.
     '''
-    logging.getLogger('collect_logs').info('searching log files')
+    logging.getLogger('collect_cmake_logs').info('searching for log files')
     logs = {}
     for subdir, _dirs, files in os.walk(path):
         files = [os.path.join(subdir, f)
@@ -34,6 +34,23 @@ def collect_logs(path):
         if files:
             files.sort()
             logs[os.path.relpath(subdir, path)] = files
+    return logs
+
+def collect_cmt_logs(path, platform):
+    '''
+    Looks for files ending in '-build.log' in all the subdirs.
+
+    @param path: directory where to start the search from
+    @return: dictionary with the subdir as key (relative path) and the list of
+             files (full path) as values.
+    '''
+    logging.getLogger('collect_cmt_logs').info('searching for log files')
+    logs = {}
+    filename = 'build.{0}.log'.format(platform)
+    for subdir, _dirs, files in os.walk(path):
+        if filename in files:
+            logs[os.path.relpath(subdir, path)] = [os.path.join(subdir,
+                                                                filename)]
     return logs
 
 class RegexExcusion(object):
@@ -69,7 +86,8 @@ class RegexExcusion(object):
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
-    Collect disk usage statistics and publish them to the Dashboard.
+    Collect partial build logs from a directory and group them in a single
+    file.
     '''
     __usage__ = '%prog [options] directory output_file'
 
@@ -83,20 +101,31 @@ class Script(LbUtils.Script.PlainScript):
         self.parser.add_option('-x', '--exclude', action="append",
                                help='regular expression to select files that '
                                     'should not be included in the output')
-        self.parser.set_defaults(exclude=[])
+        self.parser.add_option('--cmt', action='store_const',
+                               dest='build_tool', const='cmt',
+                               help='expect a CMT build directory')
+        self.parser.add_option('--cmake', action='store_const',
+                               dest='build_tool', const='cmake',
+                               help='expect a CMake build directory (default)')
+        self.parser.add_option('--platform', action='store',
+                               help='platform id (used only with the CMT '
+                                    'scanner) [default: %default]')
+        platform = os.environ.get('BINARY_TAG', os.environ.get('CMTCONFIG', ''))
+        self.parser.set_defaults(exclude=[],
+                                 build_tool='cmake',
+                                 platform=platform)
 
-    def main(self):
+    def cmake(self):
         '''
-        Script logic.
+        CMake specific logic.
         '''
-
         path, output = self.args
-        logs = collect_logs(path)
+        exclude = RegexExcusion(self.options.exclude)
+
+        logs = collect_cmake_logs(path)
         if not logs:
             self.log.error('lbn-wrapcmd did not produce files in %s', path)
             return 1
-
-        exclude = RegexExcusion(self.options.exclude)
 
         # sort the directories by contained filename, so that even if they
         # are built at the same time, the one that completes first wins
@@ -116,6 +145,49 @@ class Script(LbUtils.Script.PlainScript):
                     outfile.write('#### CMake %s ####\n' % subdir)
                     for fname in files:
                         outfile.writelines(open(fname))
+
+    def cmt(self):
+        '''
+        CMT specific logic.
+        '''
+        path, output = self.args
+        exclude = RegexExcusion(self.options.exclude)
+
+        logs = collect_cmt_logs(path, self.options.platform)
+        if not logs:
+            self.log.error('CMT build did not produce log files in %s', path)
+            return 1
+
+        # sort the directories by contained filename, so that even if they
+        # are built at the same time, the one that completes first wins
+        # (note that the list of files in each subdir is sorted)
+        import re
+        hdr = re.compile(r'Building package[^[]*\[(\d+)/\d+\]')
+        def key(subdir):
+            filename = logs[subdir][0]
+            #self.log.debug('key for %s', filename)
+            with open(filename) as f:
+                m = hdr.search(f.read(1024))
+            k = int(m.group(1)) if m else None
+            #self.log.debug('key found: %s', k)
+            return k
+
+        subdirs = sorted(logs, key=key)
+        # copy the content of each log file into the output file, prepending
+        # the group of files in a subdir with a separator
+        with open(output, 'a' if self.options.append else 'w') as outfile:
+            for subdir in subdirs:
+                # we want to show only files that are not excluded
+                files = exclude.filter(logs[subdir])
+                for fname in files:
+                    outfile.writelines(open(fname))
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+
+        getattr(self, self.options.build_tool)()
 
         return 0
 
