@@ -347,16 +347,31 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                             manif.write(createManifestFile(proj.name, proj.version,
                                                            self.platform,
                                                            proj.build_dir))
-                if str(self.slot.build_tool) == 'CMake':
-                    from itertools import takewhile as twhile
+                if str(proj.build_tool) == 'CMake':
+                    loglines = result.stdout.splitlines(True)
+                    starts = [(line.split()[2], idx)
+                              for idx, line in enumerate(loglines)
+                              if line.startswith('#### CMake ')]
+                    end = len(loglines)
+                    regions = {}
+                    for key, start in starts[-1::-1]:
+                        regions[key] = (start, end)
+                        end = start
                     with open(join(summary_dir, 'build.log'), 'w') as f:
-                        f.writelines(twhile(lambda s:
-                                            not s.startswith('#### CMake all'),
-                                            result.stdout.splitlines(True)))
+                        start, end = regions.get('configure', (0, 0))
+                        f.writelines(loglines[start:end])
                     call(['lbn-collect-build-logs', '--debug', '--append',
+                          '--exclude', '.*unsafe-install.*',
+                          '--exclude', '.*python.zip.*',
+                          '--exclude', '.*precompile-.*',
                           self._buildDir(proj, 'build.%s' % self.platform),
                           join(summary_dir, 'build.log')])
-                elif str(self.slot.build_tool) == 'CMT':
+                    with open(join(summary_dir, 'build.log'), 'a') as f:
+                        for key in ['unsafe-install', 'post-install']:
+                            start, end = regions.get(key, (0, 0))
+                            f.writelines(loglines[start:end])
+
+                elif str(proj.build_tool) == 'CMT':
                     call(['lbn-collect-build-logs', '--debug', '--cmt',
                           '--platform', self.platform,
                           self._buildDir(proj),
