@@ -25,7 +25,10 @@ from LbNightlyTools.Utils import (applyenv, ensureDirs,
 from LbNightlyTools import CheckoutMethods, BuildMethods
 
 __log__ = logging.getLogger(__name__)
-
+__meta_log__ = logging.getLogger(__name__ + '.meta')
+__meta_log__.setLevel(logging.DEBUG
+                      if os.environ.get('DEBUG_METACLASSES')
+                      else logging.WARNING)
 
 # constants
 GP_EXP = re.compile(r'gaudi_project\(([^)]+)\)')
@@ -81,12 +84,16 @@ class _BuildToolProperty(object):
     '''
     def __get__(self, instance, owner):
         'getter'
+        if (hasattr(instance, 'ignore_slot_build_tool') and
+                instance.ignore_slot_build_tool):
+            return instance._build_tool
         try:
             return instance.slot.build_tool
         except AttributeError:
             return instance._build_tool
     def __set__(self, instance, value):
         'setter'
+        __meta_log__.debug('setting %s build tool to %s', instance, value)
         if hasattr(instance, 'slot') and instance.slot:
             raise AttributeError("can't set attribute")
         from BuildMethods import getMethod as getBuildMethod
@@ -101,9 +108,23 @@ class _ProjectMeta(type):
         '''
         Instrument Project classes.
         '''
-        dct['__build_tool__'] = dct.get('build_tool')
+        __meta_log__.debug('preparing class %s(%s)', name, bases)
+        if 'build_tool' in dct:
+            build_tool = dct.get('build_tool')
+            __meta_log__.debug('selected build tool %s', build_tool)
+        else:
+            for base in bases:
+                if hasattr(base, '__build_tool__'):
+                    build_tool = base.__build_tool__
+                    __meta_log__.debug('inherited build tool %s', build_tool)
+                    break
+            else: # this 'else' is bound to the 'for' loop
+                __meta_log__.debug('use default build tool')
+                build_tool = None
+        dct['__build_tool__'] = build_tool
         dct['build_tool'] = _BuildToolProperty()
         if 'name' in dct:
+            __meta_log__.debug('default name %s', dct.get('name'))
             dct['__project_name__'] = dct.pop('name')
         if 'checkout' in dct:
             if isinstance(dct['checkout'], basestring):
@@ -113,6 +134,7 @@ class _ProjectMeta(type):
                 reclog = RecordLogger(CheckoutMethods.__log__)
                 info = log_enter_step('checking out')
                 dct['checkout'] = info(reclog(timelog(dct['checkout'])))
+        __meta_log__.debug('adding logging wrappers')
         timelog = log_timing(BuildMethods.__log__)
         reclog = RecordLogger(BuildMethods.__log__)
         for method in ('build', 'clean', 'test'):
@@ -135,6 +157,8 @@ class _ProjectMeta(type):
         if name:
             # we prepend the class name to the arguments.
             args = (name,) + args
+        __meta_log__.debug('instantiating: %s(*%r, **%r)',
+                           self.__name__, args, kwargs)
         return type.__call__(self, *args, **kwargs)
 
 
@@ -925,7 +949,8 @@ class DataProject(Project):
     '''
     Special Project class for projects containing only data packages.
     '''
-    build_method = 'no_build'
+    ignore_slot_build_tool = True
+    build_tool = 'no_build'
     def __init__(self, name, packages=None, **kwargs):
         '''
         Initialize the instance with name and list of packages.
@@ -1039,36 +1064,6 @@ class DataProject(Project):
 
         from CheckoutMethods import _merge_outputs
         return _merge_outputs(outputs)
-
-    def build(self, **kwargs):
-        '''
-        No build step for data packages.
-        '''
-        from BuildMethods import BuildResults
-        now = datetime.now()
-        return BuildResults(self, 0,
-                            '%s does not require build' % self,
-                            '', now, now)
-
-    def clean(self, **kwargs):
-        '''
-        No build step for data packages.
-        '''
-        from BuildMethods import BuildResults
-        now = datetime.now()
-        return BuildResults(self, 0,
-                            '%s does not require clean' % self,
-                            '', now, now)
-
-    def test(self, **kwargs):
-        '''
-        No test step for data packages.
-        '''
-        from BuildMethods import BuildResults
-        now = datetime.now()
-        return BuildResults(self, 0,
-                            '%s does not require test' % self,
-                            '', now, now)
 
 
 class DBASE(DataProject):
