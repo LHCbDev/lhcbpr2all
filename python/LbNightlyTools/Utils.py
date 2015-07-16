@@ -408,7 +408,6 @@ class Dashboard(object):
         import socket
 
         self._log = logging.getLogger('Dashboard')
-        self._log.debug('preparing connection to dashboard')
 
         if submit and credentials is None:
             if os.path.exists(self.CRED_FILE):
@@ -426,6 +425,7 @@ class Dashboard(object):
 
         self.submit = submit
         if submit:
+            self._log.debug('preparing connection to dashboard')
             self.server = couchdb.Server(server)
             self.server.resource.credentials = credentials
             try:
