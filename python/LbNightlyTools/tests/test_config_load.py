@@ -52,6 +52,7 @@ def add_defaults(expected):
     '''
     slot_defaults = {'packages': [],
                      'description': 'Generic nightly build slot.',
+                     'build_id': 0,
                      'disabled': False,
                      'env': [],
                      'preconditions': [],

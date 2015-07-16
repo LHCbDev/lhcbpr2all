@@ -76,6 +76,7 @@ def test_make_build():
 def test_cmt_build():
     dummy_src = join(_testdata, 'artifacts', 'TestProject.HEAD.testing-slot.src.tar.bz2')
     with TemporaryDir(chdir=True):
+        print os.environ['CMTCONFIG']
         slot = Slot('slot', build_tool='cmt',
                     projects=[Project('TestProject', 'HEAD',
                                       checkout='untar',

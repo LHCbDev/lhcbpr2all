@@ -157,6 +157,8 @@ class cmt(make):
         kwargs.pop('max_load', None)
         kwargs.pop('jobs', None)
         env = kwargs.get('env', {})
+        if 'CMTCONFIG' not in env:
+            env['CMTCONFIG'] = os.environ.get('CMTCONFIG')
         if 'GAUDI_QMTEST_HTML_OUTPUT' not in env:
             bin_dir = os.path.join(proj.baseDir,
                                    'build.{CMTCONFIG}'.format(**env),

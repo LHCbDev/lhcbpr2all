@@ -163,7 +163,7 @@ def test_PartialCheckout():
     p2 = Project('LHCb', 'HEAD', checkout=lcb)
 
     s = Slot('dummy', [p1, p2])
-    s.checkout(projects=set(['gaudi']))
+    s.checkout(projects=set(['Gaudi']))
 
     assert gcb.args == (p1,), gcb.args
     assert gcb.kwargs == {}, gcb.kwargs
