@@ -131,7 +131,7 @@ build_slot flavour slot slot_build_id platform
                    ${coverity_opt} \
                    ${config_file}
 
-    if [ "${flavour}" = "release" ] ; then
+    if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
         # Prepare the RPMs
         time lbn-rpm ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}"  ${config_file} --platform "${platform}"
     fi
@@ -153,7 +153,7 @@ build_slot flavour slot slot_build_id platform
                            --build-id "${slot}.${slot_build_id}" \
                            --artifacts-dir "${directory}" \
                            ${config_file}
-            if [ "${flavour}" = "release" ] ; then
+            if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
                 time lbn-rpm --glimpse ${loglevel_opt}  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}"  ${config_file}
             fi
             if [ "$JENKINS_MOCK" != "true" ] ; then
