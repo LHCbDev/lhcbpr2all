@@ -50,11 +50,6 @@ class Script(LbUtils.Script.PlainScript):
                           default=False,
                           action="store_true",
                           help="Build shared RPM")
-        group.add_option('-k', '--datapkg',
-                          dest="datapkg",
-                          default=False,
-                          action="store_true",
-                          help="Builds datapackage rpms")
         group.add_option('-g', '--glimpse',
                           dest="glimpse",
                           default=False,
@@ -507,28 +502,19 @@ class Script(LbUtils.Script.PlainScript):
         rpmbuildarea = mkdtemp(prefix="rpm")
         keeprpmdir = self.options.keeprpmdir
 
-        if self.options.datapkg:
+        if self.options.shared:
             for p in self.config["packages"]:
                 fulldatapkg = p["name"]
-                project = "DBASE" # by default..
-                try:
-                    project = p["container"]
-                except:
-                    # We can pass if not specified, default is DBASE
-                    pass
+                project = p.get("container", "DBASE")
                 version = p["version"]
                 self.log.info("Preparing RPM for datapkg %s %s %s" % (project, fulldatapkg, version))
                 self._buildDatapkgRpm(project, fulldatapkg, version, rpmbuildarea, artifactdir, keeprpmdir)
-
-            # Done we now exit...
-            return
-
 
         for p in self.config["projects"]:
             project = p["name"]
             if ((self.options.projects and
                  project.lower() not in self.options.projects) or
-                project.lower() in ('dbase', 'param')):
+                project.lower() in ('dbase', 'param', 'lcgcmt')):
                 self.log.warning("Skipping project %s" % project)
                 continue # project not requested: skip
             version = p["version"]

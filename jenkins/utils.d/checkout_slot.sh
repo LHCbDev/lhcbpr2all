@@ -176,9 +176,6 @@ checkout_slot flavour slot slot_build_id
         if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
             # Now preparing the RPM with the project source
             time lbn-rpm --shared ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
-            if [ -n "${packages_list}" ] ; then
-                time lbn-rpm --datapkg ${loglevel_opt}  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
-            fi
         fi
 
         rm -rf tmp
