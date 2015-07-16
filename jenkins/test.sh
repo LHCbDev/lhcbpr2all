@@ -14,7 +14,6 @@
 
 set_common --build
 
-
 day=$(date +%a)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
@@ -36,13 +35,15 @@ else
     fi
   fi
 
-  # Now actually set the source
-  artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/${input_flavour}"
-
   submit_opt="--submit --flavour ${flavour}"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 
-  lbn-install --verbose ${artifacts_root_opt} --dest build --projects ${project} --platforms ${platform} ${slot} ${slot_build_id}
+  lbn-install --verbose \
+              --flavour ${input_flavour} \
+              --dest build \
+              --projects ${project} \
+              --platforms ${platform} \
+              ${slot} ${slot_build_id}
   prepare_opt="--no-unpack"
   config_file=build/slot-config.json
 fi

@@ -30,7 +30,7 @@ get_directory_rsync flavour slot slot_build_id"
                     echo ${USAGE}
                     exit 0;;
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo ${USAGE}
                     exit 2
             esac
@@ -43,7 +43,7 @@ get_directory_rsync flavour slot slot_build_id"
                 "2")
                     local slot_build_id="$1" ;;
                 *)
-                    echo "ERROR : Too much parameter"
+                    echo "ERROR : Too many parameters"
                     echo ${USAGE}
                     exit 1
             esac
@@ -54,7 +54,7 @@ get_directory_rsync flavour slot slot_build_id"
     done
 
     if [ "${nb_param}" != "3" ] ; then
-        echo "ERROR : Need more parameter"
+        echo "ERROR : Need more parameters"
         echo ${USAGE}
         exit 1
     fi
@@ -84,7 +84,7 @@ create_alias"
                     exit 0;;
 
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo "${USAGE}"
                     exit 2
             esac

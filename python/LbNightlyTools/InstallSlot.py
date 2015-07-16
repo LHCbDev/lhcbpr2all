@@ -313,6 +313,10 @@ class Script(LbUtils.Script.PlainScript):
                           action='store', metavar='URI',
                           help='URL or directory where the build artifacts can '
                                'be found [default: %default]')
+        parser.add_option('--flavour',
+                          action='store',
+                          help='nightly build flavour to use '
+                               '[default: %default]')
         parser.add_option('--projects',
                           action='store',
                           help='comma-separated list of projects to install '
@@ -335,7 +339,8 @@ class Script(LbUtils.Script.PlainScript):
                                '[default: False]',
                           default=False)
 
-        parser.set_defaults(artifacts_root=ARTIFACTS_URL)
+        parser.set_defaults(artifacts_root=ARTIFACTS_URL,
+                            flavour='nightly')
 
     def main(self):
         # split the 'comma-separated list' options
@@ -358,7 +363,7 @@ class Script(LbUtils.Script.PlainScript):
             self.log.debug('creating directory %s' % dest)
             os.makedirs(dest)
 
-        url = '/'.join([opts.artifacts_root, slot, build_id])
+        url = '/'.join([opts.artifacts_root, opts.flavour, slot, build_id])
         history_file = os.path.join(dest, '.installed')
 
         # URL for the slot-config file used to get the dependencies

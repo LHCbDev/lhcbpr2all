@@ -29,7 +29,7 @@ manage_user_launch flavour slots
             case "$1" in
                 "--slot-build-id")
                     if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-                        echo "ERROR : Option $1 need an argument"
+                        echo "ERROR : Option $1 needs an argument"
                         exit 3
                     else
                         local slot_build_id_opt="--slot-build-id $2"
@@ -47,7 +47,7 @@ manage_user_launch flavour slots
                     echo ${USAGE}
                     exit 0;;
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo ${USAGE}
                     exit 2
             esac
@@ -58,7 +58,7 @@ manage_user_launch flavour slots
                 "1")
                     local slots="$1" ;;
                 *)
-                    echo "ERROR : Too much parameter"
+                    echo "ERROR : Too many parameters"
                     echo ${USAGE}
                     exit 1
             esac
@@ -69,7 +69,7 @@ manage_user_launch flavour slots
     done
 
     if [ "${nb_param}" != "2" ] ; then
-        echo "ERROR : Need more parameter"
+        echo "ERROR : Need more parameters"
         echo ${USAGE}
         exit 1
     fi

@@ -26,7 +26,7 @@ execute_preconditions config_file"
                     echo ${USAGE}
                     exit 0;;
                 *)
-                    echo "ERROR : Option $1 unknow in $0"
+                    echo "ERROR : Option $1 unknown in $0"
                     echo ${USAGE}
                     exit 2
             esac
@@ -35,7 +35,7 @@ execute_preconditions config_file"
                 "0")
                     local config="$1" ;;
                 *)
-                    echo "ERROR : Too much parameter"
+                    echo "ERROR : Too many parameters"
                     echo ${USAGE}
                     exit 1
             esac
@@ -46,7 +46,7 @@ execute_preconditions config_file"
     done
 
     if [ "${nb_param}" != "1" ] ; then
-        echo "ERROR : Need more parameter"
+        echo "ERROR : Need more parameters"
         echo ${USAGE}
         exit 1
     fi
