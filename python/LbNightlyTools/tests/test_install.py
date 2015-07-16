@@ -14,14 +14,14 @@ from os.path import normpath, join
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import InstallSlot
+from LbNightlyTools.Scripts import Install
 from tempfile import mkdtemp
 import shutil
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
 def test_fixGlimpseIndexes():
-    'InstallSlot.fixGlimpseIndexes()'
+    'Install.fixGlimpseIndexes()'
     tmpd = mkdtemp()
     src = join(_testdata, 'fix_glimpse')
     dst = join(tmpd, 'fix_glimpse')
@@ -31,7 +31,7 @@ def test_fixGlimpseIndexes():
 
     # FIXME: this is equivalent to the code in the script, but we should test
     #        the real code
-    InstallSlot.fixGlimpseIndexes(f for f in InstallSlot.findGlimpseFilenames(dst)
+    Install.fixGlimpseIndexes(f for f in Install.findGlimpseFilenames(dst)
                                   if f not in untouched)
 
 

@@ -28,7 +28,7 @@ from LbNightlyTools.Configuration import DataProject
 __log__ = logging.getLogger(__name__)
 
 
-from LbNightlyTools.ScriptsCommon import BaseScript
+from LbNightlyTools.Scripts.Common import BaseScript
 class Script(BaseScript):
     '''
     Script to checkout a consistent set of projects as described in a
@@ -51,7 +51,7 @@ class Script(BaseScript):
 
     def defineOpts(self):
         """ User options -- has to be overridden """
-        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
+        from LbNightlyTools.Scripts.Common import (addBasicOptions,
                                                   addDashboardOptions,
                                                   addDeploymentOptions)
         addBasicOptions(self.parser)

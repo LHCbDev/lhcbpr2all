@@ -42,7 +42,7 @@ class Script(LbUtils.Script.PlainScript):
 
     def defineOpts(self):
         '''Define options.'''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.Scripts.Common import addBasicOptions
         self.parser.add_option('-s', '--server', action='store',
                                help='LHCbPR Server')
         self.parser.add_option('-u', '--url', action='store',
@@ -193,7 +193,7 @@ exit $RETCODE
 
 
 
-        
+
 
 # __main__
 sys.exit(Script().run())

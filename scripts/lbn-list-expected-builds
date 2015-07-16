@@ -34,9 +34,9 @@ import re
 
 from datetime import datetime, date
 
-from LbNightlyTools.BuildSlot import genPackageName
+from LbNightlyTools.Scripts.Build import genPackageName
 
-from LbNightlyTools.ScriptsCommon import BaseScript
+from LbNightlyTools.Scripts.Common import BaseScript
 
 class Script(BaseScript):
     '''
@@ -44,7 +44,7 @@ class Script(BaseScript):
     '''
     def defineOpts(self):
         '''Define options.'''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.Scripts.Common import addBasicOptions
 
         self.parser.add_option('--platforms', action='store',
                                help='whitespace-separated list of platforms to '

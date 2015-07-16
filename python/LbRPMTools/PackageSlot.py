@@ -103,7 +103,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Prepare the option parser.
         '''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.Scripts.Common import addBasicOptions
 
         addBasicOptions(self.parser)
         self.addRpmOptions(self.parser)
@@ -465,7 +465,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Main method for the script
         '''
-        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
+        from LbNightlyTools.Scripts.Common import expandTokensInOptions
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -474,7 +474,7 @@ class Script(LbUtils.Script.PlainScript):
         builddir = os.path.join(os.getcwd(), 'build')
 
         # Now loading the slot configuration
-        from LbNightlyTools.ScriptsCommon import findSlot
+        from LbNightlyTools.Scripts.Common import findSlot
         self.slot = findSlot(self.args[0])
         # FIXME: to be ported to the new configuration classes
         self.config = self.slot.toDict()

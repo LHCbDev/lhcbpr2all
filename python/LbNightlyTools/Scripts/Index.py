@@ -110,7 +110,7 @@ def filesToIndex(path):
                     hashes.add(filehash)
                     yield relname
 
-from LbNightlyTools.ScriptsCommon import BaseScript
+from LbNightlyTools.Scripts.Common import BaseScript
 class Script(BaseScript):
     '''
     Script to produce the index files for all the projects defined in the
@@ -119,7 +119,7 @@ class Script(BaseScript):
 
     def defineOpts(self):
         '''Options of the script.'''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.Scripts.Common import addBasicOptions
         addBasicOptions(self.parser)
 
     def packname(self, proj):

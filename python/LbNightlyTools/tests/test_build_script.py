@@ -13,7 +13,7 @@ import os
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import BuildSlot
+from LbNightlyTools.Scripts import Build
 from tempfile import mkdtemp
 import shutil
 import codecs
@@ -40,7 +40,7 @@ def teardown():
 
 def test_inconsistent_options():
     try:
-        script = BuildSlot.Script()
+        script = Build.Script()
         script.run(['--tests-only', '--coverity'])
         assert False, 'Script should have exited'
     except SystemExit, x:
@@ -49,7 +49,7 @@ def test_inconsistent_options():
 
 def test_missing_args():
     try:
-        script = BuildSlot.Script()
+        script = Build.Script()
         script.run()
         assert False, 'Script should have exited'
     except SystemExit, x:
@@ -114,7 +114,7 @@ def test_simple_build():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['testing-slot.json'])
         assert retcode == 0
 
@@ -148,7 +148,7 @@ def test_simple_build_parallel():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['-j', '4', 'testing-slot.json'])
         assert retcode == 0
         assert script.options.jobs == 4
@@ -183,7 +183,7 @@ def test_simple_build_load():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['-j', '4', '-l', '8', 'testing-slot.json'])
         assert retcode == 0
         assert script.options.jobs == 4
@@ -219,7 +219,7 @@ def test_simple_build_load_env():
                     version = 'HEAD'
                     )
         os.environ['LBN_LOAD_AVERAGE'] = '6.5'
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['-j', '4', 'testing-slot.json'])
         assert retcode == 0
         assert script.options.jobs == 4
@@ -255,7 +255,7 @@ def test_simple_build_w_test():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['--with-tests', 'testing-slot.json'])
         assert retcode == 0
 
@@ -270,7 +270,7 @@ def test_simple_build_w_test():
 
         #########
         teardown()
-        script = BuildSlot.Script()
+        script = Build.Script()
         script.run(['--tests-only', 'testing-slot.json'])
 
         proj_root = join(tmpd, 'testdata', 'build',
@@ -308,7 +308,7 @@ def test_simple_build_env_search_path():
         os.environ['CMTPROJECTPATH'] = '/some/cmt:/another/cmt'
         os.environ['PWD'] = os.getcwd() # this is usually done by the shell
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['testing-slot-env.json'])
         assert retcode == 0
 
@@ -384,7 +384,7 @@ def test_lbcore_164():
         f.write('new reference file\n')
         f.close()
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['--with-tests', 'testing-slot.json'])
         assert retcode == 0
 
@@ -422,7 +422,7 @@ def test_simple_build_2():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['testing-slot-2.json'])
         assert retcode == 0
 
@@ -465,7 +465,7 @@ def test_explicit_list():
         os.rename(join('build', 'DUMMYPROJECT', 'TESTPROJECT_HEAD'),
                   join('build', 'DUMMYPROJECT', 'DUMMYPROJECT_HEAD'))
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['--projects', 'DummyProject', 'testing-slot-2.json'])
         assert retcode == 0
 
@@ -504,7 +504,7 @@ def test_with_shared():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['--debug', 'testing-slot-with-shared.json'])
         assert retcode == 0
 

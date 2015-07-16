@@ -16,11 +16,11 @@ from StringIO import StringIO
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import BuildSlot
+from LbNightlyTools.Scripts import Build
 
 def test_ProjDesc():
-    'BuildSlot.ProjDesc'
-    p = BuildSlot.ProjDesc({u'name': u'MyProject',
+    'Build.ProjDesc'
+    p = Build.ProjDesc({u'name': u'MyProject',
                             u'version': u'v1r0',
                             u'dependencies': [u'MyBase']})
     assert p.name == u'MyProject'
@@ -30,25 +30,25 @@ def test_ProjDesc():
     assert str(p) == 'MyProject v1r0'
     assert p.with_shared == False
 
-    p = BuildSlot.ProjDesc({u'name': u'MyProject',
+    p = Build.ProjDesc({u'name': u'MyProject',
                             u'version': u'v1r0'})
     assert p.deps == []
 
-    p = BuildSlot.ProjDesc({u'name': u'MyProject',
+    p = Build.ProjDesc({u'name': u'MyProject',
                             u'version': u'v1r0',
                             u'with_shared': True})
     assert p.with_shared == True
 
 
 def test_genProjectXml():
-    'BuildSlot.genProjectXml()'
-    projects = map(BuildSlot.ProjDesc,
+    'Build.genProjectXml()'
+    projects = map(Build.ProjDesc,
                    [{u'name': u'MyBase',
                      u'version': u'v3r2'},
                     {u'name': u'MyProject',
                      u'version': u'v1r0',
                      u'dependencies': [u'MyBase']}])
-    xml = BuildSlot.genProjectXml('the-slot', projects)
+    xml = Build.genProjectXml('the-slot', projects)
 
     versions = dict([(p.name, str(p)) for p in projects])
 
@@ -69,14 +69,14 @@ def test_genProjectXml():
 
 
 def test_genSlotConfig():
-    'BuildSlot.genSlotConfig()'
+    'Build.genSlotConfig()'
     config = dict(slot='some-slot',
                   projects=[{'name': 'Gaudi', 'version': 'v23r8'},
                             {'name': 'LHCb', 'version': 'HEAD',
                              'dependencies': ['Gaudi']}],
                   warning_exceptions=['.*/Boost/.*warning', '.*/ROOT/.*warning'],
                   error_exceptions=[r'\[distcc\]'])
-    cmake = BuildSlot.genSlotConfig(config)
+    cmake = Build.genSlotConfig(config)
 
     print cmake
 

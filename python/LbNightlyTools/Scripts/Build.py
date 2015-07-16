@@ -105,7 +105,7 @@ def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     return packname
 
 
-from LbNightlyTools.ScriptsCommon import BaseScript
+from LbNightlyTools.Scripts.Common import BaseScript
 class Script(BaseScript):
     '''
     Script to build the projects in a slot configuration.
@@ -150,7 +150,7 @@ class Script(BaseScript):
         '''
         Prepare the option parser.
         '''
-        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
+        from LbNightlyTools.Scripts.Common import (addBasicOptions,
                                                   addBuildDirOptions,
                                                   addDeploymentOptions,
                                                   addDashboardOptions)

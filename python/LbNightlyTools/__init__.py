@@ -33,3 +33,5 @@ if not hasattr(logging.Logger, 'getChild'):
 
 # Make the Dashboard class visible from the top level for convenience.
 from LbNightlyTools.Utils import Dashboard
+
+from LbNightlyTools.Scripts.Common import findSlot

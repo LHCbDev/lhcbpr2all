@@ -71,7 +71,7 @@ class Script(LbUtils.Script.PlainScript):
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
-        from LbNightlyTools.ScriptsCommon import findSlot
+        from LbNightlyTools.Scripts.Common import findSlot
         slot = findSlot(self.args[0])
 
         from LbNightlyTools.Utils import setDayNamesEnv

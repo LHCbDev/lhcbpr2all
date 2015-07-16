@@ -15,7 +15,7 @@ preconditions and write files with parameters for next jobs in Jenkins
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
-from LbNightlyTools.ScriptsCommon import findSlot
+from LbNightlyTools.Scripts.Common import findSlot
 from LbNightlyTools.Utils import JobParams
 
 import LbUtils.Script

@@ -21,9 +21,9 @@ import codecs
 from datetime import datetime
 
 from LbNightlyTools.Utils import chdir, TaskQueue
-from LbNightlyTools.BuildSlot import unpackArtifacts, wipeDir
+from LbNightlyTools.Scripts.Build import unpackArtifacts, wipeDir
 
-from LbNightlyTools.ScriptsCommon import BaseScript
+from LbNightlyTools.Scripts.Common import BaseScript
 class Script(BaseScript):
     '''
     Script to test the projects described in a slot configuration.

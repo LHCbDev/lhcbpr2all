@@ -14,13 +14,13 @@ from os.path import normpath, join
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import Indexer
+from LbNightlyTools.Scripts import Index
 
 _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
 def test_filesToIndex():
-    'Indexer.filesToIndex()'
-    files = list(Indexer.filesToIndex(join(_testdata, 'indexer', 'AProject')))
+    'Index.filesToIndex()'
+    files = list(Index.filesToIndex(join(_testdata, 'indexer', 'AProject')))
 
     expected = ['InstallArea/include/GeneratedHeader.h',
                 'InstallArea/include/MyHeader.h',

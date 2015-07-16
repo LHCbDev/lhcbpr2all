@@ -12,7 +12,8 @@
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import StackCheckout, Configuration
+from LbNightlyTools import Configuration
+from LbNightlyTools.Scripts import Checkout
 
 import os
 import shutil
@@ -91,7 +92,7 @@ def test_empty_conf():
     with TemporaryDir(chdir=True):
         with open('test.json', 'w') as cfg:
             cfg.write('{}')
-        retval = StackCheckout.Script().run(['test.json'])
+        retval = Checkout.Script().run(['test.json'])
         assert retval == 0
 
 def test_only_projects_conf():
@@ -104,7 +105,7 @@ def test_only_projects_conf():
                                         {'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git'}}
                                       ]}
             cfg.write(json.dumps(conf_data))
-        retval = StackCheckout.Script().run(['test.json'])
+        retval = Checkout.Script().run(['test.json'])
         assert retval == 0
 
 def test_only_packages_conf():
@@ -115,7 +116,7 @@ def test_only_packages_conf():
             conf_data = {'packages': [{'name': 'WG/CharmConfig',
                                        'version': 'head'}]}
             cfg.write(json.dumps(conf_data))
-        retval = StackCheckout.Script().run(['test.json'])
+        retval = Checkout.Script().run(['test.json'])
         assert retval == 0
 
 def test_lbcore_664():
@@ -125,14 +126,14 @@ def test_lbcore_664():
         raise nose.SkipTest
     configfile = join(_testdata, 'testing-slot-lbcore-664.json')
     with TemporaryDir(chdir=True):
-        StackCheckout.Script().run(['--ignore-checkout-errors',
+        Checkout.Script().run(['--ignore-checkout-errors',
                                     configfile])
     with TemporaryDir(chdir=True):
-        StackCheckout.Script().run([configfile])
+        Checkout.Script().run([configfile])
 
     with TemporaryDir(chdir=True):
         try:
-            StackCheckout.Script().run(['--no-ignore-checkout-errors', configfile])
+            Checkout.Script().run(['--no-ignore-checkout-errors', configfile])
             assert False, 'the script should have failed'
         except:
             pass

@@ -17,7 +17,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import sys
-from LbNightlyTools.ScriptsCommon import findSlot
+from LbNightlyTools.Scripts.Common import findSlot
 
 if __name__ == '__main__':
     usage = 'Usage: %s configuration_file' % os.path.basename(sys.argv[0])

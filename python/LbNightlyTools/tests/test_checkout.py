@@ -24,7 +24,7 @@ _testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import StackCheckout
+from LbNightlyTools.Scripts import Checkout
 from LbNightlyTools import Utils
 from LbNightlyTools import CheckoutMethods
 from LbNightlyTools import Configuration
@@ -497,7 +497,7 @@ def test_checkout_datapkgs():
 
     Package = Configuration.Package
     mlh = MockLoggingHandler()
-    StackCheckout.__log__.addHandler(mlh)
+    Checkout.__log__.addHandler(mlh)
 
     with TemporaryDir(chdir=True):
         pkg = Package(name='AppConfig', version='v3r198')
@@ -523,7 +523,7 @@ def test_checkout_datapkgs_old():
     Package = Configuration.Package
 
     mlh = MockLoggingHandler()
-    StackCheckout.__log__.addHandler(mlh)
+    Checkout.__log__.addHandler(mlh)
 
     with TemporaryDir(chdir=True):
         os.makedirs('build')
@@ -548,7 +548,7 @@ def test_stack_checkout_datapkg():
     Package = Configuration.Package
 
     mlh = MockLoggingHandler()
-    StackCheckout.__log__.addHandler(mlh)
+    Checkout.__log__.addHandler(mlh)
 
     with TemporaryDir(chdir=True):
         os.makedirs('build')

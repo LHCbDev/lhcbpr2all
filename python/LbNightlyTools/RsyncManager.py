@@ -57,8 +57,8 @@ class Script(LbUtils.Script.PlainScript):
 
     def defineOpts(self):
         """ User options -- has to be overridden """
-        from LbNightlyTools.ScriptsCommon import (addBasicOptions,
-                                                  addDashboardOptions)
+        from LbNightlyTools.Scripts.Common import (addBasicOptions,
+                                                   addDashboardOptions)
         addBasicOptions(self.parser)
         addDashboardOptions(self.parser)
 
