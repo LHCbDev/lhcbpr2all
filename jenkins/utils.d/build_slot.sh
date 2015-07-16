@@ -145,6 +145,7 @@ build_slot flavour slot slot_build_id platform
         if which glimpseindex &> /dev/null ; then
             # clean up the build dir before indexing
             rm -rf build
+            mkdir build
             for tarfile in "${directory}"/*tar.bz2 ; do
                 tar xfC $tarfile build
             done
