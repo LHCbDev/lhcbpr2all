@@ -115,6 +115,14 @@ class Script(BaseScript):
             else:
                 self.log.info('not patching the sources')
 
+            # generate explicit dependencies
+            # - map position in the list with project name
+            proj_idx = dict((p['name'], i)
+                            for i, p in enumerate(cfg['projects']))
+            # - extract dependencies and update the configuration dict
+            for projname, deps in slot.dependencies().iteritems():
+                cfg['projects'][proj_idx[projname]]['dependencies'] = deps
+
         # write the checkout log of projects to dedicated files
         for project in slot.projects:
             if hasattr(project, 'checkout_log'):
