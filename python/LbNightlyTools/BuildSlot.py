@@ -22,7 +22,7 @@ import socket
 import codecs
 
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
-from LbNightlyTools.Utils import TaskQueue
+from LbNightlyTools.Utils import TaskQueue, wipeDir
 
 from string import Template
 from datetime import datetime
@@ -62,16 +62,6 @@ def listAllFiles(path, excl=None):
             if not excl(f):
                 yield join(root, f)
         dirs[:] = [d for d in dirs if not excl(d)]
-
-def wipeDir(path):
-    '''
-    Helper function to remove a directory.
-    '''
-    # FIXME: this can be done asynchronously
-    __log__.info('Removing directory %s', path)
-    if os.path.exists(path):
-        shutil.rmtree(path)
-        ensureDirs([path])
 
 def unpackArtifacts(src, dest):
     '''

@@ -15,6 +15,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import logging
+import shutil
 import json
 import codecs
 import contextlib
@@ -353,6 +354,16 @@ def genDocId(data):
         return data['_id']
     fields = ['slot', 'build_id', 'project', 'platform', 'type']
     return '.'.join([str(data[f]) for f in fields if f in data])
+
+def wipeDir(path):
+    '''
+    Helper function to remove a directory.
+    '''
+    # FIXME: this can be done asynchronously
+    logging.info('Removing directory %s', path)
+    if os.path.exists(path):
+        shutil.rmtree(path)
+        ensureDirs([path])
 
 class Dashboard(object):
     '''

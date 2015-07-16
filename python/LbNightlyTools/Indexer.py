@@ -13,16 +13,14 @@ Module supporting the script to index the builds using glimpseindex.
 '''
 __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
-import shutil
 import os
 import re
 import logging
 from hashlib import sha1 # pylint: disable=E0611
 from subprocess import Popen, PIPE
+from datetime import datetime
 
-from LbNightlyTools import Configuration
-from LbNightlyTools.Utils import pack, ensureDirs
-from LbNightlyTools.BuildSlot import ProjDesc
+from LbNightlyTools.Utils import pack, ensureDirs, wipeDir
 
 ALLOWED_EXTENSIONS = set([# official sources (yes, including Python and options)
                           '.h', '.cpp', '.icpp', '.py', '.opts',
@@ -44,14 +42,6 @@ EXCLUSIONS = [r'.*_confDb\.py$', r'.*Conf\.py$', r'InstallArea.*\.cmake$',
               r'.*/genConf/.*']
 
 __log__ = logging.getLogger(__name__)
-
-def parseConfigFile(path):
-    '''
-    Load the slot configuration file and translate it in a list of ProjDesc
-    instances.
-    '''
-    config = Configuration.load(path)
-    return config[u'slot'], map(ProjDesc, config[u'projects'])
 
 def _isFileWanted(path):
     '''
@@ -120,24 +110,12 @@ def filesToIndex(path):
                     hashes.add(filehash)
                     yield relname
 
-import LbUtils.Script
-class Script(LbUtils.Script.PlainScript):
+from LbNightlyTools.ScriptsCommon import BaseScript
+class Script(BaseScript):
     '''
     Script to produce the index files for all the projects defined in the
     configuration.
-
-    The configuration file must be in JSON format containing an object with the
-    attribute 'projects', a list of objects with defining the projects to be
-    checked out.
-
-    For example::
-        {"projects": [{"name": "Gaudi",
-                       "version": "v23r5"},
-                      {"name": "LHCb",
-                       "version": "v32r5"}]}
     '''
-    __usage__ = '%prog [options] <config.json>'
-    __version__ = ''
 
     def defineOpts(self):
         '''Options of the script.'''
@@ -156,34 +134,15 @@ class Script(LbUtils.Script.PlainScript):
         return '.'.join(packname)
 
     def main(self):
-        """ User code place holder """
+        '''script logic'''
+        self._setup()
         from os.path import join
-        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
-
-        if len(self.args) != 1:
-            self.parser.error('wrong number of arguments')
 
         # FIXME: check if the command glimpseindex is available
 
-        slot, projects = parseConfigFile(self.args[0])
-
-        build_dir = join(os.getcwd(), 'build')
         indexes_dir = join(os.getcwd(), 'indexes')
-
-        from datetime import datetime
-
-        starttime = datetime.now()
-
-        expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
-                              slot=slot)
-
-        artifacts_dir = join(os.getcwd(), self.options.artifacts_dir)
-
-        self.log.debug('cleaning indexes directory')
-        if os.path.exists(indexes_dir):
-            shutil.rmtree(indexes_dir)
-
-        ensureDirs([indexes_dir, artifacts_dir])
+        wipeDir(indexes_dir)
+        ensureDirs([indexes_dir])
 
         log_level = self.log.getEffectiveLevel()
         if log_level <= logging.DEBUG:
@@ -191,9 +150,8 @@ class Script(LbUtils.Script.PlainScript):
         else:
             glimpse_stdout = open(os.devnull, 'w') # throw away output
 
-        for proj in projects:
-
-            proj_root = join(build_dir, proj.dir)
+        for proj in self.slot.activeProjects:
+            proj_root = self._buildDir(proj)
             # ignore missing directories
             # (the project may not have been checked out)
             if not os.path.exists(proj_root):
@@ -202,7 +160,7 @@ class Script(LbUtils.Script.PlainScript):
 
             self.log.info('Indexing %s', proj)
 
-            index_dir = join(indexes_dir, proj.dir)
+            index_dir = join(indexes_dir, proj.baseDir)
             ensureDirs([index_dir])
 
             glimpseindex = Popen(['glimpseindex', '-H', index_dir, '-F'],
@@ -215,9 +173,9 @@ class Script(LbUtils.Script.PlainScript):
             glimpseindex.wait()
 
             self.log.info('packing indexes for %s...', proj)
-            pack([proj.dir], join(artifacts_dir, self.packname(proj)),
+            pack([proj.baseDir], join(self.artifacts_dir, self.packname(proj)),
                  cwd=indexes_dir, checksum='md5')
 
         self.log.info('files indexed (time taken: %s).',
-                      datetime.now() - starttime)
+                      datetime.now() - self.starttime)
         return 0
