@@ -14,7 +14,7 @@ import argparse
 
 
 def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
-    optname, optcontent, setupname, setupcontent):
+    optname, optcontent, optstandalone, setupname, setupcontent):
     """
     This method creates a dictionary with information about the job (like time_start/end etc)
     which will be added to json_results along with the execution results
@@ -32,6 +32,7 @@ def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
         'app_version': appversion,
         'opt_name': optname,
         'opt_content': optcontent,
+        'opt_standalone': optstandalone,
         'setup_name': setupname,
         'setup_content': setupcontent
     }
@@ -67,6 +68,9 @@ def main():
     parser.add_argument('--opt-content',
                         help='Option content ("${PRCONFIGOPTS}/Moore/PRTEST-Callgrind-300evts.py",...)',
                         required=True)
+    parser.add_argument('--opt-standalone', action='store_true',
+                        help='Set flag if option is shell script and not job option',
+                        default=False)
     parser.add_argument('--setup-name',
                         help='Setup name (UsePRConfig, UserAreaPRConfig, ...)',
                         required=True)
@@ -113,6 +117,7 @@ def main():
         options.app_version,
         options.opt_name,
         options.opt_content,
+        options.opt_standalone,
         options.setup_name,
         options.setup_content
     )
