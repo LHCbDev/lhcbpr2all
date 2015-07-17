@@ -24,6 +24,8 @@ import codecs
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
 from LbNightlyTools.Utils import TaskQueue, wipeDir
 
+from LbNightlyTools.Scripts.CollectBuildLogs import Script as CBLScript
+
 from string import Template
 from datetime import datetime
 from collections import defaultdict
@@ -350,22 +352,23 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     with open(join(summary_dir, 'build.log'), 'w') as f:
                         start, end = regions.get('configure', (0, 0))
                         f.writelines(loglines[start:end])
-                    call(['lbn-collect-build-logs', '--debug', '--append',
-                          '--exclude', '.*unsafe-install.*',
-                          '--exclude', '.*python.zip.*',
-                          '--exclude', '.*precompile-.*',
-                          self._buildDir(proj, 'build.%s' % self.platform),
-                          join(summary_dir, 'build.log')])
+                    CBLScript().run(['--debug', '--append',
+                                     '--exclude', '.*unsafe-install.*',
+                                     '--exclude', '.*python.zip.*',
+                                     '--exclude', '.*precompile-.*',
+                                     self._buildDir(proj,
+                                                    'build.%s' % self.platform),
+                                     join(summary_dir, 'build.log')])
                     with open(join(summary_dir, 'build.log'), 'a') as f:
                         for key in ['unsafe-install', 'post-install']:
                             start, end = regions.get(key, (0, 0))
                             f.writelines(loglines[start:end])
 
                 elif str(proj.build_tool) == 'CMT':
-                    call(['lbn-collect-build-logs', '--debug', '--cmt',
-                          '--platform', self.platform,
-                          self._buildDir(proj),
-                          join(summary_dir, 'build.log')])
+                    CBLScript().run(['--debug', '--cmt',
+                                     '--platform', self.platform,
+                                     self._buildDir(proj),
+                                     join(summary_dir, 'build.log')])
                 else:
                     with open(join(summary_dir, 'build.log'), 'w') as f:
                         f.write(result.stdout)

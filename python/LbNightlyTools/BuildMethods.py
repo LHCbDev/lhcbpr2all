@@ -160,7 +160,7 @@ class cmt(make):
         if 'CMTCONFIG' not in env:
             env['CMTCONFIG'] = os.environ.get('CMTCONFIG')
         if 'GAUDI_QMTEST_HTML_OUTPUT' not in env:
-            bin_dir = os.path.join(proj.baseDir,
+            bin_dir = os.path.join(os.path.abspath(proj.baseDir),
                                    'build.{CMTCONFIG}'.format(**env),
                                    'html')
             env['GAUDI_QMTEST_HTML_OUTPUT'] = bin_dir

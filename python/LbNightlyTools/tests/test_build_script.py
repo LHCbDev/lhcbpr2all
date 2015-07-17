@@ -13,10 +13,11 @@ import os
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools.Scripts import Build
+from LbNightlyTools.Scripts import Build, Test
 from tempfile import mkdtemp
 import shutil
 import codecs
+from .utils import TemporaryDir
 
 from datetime import date
 from os.path import exists, normpath, join, dirname, isfile
@@ -66,17 +67,16 @@ def assert_files_exist(root, *files):
 
 def _check_build_artifacts(root, info):
     artifacts_dir = join(root, 'artifacts')
-    chunks_dir = ('summaries.{config}/{project}/'
-                  '{slot}.{weekday}_{PROJECT}_{version}-{config}.log.chunks')
+    chunks_dir = ('summaries.{config}/{project}/build_log.chunks')
 
     assert_files_exist(artifacts_dir,
-                       'Project.xml',
                        *[f.format(**info)
                          for f in ['{project}.{version}.{slot}.{config}.tar.bz2',
+                                   'summaries.{config}/{project}/build.log',
                                    'summaries.{config}/{project}/build_log.html',
                                    chunks_dir,
-                                   'db/{slot}.{build_id}.{config}.job-start.json',
-                                   'db/{slot}.{build_id}.{config}.job-end.json',
+                                   #'db/{slot}.{build_id}.{config}.job-start.json',
+                                   #'db/{slot}.{build_id}.{config}.job-end.json',
                                    'db/{slot}.{build_id}.{project}.{config}.build-result.json',
                                    ]]
                        )
@@ -89,7 +89,6 @@ def _check_build_artifacts(root, info):
 def _check_test_artifacts(root, info):
     artifacts_dir = join(root, 'artifacts')
     assert_files_exist(artifacts_dir,
-                       'Project.xml',
                        *[f.format(**info)
                          for f in ['summaries.{config}/{project}/html/index.html',
                                    'db/{slot}.{build_id}.{project}.{config}.tests-result.json',
@@ -239,10 +238,8 @@ def test_simple_build_load_env():
         shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_w_test():
-    tmpd = mkdtemp()
-    shutil.copytree(_testdata, join(tmpd, 'testdata'))
-    oldcwd = os.getcwd()
-    try:
+    with TemporaryDir(chdir=True, keep=False) as tmpd:
+        shutil.copytree(_testdata, join(tmpd, 'testdata'))
         os.chdir(join(tmpd, 'testdata'))
         info = dict(
                     today = str(date.today()),
@@ -255,8 +252,7 @@ def test_simple_build_w_test():
                     version = 'HEAD'
                     )
 
-        script = Build.Script()
-        retcode = script.run(['--with-tests', 'testing-slot.json'])
+        retcode = Build.Script().run(['testing-slot.json'])
         assert retcode == 0
 
         proj_root = join(tmpd, 'testdata', 'build',
@@ -270,8 +266,8 @@ def test_simple_build_w_test():
 
         #########
         teardown()
-        script = Build.Script()
-        script.run(['--tests-only', 'testing-slot.json'])
+        script = Test.Script()
+        script.run(['--no-unpack', 'testing-slot.json'])
 
         proj_root = join(tmpd, 'testdata', 'build',
                          info['PROJECT'], '{PROJECT}_{version}'.format(**info))
@@ -282,10 +278,6 @@ def test_simple_build_w_test():
 
         _check_test_artifacts(join(tmpd, 'testdata'), info)
 
-
-    finally:
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_env_search_path():
     tmpd = mkdtemp()
@@ -385,7 +377,11 @@ def test_lbcore_164():
         f.close()
 
         script = Build.Script()
-        retcode = script.run(['--with-tests', 'testing-slot.json'])
+        retcode = script.run(['testing-slot.json'])
+        assert retcode == 0
+
+        script = Test.Script()
+        retcode = script.run(['--no-unpack', 'testing-slot.json'])
         assert retcode == 0
 
         assert_files_exist(proj_root,
@@ -466,7 +462,7 @@ def test_explicit_list():
                   join('build', 'DUMMYPROJECT', 'DUMMYPROJECT_HEAD'))
 
         script = Build.Script()
-        retcode = script.run(['--projects', 'DummyProject', 'testing-slot-2.json'])
+        retcode = script.run(['--projects', 'DummyProject', 'testing-slot-2b.json'])
         assert retcode == 0
 
         proj_root = join(tmpd, 'testdata', 'build',
