@@ -715,7 +715,7 @@ class Package(object):
                 'version': self.version,
                 'checkout': self._checkout.__name__,
                 'checkout_opts': self.checkout_opts}
-        if not self.container:
+        if self.container:
             data['container'] = self.container.name
         return data
 

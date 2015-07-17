@@ -52,6 +52,7 @@ def add_defaults(expected):
     '''
     slot_defaults = {'packages': [],
                      'description': 'Generic nightly build slot.',
+                     'build_tool': 'cmake',
                      'build_id': 0,
                      'disabled': False,
                      'env': [],
@@ -65,6 +66,8 @@ def add_defaults(expected):
                         'overrides': {},
                         'dependencies': [],
                         'with_shared': False}
+    package_defaults = {'checkout': 'getpack',
+                        'container': 'DBASE'}
 
     for k in slot_defaults:
         if k not in expected:
@@ -74,6 +77,11 @@ def add_defaults(expected):
         for k in project_defaults:
             if k not in project:
                 project[k] = project_defaults[k]
+
+    for package in expected.get('packages', []):
+        for k in package_defaults:
+            if k not in package:
+                package[k] = package_defaults[k]
 
 
 def test_loadJSON():
@@ -125,6 +133,47 @@ def test_loadJSON_2():
 
     assert_equals(slot.cache_entries, expected['cmake_cache'])
     print ''
+    assert_equals(found, expected)
+
+def test_loadJSON_3():
+    'JSON with data packages'
+    data = {'slot': 'slot-with-packages',
+            'packages': [
+                         {
+                          'checkout_opts': { 'export': True },
+                          'name': 'ProdConf',
+                          'version': 'v1r19'
+                          },
+                         {
+                          'checkout_opts': { 'export': True },
+                          'container': 'PARAM',
+                          'name': 'TMVAWeights',
+                          'version': 'v1r4'
+                          }
+                         ],
+            'projects': []
+            }
+    expected = dict(data)
+    add_defaults(expected)
+    expected['projects'] = [{'checkout': 'ignore',
+                             'disabled': False,
+                             'name': 'DBASE',
+                             'version': 'None'},
+                            {'checkout': 'ignore',
+                             'disabled': False,
+                             'name': 'PARAM',
+                             'version': 'None'},
+                            ]
+
+    slot = Configuration.Slot.fromDict(data)
+    found = slot.toDict()
+
+    # order of projects and packages is not relevant in this case
+    found['projects'].sort()
+    found['packages'].sort()
+    expected['projects'].sort()
+    expected['packages'].sort()
+
     assert_equals(found, expected)
 
 
