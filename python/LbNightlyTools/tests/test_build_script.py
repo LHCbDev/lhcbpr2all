@@ -75,8 +75,8 @@ def _check_build_artifacts(root, info):
                                    'summaries.{config}/{project}/build.log',
                                    'summaries.{config}/{project}/build_log.html',
                                    chunks_dir,
-                                   #'db/{slot}.{build_id}.{config}.job-start.json',
-                                   #'db/{slot}.{build_id}.{config}.job-end.json',
+                                   'db/{slot}.{build_id}.{config}.job-start.json',
+                                   'db/{slot}.{build_id}.{config}.job-end.json',
                                    'db/{slot}.{build_id}.{project}.{config}.build-result.json',
                                    ]]
                        )

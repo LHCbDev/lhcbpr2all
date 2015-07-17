@@ -298,6 +298,11 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                      build_id=self.json_tmpl['build_id'],
                                      platform=self.json_tmpl['platform'])
 
+        self.dump_json({'type': 'job-start',
+                        'host': socket.gethostname(),
+                        'build_number': os.environ.get('BUILD_NUMBER', 0),
+                        'started': self.starttime.isoformat()})
+
         self._prepareBuildDir()
 
         if self.options.rsync_dest:
@@ -409,6 +414,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
             tasks.join()
 
         self.completetime = datetime.now()
+
+        self.dump_json({'type': 'job-end',
+                        'completed': self.completetime.isoformat()})
 
         self.log.info('build completed in %s',
                       self.completetime - self.starttime)
