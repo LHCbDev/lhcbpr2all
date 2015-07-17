@@ -323,6 +323,8 @@ def ensureDirs(dirs):
     '''
     Ensure that the specified directories exist, creating them if needed.
     '''
+    if isinstance(dirs, basestring):
+        dirs = (dirs,)
     for path in dirs:
         if not os.path.exists(path):
             os.makedirs(path)

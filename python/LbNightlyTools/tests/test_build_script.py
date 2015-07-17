@@ -278,7 +278,6 @@ def test_simple_build_w_test():
 
         _check_test_artifacts(join(tmpd, 'testdata'), info)
 
-
 def test_simple_build_env_search_path():
     tmpd = mkdtemp()
     shutil.copytree(_testdata, join(tmpd, 'testdata'))
@@ -351,12 +350,9 @@ def test_lbcore_164():
 
     store in the artifacts of the builds the output of failed tests
     '''
-
-    tmpd = mkdtemp()
-    shutil.copytree(_testdata, join(tmpd, 'testdata'))
-    oldcwd = os.getcwd()
-    try:
-        os.chdir(join(tmpd, 'testdata'))
+    with TemporaryDir(chdir=True, keep=False) as tmpd:
+        shutil.copytree(_testdata, 'testdata')
+        os.chdir('testdata')
         info = dict(
                     today = str(date.today()),
                     weekday = date.today().strftime("%a"),
@@ -395,10 +391,6 @@ def test_lbcore_164():
                            'newrefs.{config}'.format(**info),
                            'TestProject', 'TestProjectSys', 'cmt',
                            'output.ref.new'))
-
-    finally:
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_2():
     # Test the case of "disabled" projects.
