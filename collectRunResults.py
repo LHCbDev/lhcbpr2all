@@ -1,27 +1,43 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess, inspect, json, logging, uuid, zipfile, ntpath, sendToDB
-from optparse import OptionParser
-from optparse import Option, OptionValueError
+import os
+import sys
+import subprocess
+import inspect
+import json
+import logging
+import uuid
+import zipfile
+import ntpath
+import sendToDB
+import argparse
 
-def JobDictionary(hostname,starttime,endtime,cmtconfig,jodDesId):
+
+def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
+    optname, optcontent, setupname, setupcontent):
     """
     This method creates a dictionary with information about the job (like time_start/end etc)
     which will be added to json_results along with the execution results
     """
-    
-    hostDict = { 'hostname': hostname, 'cpu_info': '', 'memoryinfo': ''}
+
+    hostDict = {'hostname': hostname, 'cpu_info': '', 'memoryinfo': ''}
     cmtconfigDict = {'platform': cmtconfig}
     DataDict = {
-                'HOST': hostDict,
-                'CMTCONFIG': cmtconfigDict,
-                'time_start': starttime,
-                'time_end': endtime,
-                'status': '',
-                'id_jobDescription': jodDesId
-                }
-    
+        'HOST': hostDict,
+        'CMTCONFIG': cmtconfigDict,
+        'time_start': starttime,
+        'time_end': endtime,
+        'status': '',
+        'app_name': appname,
+        'app_version': appversion,
+        'opt_name': optname,
+        'opt_content': optcontent,
+        'setup_name': setupname,
+        'setup_content': setupcontent
+    }
+
     return DataDict
+
 
 def main():
     """The collectRunResults scripts creates the json_results file which contains information about the 
@@ -29,124 +45,156 @@ def main():
      of a job are collected by handlers. Each handler knows which file must parse, so this script imports dynamically 
      each handler(from the input handler list, --list-handlers option) and calls the collectResults function, of each handler, and 
      passes to the function the directory(the default is the . <-- current directory) to the results(output of the runned job)"""
-    #this is used for checking
+    # this is used for checking
     outputfile = 'json_results'
     needed_options = 12
-    
-    description = """The program needs all the input arguments(options in order to run properly)"""
-    parser = OptionParser(usage='usage: %prog [options]',
-                          description=description)
-    parser.add_option('-r', '--results-directory', 
-                      action='store', type='string',
-                      dest='results', default=".", 
-                      help='(Optional)Directory which contains results, default is the current directory')
-    parser.add_option( '-s' , '--start-time' , action='store', type='string' , 
-                    dest='startTime' , help='The start time of the job.') 
-    parser.add_option( '-e' , '--end-time' , action='store', type='string' , 
-                    dest="endTime" , help="The end time of the job.") 
-    parser.add_option( "-p" , "--hostname" , action="store", type="string" , 
-                    dest="hostname" , help="The name of the host who runned the job.")
-    parser.add_option( "-c" , "--platform" , action="store", type="string" , 
-                    dest="platform" , help="The platform(cmtconfig) of the job.")  
-    parser.add_option( "-j" , "--jobDescription-id" , action="store", type="string" , 
-                    dest="jobDescription_id" , help="The job description unique id.")
-    parser.add_option("-l" , "--list-handlers" , action="store", type="string" ,
-                    dest="handlers" , help="The list of handlers(comma separated.")
-    parser.add_option("-q", "--quiet", action="store_true",
-                      dest="ssss", default=False,
-                      help="Just be quiet (do not print info from logger)")
-    parser.add_option("-a", "--auto-send-results", action="store_true",
-                      dest="send", default=False,
-                      help="Automatically send the zip results to the database.")
-    
-    #check if all  the options were given
-    if len(sys.argv) < needed_options:
-        parser.parse_args(['--help'])
-        return
 
-    options, args = parser.parse_args()
+    description = """The program needs all the input arguments(options in order to run properly)"""
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-r', '--results', default=".",
+                        help='Directory which contains results, default is the current directory')
     
+    parser.add_argument('--app-name',
+                        help='Application name (Brunel, Gauss, Moore, ...)',
+                        required=True)
+    parser.add_argument('--app-version',
+                        help='Application release/build version (v42r0, lhcb-gaudi-heade-111,...)',
+                        required=True)
+    parser.add_argument('--opt-name',
+                        help='Option name (PRTEST-COLLISION12-1000, PRTEST-Callgrind-300evts,...)',
+                        required=True)
+    parser.add_argument('--opt-content',
+                        help='Option content ("${PRCONFIGOPTS}/Moore/PRTEST-Callgrind-300evts.py",...)',
+                        required=True)
+    parser.add_argument('--setup-name',
+                        help='Setup name (UsePRConfig, UserAreaPRConfig, ...)',
+                        required=True)
+    parser.add_argument('--setup-content',
+                        help='Setup content ("--no-user-area --use PRConfig", "--use PRConfig", ...)',
+                        required=True)
+   
+    parser.add_argument('-s', '--start-time',
+                        dest='startTime', help='The start time of the job.',
+                        required=True)
+    parser.add_argument('-e', '--end-time',
+                        dest="endTime", help="The end time of the job.",
+                        required=True)
+    parser.add_argument("-p", "--hostname",
+                        dest="hostname", help="The name of the host who runned the job.",
+                        required=True)
+    parser.add_argument("-c", "--platform",
+                        dest="platform", help="The platform(cmtconfig) of the job.",
+                        required=True)
+    parser.add_argument("-l", "--list-handlers",
+                        dest="handlers", help="The list of handlers(comma separated.")
+    parser.add_argument("-q", "--quiet", action="store_true",
+                        dest="ssss", default=False,
+                        help="Just be quiet (do not print info from logger)")
+    parser.add_argument("-a", "--auto-send-results", action="store_true",
+                        dest="send", default=False,
+                        help="Automatically send the zip results to the database.")
+
+    options = parser.parse_args()
+
     logging.basicConfig(level=logging.WARNING)
 
     if not options.ssss:
         logging.root.setLevel(logging.INFO)
-        
+
     logger = logging.getLogger('collectRunResults.py')
-    
-    dataDict = JobDictionary(options.hostname,options.startTime,options.endTime,
-                       options.platform,options.jobDescription_id)
-    
+
+    dataDict = JobDictionary(
+        options.hostname,
+        options.startTime,
+        options.endTime,
+        options.platform,
+        options.app_name,
+        options.app_version,
+        options.opt_name,
+        options.opt_content,
+        options.setup_name,
+        options.setup_content
+    )
+
     jobAttributes = []
     handlers_result = []
-    
-    #for each handler in the handlers list
+
+    # for each handler in the handlers list
     for handler in options.handlers.split(','):
-        module = ''.join(['handlers','.',handler])
-        #import the current handler
+        module = ''.join(['handlers', '.', handler])
+        # import the current handler
         try:
             mod = __import__(module, fromlist=[module])
         except ImportError, e:
-            logger.exception('Please check your script or your LHCbPRHandlers directory')
+            logger.exception(
+                'Please check your script or your LHCbPRHandlers directory')
         else:
-            #create an instance of a the current handler
+            # create an instance of a the current handler
             klass = getattr(mod, handler)
             currentHandler = klass()
-            
+
             try:
-                #collect results from the given directory(--results-directory, -r)
+                # collect results from the given directory(--results-directory,
+                # -r)
                 currentHandler.collectResults(options.results)
-            except Exception,e:
-                #if any error occurs and the handler fails, inform the user using the logger
-                #and save that the current handler failed
+            except Exception, e:
+                # if any error occurs and the handler fails, inform the user using the logger
+                # and save that the current handler failed
                 logger.exception('Handler exception:')
-                handlers_result.append({ 'handler' : handler, 'successful' : False })
+                handlers_result.append(
+                    {'handler': handler, 'successful': False})
             else:
-                #in case everything is fine , save that the current handler worked successfully
+                # in case everything is fine , save that the current handler
+                # worked successfully
                 jobAttributes.extend(currentHandler.getResults())
-                handlers_result.append({ 'handler' : handler, 'successful' : True })
-    
+                handlers_result.append(
+                    {'handler': handler, 'successful': True})
+
     if not jobAttributes:
-        logger.warning('All handlers failed, no results were collected.Aborting...')
+        logger.warning(
+            'All handlers failed, no results were collected. Aborting...')
         exit(1)
-    
+
     unique_results_id = str(uuid.uuid1())
     zipper = zipfile.ZipFile(unique_results_id+'.zip', mode='w')
-    
+
     for i in range(len(jobAttributes)):
         if jobAttributes[i]['type'] == 'File':
             head, tail = ntpath.split(jobAttributes[i]['filename'])
-            
+
             try:
-                #write to the zip file the root file with a unique name
+                # write to the zip file the root file with a unique name
                 zipper.write(jobAttributes[i]['filename'], tail)
             except Exception:
                 pass
-            
-            #update in the json_results the uuid new filename
+
+            # update in the json_results the uuid new filename
             jobAttributes[i]['filename'] = tail
 
     dataDict['results_id'] = unique_results_id
-    
-    #add the collected results and the handlers' information to the final
-    #data dictionary       
+
+    # add the collected results and the handlers' information to the final
+    # data dictionary
     dataDict['JobAttributes'] = jobAttributes
     dataDict['handlers_info'] = handlers_result
-    
-    f = open(outputfile,'w')
+
+    f = open(outputfile, 'w')
     f.write(json.dumps(dataDict))
     f.close()
-    
-    #add to the zip results file the json_result file
+
+    # add to the zip results file the json_result file
     zipper.write(outputfile)
-    
-    #close the zipfile object
+
+    # close the zipfile object
     zipper.close()
-    
+
     logger.info(unique_results_id+'.zip')
-    
+
     if options.send:
-        logger.info('Automatically sending the zip results file to the database...')
-        sendToDB.run(unique_results_id+'.zip' ,False)
+        logger.info(
+            'Automatically sending the zip results file to the database...')
+        sendToDB.run(unique_results_id+'.zip', False)
 
 if __name__ == '__main__':
     main()
