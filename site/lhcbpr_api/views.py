@@ -179,7 +179,10 @@ class ActiveApplicationViewSet(viewsets.ViewSet):
             # Slots
             nightlyVersionNumber = 1
             if 'nightlyVersionNumber' in request.query_params:
-                nightlyVersionNumber = int(request.query_params['nightlyVersionNumber'])
+                try:
+                    nightlyVersionNumber = int(request.query_params['nightlyVersionNumber'])
+                except ValueError:
+                    nightlyVersionNumber = 1
 
             queryset = (
                 Job.objects
