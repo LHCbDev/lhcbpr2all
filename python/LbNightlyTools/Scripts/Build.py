@@ -557,8 +557,13 @@ class BuildReporter(object):
         '''
         from collections import deque
 
-        w_exp = re.compile(r'\bwarning\b|\bSyntaxWarning:', re.IGNORECASE)
-        e_exp = re.compile(r'\berror\b|\*\*\* Break \*\*\*', re.IGNORECASE)
+        w_exp = re.compile('|'.join([r'\bwarning\b',
+                                     r'\bSyntaxWarning:']),
+                           re.IGNORECASE)
+        e_exp = re.compile('|'.join([r'\berror\b',
+                                     r'\*\*\* Break \*\*\*',
+                                     r'^Traceback \(most recent call last\):']),
+                           re.IGNORECASE)
         #cExp = re.compile(r'cov-|(Coverity (warning|error|message))',
         #                  re.IGNORECASE)
 
