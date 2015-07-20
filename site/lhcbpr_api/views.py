@@ -175,7 +175,7 @@ class ActiveApplicationViewSet(viewsets.ViewSet):
             )
         result.append({'name': 'Releases', 'values': releases})
         
-        if 'withNightly' in request.query_params and request.query_params['withNightly']:
+        if 'withNightly' in request.query_params and request.query_params['withNightly'] == "true":
             # Slots
             nightlyVersionNumber = 1
             if 'nightlyVersionNumber' in request.query_params:
