@@ -175,45 +175,49 @@ class ActiveApplicationViewSet(viewsets.ViewSet):
             )
         result.append({'name': 'Releases', 'values': releases})
         
-        # Slots
-        queryset = (
-            Job.objects
-            .select_related()
-            .values(slot_id_field, slot_field)
-            .filter(
-                job_description__application_version__slot__isnull=False,
-                job_description__application_version__application__id=pk)
-            .annotate(njobs=Count(slot_id_field))
-            .order_by(slot_field)
-        )
+        if 'withNightly' in request.query_params and request.query_params['withNightly']:
+            # Slots
+            nightlyVersionNumber = 1
+            if 'nightlyVersionNumber' in request.query_params:
+                nightlyVersionNumber = int(request.query_params['nightlyVersionNumber'])
 
-        slots = []
-        for slot in queryset:
-            slot_record = {'name': slot[slot_field]}
-            queryset_per_slot = (
+            queryset = (
                 Job.objects
                 .select_related()
-                .values(id_field, name_field, time_field)
+                .values(slot_id_field, slot_field)
                 .filter(
-                    job_description__application_version__slot__id=slot[slot_id_field],
-                    job_description__application_version__application__id=pk
-                )
-                .annotate(njobs=Count(id_field))
-                .order_by('-' + time_field)[:7]
+                    job_description__application_version__slot__isnull=False,
+                    job_description__application_version__application__id=pk)
+                .annotate(njobs=Count(slot_id_field))
+                .order_by(slot_field)
             )
-            slot_values = []
-            for app in queryset_per_slot:
-                slot_values.append(
-                    {   
-                        "id": app[id_field],
-                        "name": app[name_field],
-                        "count": app["njobs"]
-                    }
+            slots = []
+            for slot in queryset:
+                slot_record = {'name': slot[slot_field]}
+                queryset_per_slot = (
+                    Job.objects
+                    .select_related()
+                    .values(id_field, name_field, time_field)
+                    .filter(
+                        job_description__application_version__slot__id=slot[slot_id_field],
+                        job_description__application_version__application__id=pk
+                    )
+                    .annotate(njobs=Count(id_field))
+                    .order_by('-' + time_field)[:nightlyVersionNumber]
                 )
-            slot_record["values"] = slot_values
-            slot_record["count"] = slot["njobs"]
-            if slot_values:
-                result.append(slot_record)   
+                slot_values = []
+                for app in queryset_per_slot:
+                    slot_values.append(
+                        {   
+                            "id": app[id_field],
+                            "name": app[name_field],
+                            "count": app["njobs"]
+                        }
+                    )
+                slot_record["values"] = slot_values
+                slot_record["count"] = slot["njobs"]
+                if slot_values:
+                    result.append(slot_record)
         
         return Response(result)
 
