@@ -395,31 +395,31 @@ class TrendsViewSet(viewsets.ViewSet):
         logger.info('Context is read')
         logger.info('Retrieving results from service')
         service = JobResultsService()
-        results = service.get_results_per_attr_per_version(context)
-        total_count = service.get_attrs_count(context)
+        # results = service.get_results_per_attr_per_version(context)
+        # total_count = service.get_attrs_count(context)
 
-        logger.info('Looping over {0} results'.format(len(results)))        
-        for result_index in range(len(results)):
-            for version_index in range(0, len(results[result_index]['values'])):
-                current_version = results[result_index]['values'][version_index]['version']
-                numbers = results[result_index]['values'][version_index]['results']
-                count = float(len(numbers))
-                average = sum(numbers) / count
-                deviation = 0
-                for n in numbers:
-                    deviation = deviation + abs(average - n)
-                deviation = deviation / count
-                results[result_index]['values'][version_index] = {
-                    'version': current_version,
-                    'average': average,
-                    'deviation': deviation
-                }
-            results[result_index]['values'] = sorted(results[result_index]['values'], key = itemgetter('version'))
-        logger.info('Sending results')
-        logger.info(len(results))
+        # logger.info('Looping over {0} results'.format(len(results)))        
+        # for result_index in range(len(results)):
+        #     for version_index in range(0, len(results[result_index]['values'])):
+        #         current_version = results[result_index]['values'][version_index]['version']
+        #         numbers = results[result_index]['values'][version_index]['results']
+        #         count = float(len(numbers))
+        #         average = sum(numbers) / count
+        #         deviation = 0
+        #         for n in numbers:
+        #             deviation = deviation + abs(average - n)
+        #         deviation = deviation / count
+        #         results[result_index]['values'][version_index] = {
+        #             'version': current_version,
+        #             'average': average,
+        #             'deviation': deviation
+        #         }
+        #     results[result_index]['values'] = sorted(results[result_index]['values'], key = itemgetter('version'))
+        # logger.info('Sending results')
+        # logger.info(len(results))
         return Response({
-            'count': total_count,
-            'results': results
+            'count': 0,
+            'results': []
         })
 
     def get_serializer_context(self, request):
