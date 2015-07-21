@@ -27,7 +27,6 @@ class JobResultsService:
             queryset = queryset.filter(job__job_description__option__id__in = context['options'])
         if 'versions' in context and context['versions']:
             queryset = queryset.filter(job__job_description__application_version__id__in = context['versions'])
-        logger.info(context['versions'])
             
         queryset = queryset.select_related(
             'attr__name', 
