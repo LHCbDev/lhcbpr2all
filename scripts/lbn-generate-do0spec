@@ -12,10 +12,16 @@
 
 #
 # Little tool to generate -do0 RPM spec while we have a problem in the RPM generation.
-# To find the list of LCG_XX_[...]dbg rpms do:
-#  for f in  /afs/cern.ch/sw/lcg/external/rpms/lcg/LCG_79_*; do basename $f \
+#
+# To find the list of LCG_XX_[...]dbg rpms from the LCG repo for e.g. LCG_79 do:
+# for f in  /afs/cern.ch/sw/lcg/external/rpms/lcg/LCG_79_*; do basename $f \
 # | sed -e 's/-79.noarch.rpm//' | sed -e 's/1.0.0//' | grep dbg; done
-# On each of them 
+# 
+# You have have a lits of entries like: LCG_79_yoda_1.3.1_x86_64_slc6_gcc49_dbg
+# N.b. the RPM version ahs been removed !
+#
+# On each of them run:
+# lbn-generate-do0spec <name> && rpmbuild -bb tmp.spec
  
 
 import sys
