@@ -113,10 +113,14 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': '/afs/cern.ch/lhcb/software/webapps/LHCbPR2Test/api/data/debug.log',
+        },
     },
     'loggers': {
         '': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
         },
     },
