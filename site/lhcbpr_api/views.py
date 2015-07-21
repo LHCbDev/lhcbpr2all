@@ -418,7 +418,7 @@ class TrendsViewSet(viewsets.ViewSet):
         # logger.info('Sending results')
         # logger.info(len(results))
         return Response({
-            'context': 'Testing',
+            'versions': context['versions'],
             'count': 0,
             'results': []
         })
