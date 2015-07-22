@@ -23,50 +23,50 @@ set_common [--build] [--test]"
     local special_config=false
 
     while (( "$#" )); do
-	if [[ "$1" =~ 	^- ]] ; then
-	    case "$1" in
-		"--build" | "--test" )
-		    local special_config=true ;;
+    if [[ "$1" =~ ^- ]] ; then
+        case "$1" in
+        "--build" | "--test" )
+            local special_config=true ;;
 
-		"-h" | "--help")
-		    echo ${DESCRIPTION}
-		    echo ${USAGE}
-		    exit 0;;
+        "-h" | "--help")
+            echo ${DESCRIPTION}
+            echo ${USAGE}
+            exit 0;;
 
-		*)
-		    echo "ERROR : Option $1 unknow in $0"
-		    echo "${USAGE}"
-		    exit 2
-	    esac
-	else
-	    echo "ERROR : $0 doesn't have parameter"
-	    exit 1
-	fi
+        *)
+            echo "ERROR : Option $1 unknown in $0"
+            echo "${USAGE}"
+            exit 2
+        esac
+    else
+        echo "ERROR : $0 doesn't have parameter"
+        exit 1
+    fi
 
-	shift
+    shift
     done
 
     # Need to set HOME on master because HOME not writable when connect by tomcat
     # Need to be FIX
     if [[ "${NODE_LABELS}" == *"master"* ]]
     then
-	export HOME=$PWD
+        export HOME=$PWD
     fi
 
     export CMTCONFIG=${platform}
-# default (backward-compatible) build flavour
+    # default (backward-compatible) build flavour
     if [ "${flavour}" == "" ] ; then
-	export flavour=nightly
+        export flavour=nightly
     fi
 
-# initial environment seen by the Jenkins script
+    # initial environment seen by the Jenkins script
     env_log=$(basename $0)${platform:+.}${platform}.env
     printenv | sort > ${env_log}
 
-# enforce C (POSIX) localization
+    # enforce C (POSIX) localization
     export LC_ALL=C
 
-# used by some tests to reduce the number of concurrent tests
+    # used by some tests to reduce the number of concurrent tests
     export LHCB_NIGHTLY_MAX_THREADS=1
 
     export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${flavour}/${slot}/${slot_build_id}}
@@ -87,46 +87,46 @@ set_common [--build] [--test]"
 
     LbScriptsVersion=dev
 
-# FIXME: workaround for LBCORE-769
+    # FIXME: workaround for LBCORE-769
     if ( echo $platform | grep -q slc5 ) ; then
-	LbScriptsVersion=LBSCRIPTS_v8r3
+        LbScriptsVersion=LBSCRIPTS_v8r3
     fi
 
     if [ "${special_config}" == "true" ] ; then
-	export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
-	# FIXME: this is usually set by the "group login" script, but it is not
-	#        called on lxbuild (it is needed to get the right ICC environment)
-	export GROUP_DIR=/afs/cern.ch/group/z5
-	export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
-	# FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
-	. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
-	#	export CMTCONFIG=${platform}
-	# FIXME: path to the new gdb should be implicit in the build/run-time
-	#        environment
-	# See https://its.cern.ch/jira/browse/LBCORE-151
-	export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
-	# COMPILER_PATH (set by LbLogin --no-cache) create troubles
-	unset COMPILER_PATH
+        export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
+        # FIXME: this is usually set by the "group login" script, but it is not
+        #        called on lxbuild (it is needed to get the right ICC environment)
+        export GROUP_DIR=/afs/cern.ch/group/z5
+        export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
+        # FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
+        . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
+        #    export CMTCONFIG=${platform}
+        # FIXME: path to the new gdb should be implicit in the build/run-time
+        #        environment
+        # See https://its.cern.ch/jira/browse/LBCORE-151
+        export PATH=/afs/cern.ch/sw/lcg/external/gdb/7.6/$CMTOPT/bin:$PATH
+        # COMPILER_PATH (set by LbLogin --no-cache) create troubles
+        unset COMPILER_PATH
 
-	# FIXME: we need to get the latest compilers wrappers until we release LbScripts
-	export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
+        # FIXME: we need to get the latest compilers wrappers until we release LbScripts
+        export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
     else
-	. /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
+        . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
     fi
 
 # FIXME: with gcc49 we do not get the right Python with LbLogin
     if (echo $CMTCONFIG | grep -q gcc49) ; then
-	export PATH=/afs/cern.ch/sw/lcg/releases/LCG_68/Python/2.7.6/x86_64-slc6-gcc48-opt/bin:$PATH
+        export PATH=/afs/cern.ch/sw/lcg/releases/LCG_68/Python/2.7.6/x86_64-slc6-gcc48-opt/bin:$PATH
     fi
 
 # FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)
     if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
-	. SetupProject.sh LCGCMT 66 Python
+        . SetupProject.sh LCGCMT 66 Python
     fi
 
     if klist -5 > /dev/null 2>&1 ; then
-	kinit -R
-	klist -5
+        kinit -R
+        klist -5
     fi
 
     set -xe
@@ -134,7 +134,7 @@ set_common [--build] [--test]"
 
     export SET_COMMON=true
     if [ "${special_config}" == "true" ] ; then
-	export SET_SPECIAL_CONFIG=true
+        export SET_SPECIAL_CONFIG=true
     fi
 
 }

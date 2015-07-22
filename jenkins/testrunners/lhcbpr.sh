@@ -11,6 +11,6 @@ echo "Now running the test"
 mycount=${count:-1}
 echo "Will run the test $mycount time(s)"
 for i in `seq 1 $mycount`; do
-	sh runtest.sh
+    sh runtest.sh
 done
 

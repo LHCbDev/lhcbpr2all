@@ -11,65 +11,67 @@
 
 function check_preconditions {
 
-	local DESCRIPTION="DESCRIPTION : \
+    local DESCRIPTION="DESCRIPTION : \
 Function to check if we have precondition on an specify slot"
     local USAGE="USAGE : \
 check_preconditions config_file slot slot_build_id
-		[--platforms <platforms>]"
+        [--platforms <platforms>]"
 
-	local nb_param=0
+    local nb_param=0
 
-	while (( "$#" )); do
-		if [[ "$1" =~ 	^- ]] ; then
-			case "$1" in
-				"--platforms")
-					if [[ "$2" = "" || "$2" =~ ^- ]] ; then
-						echo "ERROR : Option $1 need an argument"
-						exit 3
-					else
-						local platforms="$2"
-					fi
-					shift ;;
+    while (( "$#" )); do
+        if [[ "$1" =~ ^- ]] ; then
+            case "$1" in
+                "--platforms")
+                    if [[ "$2" = "" || "$2" =~ ^- ]] ; then
+                        echo "ERROR : Option $1 needs an argument"
+                        exit 3
+                    else
+                        local platforms="$2"
+                    fi
+                    shift ;;
 
-				"-h" | "--help")
-					echo ${DESCRIPTION}
-					echo ${USAGE}
-					exit 0;;
-				*)
-					echo "ERROR : Option $1 unknow in $0"
-					echo ${USAGE}
-					exit 2
-			esac
-		else
-			case "${nb_param}" in
-				"0")
-					local config="$1" ;;
-				"1")
-					local slot="$1" ;;
-				"2")
-					local slot_build_id="$1" ;;
-				*)
-					echo "ERROR : Too much parameter"
-					echo ${USAGE}
-					exit 1
-			esac
-			local nb_param=$((nb_param+1))
-		fi
+                "-h" | "--help")
+                    echo ${DESCRIPTION}
+                    echo ${USAGE}
+                    exit 0;;
+                *)
+                    echo "ERROR : Option $1 unknown in $0"
+                    echo ${USAGE}
+                    exit 2
+            esac
+        else
+            case "${nb_param}" in
+                "0")
+                    local config="$1" ;;
+                "1")
+                    local slot="$1" ;;
+                "2")
+                    local slot_build_id="$1" ;;
+                "3")
+                    local flavour="$1" ;;
+                *)
+                    echo "ERROR : Too many parameters"
+                    echo ${USAGE}
+                    exit 1
+            esac
+            local nb_param=$((nb_param+1))
+        fi
 
-		shift
+        shift
     done
 
-	if [ "${nb_param}" != "3" ] ; then
-		echo "ERROR : Need more parameter"
-		echo ${USAGE}
-		exit 1
-	fi
-
-    if [ "$SET_COMMON" != "true" -o "$CONFIG_FILE_CHECKOUT" != "true" ] ; then
-		echo "ERROR : $0 need SET_COMMON and CONFIG_FILE_CHECKOUT set with true"
-		exit 1
+    if [ "${nb_param}" != "4" ] ; then
+        echo "ERROR : Need more parameters"
+        echo ${USAGE}
+        exit 1
     fi
 
-	lbn-check-preconditions --verbose "${config}" "$slot" "$slot_build_id" ${platforms:+--platforms "${platforms}"}
+    if [ "$SET_COMMON" != "true" -o "$CONFIG_FILE_CHECKOUT" != "true" ] ; then
+        echo "ERROR : $0 need SET_COMMON and CONFIG_FILE_CHECKOUT set with true"
+        exit 1
+    fi
+
+    lbn-check-preconditions --verbose "${config}" "$slot" "$slot_build_id" "$flavour" ${platforms:+--platforms "${platforms}"}
 
 }

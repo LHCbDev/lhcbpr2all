@@ -14,11 +14,13 @@
 
 set_common --build
 
-get_artifact \
-	--get-config \
-	--get-sources \
-    "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
-    "${ARTIFACTS_DIR}"
+if [ "$JENKINS_MOCK" != "true" ] ; then
+    get_artifact \
+        --get-config \
+        --get-sources \
+        "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
+        "${ARTIFACTS_DIR}"
+fi
 
 build_slot \
     "${flavour}" \

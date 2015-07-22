@@ -1182,6 +1182,8 @@ class BuildReporter(object):
                 found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
                 if found:
                     style_cls = found.group(1).lower()
+                elif re.search(r'\*\*\* Break \*\*\*', line, re.IGNORECASE):
+                    style_cls = 'error'
                 if (line.startswith('Scanning dependencies') or
                     line.startswith('Linking ')):
                     style_cls = 'cmake_message'
@@ -1302,8 +1304,13 @@ class BuildReporter(object):
         '''
         from collections import deque
 
-        w_exp = re.compile(r'\bwarning\b|\bSyntaxWarning:', re.IGNORECASE)
-        e_exp = re.compile(r'\berror\b', re.IGNORECASE)
+        w_exp = re.compile('|'.join([r'\bwarning\b',
+                                     r'\bSyntaxWarning:']),
+                           re.IGNORECASE)
+        e_exp = re.compile('|'.join([r'\berror\b',
+                                     r'\*\*\* Break \*\*\*',
+                                     r'^Traceback \(most recent call last\):']),
+                           re.IGNORECASE)
         #cExp = re.compile(r'cov-|(Coverity (warning|error|message))',
         #                  re.IGNORECASE)
 

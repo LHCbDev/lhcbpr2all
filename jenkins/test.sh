@@ -14,7 +14,6 @@
 
 set_common --build
 
-
 day=$(date +%a)
 deploybase=$(dirname /data/${ARTIFACTS_DIR})
 
@@ -29,20 +28,22 @@ else
   # Selection of the input for the files to be tested
   # Check if input_flavour or flavour have been defined
   if [ "$input_flavour" = "" ] ; then
-  	if [ "$flavour" = "" ] ; then
-    	echo "The env variable flavour needs to be defined"
+    if [ "$flavour" = "" ] ; then
+      echo "The env variable flavour needs to be defined"
     else
-    	input_flavour=$flavour
+      input_flavour=$flavour
     fi
   fi
-
-  # Now actually set the source
-  artifacts_root_opt="--artifacts-root https://buildlhcb.cern.ch/artifacts/${input_flavour}"
 
   submit_opt="--submit --flavour ${flavour}"
   rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
 
-  lbn-install --verbose ${artifacts_root_opt} --dest build --projects ${project} --platforms ${platform} ${slot} ${slot_build_id}
+  lbn-install --verbose \
+              --flavour ${input_flavour} \
+              --dest build \
+              --projects ${project} \
+              --platforms ${platform} \
+              ${slot} ${slot_build_id}
   prepare_opt="--no-unpack"
   config_file=build/slot-config.json
 fi
@@ -50,11 +51,11 @@ fi
 # Now checking what to run
 used_test_runner="default"
 if [ "${testrunner}" != "" ] && [ "${testrunner}" != "None"  ] ; then
-	used_test_runner=${testrunner}
+  used_test_runner=${testrunner}
 fi
 
 if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
-	export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
+  export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
 fi
 
 # And run it...
