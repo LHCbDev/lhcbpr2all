@@ -16,4 +16,8 @@ export HOME=$PWD
 # Set common environment
 . $(dirname $0)/common.sh
 
+# 5 minutes grace time before getting data from the URL
+# see https://its.cern.ch/jira/browse/LBCORE-883
+sleep 300
+
 lbn-release-poll --debug http://buildlhcb.cern.ch/cgi-bin/getreleases
