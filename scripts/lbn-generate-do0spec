@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+
+#
+# Little tool to generate -do0 RPM spec while we have a problem in the RPM generation.
+#
+# To find the list of LCG_XX_[...]dbg rpms from the LCG repo for e.g. LCG_79 do:
+# for f in  /afs/cern.ch/sw/lcg/external/rpms/lcg/LCG_79_*; do basename $f \
+# | sed -e 's/-79.noarch.rpm//' | sed -e 's/1.0.0//' | grep dbg; done
+# 
+# You have have a lits of entries like: LCG_79_yoda_1.3.1_x86_64_slc6_gcc49_dbg
+# N.b. the RPM version ahs been removed !
+#
+# On each of them run:
+# lbn-generate-do0spec <name> && rpmbuild -bb tmp.spec
+ 
+
+import sys
+import logging
+
+# First checking args
+if len(sys.argv) == 1:
+   logging.error("Please specify RPM name");
+   sys.exit(2)
+
+rpmname=sys.argv[1]
+
+if rpmname.find("dbg") == -1:
+   logging.error("RPM is not in dbg config, cannot create meta for do0 version")
+   sys.exit(2)
+
+do0name=rpmname.replace("dbg", "do0")
+logging.warning("Generating tmp.spec for %s depending on %s" % (do0name, rpmname))
+
+# Now generating the spec
+from subprocess import call
+call(["lbn-generate-metaspec", "-o", "tmp.spec", do0name, "1.0.0", rpmname])
+
+
+
+     
