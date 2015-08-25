@@ -378,7 +378,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 else:
                     with open(join(summary_dir, 'build.log'), 'w') as f:
                         f.write(result.stdout)
-                reporter = BuildReporter(summary_dir, proj.name,
+                reporter = BuildReporter(summary_dir, proj,
                                          self.platform,
                                          self.slot, result)
                 reporter.genOldSummaries()
@@ -433,7 +433,7 @@ class BuildReporter(object):
         Initialize the instance.
 
         @param summary_dir: directory of the build summaries
-        @param project: ProjDesc instance of the project
+        @param project: Project instance
         @param platform: platform id
         @param config: configuration dictionary
         '''
@@ -462,7 +462,7 @@ class BuildReporter(object):
         '''
         w_count = sum(map(len, self.summary['warning'].values()))
         e_count = sum(map(len, self.summary['error'].values()))
-        data = {'project': self.project,
+        data = {'project': self.project.name,
                 'started': self.result.started.isoformat(),
                 'completed': self.result.completed.isoformat(),
                 'retcode': self.result.returncode,
@@ -743,8 +743,10 @@ class BuildReporter(object):
         w_summ = formatList('warning')
         c_summ = formatList('coverity')
 
-        return html.substitute(project=self.project,
+        return html.substitute(project=self.project.name,
+                               version=self.project.version,
                                slot=self.slot.name,
+                               slot_build_id=self.slot.build_id,
                                host=socket.gethostname(),
                                logfile_links=dumps(logfile_links, indent=2),
                                code_links=dumps(code_links, indent=2),
