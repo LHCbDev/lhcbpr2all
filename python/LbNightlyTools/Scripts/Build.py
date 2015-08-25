@@ -318,6 +318,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
             for proj, result in self.slot.buildGen(projects=opts.projects,
                                                    jobs=opts.jobs,
                                                    max_load=opts.load_average,
+                                                   args=['-k'],
                                                    stderr=STDOUT,
                                                    before=record_start):
                 summary_dir = self._summaryDir(proj)
