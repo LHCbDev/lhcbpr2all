@@ -70,6 +70,11 @@ class Script(BaseScript):
         # remove (optional) suffix '-build' (or '-release') from os_label
         os_label = re.sub(r'-(build|release)$', '', os_label)
 
+        if not opts.platforms:
+            opts.platforms = self.slot.platforms
+        else:
+            opts.platforms = opts.platforms.split()
+
         expected_builds = [ (genPackageName(proj, platform,
                                             build_id=opts.build_id,
                                             artifacts_dir=opts.artifacts_dir),
@@ -80,7 +85,9 @@ class Script(BaseScript):
                              now,
                              os_label)
                             for proj in self.slot.activeProjects
-                            for platform in self.slot.platforms]
+                            for platform in opts.platforms]
+
+        self.log.debug('expecting %d builds', len(expected_builds))
 
         if opts.output:
             import codecs
