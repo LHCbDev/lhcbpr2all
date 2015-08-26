@@ -130,10 +130,23 @@ def git(desc, url, commit='master', export=False):
         'helper to simplify the code'
         outputs.append(log_call(*args, **kwargs))
 
+    commit_id = None
     call(['git', 'clone', '--no-checkout', url, dest])
+
     if not os.path.exists(dest):
         # ensure the destination directory exists even when the cloning fails
         os.makedirs(dest)
+    else:
+        log.debug('extracting the list of branches')
+        proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
+        branches = set(branch[2:].rstrip()
+                       for branch in proc.communicate()[0].splitlines())
+        if 'remotes/origin/' + commit in branches:
+            commit = 'origin/' + commit
+
+        commit_id = Popen(['git', 'rev-parse', commit],
+                          cwd=dest, stdout=PIPE).communicate()[0].strip()
+
     if not export:
         log.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
@@ -148,12 +161,6 @@ def git(desc, url, commit='master', export=False):
                 call(['git', 'checkout', version, subdir], cwd=dest)
     else:
         # FIXME: the outputs of git archive is not collected
-        log.debug('extracting the list of branches')
-        proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
-        branches = set(branch[2:].rstrip()
-                       for branch in proc.communicate()[0].splitlines())
-        if 'remotes/origin/' + commit in branches:
-            commit = 'origin/' + commit
         log.debug('export commit %s for %s', commit, desc)
         p1 = Popen(['git', 'archive', commit],
                    cwd=dest, stdout=PIPE)
@@ -171,6 +178,10 @@ def git(desc, url, commit='master', export=False):
         f.write('include($ENV{LBUTILSROOT}/data/toolchain.cmake)\n')
         f.close()
     log.debug('checkout of %s completed in %s', desc, dest)
+    if commit_id:
+        log.debug('using commit %s', commit_id)
+    else:
+        log.warning('unable to detect the used commit id')
     return _merge_outputs(outputs)
 
 def svn(desc, url, export=False):
