@@ -141,7 +141,7 @@ def git(desc, url, commit='master', export=False):
         proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
         branches = set(branch[2:].rstrip()
                        for branch in proc.communicate()[0].splitlines())
-        if 'remotes/origin/' + commit in branches:
+        if commit not in branches and 'remotes/origin/' + commit in branches:
             commit = 'origin/' + commit
 
         commit_id = Popen(['git', 'rev-parse', commit],
@@ -275,7 +275,23 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
 
     dest = normpath(join(prjroot, 'DIRAC'))
     log.debug('cloning git repository %s', url)
+    commit_id = None
     call(['git', 'clone', '--no-checkout', url, dest])
+
+    if not os.path.exists(dest):
+        # ensure the destination directory exists even when the cloning fails
+        os.makedirs(dest)
+    else:
+        log.debug('extracting the list of branches')
+        proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
+        branches = set(branch[2:].rstrip()
+                       for branch in proc.communicate()[0].splitlines())
+        if commit not in branches and 'remotes/origin/' + commit in branches:
+            commit = 'origin/' + commit
+
+        commit_id = Popen(['git', 'rev-parse', commit],
+                          cwd=dest, stdout=PIPE).communicate()[0].strip()
+
     if not export:
         log.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
@@ -291,6 +307,10 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
             log.warning('problems exporting commit %s for %s', commit, desc)
         shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
     log.debug('checkout of %s completed in %s', desc, prjroot)
+    if commit_id:
+        log.debug('using commit %s', commit_id)
+    else:
+        log.warning('unable to detect the used commit id')
 
     log.debug('starting post-checkout step for %s', desc)
     log.debug('deploying scripts')
