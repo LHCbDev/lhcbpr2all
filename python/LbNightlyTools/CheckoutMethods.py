@@ -162,12 +162,12 @@ def git(desc, url, commit='master', export=False):
     else:
         # FIXME: the outputs of git archive is not collected
         log.debug('export commit %s for %s', commit, desc)
-        p1 = Popen(['git', 'archive', commit],
-                   cwd=dest, stdout=PIPE)
-        p2 = Popen(['tar', '--extract', '--file', '-'],
-                   cwd=dest, stdin=p1.stdout)
-        p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-        if p2.wait() or p1.wait():
+        proc1 = Popen(['git', 'archive', commit],
+                      cwd=dest, stdout=PIPE)
+        proc2 = Popen(['tar', '--extract', '--file', '-'],
+                      cwd=dest, stdin=proc1.stdout)
+        proc1.stdout.close()  # Allow proc1 to receive a SIGPIPE if proc2 exits.
+        if proc2.wait() or proc1.wait():
             log.warning('problems exporting commit %s for %s', commit, desc)
         shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
     f = open(os.path.join(dest, 'Makefile'), 'w')
@@ -282,12 +282,12 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
     else:
         # FIXME: the outputs of git archive is not collected
         log.debug('export commit %s for %s', commit, desc)
-        p1 = Popen(['git', 'archive', commit],
+        proc1 = Popen(['git', 'archive', commit],
                    cwd=dest, stdout=PIPE)
-        p2 = Popen(['tar', '--extract', '--file', '-'],
-                   cwd=dest, stdin=p1.stdout)
-        p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-        if p2.wait() or p1.wait():
+        proc2 = Popen(['tar', '--extract', '--file', '-'],
+                   cwd=dest, stdin=proc1.stdout)
+        proc1.stdout.close()  # Allow proc1 to receive a SIGPIPE if proc2 exits.
+        if proc2.wait() or proc1.wait():
             log.warning('problems exporting commit %s for %s', commit, desc)
         shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
     log.debug('checkout of %s completed in %s', desc, prjroot)
@@ -475,10 +475,12 @@ def ganga(desc, rootdir='.'):
     Special hybrid checkout needed to release Ganga.
     '''
     __log__.debug('getting checkout script')
-    script_url = 'svn+ssh://svn.cern.ch/reps/ganga/trunk/external/LHCbSetupProject/scripts/lhcb-prepare'
+    script_url = ('svn+ssh://svn.cern.ch/reps/ganga/trunk/external/'
+                  'LHCbSetupProject/scripts/lhcb-prepare')
     retry_log_call(['svn', 'export', script_url], cwd=rootdir)
     __log__.debug('running checkout script')
-    retry_log_call([os.path.join(rootdir, 'lhcb-prepare'), '-d', rootdir, desc.version.lower()])
+    retry_log_call([os.path.join(rootdir, 'lhcb-prepare'),
+                    '-d', rootdir, desc.version.lower()])
 
     projdir = os.path.join(rootdir, desc.baseDir)
 

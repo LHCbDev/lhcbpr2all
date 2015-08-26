@@ -186,6 +186,7 @@ class BaseScript(LbUtils.Script.PlainScript):
         '''
         Initialize variables.
         '''
+        # pylint: disable=W0201
         from os.path import join
         from datetime import datetime
         from LbNightlyTools.Utils import ensureDirs, Dashboard

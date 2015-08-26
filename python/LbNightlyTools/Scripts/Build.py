@@ -313,6 +313,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         from subprocess import STDOUT
         with chdir(self.build_dir):
             def record_start(proj):
+                '''helper function to keep track of the start of the build'''
                 self.dump_json({'project': proj.name,
                                 'started': datetime.now().isoformat()})
             for proj, result in self.slot.buildGen(projects=opts.projects,
@@ -342,7 +343,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                         if not os.path.exists(os.path.dirname(manifest_file)):
                             os.makedirs(os.path.dirname(manifest_file))
                         with open(manifest_file, 'w') as manif:
-                            manif.write(createManifestFile(proj.name, proj.version,
+                            manif.write(createManifestFile(proj.name,
+                                                           proj.version,
                                                            self.platform,
                                                            proj.build_dir))
                 if str(proj.build_tool) == 'CMake':
@@ -396,16 +398,16 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
                 # FIXME
                 if proj.with_shared:
-                    shr_packname = genPackageName(proj, "shared",
-                                                  build_id=self.options.build_id,
-                                                  artifacts_dir=self.artifacts_dir)
+                    shr_pack = genPackageName(proj, "shared",
+                                              build_id=self.options.build_id,
+                                              artifacts_dir=self.artifacts_dir)
                     to_pack_list = (set(open(join(summary_dir,
                                                   'sources_built.list'))) -
                                     set(open(join(summary_dir,
                                                   'sources.list'))))
                     pack([os.path.relpath(f.strip(), self.build_dir)
                           for f in sorted(to_pack_list)],
-                         shr_packname, cwd=self.build_dir, checksum='md5')
+                         shr_pack, cwd=self.build_dir, checksum='md5')
 
                 if tasks:
                     tasks.add(self.deploy_artifacts)
