@@ -1373,6 +1373,13 @@ class Slot(object):
         '''
         result = dict(os.environ) if envdict is None else dict(envdict)
         applyenv(result, self.env)
+        # ensure that the current directory is first in the CMake and CMT
+        # search paths
+        from os import pathsep
+        curdir = os.getcwd()
+        for var in ('CMTPROJECTPATH', 'CMAKE_PREFIX_PATH'):
+            result[var] = pathsep.join([curdir] +
+                                       result.get(var, '').split(pathsep))
         return result
 
     def _projects_by_deps(self, projects=None):
