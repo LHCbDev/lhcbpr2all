@@ -1110,7 +1110,7 @@ class Slot(object):
     __metaclass__ = _SlotMeta
     __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc',
                  'platforms', 'error_exceptions', 'warning_exceptions',
-                 'preconditions', 'cache_entries', 'build_id')
+                 'preconditions', 'cache_entries', 'build_id', 'no_patch')
     __projects__ = []
     __env__ = []
 
@@ -1131,6 +1131,8 @@ class Slot(object):
         @param error_exceptions: list of regex of errors that should be ignored
         @param cache_entries: dictionary of CMake cache variables to preset
         @param build_id: numeric id for the build
+        @param no_patch: if set to True, sources will not be patched (default to
+                         False)
         '''
         self._name = name
         if projects is None:
@@ -1155,6 +1157,8 @@ class Slot(object):
 
         self.build_id = kwargs.get('build_id', 0)
 
+        self.no_patch = kwargs.get('no_patch', False)
+
         # add this slot to the global list of slots
         global slots
         slots[name] = self
@@ -1174,6 +1178,7 @@ class Slot(object):
                 'warning_exceptions': self.warning_exceptions,
                 'preconditions': self.preconditions,
                 'build_id': self.build_id,
+                'no_patch': bool(self.no_patch),
                 }
         if self.cache_entries:
             data['cmake_cache'] = self.cache_entries
@@ -1224,6 +1229,8 @@ class Slot(object):
         slot.cache_entries = data.get('cmake_cache', [])
 
         slot.build_id = data.get('build_id', 0)
+
+        slot.no_patch = data.get('no_patch', False)
 
         return slot
 
@@ -1341,6 +1348,8 @@ class Slot(object):
         '''
         Patch all active projects in the slot to have consistent dependencies.
         '''
+        if self.no_patch:
+            raise ValueError('slot %s cannot be patched (no_patch=True)' % self)
         for project in self.activeProjects:
             project.patch(patchfile)
 

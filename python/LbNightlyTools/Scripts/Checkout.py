@@ -107,7 +107,7 @@ class Script(BaseScript):
             slot.checkout(projects=opts.projects,
                           ignore_errors=opts.ignore_checkout_errors)
 
-            if not cfg.get('no_patch'):
+            if not slot.no_patch:
                 with open(join(self.artifacts_dir,
                                '.'.join([opts.build_id or 'slot', 'patch'])),
                           'w') as patchfile:

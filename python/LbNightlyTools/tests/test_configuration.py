@@ -376,3 +376,29 @@ def test_dataproject():
     assert ac.version == version
     assert ac.baseDir == os.path.join('DBASE', name, version)
     assert d.Gen_DecFiles is ac
+
+def test_no_patch_flag():
+    s = Slot('lhcb-release')
+    assert s.no_patch == False
+
+    d = s.toDict()
+    assert d.get('no_patch') == False
+
+    s = Slot.fromDict(d)
+    assert s.no_patch == False
+
+    s = Slot('lhcb-release', no_patch=True)
+    assert s.no_patch == True
+
+    d = s.toDict()
+    assert d.get('no_patch') == True
+
+    s = Slot.fromDict(d)
+    assert s.no_patch == True
+
+    try:
+        from StringIO import StringIO
+        s.patch(StringIO())
+        assert False, "ValueError expected"
+    except ValueError:
+        pass
