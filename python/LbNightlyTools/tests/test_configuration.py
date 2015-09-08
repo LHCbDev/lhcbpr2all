@@ -8,383 +8,371 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-import json
-
-from LbNightlyTools.tests.utils import processFile, processFileWithName
-
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import Configuration
+from LbNightlyTools.Configuration import slots, Project, Package, Slot, ProjectsList, DBASE
+import LbNightlyTools.BuildMethods as BM
 
-def test_loadJSON():
-    'Configuration.load(json_file)'
-    expected = {'slot': 'slot-name',
-                'projects':[{"name": "Gaudi",
-                             "version": "v23r5",
-                             "checkout": "specialCheckoutFunction"},
-                            {"name": "LHCb",
-                             "version": "v32r5",
-                             "dependencies": ["Gaudi"]}]}
+import os
 
-    found = processFile(json.dumps(expected), Configuration.load)
-    assert found == expected
+def setup():
+    slots.clear()
 
-def test_loadJSON_2():
-    'Configuration.load(json_with_slot)'
-    expected = {'projects':[{"name": "Gaudi",
-                             "version": "v23r5",
-                             "checkout": "specialCheckoutFunction"},
-                            {"name": "LHCb",
-                             "version": "v32r5",
-                             "dependencies": ["Gaudi"]}]}
+def test_slots_dict():
+    s = Slot('slot1')
+    assert len(slots) == 1
+    assert slots['slot1'] is s
+
+    s = Slot('slot2')
+    assert len(slots) == 2
+    assert slots['slot2'] is s
+
+    s = Slot('slot1')
+    assert len(slots) == 2
+    assert slots['slot1'] is s
 
 
-    found = processFileWithName(json.dumps(expected), 'special-slot.json', Configuration.load)
-    expected['slot'] = 'special-slot'
-    assert found == expected
+def test_ProjectsList():
+    slot = object() # dummy object for checking
+    pl = ProjectsList(slot)
+    assert len(pl) == 0
 
-TEST_XML = u'''
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="configuration.xsd">
-    <general>
-        <ignore>
-            <error value="distcc["/>
-            <error value="assert (error"/>
-            <warning value="__shadow__::__"/>
-            <warning value="was hidden"/>
-        </ignore>
-    </general>
-    <slot name="lhcb-lcg-head" description="lhcb-lcg-head - head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6" use_cmake="false">
-        <cmtprojectpath>
-            <path value="dir1"/>
-            <path value="dir2/%DAY%"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc5-gcc43-dbg"/>
-            <platform name="i686-slc5-gcc43-opt"/>
-            <platform name="x86_64-slc6-gcc46-opt"/>
-            <platform name="x86_64-slc6-gcc46-dbg"/>
-            <platform name="x86_64-slc6-gcc47-opt"/>
-            <platform name="x86_64-slc6-clang32-opt"/>
-        </platforms>
-        <waitfor flag="/afs/cern.ch/sw/lcg/app/nightlies/dev/%DAY%/isDone-%PLATFORM%"/>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <projects>
-            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-                <dependence project="LCGCMT" tag="LCGCMT_preview"/>
-            </project>
-            <project name="Online" tag="ONLINE_HEAD" headofeverything="true"/>
-            <project name="LHCb" tag="LHCB_HEAD" headofeverything="true">
-                <change package="Det/DetDescSvc" value="v2r2"/>
-                <addon package="Tools/EventIndexer" value="HEAD"/>
-            </project>
-            <project name="Lbcom" tag="LBCOM_HEAD" headofeverything="true"/>
-            <project name="Boole" tag="BOOLE_HEAD" headofeverything="true"/>
-            <project name="Rec" tag="REC_HEAD" headofeverything="true"/>
-            <project name="Brunel" tag="BRUNEL_HEAD" headofeverything="true"/>
-        </projects>
-    </slot>
-    <slot name="lhcb-lcg-test" description="a test" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
-        <cmtprojectpath>
-            <path value="dir1"/>
-            <path value="dir2/%DAY%"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc47-opt"/>
-            <platform name="x86_64-slc6-clang32-opt"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <projects>
-            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
-            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-            </project>
-        </projects>
-    </slot>
-    <slot name="lhcb-compatibility-x" description="lhcb-compatibility-x - testing released software against latest database tags" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
-        <paths>
-            <path value="%BUILDROOT%/nightlies/%SLOT%/%DAY%/%CMTCONFIG%" name="builddir"/>
-            <path value="%BUILDROOT%/builders/%SLOT%" name="buildersdir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/%SLOT%/%DAY%" name="releasedir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/www/logs/%SLOT%" name="wwwdir"/>
-        </paths>
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
-            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
-            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc5-gcc43-opt"/>
-            <platform name="x86_64-slc5-gcc43-dbg"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
-        <projects>
-            <project name="Brunel" tag="BRUNEL_v37r8p4"/>
-            <project name="Moore" tag="MOORE_v10r2p4"/>
-            <project name="DaVinci" tag="DAVINCI_v26r3p3"/>
-        </projects>
-    </slot>
-    <slot name="lhcb-headofeverything" description="testing headofeverything override flag" mails="false" hidden="false" computedependencies="false" disabled="true" renice="+6">
-        <paths>
-            <path value="%BUILDROOT%/nightlies/%SLOT%/%DAY%/%CMTCONFIG%" name="builddir"/>
-            <path value="%BUILDROOT%/builders/%SLOT%" name="buildersdir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/%SLOT%/%DAY%" name="releasedir"/>
-            <path value="%AFSROOT%/cern.ch/lhcb/software/nightlies/www/logs/%SLOT%" name="wwwdir"/>
-        </paths>
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
-            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
-            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc47-opt"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
-        <projects>
-            <project name="Brunel" tag="BRUNEL_HEAD" headofeverything="false"/>
-            <project name="Moore" tag="MOORE_v10r2p4" headofeverything="true"/>
-        </projects>
-    </slot>
-    <slot name="lhcb-sim" description="testing Geant4 special case">
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/DEV/nightlies"/>
-            <path value="/afs/cern.ch/sw/Gaudi/releases"/>
-            <path value="/afs/cern.ch/sw/lcg/app/releases"/>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc48-opt"/>
-        </platforms>
-        <cmtextratags value="use-distcc,no-pyzip"/>
-        <days mon="false" tue="false" wed="false" thu="false" fri="false" sat="false" sun="false"/>
-        <projects>
-            <project name="Geant4" tag="GEANT4_HEAD" />
-            <project name="Gauss" tag="GAUSS_HEAD" />
-        </projects>
-    </slot>
-    <slot name="lhcb-cmake" description="CMake-enabled slot" use_cmake="true">
-        <cmtprojectpath>
-            <path value="/afs/cern.ch/lhcb/software/releases"/>
-        </cmtprojectpath>
-        <platforms>
-            <platform name="x86_64-slc6-gcc49-opt"/>
-        </platforms>
-        <projects>
-            <project name="LCGCMT" tag="LCGCMT_preview" headofeverything="false" disabled="true"/>
-            <project name="Gaudi" tag="GAUDI_HEAD" headofeverything="true">
-            </project>
-        </projects>
-    </slot>
-</configuration>
-'''
+    pl.insert(0, Project('a', 'v1r0'))
+    assert len(pl) == 1
+    a = pl['a']
+    assert a == pl[0]
+    assert a.name == 'a'
+    assert a.slot is slot
 
-def test_loadXML():
-    'Configuration.load(xml)'
-    expected = {'slot': 'lhcb-lcg-head',
-                'description': "head of everything against GAUDI_HEAD, LCGCMT head of all repositories from today's LCG dev slot",
-                'projects': [{'name': 'LCGCMT',
-                              'version': 'preview',
-                              'checkout': 'ignore',
-                              'overrides': {}},
-                             {'name': 'Gaudi',
-                              'version': 'HEAD',
-                              'checkout': 'gaudi',
-                              'overrides': {}},
-                             {'name': 'Online',
-                              'version': 'HEAD',
-                              'overrides': {}},
-                             {'name': 'LHCb',
-                              'version': 'HEAD',
-                              'overrides': {'Det/DetDescSvc': 'v2r2',
-                                            'Tools/EventIndexer': 'HEAD'}},
-                             {'name': 'Lbcom',
-                              'version': 'HEAD',
-                              'overrides': {}},
-                             {'name': 'Boole',
-                              'version': 'HEAD',
-                              'overrides': {}},
-                             {'name': 'Rec',
-                              'version': 'HEAD',
-                              'overrides': {}},
-                             {'name': 'Brunel',
-                              'version': 'HEAD',
-                              'overrides': {}}],
-                'env': ['CMTPROJECTPATH=dir1:dir2/${TODAY}:/afs/cern.ch/lhcb/software/releases',
-                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
-                'USE_CMT': True,
-                'default_platforms': ['x86_64-slc5-gcc43-dbg',
-                                      'i686-slc5-gcc43-opt',
-                                      'x86_64-slc6-gcc46-opt',
-                                      'x86_64-slc6-gcc46-dbg',
-                                      'x86_64-slc6-gcc47-opt',
-                                      'x86_64-slc6-clang32-opt'],
-                'preconditions': [{'name': 'waitForFile',
-                                   'args': {'path': '/afs/cern.ch/sw/lcg/app/nightlies/dev/${TODAY}/isDone-${CMTCONFIG}'}}],
-                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
-                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
-                }
+    pl.append(Project('b', 'v2r0'))
+    assert len(pl) == 2
+    b = pl['b']
+    assert b == pl[1]
+    assert b.name == 'b'
+    assert b.slot is slot
 
-    load = lambda path: Configuration.load(path+"#lhcb-lcg-head")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    del pl[0]
+    assert len(pl) == 1
+    assert a.slot is None
 
-def test_loadXML_2():
-    'Configuration.load(xml) [with LCGCMT_preview]'
+    pl.append(Project('a/b', 'v3r0'))
+    assert len(pl) == 2
+    a_b = pl['a/b']
+    assert a_b == pl[1]
+    assert a_b.name == 'a/b'
+    assert a_b == pl['a_b']
 
-    expected = {'slot': 'lhcb-lcg-test',
-                'description': "a test",
-                'projects': [{'name': 'LCGCMT',
-                              'version': 'preview',
-                              'checkout': 'ignore',
-                              'overrides': {}},
-                             {'name': 'Gaudi',
-                              'version': 'HEAD',
-                              'checkout': 'gaudi',
-                              'overrides': {}}],
-                'env': ['CMTPROJECTPATH=dir1:dir2/${TODAY}:/afs/cern.ch/lhcb/software/releases',
-                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
-                'USE_CMT': True,
-                'default_platforms': ['x86_64-slc6-gcc47-opt',
-                                      'x86_64-slc6-clang32-opt'],
-                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
-                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
-                }
+    # works as iterable
+    assert [p.name for p in pl] == ['b', 'a/b']
 
-    load = lambda path: Configuration.load(path+"#lhcb-lcg-test")
-    found = processFile(TEST_XML, load)
-    #from pprint import pprint
-    #pprint(found)
-    #pprint(expected)
-    assert found == expected
+def test_slot_projects():
+    slot = Slot('test', projects=[Project('a', 'v1r0'), Project('b', 'v2r0')])
+    assert len(slot.projects) == 2
+    a, b = slot.projects
+    assert a.slot == b.slot == slot
+    assert a == slot.a
+    assert b == slot.b
 
-def test_loadXML_3():
-    'Configuration.load(xml) [with lhcb-compatibility*]'
+    del slot.b
+    assert len(slot.projects) == 1
+    #assert 'a' in slot.projects
+    #assert 'b' not in slot.projects
+    assert b.slot is None
 
-    expected = {'slot': 'lhcb-compatibility-x',
-                'description': "testing released software against latest database tags",
-                'projects': [{'name': 'Brunel',
-                              'version': 'v37r8p4',
-                              'overrides': {}},
-                             {'name': 'Moore',
-                              'version': 'v10r2p4',
-                              'overrides': {}},
-                             {'name': 'DaVinci',
-                              'version': 'v26r3p3',
-                              'overrides': {}}],
-                'env': ['CMTPROJECTPATH=' +
-                          ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
-                                    '/afs/cern.ch/sw/Gaudi/releases',
-                                    '/afs/cern.ch/sw/lcg/app/releases',
-                                    '/afs/cern.ch/lhcb/software/releases']),
-                        'CMTEXTRATAGS=use-distcc,no-pyzip',
-                        'GAUDI_QMTEST_DEFAULT_SUITE=compatibility'],
-                'USE_CMT': True,
-                'default_platforms': ['x86_64-slc5-gcc43-opt',
-                                      'x86_64-slc5-gcc43-dbg'],
-                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
-                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
-                }
+    try:
+        slot.projects = []
+        assert False, '"slot.projects = []" should have failed'
+    except:
+        pass
 
-    load = lambda path: Configuration.load(path+"#lhcb-compatibility-x")
-    found = processFile(TEST_XML, load)
-    #from pprint import pprint
-    #pprint(found)
-    #pprint(expected)
-    assert found == expected
+    class SpecialSlot(Slot):
+        projects = [Project('a', 'v1r0'),
+                    Project('b', 'v2r0')]
 
-def test_loadXML_4():
-    'Configuration.load(xml) [with lhcb-headofeverything]'
+    slot = SpecialSlot('test1')
+    assert len(slot.projects) == 2
+    a, b = slot.projects
+    assert a.slot == b.slot == slot
 
-    expected = {'slot': 'lhcb-headofeverything',
-                'description': "testing headofeverything override flag",
-                'projects': [{'name': 'Brunel',
-                              'version': 'HEAD',
-                              'overrides': {},
-                              'checkout_opts': {'recursive_head': False}},
-                             {'name': 'Moore',
-                              'version': 'v10r2p4',
-                              'overrides': {},
-                              'checkout_opts': {'recursive_head': True}}],
-                'env': ['CMTPROJECTPATH=' +
-                          ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
-                                    '/afs/cern.ch/sw/Gaudi/releases',
-                                    '/afs/cern.ch/sw/lcg/app/releases',
-                                    '/afs/cern.ch/lhcb/software/releases']),
-                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
-                'USE_CMT': True,
-                'default_platforms': ['x86_64-slc6-gcc47-opt'],
-                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
-                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
-                }
+    slot.projects.insert(0, Project('zero', 'v0r0'))
+    assert len(slot.projects) == 3
+    assert slot.projects['zero'].slot == slot
 
-    load = lambda path: Configuration.load(path+"#lhcb-headofeverything")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    try:
+        slot.projects = []
+        assert False, '"slot.projects = []" should have failed'
+    except:
+        pass
 
-def test_loadXML_5():
-    'Configuration.load(xml) [with lhcb-sim]'
+def test_deps():
+    # explicit dependencies
+    slot = Slot('test', projects=[Project('A', 'v1r0',
+                                          dependencies=['Zero']),
+                                  Project('b', 'v2r0',
+                                          dependencies=['c', 'a'])])
+    #slot.checkout()
+    assert slot.A.dependencies() == ['Zero']
+    assert slot.b.dependencies() == ['A', 'c']
 
-    expected = {'slot': 'lhcb-sim',
-                'description': "testing Geant4 special case",
-                'projects': [{'name': 'Geant4',
-                              'version': 'HEAD',
-                              'overrides': {},
-                              'with_shared': True},
-                             {'name': 'Gauss',
-                              'version': 'HEAD',
-                              'overrides': {}}],
-                'env': ['CMTPROJECTPATH=' +
-                          ':'.join(['/afs/cern.ch/lhcb/software/DEV/nightlies',
-                                    '/afs/cern.ch/sw/Gaudi/releases',
-                                    '/afs/cern.ch/sw/lcg/app/releases',
-                                    '/afs/cern.ch/lhcb/software/releases']),
-                        'CMTEXTRATAGS=use-distcc,no-pyzip'],
-                'USE_CMT': True,
-                'default_platforms': ['x86_64-slc6-gcc48-opt'],
-                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
-                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
-                }
+    full_deps = slot.fullDependencies()
+    expected = {'b': ['A', 'c'], 'A': ['Zero']}
+    assert full_deps == expected, full_deps
 
-    load = lambda path: Configuration.load(path+"#lhcb-sim")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    deps = slot.dependencies()
+    expected = {'A': [], 'b': ['A']}
+    assert deps == expected, deps
 
-def test_loadXML_6():
-    'Configuration.load(xml) [with CMake]'
+    b = Project('b', 'v2r0', dependencies=['c', 'a'])
+    assert b.dependencies() == ['a', 'c']
 
-    expected = {'slot': 'lhcb-cmake',
-                'description': "CMake-enabled slot",
-                'projects': [{'name': 'LCGCMT',
-                              'version': 'preview',
-                              'checkout': 'ignore',
-                              'overrides': {}},
-                             {'name': 'Gaudi',
-                              'version': 'HEAD',
-                              'checkout': 'gaudi',
-                              'overrides': {}}],
-                'env': ['CMTPROJECTPATH=/afs/cern.ch/lhcb/software/releases'],
-                'default_platforms': ['x86_64-slc6-gcc49-opt'],
-                'error_exceptions': ['distcc\\[', 'assert\\ \\(error'],
-                'warning_exceptions': ['\\_\\_shadow\\_\\_\\:\\:\\_\\_', 'was\\ hidden']
-                }
+def test_slot_def_args():
+    # test default arguments
+    dummy = Slot('dummy')
+    assert len(dummy.projects) == 0
 
-    load = lambda path: Configuration.load(path+"#lhcb-cmake")
-    found = processFile(TEST_XML, load)
-    from pprint import pprint
-    pprint(found)
-    pprint(expected)
-    assert found == expected
+    dummy = Slot('dummy', [Project('A', 'v1r0')])
+    assert len(dummy.projects) == 1
+    assert dummy.A.version == 'v1r0'
+
+def test_env():
+    slot = Slot('test', projects=[Project('a', 'v1r0', env=['proj=a'])],
+                env=['slot=test', 'proj=none'])
+
+    special = {'CMAKE_PREFIX_PATH': os.getcwd(), 'CMTPROJECTPATH': os.getcwd()}
+    def expected(d):
+        '''hack to extend the expected dictionary with search paths'''
+        d.update(special)
+        return d
+
+    # extend CMake and CMT search paths
+    initial = {'CMAKE_PREFIX_PATH': '/usr/local/bin:/usr/bin'}
+    env = slot.environment(initial)
+    assert env['CMAKE_PREFIX_PATH'] == os.pathsep.join([os.getcwd(), initial['CMAKE_PREFIX_PATH']])
+    assert env['CMTPROJECTPATH'] == os.getcwd()
+
+    initial = {'CMTPROJECTPATH': '/usr/local/bin:/usr/bin'}
+    env = slot.environment(initial)
+    assert env['CMTPROJECTPATH'] == os.pathsep.join([os.getcwd(), initial['CMTPROJECTPATH']])
+    assert env['CMAKE_PREFIX_PATH'] == os.getcwd()
+
+    # with dummy env
+    initial = {}
+    env = slot.environment(initial)
+    assert env == expected({'slot': 'test', 'proj': 'none'}), (env, expected({'slot': 'test', 'proj': 'none'}))
+    assert initial == {}
+
+    env = slot.a.environment(initial)
+    assert env == expected({'slot': 'test', 'proj': 'a'})
+    assert initial == {}
+
+    # with os.environ
+    key = 'USER'
+    if key not in os.environ:
+        os.environ[key] = 'dummy'
+    value = os.environ[key]
+
+    initial = dict(os.environ)
+
+    slot.env.append('me=${%s}' % key)
+
+    env = slot.environment()
+    assert env['slot'] == 'test'
+    assert env['proj'] == 'none'
+    assert env[key] == value
+    assert env['me'] == value
+    assert os.environ == initial
+
+    env = slot.a.environment()
+    assert env['slot'] == 'test'
+    assert env['proj'] == 'a'
+    assert env[key] == value
+    assert env['me'] == value
+    assert os.environ == initial
+
+    # derived class
+    class SpecialSlot(Slot):
+        projects = []
+        env = ['slot=test', 'proj=none']
+    slot = SpecialSlot('test')
+
+    env = slot.environment({})
+    assert env == expected({'slot': 'test', 'proj': 'none'})
+
+    slot.env.append('another=entry')
+    env = slot.environment({})
+    assert env == expected({'slot': 'test', 'proj': 'none', 'another': 'entry'})
+    # ensure that touching the instance 'env' attribute does not change the
+    # class
+    assert SpecialSlot.env == SpecialSlot.__env__ == ['slot=test', 'proj=none']
+
+    # derived class
+    class ExtendedSlot(SpecialSlot):
+        env = ['proj=dummy']
+    slot = ExtendedSlot('test')
+
+    env = slot.environment({})
+    assert env == expected({'slot': 'test', 'proj': 'dummy'})
+
+def test_slot_desc():
+    slot = Slot('test')
+    assert slot.desc == Slot.__doc__.strip()
+
+    slot = Slot('test', desc='a test slot')
+    assert slot.desc == 'a test slot'
+
+    class MyTest(Slot):
+        '''
+        This is My Test.
+        '''
+    slot = MyTest('test')
+    assert slot.desc == 'This is My Test.'
+
+    class NoDesc(Slot):
+        pass
+    slot = NoDesc('test')
+    assert slot.desc == '<no description>'
+
+
+def test_build_tool_prop():
+    #######
+    p = Project('p', 'v')
+    assert p.__build_tool__ is None
+    assert isinstance(p.build_tool, BM.default)
+
+    p.build_tool = 'echo'
+    assert isinstance(p.build_tool, BM.echo)
+
+    p.build_tool = BM.cmt
+    assert isinstance(p.build_tool, BM.cmt)
+
+    #######
+    class MyProj(Project):
+        build_tool = 'echo'
+
+    mp = MyProj('v')
+    assert isinstance(mp.build_tool, BM.echo)
+
+    mp.build_tool = BM.cmt
+    assert isinstance(mp.build_tool, BM.cmt)
+
+    #######
+    s = Slot('s')
+    assert s.__build_tool__ is None
+    assert isinstance(s.build_tool, BM.default)
+
+    s.build_tool = 'echo'
+    assert isinstance(s.build_tool, BM.echo)
+
+    s.build_tool = BM.cmt
+    assert isinstance(s.build_tool, BM.cmt)
+
+    #######
+    class MySlot(Slot):
+        build_tool = 'echo'
+
+    ms = MySlot('ms')
+    assert isinstance(ms.build_tool, BM.echo)
+
+    ms.build_tool = BM.cmt
+    assert isinstance(ms.build_tool, BM.cmt)
+
+    #######
+    p.build_tool = BM.cmt
+    s.build_tool = 'echo'
+    s.projects.append(p)
+    assert isinstance(p.build_tool, BM.echo)
+    try:
+        p.build_tool = 'cmake'
+        assert False, 'exception expected'
+    except AttributeError:
+        pass
+    except:
+        assert False, 'AttributeError exception expected'
+
+def test_custom_projects():
+    from LbNightlyTools.CheckoutMethods import ignore
+
+    class LHCb(Project):
+        checkout = 'ignore'
+
+    p = LHCb('HEAD')
+    assert p.name == 'LHCb'
+    assert p.version == 'HEAD'
+    assert p._checkout == ignore, (p._checkout, ignore)
+
+    class Gaudi(Project):
+        __url__ = 'http://git.cern.ch/pub/gaudi'
+        def commitId(self):
+            import re
+            if self.version.lower() == 'head':
+                return 'master'
+            elif re.match(r'v[0-9]+', self.version):
+                return '{0}/{0}_{1}'.format(self.name.upper(), self.version)
+            return self.version.replace('/', '_')
+        def checkout(self, **kwargs):
+            args = {'url': self.__url__,
+                    'commit': self.commitId()}
+            args.update(kwargs)
+            return (0, str(args), '')
+
+    g = Gaudi('v26r1')
+    assert g.name == 'Gaudi'
+    assert g.version == 'v26r1'
+    assert g.commitId() == 'GAUDI/GAUDI_v26r1'
+    expected = (0, str({'url': 'http://git.cern.ch/pub/gaudi',
+                        'commit': 'GAUDI/GAUDI_v26r1',
+                        'verbose': True}), '')
+    output = g.checkout(verbose=True)
+    assert output == expected, (output, expected)
+
+    class SpecialGaudi(Project):
+        name = 'Special'
+
+    assert SpecialGaudi.__project_name__ == 'Special'
+    s = SpecialGaudi('HEAD')
+    assert s.name == 'Special', s.name
+
+def test_custom_projects_2():
+    from LbNightlyTools.CheckoutMethods import ignore
+
+    class CustomProject(Project):
+        checkout = 'ignore'
+
+    p = CustomProject('LHCb', 'HEAD')
+    assert p.name == 'LHCb'
+    assert p.version == 'HEAD'
+    assert p._checkout == ignore, (p._checkout, ignore)
+
+    class LHCb(CustomProject):
+        pass
+
+    p = LHCb('HEAD')
+    assert p.name == 'LHCb'
+    assert p.version == 'HEAD'
+    assert p._checkout == ignore, (p._checkout, ignore)
+
+def test_dataproject():
+    # test empty constructor
+    DBASE()
+
+    name, version = 'AppConfig', 'v3r198'
+    d = DBASE(packages=[Package(name, version)])
+    assert d.name == 'DBASE'
+    assert d.baseDir == 'DBASE'
+
+    assert len(d.packages) == 1
+    ac = d.packages[0]
+    assert ac.name == name
+    assert ac.version == version
+    assert ac.baseDir == os.path.join('DBASE', name, version)
+    assert d.AppConfig is ac
+
+    name, version = 'Gen/DecFiles', 'v27r39'
+    d.packages.append(Package(name, version))
+    assert len(d.packages) == 2
+    ac = d.packages[name]
+    assert ac.name == name
+    assert ac.version == version
+    assert ac.baseDir == os.path.join('DBASE', name, version)
+    assert d.Gen_DecFiles is ac

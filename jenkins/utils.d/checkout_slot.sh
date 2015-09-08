@@ -173,12 +173,9 @@ checkout_slot flavour slot slot_build_id
         cp ${env_log} ${dest_dir}
         echo "$BUILD_URL" > ${dest_dir}/checkout_job_url.txt
 
-        if [ "${flavour}" = "release" ] ; then
+        if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
             # Now preparing the RPM with the project source
             time lbn-rpm --shared ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
-            if [ -n "${packages_list}" ] ; then
-                time lbn-rpm --datapkg ${loglevel_opt}  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
-            fi
         fi
 
         rm -rf tmp

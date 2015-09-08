@@ -15,7 +15,7 @@ preconditions and write files with parameters for next jobs in Jenkins
 '''
 __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 
-from LbNightlyTools.Configuration import load
+from LbNightlyTools.Scripts.Common import findSlot
 from LbNightlyTools.Utils import JobParams
 
 import LbUtils.Script
@@ -51,7 +51,8 @@ class Script(LbUtils.Script.PlainScript):
 
         opts = self.options
 
-        data = load(self.args[0])
+        # FIXME: to be ported to the new configuration classes
+        data = findSlot(self.args[0]).toDict()
         slot = self.args[1]
         slot_build_id = self.args[2]
         flavour = self.args[3]

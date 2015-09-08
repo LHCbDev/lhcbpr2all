@@ -50,11 +50,6 @@ class Script(LbUtils.Script.PlainScript):
                           default=False,
                           action="store_true",
                           help="Build shared RPM")
-        group.add_option('-k', '--datapkg',
-                          dest="datapkg",
-                          default=False,
-                          action="store_true",
-                          help="Builds datapackage rpms")
         group.add_option('-g', '--glimpse',
                           dest="glimpse",
                           default=False,
@@ -108,7 +103,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Prepare the option parser.
         '''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.Scripts.Common import addBasicOptions
 
         addBasicOptions(self.parser)
         self.addRpmOptions(self.parser)
@@ -470,7 +465,7 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Main method for the script
         '''
-        from LbNightlyTools.ScriptsCommon import expandTokensInOptions
+        from LbNightlyTools.Scripts.Common import expandTokensInOptions
 
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
@@ -479,8 +474,10 @@ class Script(LbUtils.Script.PlainScript):
         builddir = os.path.join(os.getcwd(), 'build')
 
         # Now loading the slot configuration
-        from LbNightlyTools import Configuration
-        self.config = Configuration.load(self.args[0])
+        from LbNightlyTools.Scripts.Common import findSlot
+        self.slot = findSlot(self.args[0])
+        # FIXME: to be ported to the new configuration classes
+        self.config = self.slot.toDict()
 
         expandTokensInOptions(self.options, ['build_id', 'artifacts_dir'],
                               slot=self.config[u'slot'])
@@ -505,28 +502,19 @@ class Script(LbUtils.Script.PlainScript):
         rpmbuildarea = mkdtemp(prefix="rpm")
         keeprpmdir = self.options.keeprpmdir
 
-        if self.options.datapkg:
+        if self.options.shared:
             for p in self.config["packages"]:
                 fulldatapkg = p["name"]
-                project = "DBASE" # by default..
-                try:
-                    project = p["container"]
-                except:
-                    # We can pass if not specified, default is DBASE
-                    pass
+                project = p.get("container", "DBASE")
                 version = p["version"]
                 self.log.info("Preparing RPM for datapkg %s %s %s" % (project, fulldatapkg, version))
                 self._buildDatapkgRpm(project, fulldatapkg, version, rpmbuildarea, artifactdir, keeprpmdir)
-
-            # Done we now exit...
-            return
-
 
         for p in self.config["projects"]:
             project = p["name"]
             if ((self.options.projects and
                  project.lower() not in self.options.projects) or
-                project.lower() in ('dbase', 'param')):
+                project.lower() in ('dbase', 'param', 'lcgcmt')):
                 self.log.warning("Skipping project %s" % project)
                 continue # project not requested: skip
             version = p["version"]

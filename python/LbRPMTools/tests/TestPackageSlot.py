@@ -32,7 +32,7 @@ class Test(unittest.TestCase):
 
         self._rel_dir = normpath(join(*([__file__] + [os.pardir] * 4
                                          + ['testdata', 'rpm',  'rel'])))
-        
+
         self._slotconfig = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'slot-config.json'])))
 
@@ -152,11 +152,11 @@ class Test(unittest.TestCase):
                              '--artifacts-dir',  artifactdir, '--manifest', self._manifestxml ,
                              self._slotconfig ])
 
-        
+
         newspecfilename = os.path.join(artifactdir,  self._indexspecname)
         newlines = [ l for l in open(newspecfilename, 'U').readlines()
                      if "%define buildarea" not in l ]
-        oldlines = [ l for l in open(self._fullindexspecname, 'U').readlines() 
+        oldlines = [ l for l in open(self._fullindexspecname, 'U').readlines()
         if "%define buildarea" not in l ]
 
         from difflib import Differ, unified_diff
@@ -185,7 +185,7 @@ class Test(unittest.TestCase):
         from LbRPMTools.PackageSlot import Script
         artifactdir = mkdtemp("DATAPKG")
         script = Script()
-        script.run(['--dry-run', '-k', '--verbose',  '--build-id', 'lhcb-release.999',
+        script.run(['--dry-run', '--shared', '--verbose',  '--build-id', 'lhcb-release.999',
                     '--artifacts-dir',  artifactdir, self._datapkgslotconfig,
                     '--rpmreldir', self._data_dir ])
 
@@ -220,7 +220,7 @@ class Test(unittest.TestCase):
         from LbRPMTools.PackageSlot import Script
         artifactdir = mkdtemp("DATAPKG")
         script = Script()
-        script.run(['--dry-run', '-k', '--verbose',  '--build-id', 'lhcb-release.999',
+        script.run(['--dry-run', '--shared', '--verbose',  '--build-id', 'lhcb-release.999',
                     '--artifacts-dir',  artifactdir, self._datapkgslotconfig,
                     '--rpmreldir', self._rel_dir ])
 
@@ -246,7 +246,7 @@ class Test(unittest.TestCase):
         import shutil
         shutil.rmtree(artifactdir)
 
- 
+
 
 if __name__ == "__main__":
     unittest.main()

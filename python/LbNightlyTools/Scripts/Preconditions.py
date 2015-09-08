@@ -56,29 +56,12 @@ def waitForFile(path, timeout=timedelta(hours=12), max_age=None):
     return False
 
 
-def parseConfigFile(path):
-    '''
-    Extract required information from the configuration file.
-    '''
-    from LbNightlyTools.Configuration import load
-    data = load(path)
-    return data.get(u'preconditions', [])
-
-
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
-    Script to Check.
-
-    The configuration file must be in JSON format containing an object with the
-    attribute 'projects', a list of objects with defining the projects to be
-    checked out.
-
-    For example::
-        {"preconditions": [{"name": "waitForFile",
-                            "args": {"path": "path/to/file"}}]}
+    Script to check slot preconditions.
     '''
-    __usage__ = '%prog [options] <config.json>'
+    __usage__ = '%prog [options] <slot name or config file>'
     __version__ = ''
 
     def main(self):
@@ -88,13 +71,14 @@ class Script(LbUtils.Script.PlainScript):
         if len(self.args) != 1:
             self.parser.error('wrong number of arguments')
 
-        preconds = parseConfigFile(self.args[0])
+        from LbNightlyTools.Scripts.Common import findSlot
+        slot = findSlot(self.args[0])
 
         from LbNightlyTools.Utils import setDayNamesEnv
         setDayNamesEnv()
 
         starttime = datetime.now()
-        for precond in preconds:
+        for precond in slot.preconditions:
             name = precond[u'name']
             args = precond.get(u'args', {})
             f = globals()[name]

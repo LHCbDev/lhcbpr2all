@@ -13,10 +13,11 @@ import os
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import BuildSlot
+from LbNightlyTools.Scripts import Build, Test
 from tempfile import mkdtemp
 import shutil
 import codecs
+from .utils import TemporaryDir
 
 from datetime import date
 from os.path import exists, normpath, join, dirname, isfile
@@ -40,7 +41,7 @@ def teardown():
 
 def test_inconsistent_options():
     try:
-        script = BuildSlot.Script()
+        script = Build.Script()
         script.run(['--tests-only', '--coverity'])
         assert False, 'Script should have exited'
     except SystemExit, x:
@@ -49,7 +50,7 @@ def test_inconsistent_options():
 
 def test_missing_args():
     try:
-        script = BuildSlot.Script()
+        script = Build.Script()
         script.run()
         assert False, 'Script should have exited'
     except SystemExit, x:
@@ -66,13 +67,12 @@ def assert_files_exist(root, *files):
 
 def _check_build_artifacts(root, info):
     artifacts_dir = join(root, 'artifacts')
-    chunks_dir = ('summaries.{config}/{project}/'
-                  '{slot}.{weekday}_{PROJECT}_{version}-{config}.log.chunks')
+    chunks_dir = ('summaries.{config}/{project}/build_log.chunks')
 
     assert_files_exist(artifacts_dir,
-                       'Project.xml',
                        *[f.format(**info)
                          for f in ['{project}.{version}.{slot}.{config}.tar.bz2',
+                                   'summaries.{config}/{project}/build.log',
                                    'summaries.{config}/{project}/build_log.html',
                                    chunks_dir,
                                    'db/{slot}.{build_id}.{config}.job-start.json',
@@ -89,7 +89,6 @@ def _check_build_artifacts(root, info):
 def _check_test_artifacts(root, info):
     artifacts_dir = join(root, 'artifacts')
     assert_files_exist(artifacts_dir,
-                       'Project.xml',
                        *[f.format(**info)
                          for f in ['summaries.{config}/{project}/html/index.html',
                                    'db/{slot}.{build_id}.{project}.{config}.tests-result.json',
@@ -114,7 +113,7 @@ def test_simple_build():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['testing-slot.json'])
         assert retcode == 0
 
@@ -148,7 +147,7 @@ def test_simple_build_parallel():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['-j', '4', 'testing-slot.json'])
         assert retcode == 0
         assert script.options.jobs == 4
@@ -183,7 +182,7 @@ def test_simple_build_load():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['-j', '4', '-l', '8', 'testing-slot.json'])
         assert retcode == 0
         assert script.options.jobs == 4
@@ -219,7 +218,7 @@ def test_simple_build_load_env():
                     version = 'HEAD'
                     )
         os.environ['LBN_LOAD_AVERAGE'] = '6.5'
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['-j', '4', 'testing-slot.json'])
         assert retcode == 0
         assert script.options.jobs == 4
@@ -239,10 +238,8 @@ def test_simple_build_load_env():
         shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_w_test():
-    tmpd = mkdtemp()
-    shutil.copytree(_testdata, join(tmpd, 'testdata'))
-    oldcwd = os.getcwd()
-    try:
+    with TemporaryDir(chdir=True, keep=False) as tmpd:
+        shutil.copytree(_testdata, join(tmpd, 'testdata'))
         os.chdir(join(tmpd, 'testdata'))
         info = dict(
                     today = str(date.today()),
@@ -255,8 +252,7 @@ def test_simple_build_w_test():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
-        retcode = script.run(['--with-tests', 'testing-slot.json'])
+        retcode = Build.Script().run(['testing-slot.json'])
         assert retcode == 0
 
         proj_root = join(tmpd, 'testdata', 'build',
@@ -270,8 +266,8 @@ def test_simple_build_w_test():
 
         #########
         teardown()
-        script = BuildSlot.Script()
-        script.run(['--tests-only', 'testing-slot.json'])
+        script = Test.Script()
+        script.run(['--no-unpack', 'testing-slot.json'])
 
         proj_root = join(tmpd, 'testdata', 'build',
                          info['PROJECT'], '{PROJECT}_{version}'.format(**info))
@@ -281,11 +277,6 @@ def test_simple_build_w_test():
                                 'bin', 'HelloWorld.exe'))
 
         _check_test_artifacts(join(tmpd, 'testdata'), info)
-
-
-    finally:
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_env_search_path():
     tmpd = mkdtemp()
@@ -308,7 +299,7 @@ def test_simple_build_env_search_path():
         os.environ['CMTPROJECTPATH'] = '/some/cmt:/another/cmt'
         os.environ['PWD'] = os.getcwd() # this is usually done by the shell
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['testing-slot-env.json'])
         assert retcode == 0
 
@@ -359,12 +350,9 @@ def test_lbcore_164():
 
     store in the artifacts of the builds the output of failed tests
     '''
-
-    tmpd = mkdtemp()
-    shutil.copytree(_testdata, join(tmpd, 'testdata'))
-    oldcwd = os.getcwd()
-    try:
-        os.chdir(join(tmpd, 'testdata'))
+    with TemporaryDir(chdir=True, keep=False) as tmpd:
+        shutil.copytree(_testdata, 'testdata')
+        os.chdir('testdata')
         info = dict(
                     today = str(date.today()),
                     weekday = date.today().strftime("%a"),
@@ -384,8 +372,12 @@ def test_lbcore_164():
         f.write('new reference file\n')
         f.close()
 
-        script = BuildSlot.Script()
-        retcode = script.run(['--with-tests', 'testing-slot.json'])
+        script = Build.Script()
+        retcode = script.run(['testing-slot.json'])
+        assert retcode == 0
+
+        script = Test.Script()
+        retcode = script.run(['--no-unpack', 'testing-slot.json'])
         assert retcode == 0
 
         assert_files_exist(proj_root,
@@ -399,10 +391,6 @@ def test_lbcore_164():
                            'newrefs.{config}'.format(**info),
                            'TestProject', 'TestProjectSys', 'cmt',
                            'output.ref.new'))
-
-    finally:
-        os.chdir(oldcwd)
-        shutil.rmtree(tmpd, ignore_errors=True)
 
 def test_simple_build_2():
     # Test the case of "disabled" projects.
@@ -422,7 +410,7 @@ def test_simple_build_2():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['testing-slot-2.json'])
         assert retcode == 0
 
@@ -465,8 +453,8 @@ def test_explicit_list():
         os.rename(join('build', 'DUMMYPROJECT', 'TESTPROJECT_HEAD'),
                   join('build', 'DUMMYPROJECT', 'DUMMYPROJECT_HEAD'))
 
-        script = BuildSlot.Script()
-        retcode = script.run(['--projects', 'DummyProject', 'testing-slot-2.json'])
+        script = Build.Script()
+        retcode = script.run(['--projects', 'DummyProject', 'testing-slot-2b.json'])
         assert retcode == 0
 
         proj_root = join(tmpd, 'testdata', 'build',
@@ -504,7 +492,7 @@ def test_with_shared():
                     version = 'HEAD'
                     )
 
-        script = BuildSlot.Script()
+        script = Build.Script()
         retcode = script.run(['--debug', 'testing-slot-with-shared.json'])
         assert retcode == 0
 

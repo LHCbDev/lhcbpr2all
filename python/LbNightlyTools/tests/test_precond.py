@@ -15,18 +15,17 @@ from LbNightlyTools.tests.utils import processFile
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import SlotPreconditions
+from LbNightlyTools.Scripts.Common import findSlot
 
 def test_parseConfigFile():
-    'SlotPreconditions.parseConfigFile()'
+    'Preconditions parsing'
     expected = [{"name": "waitForFile",
                  "args": {"path": "path/to/file"}}]
 
     found = processFile(json.dumps({'preconditions': expected}),
-                        SlotPreconditions.parseConfigFile)
+                        findSlot).preconditions
     assert found == expected
 
     found = processFile(json.dumps({}),
-                        SlotPreconditions.parseConfigFile)
+                        findSlot).preconditions
     assert found == []
-

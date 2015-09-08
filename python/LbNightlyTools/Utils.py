@@ -15,8 +15,10 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 
 import os
 import logging
+import shutil
 import json
 import codecs
+import contextlib
 from datetime import datetime
 
 DAY_NAMES = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
@@ -97,11 +99,232 @@ def retry_call(*args, **kwargs):
                                 .format(args[0], retry))
         return 0
 
+def tee_call(*args, **kwargs):
+    '''
+    Wrapper for Popen to run a command and collect the output.
+
+    The arguments are those of Popen, with the addition of
+    @param verbose: if True, the output and error are printed while the process
+                    is running.
+
+    @return: tuple with return code, stdout and stderr
+
+    Example:
+    >>> tee_call(['echo hello'], shell=True, verbose=True)
+    hello
+    (0, 'hello\\n', '')
+    '''
+    from subprocess import Popen, PIPE
+    import select
+    import sys
+    import errno
+    verbose = kwargs.pop('verbose', False)
+    if 'stdout' not in kwargs:
+        kwargs['stdout'] = PIPE
+    if 'stderr' not in kwargs:
+        kwargs['stderr'] = PIPE
+
+    proc = Popen(*args, **kwargs)
+
+    if not verbose:
+        out, err = proc.communicate()
+        retcode = proc.returncode
+    else:
+        # code inspired (mostly copied) from subprocess module
+        poller = select.poll()
+        files = {proc.stdout.fileno(): (proc.stdout, sys.stdout),
+                 proc.stderr.fileno(): (proc.stderr, sys.stderr)}
+        out = []
+        err = []
+        output = {proc.stdout.fileno(): out,
+                  proc.stderr.fileno(): err}
+
+        select_POLLIN_POLLPRI = select.POLLIN | select.POLLPRI
+
+        poller.register(proc.stdout, select_POLLIN_POLLPRI)
+        poller.register(proc.stderr, select_POLLIN_POLLPRI)
+
+        def close_unregister_and_remove(fd):
+            poller.unregister(fd)
+            files[fd][0].close()
+            files.pop(fd)
+
+        while files:
+            try:
+                ready = poller.poll()
+            except select.error, e:
+                if e.args[0] == errno.EINTR:
+                    continue
+                raise
+            for fd, mode in ready:
+                if mode & select_POLLIN_POLLPRI:
+                    data = os.read(fd, 4096)
+                    if not data:
+                        close_unregister_and_remove(fd)
+                    output[fd].append(data)
+                    files[fd][1].write(data)
+                else:
+                    # Ignore hang up or errors.
+                    close_unregister_and_remove(fd)
+        out = ''.join(out)
+        err = ''.join(err)
+        retcode = proc.wait()
+
+    return retcode, out, err
+
+def retry_tee_call(*args, **kwargs):
+    '''
+    Replacement for tee_call() that can retry if the command fails.
+    To enable the retries, pass the keyword argument 'retry' setting it to the
+    number of timed to try.
+
+    For example:
+
+    >>> retry_tee_call(['false'], retry=3)
+    Traceback (most recent call last):
+    ...
+    RuntimeError: the command ['false'] failed 3 times
+    '''
+    if 'retry' not in kwargs:
+        # no retry
+        return tee_call(*args, **kwargs)
+    else:
+        retry = kwargs.pop('retry')
+        for _count in range(retry):
+            result = tee_call(*args, **kwargs)
+            if result[0] == 0:
+                break
+        else: # Note: else of the 'for' block
+            raise RuntimeError('the command {0} failed {1} times'
+                                .format(args[0], retry))
+        return result
+
+def log_call(*args, **kwargs):
+    '''
+    Wrapper for Popen to run a command and collect the output.
+
+    The arguments are those of Popen, with the addition of
+    @param logger: a logging.Logger instance to be used to print messages
+                  [default: default logger].
+    @param log_level: level the output of the command should use
+                      [default: logging.DEBUG]
+
+    @return: tuple with return code, stdout and stderr
+
+    Example:
+    >>> import logging
+    >>> import sys
+    >>> logger = logging.getLogger('hi')
+    >>> logger.addHandler(logging.StreamHandler(sys.stdout))
+    >>> logger.setLevel(logging.INFO)
+    >>> log_call(['echo hello'], shell=True, logger=logging.getLogger('hi'), log_level=logging.DEBUG)
+    (0, 'hello\\n', '')
+    >>> log_call(['echo hello'], shell=True, logger=logging.getLogger('hi'), log_level=logging.INFO)
+    hello
+    (0, 'hello\\n', '')
+    '''
+    from subprocess import Popen, PIPE
+    import select
+    import errno
+
+    log = kwargs.pop('logger', logging).log
+    log_level = kwargs.pop('log_level', logging.DEBUG)
+
+    if 'stdout' not in kwargs:
+        kwargs['stdout'] = PIPE
+    if 'stderr' not in kwargs:
+        kwargs['stderr'] = PIPE
+
+    proc = Popen(*args, **kwargs)
+
+    # code inspired (mostly copied) from subprocess module
+    poller = select.poll()
+
+    select_POLLIN_POLLPRI = select.POLLIN | select.POLLPRI
+    out = []
+    err = []
+
+    files = dict((x.fileno(), x)
+                 for x in (proc.stdout, proc.stderr)
+                 if x)
+    output = {proc.stdout.fileno(): out}
+    if proc.stderr:
+        output[proc.stderr.fileno()] = err
+    spilled_output = dict((x.fileno(), '')
+                          for x in (proc.stdout, proc.stderr)
+                          if x)
+
+    poller.register(proc.stdout, select_POLLIN_POLLPRI)
+    if proc.stderr:
+        poller.register(proc.stderr, select_POLLIN_POLLPRI)
+
+    def close_unregister_and_remove(fd):
+        poller.unregister(fd)
+        files[fd].close()
+        files.pop(fd)
+
+    while files:
+        try:
+            ready = poller.poll()
+        except select.error, e:
+            if e.args[0] == errno.EINTR:
+                continue
+            raise
+        for fd, mode in ready:
+            if mode & select_POLLIN_POLLPRI:
+                data = os.read(fd, 4096)
+                if not data:
+                    close_unregister_and_remove(fd)
+                output[fd].append(data)
+                data = spilled_output[fd] + data
+                spilled_output[fd] = ''
+                for line in data.splitlines(True):
+                    if line.endswith('\n'):
+                        log(log_level, line.rstrip())
+                    else:
+                        spilled_output[fd] += line
+            else:
+                # Ignore hang up or errors.
+                close_unregister_and_remove(fd)
+    out = ''.join(out)
+    err = ''.join(err)
+    retcode = proc.wait()
+
+    return retcode, out, err
+
+def retry_log_call(*args, **kwargs):
+    '''
+    Replacement for log_call() that can retry if the command fails.
+    To enable the retries, pass the keyword argument 'retry' setting it to the
+    number of timed to try.
+
+    For example:
+
+    >>> retry_log_call(['false'], retry=3)
+    Traceback (most recent call last):
+    ...
+    RuntimeError: the command ['false'] failed 3 times
+    '''
+    if 'retry' not in kwargs:
+        # no retry
+        return log_call(*args, **kwargs)
+    else:
+        retry = kwargs.pop('retry')
+        for _count in range(retry):
+            result = log_call(*args, **kwargs)
+            if result[0] == 0:
+                break
+        else: # Note: else of the 'for' block
+            raise RuntimeError('the command {0} failed {1} times'
+                                .format(args[0], retry))
+        return result
 
 def ensureDirs(dirs):
     '''
     Ensure that the specified directories exist, creating them if needed.
     '''
+    if isinstance(dirs, basestring):
+        dirs = (dirs,)
     for path in dirs:
         if not os.path.exists(path):
             os.makedirs(path)
@@ -133,6 +356,16 @@ def genDocId(data):
         return data['_id']
     fields = ['slot', 'build_id', 'project', 'platform', 'type']
     return '.'.join([str(data[f]) for f in fields if f in data])
+
+def wipeDir(path):
+    '''
+    Helper function to remove a directory.
+    '''
+    # FIXME: this can be done asynchronously
+    logging.info('Removing directory %s', path)
+    if os.path.exists(path):
+        shutil.rmtree(path)
+        ensureDirs([path])
 
 class Dashboard(object):
     '''
@@ -334,6 +567,48 @@ class Dashboard(object):
             else:
                 yield (r[u'key'], v[u'slot'], v[u'build_id'])
 
+
+class TaskQueue(object):
+    '''
+    Simple class to schedule asynchronous operations.
+    '''
+    def __init__(self):
+        '''
+        Initialize the task queue and start the worker thread.
+        '''
+        from threading import Thread
+        from Queue import Queue
+        self.queue = Queue()
+        def worker(q):
+            'Worker main loop.'
+            while True:
+                action, args, kwargs = q.get()
+                action(*args, **kwargs)
+                q.task_done()
+        self.thread = Thread(target=worker, args=(self.queue,))
+        # do not wait for the thread when exiting the application
+        self.thread.daemon = True
+        self.thread.start()
+
+    def add(self, task, args=None, kwargs=None):
+        '''
+        Add a new task to the queue.
+
+        @param task: callable to be executed
+        @param args: positional arguments to pass to the task callable
+        @param kwargs: keyword arguments to pass to the task callable
+        '''
+        if args is None:
+            args = tuple()
+        if kwargs is None:
+            kwargs = {}
+        self.queue.put((task, args, kwargs))
+
+    def join(self):
+        '''
+        Waits until all the tasks completed.
+        '''
+        self.queue.join()
 
 
 class JenkinsTest(object):
@@ -579,6 +854,30 @@ class IgnorePackageVersions(object):
         '''
         return self._exclusions.get(os.path.basename(src), [])
 
+def applyenv(envdict, definitions):
+    '''
+    Modify the environment  described by 'envdict' from a list of definitions of
+    the type 'name=value', expanding the variables in 'value'.
+
+    >>> env = {}
+    >>> applyenv(env, ['foo=bar'])
+    >>> env['foo']
+    'bar'
+    >>> applyenv(env, ['baz=some_${foo}'])
+    >>> env['baz']
+    'some_bar'
+
+    If a variable in the value cannot be expanded, it is left unmodified:
+
+    >>> applyenv(env, ['unknown=${var}'])
+    >>> env['unknown']
+    '${var}'
+    '''
+    from string import Template
+    for item in definitions:
+        name, value = item.split('=', 1)
+        envdict[name] = Template(value).safe_substitute(envdict)
+
 def setenv(definitions):
     '''
     Modify the environment from a list of definitions of the type 'name=value',
@@ -587,13 +886,50 @@ def setenv(definitions):
     >>> setenv(['foo=bar'])
     >>> os.environ['foo']
     'bar'
-    >>> setenv(['baz=some_${foo}'])
-    >>> os.environ['baz']
-    'some_bar'
+
+    @note: it is equivalent to 'applyenv(os.environ, definitions)'
     '''
-    for item in definitions:
-        name, value = item.split('=', 1)
-        os.environ[name] = os.path.expandvars(value)
+    applyenv(os.environ, definitions)
+
+
+@contextlib.contextmanager
+def chdir(dirname=None, create=False):
+    '''
+    Context manager useful to switch to a directory for a context block and back
+    to the previous location once we are out put the block.
+
+    See http://www.astropython.org/snippet/2009/10/chdir-context-manager
+    '''
+    curdir = os.getcwd()
+    try:
+        if dirname is not None:
+            if not os.path.isdir(dirname) and create:
+                os.makedirs(dirname)
+            os.chdir(dirname)
+        yield
+    finally:
+        os.chdir(curdir)
+
+
+def write_patch(patchfile, olddata, newdata, filename):
+    '''
+    Write the difference between olddata and newdata (of filename in  patchfile.
+
+    @param patchfile: file object to which write the differences
+    @param olddata: old version of the data
+    @param newdata: new version of teh data
+    @param fileanme: name of the file to be used in the diff headers
+    '''
+    from difflib import context_diff
+    if hasattr(olddata, 'splitlines'):
+        olddata = olddata.splitlines(True)
+    if hasattr(newdata, 'splitlines'):
+        newdata = newdata.splitlines(True)
+    for l in context_diff(olddata, newdata,
+                          fromfile=os.path.join('a', filename),
+                          tofile=os.path.join('b', filename)):
+        patchfile.write(l)
+
 
 class JobParams(object):
     '''

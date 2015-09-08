@@ -32,7 +32,7 @@ a.morebtn { color: red; cursor:pointer; cursor:hand; }
 </style>
 <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script type="text/javascript">
-var logfile = "${old_build_id}";
+var logfile = "build_log";
 var logfileLinks = ${logfile_links};
 var codeLinks = ${code_links};
 
@@ -54,7 +54,7 @@ $$(function(){
 </script>
 <script type="text/javascript" src="logFileJQ.js"></script>
 </head><body>
-<h3>LogCheck for package ${project} on ${host}</h3>
+<h3>Build log for ${project} ${version} (${slot}.${slot_build_id}, on ${host})</h3>
 <p>
 Warnings: ${wCount}<br/>
 Errors: ${eCount}<br/>
@@ -67,7 +67,7 @@ Coverity messages: ${covCount}<br/>
 <li class="wsumm"><a href="#summary_warnings">Summary of warnings</a></li>
 <li class="csumm"><a href="#summary_coverity">Summary of Coverity messages</a></li>
 <li><a href="#environment">Environment</a></li>
-<li><a href="#checkout">Checkout (getpack) log</a></li>
+<li><a href="../../${project}.checkout.log.html">Checkout log</a></li>
 <li><a href="#build_log">Build log</a></li>
 <li><a href="#environment" onclick="javascript:$$('.packageLink').click();">Show all (may take long time)</a></li>
 </ul>

@@ -33,7 +33,7 @@ class Script(LbUtils.Script.PlainScript):
 
     def defineOpts(self):
         '''Define options.'''
-        from LbNightlyTools.ScriptsCommon import addBasicOptions
+        from LbNightlyTools.Scripts.Common import addBasicOptions
         self.parser.add_option('-o', '--output', action='store',
                                help='output file name '
                                     '[default: standard output]')

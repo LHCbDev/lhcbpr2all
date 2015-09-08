@@ -148,7 +148,7 @@ class ConfigGenerator(LbUtils.Script.PlainScript):
                   'description': 'Slot used for releasing projects.',
                   'projects': projects,
                   'packages': packages,
-                  'USE_CMT': self.options.build_tool.lower() == 'cmt',
+                  'build_tool': self.options.build_tool.lower(),
                   'no_patch': True,
                   'error_exceptions': ERR_EXCEPT,
                   'warning_exceptions': WARN_EXCEPT,

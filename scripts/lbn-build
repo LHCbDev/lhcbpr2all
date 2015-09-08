@@ -12,6 +12,6 @@
 import LbUtils.Log
 LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
 
-from LbNightlyTools.BuildSlot import Script
+from LbNightlyTools.Scripts.Build import Script
 import sys
 sys.exit(Script().run())

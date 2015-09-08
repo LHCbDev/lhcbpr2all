@@ -110,16 +110,28 @@ build_slot flavour slot slot_build_id platform
 
     # Notify the system of the builds that need to be tested.
     if [ "${with_tests}" != "no" ] ; then
-        lbn-list-expected-builds --slot-build-id ${slot_build_id} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}" --platforms "${platform}" -o expected_builds.json ${config_file}
+        lbn-list-expected-builds --slot-build-id ${slot_build_id} \
+                                 --build-id "${slot}.${slot_build_id}" \
+                                 --artifacts-dir "${directory}" \
+                                 --platforms "${platform}" \
+                                 -o expected_builds.json \
+                                 ${config_file}
         if [ "$JENKINS_MOCK" != "true" ] ; then
             datadir=${JENKINS_HOME}/nightlies/${flavour}/running_builds
             scp expected_builds.json buildlhcb.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
         fi
     fi
 
-    time lbn-build --no-distcc ${loglevel_opt} --jobs 8 --timeout 18000 --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}" --clean ${submit_opt} ${rsync_opt} ${coverity_opt} ${config_file}
+    time lbn-build ${loglevel_opt} \
+                   --build-id "${slot}.${slot_build_id}" \
+                   --artifacts-dir "${directory}" \
+                   --clean \
+                   ${submit_opt} \
+                   ${rsync_opt} \
+                   ${coverity_opt} \
+                   ${config_file}
 
-    if [ "${flavour}" = "release" ] ; then
+    if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
         # Prepare the RPMs
         time lbn-rpm ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}"  ${config_file} --platform "${platform}"
     fi
@@ -132,9 +144,16 @@ build_slot flavour slot slot_build_id platform
     if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
         if which glimpseindex &> /dev/null ; then
             # clean up the build dir before indexing
-            lbn-build ${loglevel_opt} --clean --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}" --clean ${config_file}
-            time lbn-index ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}" ${config_file}
-            if [ "${flavour}" = "release" ] ; then
+            rm -rf build
+            mkdir build
+            for tarfile in "${directory}"/*tar.bz2 ; do
+                tar xfC $tarfile build
+            done
+            time lbn-index ${loglevel_opt} \
+                           --build-id "${slot}.${slot_build_id}" \
+                           --artifacts-dir "${directory}" \
+                           ${config_file}
+            if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
                 time lbn-rpm --glimpse ${loglevel_opt}  --build-id "${slot}.${slot_build_id}" --artifacts-dir "${directory}"  ${config_file}
             fi
             if [ "$JENKINS_MOCK" != "true" ] ; then

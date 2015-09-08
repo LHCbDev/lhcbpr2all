@@ -43,7 +43,7 @@ def test_empty_config():
 
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == []
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
         assert len(output['default_platforms']) == 2
 
@@ -73,7 +73,7 @@ def test_LHCb():
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -95,7 +95,7 @@ def test_Gaudi():
         assert output['projects'] == [{'name': 'Gaudi', 'version': 'v23r9',
                                        'checkout': 'gaudi',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -117,7 +117,7 @@ def test_Geant4():
         assert output['projects'] == [{'name': 'Geant4', 'version': 'v95r2p7',
                                        'with_shared': True,
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -139,7 +139,7 @@ def test_Dirac():
         assert output['projects'] == [{'name': 'Dirac', 'version': 'v6r12p1',
                                        'checkout': 'dirac',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -161,7 +161,7 @@ def test_LHCbGrid():
         assert output['projects'] == [{'name': 'LHCbGrid', 'version': 'v0r4',
                                        'checkout': 'lhcbgrid',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -183,7 +183,7 @@ def test_LHCbDirac():
         assert output['projects'] == [{'name': 'LHCbDirac', 'version': 'v7r6p24',
                                        'checkout': 'lhcbdirac',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -206,7 +206,7 @@ def test_two_projects():
                                        'checkout_opts': {'export': True}},
                                       {'name': 'Lbcom', 'version': 'v14r1',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -229,7 +229,7 @@ def test_fixCase():
                                        'checkout_opts': {'export': True}},
                                       {'name': 'DaVinci', 'version': 'v34r0',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -265,7 +265,7 @@ def test_stdout():
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is False
+        assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -286,7 +286,7 @@ def test_with_cmt():
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is True
+        assert output['build_tool'] == 'cmt'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()
@@ -307,7 +307,7 @@ def test_with_build_tool_cmt():
         assert output['slot'] == 'lhcb-release'
         assert output['projects'] == [{'name': 'LHCb', 'version': 'v36r1',
                                        'checkout_opts': {'export': True}}]
-        assert output['USE_CMT'] is True
+        assert output['build_tool'] == 'cmt'
         assert output['no_patch'] is True
 
         assert output == s.genConfig()

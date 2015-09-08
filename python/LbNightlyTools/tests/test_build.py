@@ -8,88 +8,148 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-import os
-
-from xml.etree import ElementTree as ET
-from StringIO import StringIO
-
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import BuildSlot
+import os
 
-def test_ProjDesc():
-    'BuildSlot.ProjDesc'
-    p = BuildSlot.ProjDesc({u'name': u'MyProject',
-                            u'version': u'v1r0',
-                            u'dependencies': [u'MyBase']})
-    assert p.name == u'MyProject'
-    assert p.version == u'v1r0'
-    assert p.deps == [u'MyBase']
-    assert p.dir == os.path.join('MYPROJECT', 'MYPROJECT_v1r0')
-    assert str(p) == 'MyProject v1r0'
-    assert p.with_shared == False
+from LbNightlyTools.Configuration import Slot, Project
 
-    p = BuildSlot.ProjDesc({u'name': u'MyProject',
-                            u'version': u'v1r0'})
-    assert p.deps == []
+from LbNightlyTools.tests.utils import TemporaryDir
 
-    p = BuildSlot.ProjDesc({u'name': u'MyProject',
-                            u'version': u'v1r0',
-                            u'with_shared': True})
-    assert p.with_shared == True
+from os.path import normpath, join, exists
 
 
-def test_genProjectXml():
-    'BuildSlot.genProjectXml()'
-    projects = map(BuildSlot.ProjDesc,
-                   [{u'name': u'MyBase',
-                     u'version': u'v3r2'},
-                    {u'name': u'MyProject',
-                     u'version': u'v1r0',
-                     u'dependencies': [u'MyBase']}])
-    xml = BuildSlot.genProjectXml('the-slot', projects)
+_testdata = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
-    versions = dict([(p.name, str(p)) for p in projects])
+def test_basic_build():
+    with TemporaryDir():
+        slot = Slot('slot', build_tool='echo')
+        slot.projects.append(Project('Gaudi', 'HEAD', checkout='ignore'))
+        slot.checkout()
 
-    data = ET.parse(StringIO(xml))
+        res = slot.clean()
+        assert 'Gaudi' in res
+        assert res['Gaudi'].returncode == 0
+        assert 'clean' in res['Gaudi'].stdout
 
-    getName = lambda e: e.attrib['name']
-    root = data.getroot()
-    assert root.attrib['name'] == 'the-slot'
+        res = slot.build()
+        assert 'Gaudi' in res
+        assert res['Gaudi'].returncode == 0
+        assert 'build' in res['Gaudi'].stdout
 
-    children = root.getchildren()
-    assert len(children) == len(projects)
-    for e, p in zip(children, projects):
-        assert e.attrib['name'] == str(p)
-        deps = e.getchildren()
-        assert len(deps) == len(p.deps)
-        for a, b in zip(sorted(map(getName, deps)), sorted(map(versions.get, p.deps))):
-            assert a == b, 'Dependencies of %s not matching (%s != %s)' % (p, a, b)
+        res = slot.test()
+        assert 'Gaudi' in res
+        assert res['Gaudi'].returncode == 0
+        assert 'test' in res['Gaudi'].stdout
 
+def test_make_build():
+    dummy_src = join(_testdata, 'build_tests', 'orig', 'dummy', '.')
+    with TemporaryDir(chdir=True):
+        slot = Slot('slot', build_tool='make',
+                    projects=[Project('dummy', 'head',
+                                      checkout='copy',
+                                      checkout_opts=dict(src=dummy_src))])
+        slot.checkout()
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
 
-def test_genSlotConfig():
-    'BuildSlot.genSlotConfig()'
-    config = dict(slot='some-slot',
-                  projects=[{'name': 'Gaudi', 'version': 'v23r8'},
-                            {'name': 'LHCb', 'version': 'HEAD',
-                             'dependencies': ['Gaudi']}],
-                  warning_exceptions=['.*/Boost/.*warning', '.*/ROOT/.*warning'],
-                  error_exceptions=[r'\[distcc\]'])
-    cmake = BuildSlot.genSlotConfig(config)
+        res = slot.build()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== building all ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
 
-    print cmake
+        res = slot.test()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== running tests ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
 
-    assert 'set(slot some-slot)\n' in cmake
-    assert 'set(config $ENV{CMTCONFIG})\n' in cmake
-    assert 'set(projects Gaudi LHCb)\n' in cmake
-    assert 'set(Gaudi_version v23r8)\n' in cmake
-    assert 'set(LHCb_version HEAD)\n' in cmake
-    assert 'set(Gaudi_dependencies )\n' in cmake
-    assert 'set(LHCb_dependencies Gaudi)\n' in cmake
+        res = slot.clean()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== cleaning ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
+        assert not exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
+        assert not exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
 
-    # FIXME: these shoud be improved
-    assert r'.*/Boost/.*warning' in cmake
-    assert r'.*/ROOT/.*warning' in cmake
-    assert r'"\\[distcc\\]"' in cmake
+def test_cmt_build():
+    dummy_src = join(_testdata, 'artifacts', 'TestProject.HEAD.testing-slot.src.tar.bz2')
+    with TemporaryDir(chdir=True):
+        print os.environ['CMTCONFIG']
+        slot = Slot('slot', build_tool='cmt',
+                    projects=[Project('TestProject', 'HEAD',
+                                      checkout='untar',
+                                      checkout_opts=dict(src=dummy_src))])
+        slot.checkout()
 
+        proj_root = join('TESTPROJECT', 'TESTPROJECT_HEAD')
+        assert exists(join(proj_root, 'Makefile'))
+        with open(join(proj_root, 'Makefile'), 'a') as mkf:
+            # the Makefile in TestProject does not include tests and purge
+            mkf.write('test:\n'
+                      '\t@echo === running tests ===\n'
+                      'clean:\n'
+                      '\tcd TestProjectSys/cmt; $(MAKE) clean\n'
+                      '\t$(RM) -r InstallArea\n'
+                      'purge: clean\n'
+                      '\t$(RM) TestProjectSys/cmt/Makefile\n')
+        config = os.environ['CMTCONFIG']
+
+        res = slot.build()
+        assert 'TestProject' in res
+        assert res['TestProject'].returncode == 0
+        assert exists(join(proj_root, 'TestProjectSys', config,
+                           'HelloWorld.exe'))
+        assert exists(join(proj_root, 'TestProjectSys', 'cmt',
+                           'Makefile'))
+        assert exists(join(proj_root, 'InstallArea', config,
+                           'bin', 'HelloWorld.exe'))
+
+        res = slot.test()
+        assert 'TestProject' in res
+        assert res['TestProject'].returncode == 0
+
+        res = slot.clean()
+        assert 'TestProject' in res
+        assert res['TestProject'].returncode == 0
+        assert not exists(join(proj_root, 'TestProjectSys', config,
+                               'HelloWorld.exe'))
+        assert not exists(join(proj_root, 'TestProjectSys', 'cmt',
+                               'Makefile'))
+        assert not exists(join(proj_root, 'InstallArea', config,
+                               'bin', 'HelloWorld.exe'))
+
+def test_cmake_build():
+    dummy_src = join(_testdata, 'build_tests', 'orig', 'dummy', '.')
+    with TemporaryDir(chdir=True):
+        slot = Slot('slot', build_tool='cmake',
+                    projects=[Project('dummy', 'head',
+                                      checkout='copy',
+                                      checkout_opts=dict(src=dummy_src))])
+        slot.checkout()
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
+
+        res = slot.build()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== configure ===' in res['dummy'].stdout
+        assert '=== building all ===' in res['dummy'].stdout
+        assert '=== unsafe-install ===' in res['dummy'].stdout
+        assert '=== post-install ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'cache_preload.cmake'))
+
+        res = slot.test()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== running tests ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
+
+        res = slot.clean()
+        assert 'dummy' in res
+        assert res['dummy'].returncode == 0
+        assert '=== purge ===' in res['dummy'].stdout
+        assert exists(join('DUMMY', 'DUMMY_HEAD', 'Makefile'))
+        assert not exists(join('DUMMY', 'DUMMY_HEAD', 'all'))
+        assert not exists(join('DUMMY', 'DUMMY_HEAD', 'test_results'))
