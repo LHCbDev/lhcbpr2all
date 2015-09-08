@@ -8,6 +8,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
+from LbNightlyTools.Configuration import DataProject
 '''
 Module containing the classes and functions used to build a
 "Nightly Build Slot".
@@ -329,7 +330,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     self.log.warning('build exited with code %d',
                                      result.returncode)
 
-                if self.slot.name == 'lhcb-release':
+                if (self.slot.name == 'lhcb-release' and
+                    not isinstance(proj, DataProject)):
                     manifest_file = self._buildDir(proj, 'InstallArea',
                                                    self.platform,
                                                    'manifest.xml')
@@ -346,7 +348,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                             manif.write(createManifestFile(proj.name,
                                                            proj.version,
                                                            self.platform,
-                                                           proj.build_dir))
+                                                           proj.baseDir))
                 if str(proj.build_tool) == 'CMake':
                     loglines = result.stdout.splitlines(True)
                     starts = [(line.split()[2], idx)
