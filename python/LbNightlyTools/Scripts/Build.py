@@ -515,7 +515,8 @@ class BuildReporter(object):
             f.close()
 
         # copy the build log, prepending environment and checkout
-        env_lines = ['%s=%s\n' % i for i in sorted(os.environ.items())]
+        env_lines = ['%s=%s\n' % i
+                     for i in sorted(self.project.environment().items())]
 
         # generate HTML summary main page
         html_summary = join(self.summary_dir, 'build_log.html')
