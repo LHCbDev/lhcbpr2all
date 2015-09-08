@@ -8,7 +8,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization  #
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
-from LbNightlyTools.Configuration import DataProject
 '''
 Module containing the classes and functions used to build a
 "Nightly Build Slot".
@@ -21,6 +20,8 @@ import os
 import re
 import socket
 import codecs
+
+from LbNightlyTools.Configuration import DataProject
 
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
 from LbNightlyTools.Utils import TaskQueue, wipeDir
@@ -390,13 +391,14 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
                 self._recordSourcesLists(proj, 'sources_built.list')
 
-                self.log.info('packing %s', proj.baseDir)
+                if not isinstance(proj, DataProject):
+                    self.log.info('packing %s', proj.baseDir)
 
-                pack([os.path.join(proj.baseDir, 'InstallArea')],
-                     genPackageName(proj, self.platform,
-                                    build_id=self.options.build_id,
-                                    artifacts_dir=self.artifacts_dir),
-                     cwd=self.build_dir, checksum='md5')
+                    pack([os.path.join(proj.baseDir, 'InstallArea')],
+                         genPackageName(proj, self.platform,
+                                        build_id=self.options.build_id,
+                                        artifacts_dir=self.artifacts_dir),
+                         cwd=self.build_dir, checksum='md5')
 
                 # FIXME
                 if proj.with_shared:
