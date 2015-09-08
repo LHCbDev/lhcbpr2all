@@ -138,14 +138,32 @@ def test_slot_def_args():
 def test_env():
     slot = Slot('test', projects=[Project('a', 'v1r0', env=['proj=a'])],
                 env=['slot=test', 'proj=none'])
+
+    special = {'CMAKE_PREFIX_PATH': os.getcwd(), 'CMTPROJECTPATH': os.getcwd()}
+    def expected(d):
+        '''hack to extend the expected dictionary with search paths'''
+        d.update(special)
+        return d
+
+    # extend CMake and CMT search paths
+    initial = {'CMAKE_PREFIX_PATH': '/usr/local/bin:/usr/bin'}
+    env = slot.environment(initial)
+    assert env['CMAKE_PREFIX_PATH'] == os.pathsep.join([os.getcwd(), initial['CMAKE_PREFIX_PATH']])
+    assert env['CMTPROJECTPATH'] == os.getcwd()
+
+    initial = {'CMTPROJECTPATH': '/usr/local/bin:/usr/bin'}
+    env = slot.environment(initial)
+    assert env['CMTPROJECTPATH'] == os.pathsep.join([os.getcwd(), initial['CMTPROJECTPATH']])
+    assert env['CMAKE_PREFIX_PATH'] == os.getcwd()
+
     # with dummy env
     initial = {}
     env = slot.environment(initial)
-    assert env == {'slot': 'test', 'proj': 'none'}
+    assert env == expected({'slot': 'test', 'proj': 'none'}), (env, expected({'slot': 'test', 'proj': 'none'}))
     assert initial == {}
 
     env = slot.a.environment(initial)
-    assert env == {'slot': 'test', 'proj': 'a'}
+    assert env == expected({'slot': 'test', 'proj': 'a'})
     assert initial == {}
 
     # with os.environ
@@ -153,6 +171,7 @@ def test_env():
     if key not in os.environ:
         os.environ[key] = 'dummy'
     value = os.environ[key]
+
     initial = dict(os.environ)
 
     slot.env.append('me=${%s}' % key)
@@ -178,11 +197,11 @@ def test_env():
     slot = SpecialSlot('test')
 
     env = slot.environment({})
-    assert env == {'slot': 'test', 'proj': 'none'}
+    assert env == expected({'slot': 'test', 'proj': 'none'})
 
     slot.env.append('another=entry')
     env = slot.environment({})
-    assert env == {'slot': 'test', 'proj': 'none', 'another': 'entry'}
+    assert env == expected({'slot': 'test', 'proj': 'none', 'another': 'entry'})
     # ensure that touching the instance 'env' attribute does not change the
     # class
     assert SpecialSlot.env == SpecialSlot.__env__ == ['slot=test', 'proj=none']
@@ -193,7 +212,7 @@ def test_env():
     slot = ExtendedSlot('test')
 
     env = slot.environment({})
-    assert env == {'slot': 'test', 'proj': 'dummy'}
+    assert env == expected({'slot': 'test', 'proj': 'dummy'})
 
 def test_slot_desc():
     slot = Slot('test')
