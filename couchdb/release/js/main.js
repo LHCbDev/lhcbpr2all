@@ -19,6 +19,9 @@ if (!$.cookie("filters")) {
 }
 var filters = JSON.parse($.cookie("filters"));
 
+function checkoutURL(slot, build_id, project) {
+    return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/' + project + '.checkout.log.html';
+}
 
 function buildURL(slot, build_id, platform, project) {
     return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/summaries.' + platform + '/' + project + '/build_log.html';
@@ -237,7 +240,7 @@ jQuery.fn.lbSlotTable = function(data) {
         if (!val.disabled) {
             proj_name = '<a href="' +
                 checkoutURL(data.value.slot, data.value.build_id, val.name) +
-                '" title="show checkout log">' + val.name + '</a>';
+                '" title="show checkout log" target="_blank">' + val.name + '</a>';
         }
         var proj_vers = val.version;
         if (proj_vers == 'None') {

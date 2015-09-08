@@ -139,7 +139,7 @@ jQuery.fn.lbSlotTable = function(data) {
         if (!val.disabled) {
             proj_name = '<a href="' +
                 checkoutURL(data.value.slot, data.value.build_id, val.name) +
-                '" title="show checkout log">' + val.name + '</a>';
+                '" title="show checkout log" target="_blank">' + val.name + '</a>';
         }
         var proj_vers = val.version;
         if (proj_vers == 'None') {
