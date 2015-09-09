@@ -52,24 +52,20 @@ class Script(LbUtils.Script.PlainScript):
         opts = self.options
 
         # FIXME: to be ported to the new configuration classes
-        data = findSlot(self.args[0]).toDict()
-        slot = self.args[1]
+        slot = findSlot(self.args[0])
+        slot_name = self.args[1]
         slot_build_id = self.args[2]
         flavour = self.args[3]
 
-        preconds = data.get(u'preconditions', [])
+        preconds = slot.preconditions
         if preconds:
-            self.log.info('Find precondition for %s', slot)
+            self.log.info('Found preconditions for %s', slot_name)
             output_file = 'slot-precondition-{0}-{1}.txt'
         else:
-            self.log.info('No precondition for %s', slot)
+            self.log.info('No preconditions for %s', slot_name)
             output_file = 'slot-build-{0}-{1}.txt'
 
-        platforms = opts.platforms.strip().split()
-
-        if not platforms:
-            platforms = data.get(u'default_platforms', [])
-
+        platforms = opts.platforms.strip().split() or slot.platforms
 
         label = '-build'
         if (flavour == 'release'):
@@ -77,9 +73,9 @@ class Script(LbUtils.Script.PlainScript):
 
         for platform in platforms:
             os_label = platform.split('-')[1]+label
-            output_file_name = output_file.format(slot, platform)
+            output_file_name = output_file.format(slot_name, platform)
             open(output_file_name, 'w') \
-                .write(str(JobParams(slot=slot,
+                .write(str(JobParams(slot=slot_name,
                                      slot_build_id=slot_build_id,
                                      platform=platform,
                                      os_label=os_label,
