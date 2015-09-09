@@ -266,12 +266,15 @@ def dirac(desc, url='git://github.com/DIRACGrid/DIRAC.git', commit=None,
     def call(*args, **kwargs):
         'helper to simplify the code'
         outputs.append(log_call(*args, **kwargs))
+    def rcall(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(retry_log_call(*args, **kwargs))
 
     log.debug('checking out project %s', desc)
-    call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
+    rcall(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
     for pkg in ('DiracPolicy', 'DiracConfig', 'DiracSys'):
         log.debug('checking out package %s', pkg)
-        call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
+        rcall(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
 
     dest = normpath(join(prjroot, 'DIRAC'))
     log.debug('cloning git repository %s', url)
