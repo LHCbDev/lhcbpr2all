@@ -382,7 +382,7 @@ def test_no_patch_flag():
     assert s.no_patch == False
 
     d = s.toDict()
-    assert d.get('no_patch') == False
+    assert d.get('no_patch', False) == False
 
     s = Slot.fromDict(d)
     assert s.no_patch == False
@@ -391,7 +391,7 @@ def test_no_patch_flag():
     assert s.no_patch == True
 
     d = s.toDict()
-    assert d.get('no_patch') == True
+    assert d.get('no_patch', False) == True
 
     s = Slot.fromDict(d)
     assert s.no_patch == True

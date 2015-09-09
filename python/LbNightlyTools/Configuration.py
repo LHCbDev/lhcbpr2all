@@ -1178,10 +1178,11 @@ class Slot(object):
                 'warning_exceptions': self.warning_exceptions,
                 'preconditions': self.preconditions,
                 'build_id': self.build_id,
-                'no_patch': bool(self.no_patch),
                 }
         if self.cache_entries:
             data['cmake_cache'] = self.cache_entries
+        if self.no_patch:
+            data['no_patch'] = True
 
         pkgs = list(chain.from_iterable([pack.toDict()
                                          for pack in cont.packages]
