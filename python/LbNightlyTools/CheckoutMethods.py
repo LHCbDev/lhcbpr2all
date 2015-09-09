@@ -396,12 +396,15 @@ def lhcbdirac(desc, export=False):
     def call(*args, **kwargs):
         'helper to simplify the code'
         outputs.append(log_call(*args, **kwargs))
+    def rcall(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(retry_log_call(*args, **kwargs))
 
     log.debug('checking out project %s', desc)
-    call(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
+    rcall(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
     for pkg in ('LHCbDiracPolicy', 'LHCbDiracConfig', 'LHCbDiracSys'):
         log.debug('checking out package %s', pkg)
-        call(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
+        rcall(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
 
     log.debug('checking out %s', url)
     call(['svn', 'checkout' if not export else 'export', url , dest])
