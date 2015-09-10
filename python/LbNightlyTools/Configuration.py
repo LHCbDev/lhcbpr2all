@@ -1552,7 +1552,8 @@ def loadFromOldXML(source, slot):
                     projects.append({'name': dep_name,
                                      'version': dep_vers,
                                      'overrides': {},
-                                     'checkout': 'ignore'})
+                                     'checkout': 'ignore',
+                                     'disabled': True})
 
             proj_data = {'name': name,
                          'version': version,
