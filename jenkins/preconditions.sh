@@ -19,4 +19,5 @@ get_artifact \
     "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
     "${ARTIFACTS_DIR}"
 
-execute_preconditions "${config_file}"
+
+execute_preconditions "${ARTIFACTS_DIR}/slot-config.json"

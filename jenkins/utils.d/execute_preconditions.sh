@@ -51,8 +51,8 @@ execute_preconditions config_file"
         exit 1
     fi
 
-    if [ "$SET_COMMON" != "true" -o "$GET_CONFIG_FILE" != "true" ] ; then
-        echo "ERROR : $0 need SET_COMMON and GET_CONFIG_FILE set with true"
+    if [ "$SET_COMMON" != "true" ] ; then
+        echo "ERROR : $0 need SET_COMMON set to true"
         exit 1
     fi
 
