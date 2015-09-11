@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: pyapi-gitlab
+Version: 7.8.4
+Summary: Gitlab API wrapper for Gitlab 7.X
+Home-page: http://github.com/itxaka/pyapi-gitlab/
+Author: Itxaka Serrano Garcia
+Author-email: itxakaserrano@gmail.com
+License: Apache License 2.0
+Description: UNKNOWN
+Keywords: gitlab git wrapper
+Platform: UNKNOWN
