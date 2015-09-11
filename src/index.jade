@@ -1,0 +1,21 @@
+doctype html
+html(lang="en", data-ng-app="core")
+  head
+    meta(charset="utf-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1")
+    meta(name="description", content="")
+    meta(name="keywords", content="")
+    title {{ title }} LHCbPR
+    link(rel="stylesheet", href="vendors/css/base.css")
+    link(rel="stylesheet", href="app/app.css")
+  body(class="layout-fixed", ng-class="{'aside-toggled': showSideBar}")
+    .wrapper(data-autoscroll="false", class="ng-fadeInUp")
+      navbar
+      aside.aside
+        sidebar
+      section
+        .content-wrapper(ui-view="", autoscroll="false", ng-class="ng-fadeInUp")
+    script(src="vendors/base.js")
+    script(src="app/modular.js")
+    script(src="app/app.js")
+    script(src="modules/all.js")

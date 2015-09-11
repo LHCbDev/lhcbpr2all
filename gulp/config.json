@@ -1,0 +1,108 @@
+{
+  "folders": {
+    "src": "src",
+    "build": "build"
+  },
+
+  "core": {
+    "scripts": [
+      {
+        "src": [
+          "src/core/head.js",
+          "src/core/classes/**/*.js",
+          "src/core/api.js",
+          "src/core/foot.js"
+        ],
+        "dest": "build/app/modular.js"
+      }
+    ]
+  },
+
+  "app": {
+    "views": [
+      {
+        "src": "src/index.jade",
+        "dest": "build/index.html"
+      },
+      {
+        "src": ["src/app/views/*.jade", "src/app/views/**/*.jade"],
+        "dest": "build/app/views"
+      },
+      {
+        "src": ["src/modules/**/*.jade"],
+        "dest": "build/modules/"
+      }
+    ],
+    "scripts": [
+      {
+        "src": [
+          "src/app/scripts/lazy-vendors.js",
+          "src/app/scripts/init.js",
+          "src/app/scripts/**/*.js"
+        ],
+        "dest": "build/app/app.js"
+      },
+      {
+        "src": [
+          "src/modules/*/init.js",
+          "src/modules/*/scripts/**/*.js"
+        ],
+        "dest": "build/modules/all.js"
+      }
+    ],
+    "styles": {
+      "src": "src/app/styles/app.less",
+      "path": ["src/app/styles", "bower_components"],
+      "dest": "build/app/app.css"
+    },
+    "imgs": {
+      "src": "src/app/imgs/*",
+      "dest": "build/app/imgs"
+    }
+  },
+
+  "vendors": {
+    
+    "base": {
+      "js": {
+        "src": [
+          "bower_components/jquery/dist/jquery.js",
+          "bower_components/angular/angular.js",
+          "bower_components/angular-ui-router/release/angular-ui-router.js",
+          "bower_components/oclazyload/dist/ocLazyLoad.js",
+          "bower_components/lodash/lodash.js",
+          "bower_components/restangular/dist/restangular.js"
+        ],
+        "dest": "build/vendors/base.js"
+      },
+      "css": {
+        "src": [
+          "bower_components/fontawesome/css/font-awesome.css"
+        ],
+        "dest": "build/vendors/css/base.css"
+      },
+      "fonts": {
+        "src": [
+          "bower_components/fontawesome/fonts/*"
+        ],
+        "dest": "build/vendors/fonts"
+      },
+      "less": {}
+    },
+    
+    "lazy": {
+      "base": "bower_components",
+      "dest": "build/vendors/lazy",
+      "modules": [
+        {
+          "name": "ngDialog",
+          "src": [
+            "bower_components/ngDialog/css/ngDialog.min.css",
+            "bower_components/ngDialog/css/ngDialog-theme-plain.min.css",
+            "bower_components/ngDialog/js/ngDialog.min.js"
+          ]
+        }
+      ]
+    }
+  }
+}

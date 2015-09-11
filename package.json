@@ -1,0 +1,21 @@
+{
+  "name": "modular",
+  "version": "1.0.0",
+  "description": "easy to use framework based on AngularJs",
+  "main": " ",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "del": "^1.2.0",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-connect": "^2.2.0",
+    "gulp-jade": "^1.0.1",
+    "gulp-less": "^3.0.3",
+    "require-dir": "^0.3.0",
+    "run-sequence": "^1.1.1"
+  }
+}

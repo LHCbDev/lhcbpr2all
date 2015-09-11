@@ -1,0 +1,14 @@
+
+<script type="text/ng-template" id="menu-item-template"><a ng-href="#/{{item.href}}" title="{{item.text}}"><em class="fa fa-{{item.icon}}"></em>
+    <div ng-if="item.alert" class="label label-success pull-right">{{item.alert}}</div><span>{{item.text}}</span></a>
+  <ul ng-if="item.childs" ng-click="$event.stopPropagation();" ng-show="item.showChilds" class="nav sidebar-subnav">
+    <li ng-repeat="item in item.childs" ng-class="{active: item.active}" ng-include="'menu-item-template'" ng-click="item.showChilds = !item.showChilds"></li>
+  </ul>
+</script>
+<div class="aside-inner">
+  <nav class="sidebar">
+    <ul class="nav">
+      <li ng-repeat="item in menuItems track by $index" ng-class="{active: item.active}" ng-include="'menu-item-template'" ng-click="item.showChilds = !item.showChilds"></li>
+    </ul>
+  </nav>
+</div>

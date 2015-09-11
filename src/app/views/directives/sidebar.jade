@@ -1,0 +1,24 @@
+script(type='text/ng-template', id="menu-item-template")
+  a(ng-href="#/{{item.href}}", title="{{item.text}}")
+    em.fa(class="fa-{{item.icon}}")
+    .label.label-success.pull-right(ng-if="item.alert") {{item.alert}}
+    span {{item.text}}
+  ul.nav.sidebar-subnav(
+    ng-if="item.childs",
+    ng-click="$event.stopPropagation();",
+    ng-show="item.showChilds")
+    //- li.sidebar-subnav-header {{item.text}}
+    li(
+      ng-repeat='item in item.childs', 
+      ng-class="{active: item.active}", 
+      ng-include="'menu-item-template'", 
+      ng-click="item.showChilds = !item.showChilds")
+
+.aside-inner
+  nav.sidebar
+    ul.nav
+      li(
+        ng-repeat='item in menuItems track by $index', 
+        ng-class="{active: item.active}",
+        ng-include="'menu-item-template'", 
+        ng-click="item.showChilds = !item.showChilds")

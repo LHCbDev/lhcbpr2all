@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" data-ng-app="core">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <title>{{ title }} LHCbPR</title>
+    <link rel="stylesheet" href="vendors/css/base.css">
+    <link rel="stylesheet" href="app/app.css">
+  </head>
+  <body ng-class="{'aside-toggled': showSideBar}" class="layout-fixed">
+    <div data-autoscroll="false" class="wrapper ng-fadeInUp">
+      <navbar></navbar>
+      <aside class="aside">
+        <sidebar></sidebar>
+      </aside>
+      <section>
+        <div ui-view="" autoscroll="false" ng-class="ng-fadeInUp" class="content-wrapper"></div>
+      </section>
+    </div>
+    <script src="vendors/base.js"></script>
+    <script src="app/modular.js"></script>
+    <script src="app/app.js"></script>
+    <script src="modules/all.js"></script>
+  </body>
+</html>

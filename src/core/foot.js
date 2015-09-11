@@ -1,0 +1,2 @@
+    return modular;
+})(angular);

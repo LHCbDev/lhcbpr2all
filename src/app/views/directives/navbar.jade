@@ -1,0 +1,13 @@
+header.topnavbar-wrapper
+  // START Top Navbar
+  nav.navbar.topnavbar(role='navigation')
+    // START navbar header
+    .navbar-header
+      button.navbar-toggle(type="button", style="color:white", aria-expanded="false", ng-click="toggleSideBar()")
+        span.fa.fa-list(aria-hidden="true")
+      a.navbar-brand(href='#/') 
+        .brand-logo 
+          img.img-responsive.logo(src="app/imgs/lhcb_logo.png", alt="LHCb")
+        .brand-logo-collapsed 
+          img.img-responsive.logo(src="app/imgs/lhcb_logo.png", alt="LHCb")
+  // END Top Navbar

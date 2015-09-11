@@ -1,0 +1,17 @@
+src/
+	core/
+		classes/
+		services/
+		directives/
+		styles/
+		views/
+		app.js
+	modules/
+		test/
+			views/
+			styles/
+			js/
+			main.js
+	index.jade
+build/
+gulpfile.js

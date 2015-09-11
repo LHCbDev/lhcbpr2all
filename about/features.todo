@@ -1,0 +1,3 @@
+ ☐ Handling permanent links automatically (binding values of some scope variables to the querystring of the URL)
+ ☐ Showing progress of all requests to the API (User should notice when the application is loading something from the API)
+ ☐ Easy way to show and manipulate popups, charts and data tables.
