@@ -14,7 +14,7 @@ function check_preconditions {
     local DESCRIPTION="DESCRIPTION : \
 Function to check if we have precondition on an specify slot"
     local USAGE="USAGE : \
-check_preconditions config_file slot slot_build_id
+check_preconditions slot slot_build_id flavour
         [--platforms <platforms>]"
 
     local nb_param=0
@@ -43,12 +43,10 @@ check_preconditions config_file slot slot_build_id
         else
             case "${nb_param}" in
                 "0")
-                    local config="$1" ;;
-                "1")
                     local slot="$1" ;;
-                "2")
+                "1")
                     local slot_build_id="$1" ;;
-                "3")
+                "2")
                     local flavour="$1" ;;
                 *)
                     echo "ERROR : Too many parameters"
@@ -61,17 +59,17 @@ check_preconditions config_file slot slot_build_id
         shift
     done
 
-    if [ "${nb_param}" != "4" ] ; then
-        echo "ERROR : Need more parameters"
+    if [ "${nb_param}" != "3" ] ; then
+        echo "ERROR : Need 3 parameters"
         echo ${USAGE}
         exit 1
     fi
 
-    if [ "$SET_COMMON" != "true" -o "$CONFIG_FILE_CHECKOUT" != "true" ] ; then
-        echo "ERROR : $0 need SET_COMMON and CONFIG_FILE_CHECKOUT set with true"
+    if [ "$SET_COMMON" != "true" ] ; then
+        echo "ERROR : $0 need SET_COMMON set to true"
         exit 1
     fi
 
-    lbn-check-preconditions --verbose "${config}" "$slot" "$slot_build_id" "$flavour" ${platforms:+--platforms "${platforms}"}
+    lbn-check-preconditions --verbose "$slot" "$slot_build_id" "$flavour" ${platforms:+--platforms "${platforms}"}
 
 }

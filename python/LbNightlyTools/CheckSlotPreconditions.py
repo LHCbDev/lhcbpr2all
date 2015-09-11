@@ -21,17 +21,9 @@ from LbNightlyTools.Utils import JobParams
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
-    Script to Check.
-
-    The configuration file must be in JSON format containing an object with the
-    attribute 'projects', a list of objects with defining the projects to be
-    checked out.
-
-    For example::
-        {"preconditions": [{"name": "waitForFile",
-                            "args": {"path": "path/to/file"}}]}
+    Script to check if a slot have preconditions or can be built right away.
     '''
-    __usage__ = '%prog [options] <config.json> <slot> <slot_build_id>'
+    __usage__ = '%prog [options] <slot> <slot_build_id> <flavour>'
     __version__ = ''
 
     def defineOpts(self):
@@ -46,23 +38,21 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Script main function.
         '''
-        if len(self.args) != 4:
+        if len(self.args) != 3:
             self.parser.error('wrong number of arguments')
 
         opts = self.options
 
         # FIXME: to be ported to the new configuration classes
-        slot = findSlot(self.args[0])
-        slot_name = self.args[1]
-        slot_build_id = self.args[2]
-        flavour = self.args[3]
+        slot, slot_build_id, flavour = self.args
+        slot = findSlot(slot)
 
         preconds = slot.preconditions
         if preconds:
-            self.log.info('Found preconditions for %s', slot_name)
+            self.log.info('Found preconditions for %s', slot.name)
             output_file = 'slot-precondition-{0}-{1}.txt'
         else:
-            self.log.info('No preconditions for %s', slot_name)
+            self.log.info('No preconditions for %s', slot.name)
             output_file = 'slot-build-{0}-{1}.txt'
 
         platforms = opts.platforms.strip().split() or slot.platforms
@@ -73,9 +63,9 @@ class Script(LbUtils.Script.PlainScript):
 
         for platform in platforms:
             os_label = platform.split('-')[1]+label
-            output_file_name = output_file.format(slot_name, platform)
+            output_file_name = output_file.format(slot.name, platform)
             open(output_file_name, 'w') \
-                .write(str(JobParams(slot=slot_name,
+                .write(str(JobParams(slot=slot.name,
                                      slot_build_id=slot_build_id,
                                      platform=platform,
                                      os_label=os_label,

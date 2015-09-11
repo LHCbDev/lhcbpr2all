@@ -40,7 +40,6 @@ if [ "${no_checkout}" != "true" -a "${JENKINS_MOCK}" != "true" ] ; then
 fi
 
 check_preconditions \
-    "${config_file_checkout}" \
     "${slot}" \
     "${slot_build_id}" \
     "${flavour}" \
