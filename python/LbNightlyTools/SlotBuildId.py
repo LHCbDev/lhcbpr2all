@@ -132,7 +132,7 @@ def get_last_ids(slots, flavour):
                 sys.exit(3)
             slot_id = int(slot_id)
         else:
-            logging.error('Slot %s have no entrie in %s',
+            logging.error('Slot %s have no entry in %s',
                           slot_name,
                           slot_id_file)
             sys.exit(4)

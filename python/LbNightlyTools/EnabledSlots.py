@@ -22,6 +22,7 @@ from xml.etree.ElementTree import parse
 from LbNightlyTools.Utils import JobParams
 from os.path import splitext, basename
 from LbNightlyTools.SlotBuildId import get_ids
+from LbNightlyTools import Configuration
 import LbUtils.Script
 
 
@@ -96,6 +97,23 @@ class Script(LbUtils.Script.PlainScript):
 
         return slots
 
+    def extract_from_python(self, config_file):
+        self.log.info('Extract slots from %s', config_file)
+
+        slots = set()
+        try:
+
+            execfile(config_file, {'__file__': config_file})
+            slots = set(slot.name
+                        for slot in Configuration.slots.values()
+                        if not slot.disabled)
+            self.log.info('%s slots from %s', len(slots), config_file)
+
+        except:
+            self.log.warning('Can''t find or open %s', config_file)
+
+        return slots
+
     def write_files(self, slots, flavour, output_file):
         slot_ids = get_ids(slots, flavour)
         for slot in slots:
@@ -123,10 +141,11 @@ class Script(LbUtils.Script.PlainScript):
 
         if not opts.slots:
             self.log.info('Starting extraction of all enable slot')
-            slots = self.extract_from_json(os.path.join(opts.config_dir,'lhcb-*.json')) | \
-                self.extract_from_xml(os.path.join(opts.config_dir,'configuration.xml'))
+            slots =  (self.extract_from_python(os.path.join(opts.config_dir, 'configuration.py')) |
+                      self.extract_from_json(os.path.join(opts.config_dir, 'lhcb-*.json')) |
+                      self.extract_from_xml(os.path.join(opts.config_dir, 'configuration.xml')))
         else:
-            slots=opts.slots.strip().split(' ');
+            slots = opts.slots.strip().split()
 
         # Create a file that contain JobParams for each slot
         self.write_files(slots, flavour, output_file)
