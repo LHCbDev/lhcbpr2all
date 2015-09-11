@@ -149,12 +149,6 @@ checkout_slot flavour slot slot_build_id
 
     fi
 
-    if [ -e "${config_dir}/${slot}.json" ] ; then
-        config_file_checkout="${config_dir}/${slot}.json"
-    else
-        config_file_checkout="${config_dir}/configuration.xml#${slot}"
-    fi
-
     if  [ "${no_checkout}" != "true" ]; then
 
         if [ "$JENKINS_MOCK" != "true" ] ; then
@@ -165,24 +159,22 @@ checkout_slot flavour slot slot_build_id
             ignore_error_opt=--no-ignore-checkout-errors
         fi
 
-        lbn-checkout ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${submit_opt} ${ignore_error_opt} ${config_file_checkout}
+        lbn-checkout ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${submit_opt} ${ignore_error_opt} ${slot}
 
         # We need to copy the configuration at the end because
         # StachCkeckout.py cleans the artifacts before starting
-        cp ${config_file_checkout%%#*} ${dest_dir}
-        cp ${env_log} ${dest_dir}
+        for f in "${config_dir}/configuration.py" "${config_dir}/${slot}.json" "${config_dir}/configuration.xml" ${env_log} ; do
+            test -e "$f" && cp "$f" ${dest_dir}
+        done
         echo "$BUILD_URL" > ${dest_dir}/checkout_job_url.txt
 
         if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
             # Now preparing the RPM with the project source
-            time lbn-rpm --shared ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}"  ${config_file_checkout}
+            time lbn-rpm --shared ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${slot}
         fi
 
         rm -rf tmp
 
     fi
-
-    export config_file_checkout=${config_file_checkout}
-    export CONFIG_FILE_CHECKOUT=true
 
 }
