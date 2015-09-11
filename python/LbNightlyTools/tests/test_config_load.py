@@ -489,3 +489,34 @@ def test_loadXML_6():
                 }
 
     config_parse_xml_check('lhcb-cmake', expected)
+
+def test_loadPy_1():
+    'Configuration.getSlot from Python'
+    script = '''from LbNightlyTools.Configuration import *
+Slot('special-slot-from-python',
+     desc='Special slot described directly in Python',
+     projects=[Project('Gaudi', 'v23r5'),
+               Project('LHCb', 'v32r5', dependencies=['Gaudi'])])
+'''
+    expected = {'slot': 'special-slot-from-python',
+                'description': 'Special slot described directly in Python',
+                'projects': [{"name": "Gaudi",
+                             "version": "v23r5",
+                             "checkout": "gaudi"},
+                            {"name": "LHCb",
+                             "version": "v32r5",
+                             "dependencies": ["Gaudi"]}]}
+    add_defaults(expected)
+
+    if 'special-slot-from-python' in Configuration.slots:
+        del Configuration.slots['special-slot-from-python']
+    assert 'special-slot-from-python' not in Configuration.slots
+
+    with TemporaryDir() as path:
+        filepath = os.path.join(path, 'configuration.py')
+        with open(filepath, 'w') as f:
+            f.write(script)
+        slot = Configuration.getSlot('special-slot-from-python', path)
+        found = slot.toDict()
+
+    assert_equals(found, expected)

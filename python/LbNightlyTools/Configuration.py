@@ -1647,11 +1647,19 @@ def getSlot(name, configdir=os.curdir):
     '''
     Find the slot with the given name in the configuration files.
     '''
+    py_config = os.path.join(configdir, 'configuration.py')
     xml_config = os.path.join(configdir, 'configuration.xml')
     json_config = os.path.join(configdir, name + '.json')
 
+    def getFromPython(filename, name):
+        '''helper function to get a slot configuration from a Python module'''
+        execfile(filename, {'__file__': filename})
+        global slots
+        return slots[name]
+
     slot = None
-    attempts = [(parse, (json_config,)),
+    attempts = [(getFromPython, (py_config, name)),
+                (parse, (json_config,)),
                 (parse, (xml_config + '#' + name,))]
     for func, args in attempts:
         try:
