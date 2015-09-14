@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 set -x
-time lbn-test --verbose \
+time lbn-test --debug \
               --build-id "${slot}.${slot_build_id}" \
               --artifacts-dir "${ARTIFACTS_DIR}" \
               --projects ${project} \
