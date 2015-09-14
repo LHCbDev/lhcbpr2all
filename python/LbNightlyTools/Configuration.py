@@ -1653,9 +1653,17 @@ def getSlot(name, configdir=os.curdir):
 
     def getFromPython(filename, name):
         '''helper function to get a slot configuration from a Python module'''
-        execfile(filename, {'__file__': filename})
-        global slots
-        return slots[name]
+        try:
+            execfile(filename, {'__file__': filename})
+            global slots
+            return slots[name]
+        except KeyError:
+            # the slot is not in the Python configuration
+            raise RuntimeError('slot %s not in %s' % (name, filename))
+        except Exception, exc:
+            # something else went wrong: we can ignore it
+            raise RuntimeError('problem running %s (%s: %s)' %
+                               (filename, exc.__class__.__name__, exc))
 
     slot = None
     attempts = [(getFromPython, (py_config, name)),
