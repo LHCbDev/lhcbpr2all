@@ -434,6 +434,13 @@ class BuildReporter(object):
     '''
     Class to analyze the build log of project and produce reports.
     '''
+    WARNING_RE = re.compile('|'.join([r'\bwarning\b',
+                                      r'\bSyntaxWarning:']),
+                            re.IGNORECASE)
+    ERROR_RE = re.compile('|'.join([r'\berror\b',
+                                    r'\*\*\* Break \*\*\*',
+                                    r'^Traceback \(most recent call last\):']),
+                          re.IGNORECASE)
     def __init__(self, summary_dir, project, platform, slot, result):
         '''
         Initialize the instance.
@@ -489,19 +496,18 @@ class BuildReporter(object):
             Helper function to generate HTML version of a log file.
             '''
             lineclass = ['even', 'odd']
+            style_mapping = [(self.ERROR_RE, 'error'),
+                             (self.WARNING_RE, 'warning'),
+                             (re.compile(r'^(Scanning dependencies|Linking )'),
+                              'cmake_message'),
+                             (re.compile(r'^\[[ 0-9]{3}%\]'), 'cmake_progress')]
             yield u'<html>\n'
             for i, line in enumerate(iterable):
-                style_cls = None
-                found = re.search(r'\b(error|warning)\b', line, re.IGNORECASE)
-                if found:
-                    style_cls = found.group(1).lower()
-                elif re.search(r'\*\*\* Break \*\*\*', line, re.IGNORECASE):
-                    style_cls = 'error'
-                if (line.startswith('Scanning dependencies') or
-                    line.startswith('Linking ')):
-                    style_cls = 'cmake_message'
-                elif re.match(r'\[[ 0-9]{3}%\]', line):
-                    style_cls = 'cmake_progress'
+                for exp, style_cls in style_mapping:
+                    if exp.search(line):
+                        break
+                else:
+                    style_cls = None
                 i += line_offset
                 line = cgi.escape(line.rstrip())
                 if style_cls:
@@ -565,13 +571,8 @@ class BuildReporter(object):
         '''
         from collections import deque
 
-        w_exp = re.compile('|'.join([r'\bwarning\b',
-                                     r'\bSyntaxWarning:']),
-                           re.IGNORECASE)
-        e_exp = re.compile('|'.join([r'\berror\b',
-                                     r'\*\*\* Break \*\*\*',
-                                     r'^Traceback \(most recent call last\):']),
-                           re.IGNORECASE)
+        w_exp = self.WARNING_RE
+        e_exp = self.ERROR_RE
         #cExp = re.compile(r'cov-|(Coverity (warning|error|message))',
         #                  re.IGNORECASE)
 
