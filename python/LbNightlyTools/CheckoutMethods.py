@@ -19,7 +19,8 @@ import os
 
 from subprocess import Popen, PIPE
 from LbNightlyTools.Utils import (retry_log_call as _retry_log_call,
-                                  log_call as _log_call, ensureDirs)
+                                  log_call as _log_call, ensureDirs,
+                                  getMRsource)
 
 __log__ = logging.getLogger(__name__)
 __log__.setLevel(logging.DEBUG)
@@ -507,9 +508,17 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
     '''
     Wrapper around the git function for Gaudi.
     '''
+    log = __log__.getChild('gaudi')
     import re
     if proj.version.lower() == 'head':
         commit = 'master'
+    elif re.match(r'mr[0-9]+$', proj.version):
+        commit = 'master'
+        try:
+            merge = merge or getMRsource('gaudi/Gaudi', int(proj.version[2:]))
+        except:
+            log.error('error: failed to get details for merge request %s',
+                      proj.version[2:])
     elif re.match(r'v[0-9]+r[0-9]+', proj.version):
         commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
     else:
