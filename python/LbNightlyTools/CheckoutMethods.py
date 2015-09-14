@@ -167,11 +167,12 @@ def git(desc, url, commit='master', export=False, merge=None):
         commit_id = Popen(['git', 'rev-parse', commit],
                           cwd=dest, stdout=PIPE).communicate()[0].strip()
 
-        if (merge and
-            'remotes/%s/%s' % (merge_source, merge_commit) in branches):
-            merge_commit = '%s/%s' % (merge_source, merge_commit)
-        merge_commit_id = Popen(['git', 'rev-parse', merge_commit],
-                                cwd=dest, stdout=PIPE).communicate()[0].strip()
+        if merge:
+            if 'remotes/%s/%s' % (merge_source, merge_commit) in branches:
+                merge_commit = '%s/%s' % (merge_source, merge_commit)
+            merge_commit_id = Popen(['git', 'rev-parse', merge_commit],
+                                    cwd=dest,
+                                    stdout=PIPE).communicate()[0].strip()
 
     if not export:
         log.debug('checkout commit %s for %s', commit, desc)
