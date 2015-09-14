@@ -19,7 +19,8 @@ import os
 
 from subprocess import Popen, PIPE
 from LbNightlyTools.Utils import (retry_log_call as _retry_log_call,
-                                  log_call as _log_call, ensureDirs)
+                                  log_call as _log_call, ensureDirs,
+                                  getMRsource)
 
 __log__ = logging.getLogger(__name__)
 __log__.setLevel(logging.DEBUG)
@@ -116,40 +117,70 @@ def ignore(desc, export=False):
     log.info('checkout not requested for %s', desc)
     return (0, 'checkout not requested for %s' % desc, '')
 
-def git(desc, url, commit='master', export=False):
+def git(desc, url, commit='master', export=False, merge=None):
     '''
     Checkout from a git repository.
+
+    @param desc: Configuration.Project instance
+    @param url: git repository URL
+    @param commit: commit id to checkout
+    @param export: whether to use git "checkout" or "archive"
+    @param merge: merge options as (<url>, <commit> [, <remote_name>)
     '''
     log = __log__.getChild('git')
     log.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = desc.baseDir
-    log.debug('cloning git repository %s', url)
+    if merge:
+        if export:
+            log.warning('merge option is ignored when export is True')
+            merge = merge_url = merge_commit = None
+        else:
+            if len(merge) == 2:
+                merge += ('merge_source',)
+            merge_url, merge_commit, merge_source = merge
+            log.debug('merging %s from %s (%s)',
+                      merge_commit, merge_source, merge_url)
 
     outputs = []
     def call(*args, **kwargs):
         'helper to simplify the code'
         outputs.append(log_call(*args, **kwargs))
 
-    commit_id = None
+    commit_id = merge_commit_id = None
+
+    log.debug('cloning git repository %s', url)
     call(['git', 'clone', '--no-checkout', url, dest])
 
     if not os.path.exists(dest):
         # ensure the destination directory exists even when the cloning fails
         os.makedirs(dest)
     else:
+        if merge:
+            call(['git', 'remote', 'add', '-f', merge_source, merge_url],
+                 cwd=dest)
+
         log.debug('extracting the list of branches')
         proc = Popen(['git', 'branch', '-a'], cwd=dest, stdout=PIPE)
         branches = set(branch[2:].rstrip()
                        for branch in proc.communicate()[0].splitlines())
         if commit not in branches and 'remotes/origin/' + commit in branches:
             commit = 'origin/' + commit
-
         commit_id = Popen(['git', 'rev-parse', commit],
                           cwd=dest, stdout=PIPE).communicate()[0].strip()
+
+        if merge:
+            if 'remotes/%s/%s' % (merge_source, merge_commit) in branches:
+                merge_commit = '%s/%s' % (merge_source, merge_commit)
+            merge_commit_id = Popen(['git', 'rev-parse', merge_commit],
+                                    cwd=dest,
+                                    stdout=PIPE).communicate()[0].strip()
 
     if not export:
         log.debug('checkout commit %s for %s', commit, desc)
         call(['git', 'checkout', commit], cwd=dest)
+        if merge:
+            log.debug('merging %s', merge_commit)
+            call(['git', 'merge', '--no-ff', merge_commit], cwd=dest)
         for subdir, version in desc.overrides.iteritems():
             if version is None:
                 log.debug('removing %s', subdir)
@@ -180,6 +211,8 @@ def git(desc, url, commit='master', export=False):
     log.debug('checkout of %s completed in %s', desc, dest)
     if commit_id:
         log.debug('using commit %s', commit_id)
+        if merge_commit_id:
+            log.debug('merging commit %s', merge_commit_id)
     else:
         log.warning('unable to detect the used commit id')
     return _merge_outputs(outputs)
@@ -471,18 +504,26 @@ def lhcbgrid(desc, url=None, export=False):
 
 
 GAUDI_GIT_URL = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
-def gaudi(proj, url=GAUDI_GIT_URL, export=False):
+def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
     '''
     Wrapper around the git function for Gaudi.
     '''
+    log = __log__.getChild('gaudi')
     import re
     if proj.version.lower() == 'head':
         commit = 'master'
+    elif re.match(r'mr[0-9]+$', proj.version):
+        commit = 'master'
+        try:
+            merge = merge or getMRsource('gaudi/Gaudi', int(proj.version[2:]))
+        except:
+            log.error('error: failed to get details for merge request %s',
+                      proj.version[2:])
     elif re.match(r'v[0-9]+r[0-9]+', proj.version):
         commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
     else:
         commit = proj.version
-    return git(proj, url, commit, export)
+    return git(proj, url, commit, export, merge)
 
 
 LIT_GIT_URL = 'http://git.cern.ch/pub/LHCbIntegrationTests'
