@@ -954,3 +954,45 @@ class JobParams(object):
             if not k.startswith('_'):
                 data.append('{0}={1}'.format(k, getattr(self, k)))
         return '\n'.join(data)
+
+
+def getMRsource(name_or_id, mreq_iid, token=None):
+    '''
+    Retrieve details of a merge request in gitlab.cern.ch.
+
+    @param name_or_id: qualified name or id of a project in gitlab
+    @param mreq_iid: local id of the merge request
+    @param token: gitlab API token (default: os.environ['GITLAB_TOKEN'])
+
+    @return: tuple with (repository_url, branch, username) of the source
+    '''
+    import gitlab
+    server = gitlab.Gitlab(host='https://gitlab.cern.ch/',
+                           token=token or os.environ['GITLAB_TOKEN'])
+    logging.debug('looking for merge request %s in project %s',
+                  mreq_iid, name_or_id)
+    try:
+        project = server.getproject(name_or_id)
+        if not project:
+            raise RuntimeError('cannot find project %s in gitlab' % name_or_id)
+
+        for mreq in server.getmergerequests(project['id'], state='opened'):
+            if mreq['iid'] == mreq_iid:
+                break
+        else:
+            raise RuntimeError('cannot find merge request %s in project %s' %
+                               (mreq_iid, name_or_id))
+
+        source_project = server.getproject(mreq['source_project_id'])
+
+        details = (source_project['http_url_to_repo'],
+                   mreq['source_branch'],
+                   mreq['author']['username'])
+
+    except RuntimeError, err:
+        logging.error(str(err))
+        raise
+
+    logging.debug('merge request source: %s', details)
+    return details
+
