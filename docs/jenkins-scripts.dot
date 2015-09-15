@@ -1,0 +1,114 @@
+digraph "Jenkins-scripts" {
+
+"cron" [shape=circle];
+
+cron -> { rank = same; node [shape=box3d];
+  "nightly-slot";
+  "nightly-slot-tests-poll";
+  "periodic-slot-tests-poll";
+  "nightly-release-poll";
+}
+
+// Jenkins jobs
+subgraph jobs {
+  node [shape=box3d];
+  //label = "Jenkins jobs";
+
+  "nightly-slot" -> "nightly-slot-checkout";
+  "nightly-slot-checkout" -> "nightly-slot-precondition";
+  "nightly-slot-checkout" -> "nightly-slot-build-platform";
+  "nightly-slot-precondition" -> "nightly-slot-build-platform";
+
+  "nightly-slot-tests-poll" -> "nightly-slot-test-project-platform";
+
+  "periodic-slot-tests-poll" -> "nightly-slot-tests" -> "nightly-slot-test-project-platform";
+
+  "nightly-release-poll" -> "nightly-release-trigger" -> "lhcb-release" -> "nightly-slot-checkout";
+
+  "lhcb-gaudi-merge" -> "nightly-slot-checkout";
+}
+
+// Scripts
+subgraph cluster_scripts {
+  node [shape=box];
+  rank = same;
+  label = "shell scripts";
+
+  subgraph cluster_new_scripts {
+    label = "new";
+    "enabled_slots.sh";
+    "checkout.sh";
+    "preconditions.sh";
+    "build.sh";
+  }
+
+  subgraph cluster_old_scripts {
+    label = "old";
+    "ready_builds.sh";
+    "test.sh" [label = "test.sh\n(testrunners)"];
+    "periodic_to_run.sh";
+    "parse_build_param.sh";
+    "release_poll.sh";
+    "release_trigger.sh";
+  }
+}
+
+// Shell commands (aliases)
+subgraph cluster_commands {
+  node [shape=ellipse];
+  rank = same;
+  label = "shell commands";
+
+  get_configs_folder;
+  extract_enabled_slots;
+  checkout_slot;
+  push_artifact;
+  check_preconditions;
+  get_artifact;
+  execute_preconditions;
+  build_slot;
+  create_alias;
+
+  build_slot -> { create_alias push_artifact }
+};
+
+// Connections jobs->scripts
+edge [style=dashed];
+"nightly-slot" -> "enabled_slots.sh";
+"nightly-slot-checkout" -> "checkout.sh";
+"nightly-slot-precondition" -> "preconditions.sh";
+"nightly-slot-build-platform" -> "build.sh";
+"nightly-slot-tests-poll" -> "ready_builds.sh";
+"nightly-slot-test-project-platform" -> "test.sh";
+"periodic-slot-tests-poll" -> "periodic_to_run.sh";
+"nightly-slot-tests" -> "parse_build_param.sh";
+"nightly-release-poll" -> "release_poll.sh";
+"nightly-release-trigger" -> "release_trigger.sh";
+
+// Connections scripts->commands
+// fake level
+edge [style=dotted];
+"enabled_slots.sh" -> {
+  get_configs_folder
+  extract_enabled_slots
+};
+
+"checkout.sh" -> {
+  get_configs_folder
+  checkout_slot
+  push_artifact
+  check_preconditions
+};
+
+"preconditions.sh" -> {
+  get_artifact
+  execute_preconditions
+};
+
+"build.sh" -> {
+  get_artifact
+  build_slot
+};
+
+//"test.sh" -> { node [shape=folder]; testrunners };
+}
