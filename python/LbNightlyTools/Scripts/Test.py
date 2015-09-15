@@ -85,7 +85,7 @@ class Script(BaseScript):
                                 'started': datetime.now().isoformat()})
             for proj, _result in self.slot.testGen(projects=opts.projects, before=before):
                 html_src = self._buildDir(proj,
-                                          'build.{}'.format(self.platform),
+                                          'build.{0}'.format(self.platform),
                                           'html')
                 summary_json = os.path.join(html_src, 'summary.json')
                 html_dst = self._summaryDir(proj, 'html')
