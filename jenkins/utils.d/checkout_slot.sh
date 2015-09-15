@@ -133,7 +133,7 @@ checkout_slot flavour slot slot_build_id
 
         # Check that we can get a Gitlab token before attempting the checkout of
         # of a merge request
-	if [ -n "$LBN_GAUDI_MR" ] ; then
+        if [ -n "$LBN_GAUDI_MR" ] ; then
             if [ -z "$GITLAB_TOKEN" -a -e ~/private/gitlab_token.txt ] ; then
                 export GITLAB_TOKEN=$(cat ~/private/gitlab_token.txt)
             else
@@ -173,7 +173,7 @@ checkout_slot flavour slot slot_build_id
         lbn-checkout ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${submit_opt} ${ignore_error_opt} ${slot}
 
         # We need to copy the configuration at the end because
-        # StachCkeckout.py cleans the artifacts before starting
+        # lbn-checkout cleans the artifacts before starting
         for f in "${config_dir}/configuration.py" "${config_dir}/${slot}.json" "${config_dir}/configuration.xml" ${env_log} ; do
             test -e "$f" && cp "$f" ${dest_dir}
         done
