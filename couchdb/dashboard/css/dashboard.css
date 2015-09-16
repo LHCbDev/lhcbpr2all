@@ -100,13 +100,13 @@ div.slots {
 	text-align: center;
 }
 
-.day .slot-info {
+.slot-info {
 	font-weight: normal;
 	font-size: smaller;
 	text-align: center;
 }
 
-.day .slot-info img {
+.slot-info img {
 	vertical-align: middle;
 }
 
