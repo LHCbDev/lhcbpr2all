@@ -28,6 +28,7 @@ function getParameterByName(name) {
 var REQUESTED_SLOT = getParameterByName("slot");
 var REQUESTED_PROJECT = getParameterByName("project");
 var REQUESTED_DAY = getParameterByName("day");
+var REQUESTED_BUILD_ID = getParameterByName("build_id");
 
 // variables set from cookies
 if (!$.cookie("filters")) {
@@ -47,22 +48,24 @@ function testsURL(slot, build_id, platform, project) {
     return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/summaries.' + platform + '/' + project + '/html';
 }
 
-function spinInit(day) {
-    var spin = $('<img id="spinner-' + day + '" src="images/ajax-loader.gif" title="loading...">');
+function spinInit(spinkey) {
+    var spin = $('<img id="spinner-' + spinkey + '" src="images/ajax-loader.gif" title="loading...">');
     spin.data('count', 0);
     spin.hide();
     return spin;
 }
 
-function spinIncrease(day) {
-    var spin = $('#spinner-' + day);
+function spinIncrease(spinkey) {
+    if (!spinkey) return;
+    var spin = $('#spinner-' + spinkey);
     var count = spin.data('count');
     spin.data('count', count + 1);
     spin.show();
 }
 
-function spinDecrease(day) {
-    var spin = $('#spinner-' + day);
+function spinDecrease(spinkey) {
+    if (!spinkey) return;
+    var spin = $('#spinner-' + spinkey);
     var count = spin.data('count');
     count = count - 1;
     if (count <= 0) {
@@ -122,23 +125,23 @@ jQuery.fn.lbSlotDiskSpace = function() {
     });
 }
 
-jQuery.fn.lbSlotTable = function(data) {
+jQuery.fn.lbSlotTable = function(value, spinkey) {
     var tab = $('<table class="summary" border="1"/>');
     // header
     var hdr = $('<tr class="slot-header"/>');
     hdr.append('<th>Project</th><th>Version</th>');
-    $.each(data.value.platforms, function(idx, val) {
+    $.each(value.platforms, function(idx, val) {
         hdr.append('<th platform="' + val + '" nowrap>' +
             val + '<div class="slot-info"/></th>');
     });
     tab.append(hdr);
 
     // rows
-    $.each(data.value.projects, function(idx, val) {
+    $.each(value.projects, function(idx, val) {
         var proj_name = val.name;
         if (!val.disabled) {
             proj_name = '<a href="' +
-                checkoutURL(data.value.slot, data.value.build_id, val.name) +
+                checkoutURL(value.slot, value.build_id, val.name) +
                 '" title="show checkout log" target="_blank">' + val.name + '</a>';
         }
         var proj_vers = val.version;
@@ -151,7 +154,10 @@ jQuery.fn.lbSlotTable = function(data) {
             tr.addClass('disabled');
         }
 
-        $.each(data.value.platforms, function(idx, val) {
+        if (!value.platforms && value.default_platforms) {
+            value.platforms = value.default_platforms;
+        }
+        $.each(value.platforms, function(idx, val) {
             tr.append('<td platform="' + val + '">' +
                 '<table class="results"><tr>' +
                 '<td class="build"/><td class="tests"/></tr></table>');
@@ -164,19 +170,19 @@ jQuery.fn.lbSlotTable = function(data) {
     this.append(tab);
 
     // trigger load of the results of each platform
-    $.each(data.value.platforms, function(idx, val) {
+    $.each(value.platforms, function(idx, val) {
         var query = {
-            'key': JSON.stringify([data.value.slot, data.value.build_id, val])
+            'key': JSON.stringify([value.slot, value.build_id, val])
         };
-        spinIncrease(data.key);
+        spinIncrease(spinkey);
 
         var jqXHR = $.ajax({
             dataType: "json",
             url: '_view/summaries',
             data: query
         });
-        jqXHR.day = data.key;
-        jqXHR.key = [data.value.slot, data.value.build_id, val];
+        jqXHR.spinkey = spinkey;
+        jqXHR.key = [value.slot, value.build_id, val];
         jqXHR.done(function(data, textStatus, jqXHR) {
             var last_update = moment('1970-01-01');
             var started = last_update;
@@ -260,10 +266,27 @@ jQuery.fn.lbSlotTable = function(data) {
                         .tooltip();
                 }
             }
-            spinDecrease(jqXHR.day);
+            spinDecrease(jqXHR.spinkey);
         });
     });
     return this;
+}
+
+function slotBlock(data) {
+    var build_tool_logo = "";
+    if (data.build_tool) {
+        build_tool_logo = '<img class="build-logo" src="images/' + data.build_tool + '.png"/> ';
+    }
+    var build_date = data.date ? (" (" + data.date + ")") : "";
+    var slot = $('<div class="slot" slot="' + data.slot + '" build_id="' + data.build_id + '"/>');
+    slot.append($('<h4/>').append('<span class="alerts"/> ')
+        .append('<table><tr><td nowrap>' + build_tool_logo +
+            '<a class="permalink" title="Permalink to slot ' + data.slot + ', build ' + data.build_id +
+                '" href="?slot=' + data.slot + '&build_id=' + data.build_id + '">' +
+            data.slot + build_date+ '</a>:' +
+            '</td><td>' + data.description +
+            '</td></tr></table>'));
+    return slot;
 }
 
 jQuery.fn.loadButton = function() {
@@ -287,26 +310,16 @@ jQuery.fn.loadButton = function() {
                 var el = $('.day[day="' + jqXHR.day + '"] div.slots');
                 if (data.rows.length) {
                     $.each(data.rows, function(idx, row) {
-                        var value = row.value;
-                        var build_tool_logo = "";
-                        if (value.build_tool) {
-                            build_tool_logo = '<img class="build-logo" src="images/' + value.build_tool + '.png"/> ';
-                        }
-                        var slot = $('<div class="slot" slot="' + value.slot + '" build_id="' + value.build_id + '"/>');
-                        slot.append($('<h4/>').append('<span class="alerts"/> ')
-                            .append('<table><tr><td nowrap>' + build_tool_logo +
-                                '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">' + value.slot + '</a>:' +
-                                '</td><td>' + value.description +
-                                '</td></tr></table>'));
+                        var slot = slotBlock(row.value);
                         el.append(slot);
 
                         // do show/load only non-hidden slots
-                        if (! isSlotRequested(value.slot)) {
+                        if (! isSlotRequested(row.value.slot)) {
                             slot.append($('<p>Data for this slot not loaded. </p>')
                                 .append('<a href="' + window.location.href + '">Reload the page</a>'));
                             slot.hide();
                         } else {
-                            slot.lbSlotTable(row);
+                            slot.lbSlotTable(row.value, row.key);
                             slot.find('.alerts').lbSlotDiskSpace();
                         }
                     });
@@ -590,6 +603,21 @@ $(function() {
         $('#summaries').append('<div class="day" ' +
                 'day="' + d.format('YYYY-MM-DD') + '"' +
                 'day_id="' + d.format('ddd') + '"/>');
+    } else if (REQUESTED_SLOT && REQUESTED_BUILD_ID) {
+        $.ajax({url:'_view/docsBySlotBuild',
+                data: {'key': JSON.stringify([REQUESTED_SLOT, parseInt(REQUESTED_BUILD_ID)]),
+                       'include_docs': 'true'},
+                dataType: "json"})
+            .done(function(data) {
+                var slot = "Cannot find build " + REQUESTED_BUILD_ID +
+                           " for slot " + REQUESTED_SLOT;
+                if (data.rows) slot = slotBlock(data.rows[0].doc);
+                $('#summaries')
+                .append($('<div class="slots"/>')
+                        .append(slot));
+                slot.lbSlotTable(data.rows[0].doc, null);
+            });
+
     } else {
         var today = moment();
         for (var day = 0; day < 7; day++) {
