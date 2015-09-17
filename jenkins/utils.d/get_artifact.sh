@@ -52,13 +52,10 @@ get_config_file source destination
 
     lbn-manage-remote --verbose ${get_config} ${get_sources} "${source}" "${destination}"
 
-    if [ "${get_config}" != "" ] ; then
-        if [ -e ${destination}/${slot}.json ] ; then
-            export config_file=${destination}/${slot}.json
-        else
-            export config_file=${destination}/configuration.xml#${slot}
-        fi
-        export GET_CONFIG_FILE="true"
+    if [ -e ${destination}/slot-config.json ] ; then
+        export config_file=${destination}/slot-config.json
+    else
+        export config_file=${slot}
     fi
 
 }
