@@ -36,16 +36,16 @@ subgraph cluster_scripts {
 
   subgraph cluster_new_scripts {
     label = "new";
-    "enabled_slots.sh";
-    "checkout.sh";
-    "preconditions.sh";
-    "build.sh";
-    "test.sh" [label = "test.sh\n(testrunners)"];
+    "nightly-slot.sh";
+    "nightly-slot-checkout.sh";
+    "nightly-slot-precondition.sh";
+    "nightly-slot-build-platform.sh";
+    "nightly-slot-tests-poll.sh";
+    "nightly-slot-test-project-platform.sh" [label = "nightly-slot-test-project-platform.sh\n(testrunners)"];
   }
 
   subgraph cluster_old_scripts {
     label = "old";
-    "ready_builds.sh";
     "periodic_to_run.sh";
     "parse_build_param.sh";
     "release_poll.sh";
@@ -74,12 +74,12 @@ subgraph cluster_commands {
 
 // Connections jobs->scripts
 edge [style=dashed];
-"nightly-slot" -> "enabled_slots.sh";
-"nightly-slot-checkout" -> "checkout.sh";
-"nightly-slot-precondition" -> "preconditions.sh";
-"nightly-slot-build-platform" -> "build.sh";
-"nightly-slot-tests-poll" -> "ready_builds.sh";
-"nightly-slot-test-project-platform" -> "test.sh";
+"nightly-slot" -> "nightly-slot.sh";
+"nightly-slot-checkout" -> "nightly-slot-checkout.sh";
+"nightly-slot-precondition" -> "nightly-slot-precondition.sh";
+"nightly-slot-build-platform" -> "nightly-slot-build-platform.sh";
+"nightly-slot-tests-poll" -> "nightly-slot-tests-poll.sh";
+"nightly-slot-test-project-platform" -> "nightly-slot-test-project-platform.sh";
 "periodic-slot-tests-poll" -> "periodic_to_run.sh";
 "nightly-slot-tests" -> "parse_build_param.sh";
 "nightly-release-poll" -> "release_poll.sh";
@@ -88,27 +88,27 @@ edge [style=dashed];
 // Connections scripts->commands
 // fake level
 edge [style=dotted];
-"enabled_slots.sh" -> {
+"nightly-slot.sh" -> {
   get_configs_folder
   extract_enabled_slots
 };
 
-"checkout.sh" -> {
+"nightly-slot-checkout.sh" -> {
   get_configs_folder
   checkout_slot
   push_artifact
   check_preconditions
 };
 
-"preconditions.sh" -> {
+"nightly-slot-precondition.sh" -> {
   get_artifact
   execute_preconditions
 };
 
-"build.sh" -> {
+"nightly-slot-build-platform.sh" -> {
   get_artifact
   build_slot
 };
 
-//"test.sh" -> { node [shape=folder]; testrunners };
+//"nightly-slot-test-project-platform.sh" -> { node [shape=folder]; testrunners };
 }
