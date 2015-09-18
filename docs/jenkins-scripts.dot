@@ -40,12 +40,12 @@ subgraph cluster_scripts {
     "checkout.sh";
     "preconditions.sh";
     "build.sh";
+    "test.sh" [label = "test.sh\n(testrunners)"];
   }
 
   subgraph cluster_old_scripts {
     label = "old";
     "ready_builds.sh";
-    "test.sh" [label = "test.sh\n(testrunners)"];
     "periodic_to_run.sh";
     "parse_build_param.sh";
     "release_poll.sh";
