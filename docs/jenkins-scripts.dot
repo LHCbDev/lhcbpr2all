@@ -21,7 +21,7 @@ subgraph jobs {
 
   "nightly-slot-tests-poll" -> "nightly-slot-test-project-platform";
 
-  "periodic-slot-tests-poll" -> "nightly-slot-tests" -> "nightly-slot-test-project-platform";
+  "periodic-slot-tests-poll" -> "nightly-slot-test-project-platform";
 
   "nightly-release-poll" -> "lhcb-release" -> "nightly-slot-checkout";
 
@@ -43,7 +43,6 @@ subgraph cluster_scripts {
   "nightly-release-poll.sh";
 
   "periodic-slot-tests-poll.sh";
-  "nightly-slot-tests.sh";
 }
 
 // Shell commands (aliases)
@@ -74,7 +73,6 @@ edge [style=dashed];
 "nightly-slot-tests-poll" -> "nightly-slot-tests-poll.sh";
 "nightly-slot-test-project-platform" -> "nightly-slot-test-project-platform.sh";
 "periodic-slot-tests-poll" -> "periodic-slot-tests-poll.sh";
-"nightly-slot-tests" -> "nightly-slot-tests.sh";
 "nightly-release-poll" -> "nightly-release-poll.sh";
 
 // Connections scripts->commands

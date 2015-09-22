@@ -35,11 +35,12 @@ class Script(LbUtils.Script.PlainScript):
         '''Define options.'''
         from LbNightlyTools.Scripts.Common import addBasicOptions
         self.parser.add_option('-o', '--output', action='store',
-                               help='output file name '
-                                    '[default: standard output]')
+                               help='output file format '
+                                    '[default: test-params-{0}.txt]',
+                               default='test-params-{0}.txt')
         self.parser.add_option('-d', '--date', action='store',
                                help='Date for the tests '
-                                    'Format: YYYY-MM-dd HH:MM[default: today]')
+                                    'Format: YYYY-MM-dd HH:MM [default: today]')
         self.parser.add_option('-i', '--interval', action='store',
                                help='Interval for test checks in seconds '
                                     '[default: 60s]', default="60")
@@ -82,22 +83,12 @@ class Script(LbUtils.Script.PlainScript):
             for test_instance in test_list:
                 #tests_to_run.append(test_instance.__dict__)
                 tests_to_run.append(test_instance)
-        # Now display the output
-        if opts.output:
-            tmpl = []
-            for ttr in tests_to_run:
-                jenkins_test = JenkinsTest.fromScheduledTest(ttr)
-                tmpl.append(jenkins_test.toJenkinsString())
-                self.log.warning(tmpl[-1])
-            # To make Jenkins happy, Only create the file if there are entries...
-            if len(tmpl) > 0:
-                with open(opts.output, 'w') as f:
-                    # Write a file with one line with all test tests concatenated
-                    f.write("tests_list=" + " ".join(tmpl))
-        else:
-            for ttr in tests_to_run:
-                jenkins_test = JenkinsTest.fromScheduledTest(ttr)
-                print json.dumps(jenkins_test.toJenkinsString(), indent=2)
+
+        for idx, ttr in enumerate(tests_to_run):
+            jenkins_test = JenkinsTest.fromScheduledTest(ttr)
+            with open(opts.output.format(idx), 'w') as paramfile:
+                paramfile.writelines(jenkins_test.getParameterLines())
+            self.log.warning(opts.output.format(idx))
 
 
 # __main__

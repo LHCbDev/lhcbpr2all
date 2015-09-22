@@ -18,4 +18,4 @@ set_common
 
 get_configs_folder --dest-dir "configs"
 
-lbp-check-periodic-tests configs/test_schedule.xml -i $PERIOD -o periodic_tests_list.txt
+lbp-check-periodic-tests configs/test_schedule.xml -i $PERIOD
