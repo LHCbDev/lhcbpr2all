@@ -10,14 +10,13 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+. $(dirname $0)/utils.sh
 
 # Set common environment
-. $(dirname $0)/common.sh
+set_common
 
-cat > stacks.json <<EOF
-${stacks}
-EOF
+# 5 minutes grace time before getting data from the URL
+# see https://its.cern.ch/jira/browse/LBCORE-883
+sleep 300
 
-lbn-release-trigger --debug stacks.json ${index}
+lbn-release-poll --debug http://buildlhcb.cern.ch/cgi-bin/getreleases

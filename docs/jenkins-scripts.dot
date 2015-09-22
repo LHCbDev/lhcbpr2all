@@ -23,7 +23,7 @@ subgraph jobs {
 
   "periodic-slot-tests-poll" -> "nightly-slot-tests" -> "nightly-slot-test-project-platform";
 
-  "nightly-release-poll" -> "nightly-release-trigger" -> "lhcb-release" -> "nightly-slot-checkout";
+  "nightly-release-poll" -> "lhcb-release" -> "nightly-slot-checkout";
 
   "lhcb-gaudi-merge" -> "nightly-slot-checkout";
 }
@@ -42,14 +42,13 @@ subgraph cluster_scripts {
     "nightly-slot-build-platform.sh";
     "nightly-slot-tests-poll.sh";
     "nightly-slot-test-project-platform.sh" [label = "nightly-slot-test-project-platform.sh\n(testrunners)"];
+    "nightly-release-poll.sh";
   }
 
   subgraph cluster_old_scripts {
     label = "old";
     "periodic_to_run.sh";
     "parse_build_param.sh";
-    "release_poll.sh";
-    "release_trigger.sh";
   }
 }
 
@@ -82,8 +81,7 @@ edge [style=dashed];
 "nightly-slot-test-project-platform" -> "nightly-slot-test-project-platform.sh";
 "periodic-slot-tests-poll" -> "periodic_to_run.sh";
 "nightly-slot-tests" -> "parse_build_param.sh";
-"nightly-release-poll" -> "release_poll.sh";
-"nightly-release-trigger" -> "release_trigger.sh";
+"nightly-release-poll" -> "nightly-release-poll.sh";
 
 // Connections scripts->commands
 // fake level

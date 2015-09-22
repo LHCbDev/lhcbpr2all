@@ -12,12 +12,13 @@
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools.Release import Poll
+from LbNightlyTools.Scripts.Release import Poll
 
 import os
 import shutil
 import codecs
 import json
+import fnmatch
 
 from tempfile import mkdtemp
 from os.path import exists
@@ -43,6 +44,10 @@ def prepare_data(stacks):
         json.dump(stacks, output)
     return stacks
 
+def get_param_files():
+    ''' helper function to get the list of param files int he current directory '''
+    return fnmatch.filter(os.listdir(os.curdir), Poll.PARAM_PREFIX + '*' + Poll.PARAM_SUFFIX)
+
 def test_wrong_args():
     try:
         script = Poll()
@@ -62,16 +67,62 @@ def test_simple_call():
     assert retcode == 0
 
     assert exists(script.options.state_file)
-    assert exists(script.options.output_param_file)
+    param_files = get_param_files()
+    assert len(param_files) == 1
 
     params = dict(line.strip().split('=', 1)
-                  for line in open(script.options.output_param_file))
+                  for line in open(param_files[0]))
     pprint(params)
 
-    assert set(params) == set(['indexes', 'stacks'])
-    assert params['indexes'].split() == ['0']
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == stacks[0]['platforms']
+    assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == stacks[0]['build_tool'].lower()
 
-    assert json.loads(params['stacks']) == stacks
+def test_simple_call_with_cmt():
+    stacks = prepare_data([{'platforms': ['p1', 'p2'],
+                            'projects': [['Proj1', 'v1'],
+                                         ['Proj2', 'v2']],
+                            'build_tool': 'cmt'}])
+
+    script = Poll()
+    retcode = script.run(['file:data.json'])
+    assert retcode == 0
+
+    assert exists(script.options.state_file)
+    param_files = get_param_files()
+    assert len(param_files) == 1
+
+    params = dict(line.strip().split('=', 1)
+                  for line in open(param_files[0]))
+    pprint(params)
+
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == stacks[0]['platforms']
+    assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == stacks[0]['build_tool'].lower()
+
+def test_simple_call_default_build_tool():
+    stacks = prepare_data([{'platforms': ['p1', 'p2'],
+                            'projects': [['Proj1', 'v1'],
+                                         ['Proj2', 'v2']]}])
+
+    script = Poll()
+    retcode = script.run(['file:data.json'])
+    assert retcode == 0
+
+    assert exists(script.options.state_file)
+    param_files = get_param_files()
+    assert len(param_files) == 1
+
+    params = dict(line.strip().split('=', 1)
+                  for line in open(param_files[0]))
+    pprint(params)
+
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == stacks[0]['platforms']
+    assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == script.DEFAULT_BUILD_TOOL
 
 def test_no_input():
     prepare_data([])
@@ -81,7 +132,7 @@ def test_no_input():
     assert retcode == 0
 
     assert exists(script.options.state_file)
-    assert not exists(script.options.output_param_file)
+    assert not get_param_files()
 
 def test_sorting():
     prepare_data([{'platforms': ['p2', 'p1'],
@@ -126,14 +177,17 @@ def test_stability():
     assert retcode == 0
 
     assert exists(script.options.state_file)
-    assert exists(script.options.output_param_file)
+    param_files = get_param_files()
+    assert len(param_files) == 1
 
     params = dict(line.strip().split('=', 1)
-                  for line in open(script.options.output_param_file))
+                  for line in open(param_files[0]))
     pprint(params)
 
-    assert set(params) == set(['indexes', 'stacks'])
-    assert params['indexes'].split() == ['0']
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == ['p1', 'p2']
+    assert params['projects_list'].split() == ['Proj1', 'v1', 'Proj2', 'v2']
+    assert params['build_tool'].lower() == script.DEFAULT_BUILD_TOOL
 
     # second iteration (no-op)
     script = Poll()
@@ -141,7 +195,7 @@ def test_stability():
     assert retcode == 0
 
     assert exists(script.options.state_file)
-    assert not exists(script.options.output_param_file)
+    assert not get_param_files()
 
     # third iteration (one extra stack)
     prepare_data([{'platforms': ['p1', 'p2'],
@@ -156,14 +210,17 @@ def test_stability():
     assert retcode == 0
 
     assert exists(script.options.state_file)
-    assert exists(script.options.output_param_file)
+    param_files = get_param_files()
+    assert len(param_files) == 1
 
     params = dict(line.strip().split('=', 1)
-                  for line in open(script.options.output_param_file))
+                  for line in open(param_files[0]))
     pprint(params)
 
-    assert set(params) == set(['indexes', 'stacks'])
-    assert params['indexes'].split() == ['1']
+    assert set(params) == set(['platforms', 'projects_list', 'build_tool'])
+    assert params['platforms'].split() == ['p1', 'p2']
+    assert params['projects_list'].split() == ['Proj1', 'v3', 'Proj2', 'v4']
+    assert params['build_tool'].lower() == script.DEFAULT_BUILD_TOOL
 
     # fourth iteration (one stack less, nothing to build)
     prepare_data([{'platforms': ['p1', 'p2'],
@@ -175,4 +232,13 @@ def test_stability():
     assert retcode == 0
 
     assert exists(script.options.state_file)
-    assert not exists(script.options.output_param_file)
+    assert not get_param_files()
+
+def test_bad_stack():
+    prepare_data([{'projects': [['Proj1', 'v1'],
+                                ['Proj2', 'v2']]}])
+
+    script = Poll()
+    retcode = script.run(['file:data.json'])
+    assert retcode == 0
+    assert not get_param_files()
