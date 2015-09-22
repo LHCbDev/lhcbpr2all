@@ -10,15 +10,12 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+PERIOD=${1:-3600}
 
-# Set common environment
-. $(dirname $0)/common.sh
+. $(dirname $0)/utils.sh
 
-export CMTCONFIG=$platform
+set_common
 
-lbn-parse-build-params
+get_configs_folder --dest-dir "configs"
 
-
-
+lbp-check-periodic-tests configs/test_schedule.xml -i $PERIOD -o periodic_tests_list.txt

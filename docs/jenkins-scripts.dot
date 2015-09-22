@@ -34,22 +34,16 @@ subgraph cluster_scripts {
   rank = same;
   label = "shell scripts";
 
-  subgraph cluster_new_scripts {
-    label = "new";
-    "nightly-slot.sh";
-    "nightly-slot-checkout.sh";
-    "nightly-slot-precondition.sh";
-    "nightly-slot-build-platform.sh";
-    "nightly-slot-tests-poll.sh";
-    "nightly-slot-test-project-platform.sh" [label = "nightly-slot-test-project-platform.sh\n(testrunners)"];
-    "nightly-release-poll.sh";
-  }
+  "nightly-slot.sh";
+  "nightly-slot-checkout.sh";
+  "nightly-slot-precondition.sh";
+  "nightly-slot-build-platform.sh";
+  "nightly-slot-tests-poll.sh";
+  "nightly-slot-test-project-platform.sh" [label = "nightly-slot-test-project-platform.sh\n(testrunners)"];
+  "nightly-release-poll.sh";
 
-  subgraph cluster_old_scripts {
-    label = "old";
-    "periodic_to_run.sh";
-    "parse_build_param.sh";
-  }
+  "periodic-slot-tests-poll.sh";
+  "nightly-slot-tests.sh";
 }
 
 // Shell commands (aliases)
@@ -79,8 +73,8 @@ edge [style=dashed];
 "nightly-slot-build-platform" -> "nightly-slot-build-platform.sh";
 "nightly-slot-tests-poll" -> "nightly-slot-tests-poll.sh";
 "nightly-slot-test-project-platform" -> "nightly-slot-test-project-platform.sh";
-"periodic-slot-tests-poll" -> "periodic_to_run.sh";
-"nightly-slot-tests" -> "parse_build_param.sh";
+"periodic-slot-tests-poll" -> "periodic-slot-tests-poll.sh";
+"nightly-slot-tests" -> "nightly-slot-tests.sh";
 "nightly-release-poll" -> "nightly-release-poll.sh";
 
 // Connections scripts->commands
@@ -108,5 +102,8 @@ edge [style=dotted];
   build_slot
 };
 
+"periodic-slot-tests-poll.sh" -> {
+  get_configs_folder
+};
 //"nightly-slot-test-project-platform.sh" -> { node [shape=folder]; testrunners };
 }
