@@ -8,6 +8,8 @@ function(doc) {
 				proj_data.disabled = doc.projects[idx].checkout == "ignore";
 			else
 				proj_data.disabled = doc.projects[idx].disabled;
+			if (doc.projects[idx].no_test)
+			    proj_data.no_test = true;
 			projs.push(proj_data);
 		}
 		data = {"slot": doc.slot,
@@ -29,6 +31,7 @@ function(doc) {
 		} else if (doc.default_platforms) {
 			data.platforms = doc.default_platforms;
 		}
+		if (doc.no_test) data.no_test = true;
 		emit(doc.date, data);
 	}
 }
