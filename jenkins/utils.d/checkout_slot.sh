@@ -131,15 +131,10 @@ checkout_slot flavour slot slot_build_id
             exit 1
         fi
 
-        # Check that we can get a Gitlab token before attempting the checkout of
-        # of a merge request
-	if [ -n "$LBN_GAUDI_MR" ] ; then
-            if [ -z "$GITLAB_TOKEN" -a -e ~/private/gitlab_token.txt ] ; then
-                export GITLAB_TOKEN=$(cat ~/private/gitlab_token.txt)
-            else
-                echo "Cannot talk to gitlab (for a merge request) without a valid token"
-                exit 1
-            fi
+        # Try to get the gitlab token (may be needed if there's a merge request
+        # to handle).
+        if [ -z "$GITLAB_TOKEN" -a -e ~/private/gitlab_token.txt ] ; then
+            export GITLAB_TOKEN=$(cat ~/private/gitlab_token.txt)
         fi
 
         if [ "${slot}" = "lhcb-release" ] ; then
