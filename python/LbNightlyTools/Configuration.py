@@ -260,6 +260,7 @@ class Project(object):
         @param build_tool: build method used for the project
         @param with_shared: if True, the project requires packing of data
                             generated at build time in the source tree
+        @param no_test: if True, the tests of the project should not be run
         '''
         self.name = name
         self.version = 'HEAD' if version.upper() == 'HEAD' else version
@@ -292,6 +293,7 @@ class Project(object):
 
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
         self.with_shared = kwargs.get('with_shared', False)
+        self.no_test = kwargs.get('no_test', False)
 
         self.build_results = None
 
@@ -309,6 +311,8 @@ class Project(object):
                 'disabled': self.disabled,
                 'env': self.env,
                 'with_shared': self.with_shared}
+        if self.no_test:
+            data['no_test'] = True
         if not self.slot:
             data['build_tool'] = self.build_tool.__class__.__name__
         return data
@@ -958,6 +962,8 @@ class DataProject(Project):
         # we use 'None' as version just to comply with Project.__init__, but the
         # version is ignored
         Project.__init__(self, name, 'None', **kwargs)
+        # data projects cannot be tested by definition
+        self.no_test = True
         if packages is None:
             packages = []
         self._packages = PackagesList(self, packages)
@@ -1110,7 +1116,8 @@ class Slot(object):
     __metaclass__ = _SlotMeta
     __slots__ = ('_name', '_projects', 'env', '_build_tool', 'disabled', 'desc',
                  'platforms', 'error_exceptions', 'warning_exceptions',
-                 'preconditions', 'cache_entries', 'build_id', 'no_patch')
+                 'preconditions', 'cache_entries', 'build_id', 'no_patch',
+                 'no_test')
     __projects__ = []
     __env__ = []
 
@@ -1133,6 +1140,7 @@ class Slot(object):
         @param build_id: numeric id for the build
         @param no_patch: if set to True, sources will not be patched (default to
                          False)
+        @param no_test: if set to True, tests should not be run for this slot)
         '''
         self._name = name
         if projects is None:
@@ -1158,6 +1166,7 @@ class Slot(object):
         self.build_id = kwargs.get('build_id', 0)
 
         self.no_patch = kwargs.get('no_patch', False)
+        self.no_test = kwargs.get('no_test', False)
 
         # add this slot to the global list of slots
         global slots
@@ -1183,6 +1192,8 @@ class Slot(object):
             data['cmake_cache'] = self.cache_entries
         if self.no_patch:
             data['no_patch'] = True
+        if self.no_test:
+            data['no_test'] = True
 
         pkgs = list(chain.from_iterable([pack.toDict()
                                          for pack in cont.packages]
@@ -1232,6 +1243,7 @@ class Slot(object):
         slot.build_id = data.get('build_id', 0)
 
         slot.no_patch = data.get('no_patch', False)
+        slot.no_test = data.get('no_test', False)
 
         return slot
 
@@ -1444,9 +1456,11 @@ class Slot(object):
 
         @param projects: optional list of projects to build [default: all]
         '''
+        if self.no_test:
+            raise ValueError('slot %s cannot be tested (no_test=True)' % self)
         before = kwargs.pop('before', None)
         for project in self._projects_by_deps(kwargs.pop('projects', None)):
-            if not project.disabled:
+            if not project.disabled and not project.no_test:
                 if before:
                     before(project)
                 yield (project,
