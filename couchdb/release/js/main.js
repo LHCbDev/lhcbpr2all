@@ -308,6 +308,12 @@ jQuery.fn.lbSlotTable = function(data) {
                             } else {
                                 b.addClass('success');
                             }
+                        } else {
+                            if (value.started) {
+                                b.html((value.build_url) ?
+                                        ('<a href="' + value.build_url + '" target="_blank">running</a>') :
+                                        'running');
+                            }
                         }
                     }
                     if (value.tests) {
@@ -320,6 +326,12 @@ jQuery.fn.lbSlotTable = function(data) {
                                 t.addClass('warning').append(' (0)');
                             } else {
                                 t.addClass('success');
+                            }
+                        } else {
+                            if (value.started) {
+                                b.html((value.build_url) ?
+                                        ('<a href="' + value.build_url + '" target="_blank">running</a>') :
+                                        'running');
                             }
                         }
                     }
