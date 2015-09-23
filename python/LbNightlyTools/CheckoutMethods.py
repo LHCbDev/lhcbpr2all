@@ -519,6 +519,7 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
         except:
             log.error('error: failed to get details for merge request %s',
                       proj.version[2:])
+            raise
     elif re.match(r'v[0-9]+r[0-9]+', proj.version):
         commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
     else:
