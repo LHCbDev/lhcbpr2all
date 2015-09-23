@@ -234,7 +234,7 @@ jQuery.fn.lbSlotTable = function(value, spinkey) {
                             }
                         } else {
                             if (value.started) {
-                                b.html((value.build_url) ?
+                                t.html((value.build_url) ?
                                         ('<a href="' + value.build_url + '" target="_blank">running</a>') :
                                         'running');
                             }
