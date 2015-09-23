@@ -252,10 +252,13 @@ jQuery.fn.lbSlotTable = function(data) {
             tr.addClass('disabled');
         }
 
+        var proj_no_test = (value.no_test || val.no_test);
         $.each(data.value.platforms, function(idx, val) {
             tr.append('<td platform="' + val + '">' +
                 '<table class="results"><tr>' +
-                '<td class="build"/><td class="tests"/></tr></table>');
+                '<td class="build"/><td class="tests' +
+                ((proj_no_test) ? " disabled" : "") +
+                '"/></tr></table>');
         });
         if ($.inArray(val.name, filters.projects) >= 0) {
             tr.hide();
