@@ -252,7 +252,7 @@ jQuery.fn.lbSlotTable = function(data) {
             tr.addClass('disabled');
         }
 
-        var proj_no_test = (value.no_test || val.no_test);
+        var proj_no_test = (data.no_test || val.no_test);
         $.each(data.value.platforms, function(idx, val) {
             tr.append('<td platform="' + val + '">' +
                 '<table class="results"><tr>' +
