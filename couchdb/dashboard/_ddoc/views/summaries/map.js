@@ -5,18 +5,22 @@ function(doc) {
 				project: doc.project,
 				started: doc.started,
 				completed: doc.completed,
-				build_url: doc.build_url,
+				build_url: doc.build_url
 		};
 		if (doc.type == "build-result") {
 			data.build = {warnings: doc.warnings,
 						  errors: doc.errors}
 		} else if (doc.type == "tests-result") {
-			data.tests = {failed: 0, total: doc.results.length}
-			for (var idx in doc.results) {
-				if (doc.results[idx].outcome != 'PASS' &&
-					doc.results[idx].outcome != 'UNTESTED' &&
-					doc.results[idx].outcome != 'SKIPPED')
-					data.tests.failed++;
+			if (doc.results) {
+				data.tests = {failed: 0, total: doc.results.length};
+				for (var idx in doc.results) {
+					if (doc.results[idx].outcome != 'PASS' &&
+						doc.results[idx].outcome != 'UNTESTED' &&
+						doc.results[idx].outcome != 'SKIPPED')
+						data.tests.failed++;
+				}
+			} else {
+				data.tests = {};
 			}
 		}
 		emit(k, data);
