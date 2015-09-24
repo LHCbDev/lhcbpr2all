@@ -63,6 +63,7 @@ table.results td {
 table.summary td.success {background-color: #66FF66;}
 table.summary td.warning {background-color: #FFCC55;}
 table.summary td.failure {background-color: #FF6666;}
+table.summary td.disabled {background-color: lightgrey;}
 
 table.results a {
 	color: black;

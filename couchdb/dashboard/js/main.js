@@ -157,10 +157,13 @@ jQuery.fn.lbSlotTable = function(value, spinkey) {
         if (!value.platforms && value.default_platforms) {
             value.platforms = value.default_platforms;
         }
+        var proj_no_test = (value.no_test || val.no_test);
         $.each(value.platforms, function(idx, val) {
             tr.append('<td platform="' + val + '">' +
                 '<table class="results"><tr>' +
-                '<td class="build"/><td class="tests"/></tr></table>');
+                '<td class="build">&nbsp;</td><td class="tests' +
+                ((proj_no_test) ? " disabled" : "") +
+                '"/></tr></table>');
         });
         if (! isProjectRequested(val.name)) {
             tr.hide();
