@@ -1,6 +1,6 @@
 var ARTIFACTS_BASE_URL = 'https://buildlhcb.cern.ch/artifacts/';
 var JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-slot-build-platform/';
-var LEMON_SEARCH_PREFIX = 'https://lemon.cern.ch/lemon-web/index.php?target=process_search&amp;fb=';
+var HOST_MONITOR_PREFIX = 'https://meter.cern.ch/public/_plugin/kibana/#/dashboard/elasticsearch/Metrics:%20Host?query=@fields.entity:';
 var MAX_BUILD_IDLE_TIME = 180; // minutes
 var FILTER_DEFAULT = {
     days: ["Today"],
@@ -81,10 +81,11 @@ function jenkinsIcon(build_id) {
             'title="Jenkins build"/>').tooltip();
 }
 
-function lemonIcon(hostname) {
-    return $('<a href="' + LEMON_SEARCH_PREFIX + hostname + '" target="_blank">')
-        .append('<img src="images/lemon_16.png" alt="Lemon stats" ' +
-            'title="Lemon stats for ' + hostname + '"/>').tooltip();
+function hostMonitorLink(hostname) {
+	var host = hostname.replace(/\..*/,'');
+    return $('<a href="' + HOST_MONITOR_PREFIX + host + '" target="_blank">')
+        .append('<img src="images/kibana_16.png" alt="Lemon stats" ' +
+            'title="Stats for ' + host + '"/>').tooltip();
 }
 
 // fill an element in side a "div.day" and "div.slot" with
@@ -258,7 +259,7 @@ jQuery.fn.lbSlotTable = function(value, spinkey) {
                         h.append('&nbsp;')
                             .append(jenkinsIcon(value.build_number))
                             .append('&nbsp;')
-                            .append(lemonIcon(value.host));
+                            .append(hostMonitorLink(value.host));
                     }
                     if (started.isAfter(last_update)) {
                         last_update = started;
