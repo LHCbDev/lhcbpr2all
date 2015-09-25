@@ -158,10 +158,12 @@ def test_loadJSON_3():
     expected['projects'] = [{'checkout': 'ignore',
                              'disabled': False,
                              'name': 'DBASE',
+                             'no_test': True,
                              'version': 'None'},
                             {'checkout': 'ignore',
                              'disabled': False,
                              'name': 'PARAM',
+                             'no_test': True,
                              'version': 'None'},
                             ]
 
