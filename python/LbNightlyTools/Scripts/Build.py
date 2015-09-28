@@ -439,7 +439,8 @@ class BuildReporter(object):
                             re.IGNORECASE)
     ERROR_RE = re.compile('|'.join([r'\berror\b',
                                     r'\*\*\* Break \*\*\*',
-                                    r'^Traceback \(most recent call last\):']),
+                                    r'^Traceback \(most recent call last\):',
+                                    r'^make: \*\*\* No rule to make target']),
                           re.IGNORECASE)
     def __init__(self, summary_dir, project, platform, slot, result):
         '''
