@@ -956,7 +956,8 @@ class JobParams(object):
         return '\n'.join(data)
 
 
-def getMRsource(name_or_id, mreq_iid, token=None):
+MR_COMMENT_TMPL = '[{name}#{id}](https://buildlhcb.cern.ch/nightlies/index.html?slot={name}&build_id={id})'
+def getMRsource(name_or_id, mreq_iid, token=None, slot=None):
     '''
     Retrieve details of a merge request in gitlab.cern.ch.
 
@@ -988,6 +989,10 @@ def getMRsource(name_or_id, mreq_iid, token=None):
         details = (source_project['http_url_to_repo'],
                    mreq['source_branch'],
                    mreq['author']['username'])
+
+        if slot and slot.build_id:
+            note = MR_COMMENT_TMPL.format(slot.name, slot.build_id)
+            server.addcommenttomergerequest(project['id'], mreq['id'], note)
 
     except RuntimeError, err:
         logging.error(str(err))
