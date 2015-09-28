@@ -515,7 +515,8 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
     elif re.match(r'mr[0-9]+$', proj.version):
         commit = 'master'
         try:
-            merge = merge or getMRsource('gaudi/Gaudi', int(proj.version[2:]))
+            merge = merge or getMRsource('gaudi/Gaudi', int(proj.version[2:]),
+                                         slot=proj.slot)
         except:
             log.error('error: failed to get details for merge request %s',
                       proj.version[2:])
