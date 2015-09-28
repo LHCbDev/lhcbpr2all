@@ -956,7 +956,9 @@ class JobParams(object):
         return '\n'.join(data)
 
 
-MR_COMMENT_TMPL = '[{name}#{id}](https://buildlhcb.cern.ch/nightlies/index.html?slot={name}&build_id={id})'
+MR_COMMENT_TMPL = ('Validation started with [{name}#{id}]('
+                   'https://buildlhcb.cern.ch/nightlies/index.html'
+                   '?slot={name}&build_id={id})')
 def getMRsource(name_or_id, mreq_iid, token=None, slot=None):
     '''
     Retrieve details of a merge request in gitlab.cern.ch.
