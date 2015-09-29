@@ -299,7 +299,7 @@ def test_custom_projects():
     p = LHCb('HEAD')
     assert p.name == 'LHCb'
     assert p.version == 'HEAD'
-    assert p._checkout.__name__ == ignore.__name__, (p._checkout, ignore)
+    assert p._checkout == ignore, (p._checkout, ignore)
 
     class Gaudi(Project):
         __url__ = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
@@ -342,7 +342,7 @@ def test_custom_projects_2():
     p = CustomProject('LHCb', 'HEAD')
     assert p.name == 'LHCb'
     assert p.version == 'HEAD'
-    assert p._checkout.__name__ == ignore.__name__, (p._checkout, ignore)
+    assert p._checkout == ignore, (p._checkout, ignore)
 
     class LHCb(CustomProject):
         pass
@@ -350,7 +350,7 @@ def test_custom_projects_2():
     p = LHCb('HEAD')
     assert p.name == 'LHCb'
     assert p.version == 'HEAD'
-    assert p._checkout.__name__ == ignore.__name__, (p._checkout, ignore)
+    assert p._checkout == ignore, (p._checkout, ignore)
 
 def test_dataproject():
     # test empty constructor
