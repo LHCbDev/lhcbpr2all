@@ -302,7 +302,7 @@ def test_custom_projects():
     assert p._checkout == ignore, (p._checkout, ignore)
 
     class Gaudi(Project):
-        __url__ = 'http://git.cern.ch/pub/gaudi'
+        __url__ = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
         def commitId(self):
             import re
             if self.version.lower() == 'head':
@@ -320,7 +320,7 @@ def test_custom_projects():
     assert g.name == 'Gaudi'
     assert g.version == 'v26r1'
     assert g.commitId() == 'GAUDI/GAUDI_v26r1'
-    expected = (0, str({'url': 'http://git.cern.ch/pub/gaudi',
+    expected = (0, str({'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
                         'commit': 'GAUDI/GAUDI_v26r1',
                         'verbose': True}), '')
     output = g.checkout(verbose=True)

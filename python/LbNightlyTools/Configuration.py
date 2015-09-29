@@ -78,6 +78,112 @@ def sortedByDeps(deps):
     return recurse(deps)
 
 
+class RecordLogger(object):
+    '''
+    Decorator to collect the log messages of a Logger instance in a data member
+    of the instance.
+
+    @param logger: Logger instance or name (default: use the root Logger)
+    @param data_member: name of the property of the instance bound to the method
+                        where to record the log (default: method name + '_log')
+    '''
+    def __init__(self, logger='', data_member=None):
+        '''
+        Initialize the decorator.
+        '''
+        if isinstance(logger, basestring):
+            logger = logging.getLogger(logger)
+        self.logger = logger
+        self.data_member = data_member
+    def __call__(self, method):
+        '''
+        Decorate the method.
+        '''
+        from functools import wraps
+        logger = self.logger
+        data_member = self.data_member or (method.__name__ + '_log')
+
+        @wraps(method)
+        def log_recorder(self, *args, **kwargs):
+            from StringIO import StringIO
+            data = StringIO()
+            hdlr = logging.StreamHandler(data)
+            logger.addHandler(hdlr)
+
+            result = method(self, *args, **kwargs)
+
+            setattr(self, data_member, data.getvalue())
+            logger.removeHandler(hdlr)
+            return result
+        return log_recorder
+
+
+def log_timing(logger='', level=logging.DEBUG):
+    '''
+    Decorator to add log messages about the time a method takes.
+    '''
+    if isinstance(logger, basestring):
+        logger = logging.getLogger(logger)
+    def decorate(method):
+        from functools import wraps
+        @wraps(method)
+        def log_timing_wrapper(*args, **kwargs):
+            start_time = datetime.now()
+            logger.log(level, 'Started at: %s', start_time)
+            result = method(*args, **kwargs)
+            end_time = datetime.now()
+            logger.log(level, 'Completed at: %s', end_time)
+            logger.log(level, 'Elapsed time: %s', end_time - start_time)
+            return result
+        return log_timing_wrapper
+    return decorate
+
+
+def log_enter_step(msg=None):
+    '''
+    Decorator to log entering and exiting from a method of an object.
+    '''
+    def decorate(method):
+        from functools import wraps
+        @wraps(method)
+        def log_enter_step_wrapper(self, *args, **kwargs):
+            __log__.info(msg + ' %s', self)
+            __log__.debug('  with args %s, %s', args, kwargs)
+            return method(self, *args, **kwargs)
+        return log_enter_step_wrapper
+    return decorate
+
+
+def extend_kwargs(extra_opts_name):
+    '''
+    Decorator to define default keyword arguments of a method via an instance
+    property.
+
+    >>> class MyClass(object):
+    ...     def __init__(self):
+    ...         self.defaults = {'a': 0, 'b': 1}
+    ...     @extend_kwargs('defaults')
+    ...     def __call__(self, **kwargs):
+    ...         print kwargs
+    ...
+    >>> obj = MyClass()
+    >>> obj()
+    {'a': 0, 'b': 1}
+    >>> obj.defaults = {'c': -1}
+    >>> obj(d=-2)
+    {'c': -1, 'd': -2}
+    '''
+    def decorate(method):
+        from functools import wraps
+        @wraps(method)
+        def extend_kwargs_wrapper(self, *args, **kwargs):
+            opts = dict(getattr(self, extra_opts_name))
+            opts.update(kwargs)
+            return method(self, *args, **opts)
+        return extend_kwargs_wrapper
+    return decorate
+
+
 class _BuildToolProperty(object):
     '''
     Descriptor for the build_tool property of a slot
@@ -98,6 +204,67 @@ class _BuildToolProperty(object):
             raise AttributeError("can't set attribute")
         from BuildMethods import getMethod as getBuildMethod
         instance._build_tool = getBuildMethod(value)()
+
+
+class _CheckoutMethodProperty(object):
+    '''
+    Descriptor for the checkout property of a project.
+    '''
+    def __init__(self, default=None):
+        self.default = default
+
+    def __get__(self, instance, owner):
+        'getter'
+        return instance._checkout_wrap if instance is not None else self.default
+
+    @classmethod
+    def make_wrapper(self, instance, method):
+        '''
+        helper to add wrappers to the checkout method of the instance
+        '''
+        from functools import partial, update_wrapper
+        timelog = log_timing(CheckoutMethods.__log__)
+        reclog = RecordLogger(CheckoutMethods.__log__)
+        info = log_enter_step('checking out')
+        opts = extend_kwargs('checkout_opts')
+        return update_wrapper(partial(opts(info(reclog(timelog(method)))),
+                                      instance),
+                              method)
+
+    def getCheckoutMethod(self, instance, method):
+        '''
+        Helper to map "method" to the correct checkout method.
+
+        If not None, map the method argument to the corresponding checkout
+        method.  If None, we select an appropriate default: an explicit default,
+        or a method based on the instance name or the generic default.
+        '''
+        from CheckoutMethods import getMethod as get
+        if method is None:
+            # we want the default method
+            if self.default:
+                # we have an explicit default
+                method = get(self.default)
+            else:
+                try:
+                    # other wise we try from the name of the instance
+                    method = get(instance.name.lower())
+                except:
+                    # else, if that fails, we use the generic default
+                    method = get()
+        else:
+            # setting from an explicit value
+            method = get(method)
+
+        return method
+
+    def __set__(self, instance, value):
+        'setter'
+        if isinstance(value, tuple):
+            value, instance.checkout_opts = value
+        method = self.getCheckoutMethod(instance, value)
+        instance._checkout = method
+        instance._checkout_wrap = self.make_wrapper(instance, method)
 
 
 class _ProjectMeta(type):
@@ -126,15 +293,16 @@ class _ProjectMeta(type):
         if 'name' in dct:
             __meta_log__.debug('default name %s', dct.get('name'))
             dct['__project_name__'] = dct.pop('name')
-        if 'checkout' in dct:
-            if isinstance(dct['checkout'], basestring):
-                dct['__checkout__'] = dct.pop('checkout')
-            else:
-                timelog = log_timing(CheckoutMethods.__log__)
-                reclog = RecordLogger(CheckoutMethods.__log__)
-                info = log_enter_step('checking out')
-                dct['checkout'] = info(reclog(timelog(dct['checkout'])))
-        __meta_log__.debug('adding logging wrappers')
+        __meta_log__.debug('prepare checkout method property')
+        if 'checkout' not in dct:
+            for base in bases:
+                if hasattr(base, 'checkout'):
+                    __meta_log__.debug('inherited checkout %s', base.checkout)
+                    dct['checkout'] = base.checkout
+                    break
+        dct['checkout'] = _CheckoutMethodProperty(dct.get('checkout'))
+
+        __meta_log__.debug('adding build logging wrappers')
         timelog = log_timing(BuildMethods.__log__)
         reclog = RecordLogger(BuildMethods.__log__)
         for method in ('build', 'clean', 'test'):
@@ -162,78 +330,6 @@ class _ProjectMeta(type):
         return type.__call__(self, *args, **kwargs)
 
 
-class RecordLogger(object):
-    '''
-    Decorator to collect the log messages of a Logger instance in a data member
-    of the instance.
-
-    @param logger: Logger instance or name (default: use the root Logger)
-    @param data_member: name of the property of the instance bound to the method
-                        where to record the log (default: method name + '_log')
-    '''
-    def __init__(self, logger='', data_member=None):
-        '''
-        Initialize the decorator.
-        '''
-        if isinstance(logger, basestring):
-            logger = logging.getLogger(logger)
-        self.logger = logger
-        self.data_member = data_member
-    def __call__(self, method):
-        '''
-        Decorate the method.
-        '''
-        from functools import wraps
-        logger = self.logger
-        data_member = self.data_member or (method.__name__ + '_log')
-
-        @wraps(method)
-        def recorder(self, *args, **kwargs):
-            from StringIO import StringIO
-            data = StringIO()
-            hdlr = logging.StreamHandler(data)
-            logger.addHandler(hdlr)
-
-            result = method(self, *args, **kwargs)
-
-            setattr(self, data_member, data.getvalue())
-            logger.removeHandler(hdlr)
-            return result
-        return recorder
-
-
-def log_timing(logger='', level=logging.DEBUG):
-    '''
-    Decorator to add log messages about the time a method takes.
-    '''
-    if isinstance(logger, basestring):
-        logger = logging.getLogger(logger)
-    def decorate(method):
-        from functools import wraps
-        @wraps(method)
-        def wrapper(*args, **kwargs):
-            start_time = datetime.now()
-            logger.log(level, 'Started at: %s', start_time)
-            result = method(*args, **kwargs)
-            end_time = datetime.now()
-            logger.log(level, 'Completed at: %s', end_time)
-            logger.log(level, 'Elapsed time: %s', end_time - start_time)
-            return result
-        return wrapper
-    return decorate
-
-def log_enter_step(msg=None):
-    def decorate(method):
-        from functools import wraps
-        @wraps(method)
-        def wrapper(*args, **kwargs):
-            __log__.info(msg + ' %s', args[0])
-            __log__.debug('  with args %s, %s', args[1:], kwargs)
-            return method(*args, **kwargs)
-        return wrapper
-    return decorate
-
-
 class Project(object):
     '''
     Describe a project to be checked out, built and tested.
@@ -251,7 +347,9 @@ class Project(object):
         @param overrides: dictionary describing the differences between the
                           versions of the packages in the requested projects
                           version and the ones required in the checkout
-        @param checkout: callable that can check out the specified project
+        @param checkout: callable that can check out the specified project, or
+                         tuple (callable, kwargs), with kwargs overriding
+                         checkout_opts
         @param checkout_opts: dictionary with extra options for the checkout
                               callable
         @param disabled: if set to True, the project is taken into account only
@@ -273,23 +371,15 @@ class Project(object):
         self._deps = kwargs.get('dependencies', [])
         self.env = kwargs.get('env', [])
 
+        # we need to try setting checkout_opts before checkout, because
+        # it could be overridden if checkout is a tuple
+        self.checkout_opts = kwargs.get('checkout_opts', {})
         # Get the checkout method using:
         #  - checkout parameter
         #  - __checkout__ class property
         #  - name of the project
         #  - default
-        from CheckoutMethods import getMethod as getCheckoutMethod
-        if 'checkout' in kwargs:
-            self._checkout = getCheckoutMethod(kwargs['checkout'])
-        elif self.__checkout__:
-            self._checkout = getCheckoutMethod(self.__checkout__)
-        else:
-            try:
-                self._checkout = getCheckoutMethod(self.name.lower())
-            except:
-                self._checkout = getCheckoutMethod()
-
-        self.checkout_opts = kwargs.get('checkout_opts', {})
+        self.checkout = (kwargs.get('checkout') or self.__checkout__)
 
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
         self.with_shared = kwargs.get('with_shared', False)
@@ -345,9 +435,9 @@ class Project(object):
         '''
         dct = dict((elem, getattr(self, elem))
                     for elem in ('name', 'version', 'disabled', 'overrides',
-                                 '_deps', 'env', '_checkout',
-                                 'checkout_opts'))
+                                 '_deps', 'env', 'checkout_opts'))
         dct['build_tool'] = self._build_tool.__class__.__name__
+        dct['checkout'] = self._checkout
         return dct
 
     def __setstate__(self, state):
@@ -356,14 +446,6 @@ class Project(object):
         '''
         for key in state:
             setattr(self, key, state[key])
-
-    def checkout(self, **kwargs):
-        '''
-        Helper function to call the checkout method.
-        '''
-        opts = dict(self.checkout_opts)
-        opts.update(kwargs)
-        return self._checkout(self, **opts)
 
     def build(self, **kwargs):
         '''
@@ -693,6 +775,8 @@ class Package(object):
     '''
     Describe a package to be checked out.
     '''
+    checkout = _CheckoutMethodProperty()
+
     def __init__(self, name, version, **kwargs):
         '''
         @param name: name of the package
@@ -706,8 +790,7 @@ class Package(object):
             version = 'head'
         self.version = version
         self.container = None
-        from CheckoutMethods import getMethod
-        self._checkout = getMethod(kwargs.get('checkout'))
+        self.checkout = kwargs.get('checkout')
         self.checkout_opts = kwargs.get('checkout_opts', {})
 
     def toDict(self):
@@ -735,17 +818,21 @@ class Package(object):
         '''Non-equality operator.'''
         return not (self == other)
 
-    @RecordLogger(CheckoutMethods.__log__)
-    @log_timing(CheckoutMethods.__log__)
-    def checkout(self, **kwargs):
+    def __getstate__(self):
         '''
-        Helper function to call the checkout method.
+        Allow pickling.
         '''
-        __log__.info('checking out %s', self)
-        opts = dict(self.checkout_opts)
-        opts.update(kwargs)
-        __log__.debug('  with args %s', opts)
-        return self._checkout(self, **opts)
+        dct = dict((elem, getattr(self, elem))
+                    for elem in ('name', 'version', 'checkout_opts'))
+        dct['checkout'] = self._checkout
+        return dct
+
+    def __setstate__(self, state):
+        '''
+        Allow unpickling.
+        '''
+        for key in state:
+            setattr(self, key, state[key])
 
     @property
     def baseDir(self):
@@ -994,6 +1081,7 @@ class DataProject(Project):
         '''
         dct = Project.__getstate__(self)
         dct['_packages'] = self._packages
+        dct['checkout'] = None
         return dct
 
     def __setstate__(self, state):
