@@ -132,6 +132,14 @@ def test_Project():
     assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
 
+    # test setting checkout_opts via checkout descriptor
+    cb = MockFunc()
+    p = Project('Gaudi', 'v23r5', checkout=(cb, {'special': False}))
+    p.checkout()
+    assert cb.args == (p,), cb.args
+    assert cb.kwargs == {'special': False}, cb.kwargs
+
+
 def test_Slot():
     'Configuration.Slot'
     Slot = Configuration.Slot

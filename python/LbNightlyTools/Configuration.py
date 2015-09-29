@@ -260,6 +260,8 @@ class _CheckoutMethodProperty(object):
 
     def __set__(self, instance, value):
         'setter'
+        if isinstance(value, tuple):
+            value, instance.checkout_opts = value
         method = self.getCheckoutMethod(instance, value)
         instance._checkout = method
         instance._checkout_wrap = self.make_wrapper(instance, method)
@@ -345,7 +347,9 @@ class Project(object):
         @param overrides: dictionary describing the differences between the
                           versions of the packages in the requested projects
                           version and the ones required in the checkout
-        @param checkout: callable that can check out the specified project
+        @param checkout: callable that can check out the specified project, or
+                         tuple (callable, kwargs), with kwargs overriding
+                         checkout_opts
         @param checkout_opts: dictionary with extra options for the checkout
                               callable
         @param disabled: if set to True, the project is taken into account only
@@ -367,13 +371,15 @@ class Project(object):
         self._deps = kwargs.get('dependencies', [])
         self.env = kwargs.get('env', [])
 
+        # we need to try setting checkout_opts before checkout, because
+        # it could be overridden if checkout is a tuple
+        self.checkout_opts = kwargs.get('checkout_opts', {})
         # Get the checkout method using:
         #  - checkout parameter
         #  - __checkout__ class property
         #  - name of the project
         #  - default
         self.checkout = (kwargs.get('checkout') or self.__checkout__)
-        self.checkout_opts = kwargs.get('checkout_opts', {})
 
         self.build_tool = kwargs.get('build_tool', self.__build_tool__)
         self.with_shared = kwargs.get('with_shared', False)
