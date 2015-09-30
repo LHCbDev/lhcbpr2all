@@ -131,6 +131,8 @@ def test_Project():
     p.checkout()
     assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
+    assert hasattr(p, 'checkout_log')
+    assert p.checkout_log
 
     # test setting checkout_opts via checkout descriptor
     cb = MockFunc()

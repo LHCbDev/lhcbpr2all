@@ -224,7 +224,8 @@ class _CheckoutMethodProperty(object):
         '''
         from functools import partial, update_wrapper
         timelog = log_timing(CheckoutMethods.__log__)
-        reclog = RecordLogger(CheckoutMethods.__log__)
+        reclog = RecordLogger(CheckoutMethods.__log__,
+                              data_member='checkout_log')
         info = log_enter_step('checking out')
         opts = extend_kwargs('checkout_opts')
         return update_wrapper(partial(opts(info(reclog(timelog(method)))),
