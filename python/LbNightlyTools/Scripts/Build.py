@@ -303,7 +303,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         self.dump_json({'type': 'job-start',
                         'host': socket.gethostname(),
                         'build_number': os.environ.get('BUILD_NUMBER', 0),
-                        'started': self.starttime.isoformat()})
+                        'started': self.starttime.isoformat()},
+                       update=False)
 
         self._prepareBuildDir()
 

@@ -101,7 +101,7 @@ class Script(BaseScript):
 
         # publish the configuration before the checkout
         # (but we have to update it later)
-        self.dump_json(cfg)
+        self.dump_json(cfg, update=False)
 
         with chdir(self.build_dir):
             slot.checkout(projects=opts.projects,

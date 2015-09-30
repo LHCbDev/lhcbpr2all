@@ -447,7 +447,7 @@ class Dashboard(object):
                 os.makedirs(dumpdir)
             self._log.debug('keep JSON back-ups in %s', dumpdir)
 
-    def publish(self, data, name=None):
+    def publish(self, data, name=None, update=True):
         '''
         Store the given dictionary in the dashboard database.
 
@@ -473,9 +473,14 @@ class Dashboard(object):
                 self._log.debug('sending')
                 self.db[name] = data
             except ResourceConflict:
-                self._log.debug('%s already present: update', name)
+                self._log.debug('%s already present: %s', name,
+                                'update' if update else 'overwrite')
                 new_data = self.db[name]
-                new_data.update(data)
+                if update:
+                    new_data.update(data)
+                else:
+                    data['_rev'] = new_data['_rev']
+                    new_data = data
                 self.db[name] = new_data
             except (Unauthorized, ServerError), ex:
                 self._log.warning('could not send %s: %s', name, ex)
