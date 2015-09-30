@@ -993,10 +993,10 @@ def getMRsource(name_or_id, mreq_iid, token=None, slot=None):
                    mreq['author']['username'])
 
         if slot and slot.build_id:
-            note = MR_COMMENT_TMPL.format(slot.name, slot.build_id)
+            note = MR_COMMENT_TMPL.format(name=slot.name, id=slot.build_id)
             server.addcommenttomergerequest(project['id'], mreq['id'], note)
 
-    except RuntimeError, err:
+    except Exception, err:
         logging.error(str(err))
         raise
 
