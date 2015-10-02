@@ -51,7 +51,17 @@ class LHCbGenericRpmSpec(LHCbBaseRpmSpec):
         self._buildarea = buildarea
         self._requires = requires
         self._arch = "noarch"
+        self._postinstall = None
+        self._srcroot = None
         
+
+    def setsrcroot(self, srcroot):
+        ''' Set the dir to use as top of the rpm content '''
+        self._srcroot = srcroot
+
+    def setpostinstall(self, postinstall):
+        ''' Set the post install script to call '''
+        self._postinstall = postinstall
         
     def getRPMName(self, norelease=False):
         ''' Return the architecture, always noarch for our packages'''
@@ -91,6 +101,7 @@ BuildArch: %{arch}
 AutoReqProv: no
 Prefix: /opt/LHCbSoft
 Provides: /bin/sh
+Provides: /bin/bash
 Provides: %{project} = %{version}
 
 \n""").substitute(buildarea = self._buildarea,
@@ -131,8 +142,21 @@ Provides: %{project} = %{version}
 [ -d ${RPM_BUILD_ROOT} ] && rm -rf ${RPM_BUILD_ROOT}
 
 mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft
-cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft
+"""
+        if self._srcroot != None:
+            spec +=Template("""
+if [ -z $${TMPDIR} ]; then
+  cd /tmp
+else
+  cd $${TMPDIR}
+fi
+git clone --branch %{version} %{giturl}
+cp -r %{project}/${srcroot}/* $${RPM_BUILD_ROOT}/opt/LHCbSoft
 
+""").substitute(srcroot=self._srcroot)
+        else:
+            spec +="""
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft
 git clone --branch %{version} %{giturl}
 
 """ 
@@ -143,13 +167,44 @@ git clone --branch %{version} %{giturl}
         '''
         Prepare the RPM header
         '''
-        trailer = Template("""
+
+        # Prepare the files list
+        if self._srcroot != None:
+            import os
+            trailer ="""
+%files
+%defattr(-,root,root)
+%{prefix}/*
+"""
+        else:
+            trailer ="""
 %files
 %defattr(-,root,root)
 %{prefix}/%{project}
+"""
 
+        # Adding the post install script if requested
+        if self._postinstall != None:
+            trailer +='''
+%%post -p /bin/bash
+
+if [ "${MYSITEROOT}" ]; then
+PREFIX=${MYSITEROOT}
+else
+PREFIX=%%{prefix}
+fi
+
+${MYSITEROOT}/%s
+
+''' % self._postinstall
+        else:
+            trailer +="""
 %post
+"""
 
+
+            
+        trailer +="""
 %postun
 
 %clean
@@ -160,7 +215,7 @@ git clone --branch %{version} %{giturl}
 
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
-""").substitute(buildarea = self._buildarea)
+"""
 
         return trailer
 
@@ -207,11 +262,16 @@ e.g. %prog -o tmp.spec LbEnv 1.0.0 ssh://git@gitlab.cern.ch:7999/lhcb-core/LbEnv
                           default = None,
                           action="store",
                           help="File name for the generated specfile [default output to stdout]")
-        parser.add_option('-t', '--fromtag',
-                          dest="tag",
+        parser.add_option('--srcroot',
+                          dest="srcroot",
                           default = None,
                           action="store",
-                          help="Take the project versions tagged as specified in the conf DB (instead of command line)")
+                          help="Subdirectory of the git package to use as a root for the installation")
+        parser.add_option('--post-install',
+                          dest="postinstall",
+                          default = None,
+                          action="store",
+                          help="Script to include as post install for the RPM")
  
         return parser
 
@@ -265,8 +325,14 @@ e.g. %prog -o tmp.spec LbEnv 1.0.0 ssh://git@gitlab.cern.ch:7999/lhcb-core/LbEnv
         specname = project
         if self.options.name != None:
             specname = self.options.name
-        spec = LHCbGenericRpmSpec(specname, version, giturl, requires,  buildarea)
 
+        spec = LHCbGenericRpmSpec(specname, version, giturl, requires,  buildarea)
+        if self.options.srcroot != None:
+            spec.setsrcroot(self.options.srcroot)
+
+        if self.options.postinstall != None:
+            spec.setpostinstall(self.options.postinstall)
+            
         if self.options.output:
             with open(self.options.output, "w") as outputfile:
                 outputfile.write(spec.getSpec())
