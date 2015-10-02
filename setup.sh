@@ -9,5 +9,9 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-export PATH=$PWD/scripts:$PATH
-export PYTHONPATH=$PWD/python${PYTHONPATH:+:$PYTHONPATH}
+filename=$(readlink -f  $BASH_SOURCE)
+dir=$(dirname $filename)
+LBN_LOC=$(cd  $dir;pwd)
+
+export PATH=$LBN_LOC/scripts:$PATH
+export PYTHONPATH=$LBN_LOC/python${PYTHONPATH:+:$PYTHONPATH}
