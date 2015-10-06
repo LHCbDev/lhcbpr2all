@@ -475,27 +475,35 @@ def lhcbdirac(desc, export=False):
 
     return _merge_outputs(outputs)
 
-
-def lhcbgrid(desc, url=None, export=False):
+LHCBGRID_GIT_URL = 'https://gitlab.cern.ch/lhcb/LHCbGrid.git'
+def lhcbgrid(proj, url=LHCBGRID_GIT_URL, export=False, merge=None):
     '''
-    Special hybrid checkout needed to release LHCbGrid.
+    Special checkout needed to release LHCbGrid.
     '''
     log = __log__.getChild('lhcbgrid')
-    if url is None:
-        if desc.version.lower() == 'head':
-            url = 'http://svn.cern.ch/guest/lhcb/LHCbGrid/trunk'
-        else:
-            url = ('http://svn.cern.ch/guest/lhcb/LHCbGrid/tags/' +
-                   'LHCBGRID/LHCBGRID_' + desc.version)
+    import re
 
-    svn(desc, url=url, export=export)
+    if proj.version.lower() == 'head':
+        commit = 'master'
+    elif re.match(r'mr[0-9]+$', proj.version):
+        commit = 'master'
+        try:
+            merge = merge or getMRsource('lhcb/LHCbGrid', int(proj.version[2:]))
+        except:
+            log.error('error: failed to get details for merge request %s',
+                      proj.version[2:])
+            raise
+    else:
+        commit = proj.version
 
     outputs = []
+    outputs.append(git(proj, url, commit, export, merge))
+
     def call(*args, **kwargs):
         'helper to simplify the code'
         outputs.append(log_call(*args, **kwargs))
 
-    dest = desc.baseDir
+    dest = proj.baseDir
     log.debug('fixing requirements files')
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)
