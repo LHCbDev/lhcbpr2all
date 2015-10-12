@@ -117,11 +117,11 @@ def ignore(desc, export=False):
     log.info('checkout not requested for %s', desc)
     return (0, 'checkout not requested for %s' % desc, '')
 
-# default URLs for known projects
-GIT_URLS = {'Gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
-            'LHCbIntegrationTests':
+# default URLs for known projects (project names must be lowercase)
+GIT_URLS = {'gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
+            'lhcbintegrationtests':
                 'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
-            'LHCbGrid': 'https://gitlab.cern.ch/lhcb/LHCbGrid.git',
+            'lhcbgrid': 'https://gitlab.cern.ch/lhcb/LHCbGrid.git',
             }
 
 def git(desc, url=None, commit=None, export=False, merge=None):
@@ -135,7 +135,7 @@ def git(desc, url=None, commit=None, export=False, merge=None):
     @param merge: merge options as (<url>, <commit> [, <remote_name>])
     '''
     if not url:
-        url = GIT_URLS[desc.name]
+        url = GIT_URLS[desc.name.lower()]
     if not commit:
         if desc.version.lower() == 'head':
             commit = 'master'
@@ -569,8 +569,11 @@ def ganga(desc, rootdir='.'):
 # set default checkout method
 default = getpack # pylint: disable=C0103
 
-lhcbintegrationtests = git
-
+# use git to checkout projects with
+for proj_name in GIT_URLS:
+    if proj_name not in dir():
+        exec '{} = git'.format(proj_name)
+del proj_name
 
 def getMethod(method=None):
     '''
