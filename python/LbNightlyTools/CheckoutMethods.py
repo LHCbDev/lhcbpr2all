@@ -117,16 +117,30 @@ def ignore(desc, export=False):
     log.info('checkout not requested for %s', desc)
     return (0, 'checkout not requested for %s' % desc, '')
 
-def git(desc, url, commit='master', export=False, merge=None):
+# default URLs for known projects
+GIT_URLS = {'Gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
+            'LHCbIntegrationTests':
+                'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
+            'LHCbGrid': 'https://gitlab.cern.ch/lhcb/LHCbGrid.git',
+            }
+
+def git(desc, url=None, commit=None, export=False, merge=None):
     '''
     Checkout from a git repository.
 
     @param desc: Configuration.Project instance
-    @param url: git repository URL
-    @param commit: commit id to checkout
+    @param url: git repository URL (default derived from desc.name)
+    @param commit: commit id to checkout (default derived from desc.version)
     @param export: whether to use git "checkout" or "archive"
-    @param merge: merge options as (<url>, <commit> [, <remote_name>)
+    @param merge: merge options as (<url>, <commit> [, <remote_name>])
     '''
+    if not url:
+        url = GIT_URLS[desc.name]
+    if not commit:
+        if desc.version.lower() == 'head':
+            commit = 'master'
+        else:
+            commit = desc.version
     log = __log__.getChild('git')
     log.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = desc.baseDir
@@ -475,8 +489,7 @@ def lhcbdirac(desc, export=False):
 
     return _merge_outputs(outputs)
 
-LHCBGRID_GIT_URL = 'https://gitlab.cern.ch/lhcb/LHCbGrid.git'
-def lhcbgrid(proj, url=LHCBGRID_GIT_URL, export=False, merge=None):
+def lhcbgrid(proj, url=None, export=False, merge=None):
     '''
     Special checkout needed to release LHCbGrid.
     '''
@@ -511,8 +524,7 @@ def lhcbgrid(proj, url=LHCBGRID_GIT_URL, export=False, merge=None):
     return _merge_outputs(outputs)
 
 
-GAUDI_GIT_URL = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
-def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
+def gaudi(proj, url=None, export=False, merge=None):
     '''
     Wrapper around the git function for Gaudi.
     '''
@@ -535,17 +547,6 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
     return git(proj, url, commit, export, merge)
 
 
-LIT_GIT_URL = 'http://git.cern.ch/pub/LHCbIntegrationTests'
-def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False):
-    '''
-    Wrapper around the git function for LHCbIntegrationTests.
-    '''
-    if proj.version.lower() == 'head':
-        commit = 'master'
-    else:
-        commit = proj.version
-    return git(proj, url, commit, export)
-
 def ganga(desc, rootdir='.'):
     '''
     Special hybrid checkout needed to release Ganga.
@@ -567,6 +568,9 @@ def ganga(desc, rootdir='.'):
 
 # set default checkout method
 default = getpack # pylint: disable=C0103
+
+lhcbintegrationtests = git
+
 
 def getMethod(method=None):
     '''
