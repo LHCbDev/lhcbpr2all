@@ -1328,7 +1328,7 @@ class Slot(object):
         slot.warning_exceptions = data.get('warning_exceptions', [])
         slot.preconditions = data.get('preconditions', [])
 
-        slot.cache_entries = data.get('cmake_cache', [])
+        slot.cache_entries = data.get('cmake_cache', {})
 
         slot.build_id = data.get('build_id', 0)
 
