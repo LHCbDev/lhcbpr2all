@@ -11,10 +11,46 @@ import zipfile
 import ntpath
 import sendToDB
 import argparse
+from datetime import (timedelta, datetime, tzinfo)
+
+
+class FixedOffset(tzinfo):
+
+    """Fixed offset in minutes: `time = utc_time + utc_offset`."""
+
+    def __init__(self, offset):
+        self.__offset = timedelta(minutes=offset)
+        hours, minutes = divmod(offset, 60)
+        # NOTE: the last part is to remind about deprecated POSIX GMT+h timezones
+        #  that have the opposite sign in the name;
+        #  the corresponding numeric value is not used e.g., no minutes
+        self.__name = '<%+03d%02d>%+d' % (hours, minutes, -hours)
+
+    def utcoffset(self, dt=None):
+        return self.__offset
+
+    def tzname(self, dt=None):
+        return self.__name
+
+    def dst(self, dt=None):
+        return timedelta(0)
+
+    def __repr__(self):
+        return 'FixedOffset(%d)' % (self.utcoffset().total_seconds() / 60)
+
+
+def mkdatetime(datestr):
+    naive_date_str, _, offset_str = datestr.rpartition(' ')
+    naive_dt = datetime.strptime(naive_date_str, '%Y-%m-%d %H:%M:%S')
+    offset = int(offset_str[-4:-2]) * 60 + int(offset_str[-2:])
+    if offset_str[0] == "-":
+        offset = -offset
+    dt = naive_dt.replace(tzinfo=FixedOffset(offset))
+    return dt
 
 
 def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
-    optname, optcontent, optstandalone, setupname, setupcontent):
+                  appversiondatetime, optname, optcontent, optstandalone, setupname, setupcontent):
     """
     This method creates a dictionary with information about the job (like time_start/end etc)
     which will be added to json_results along with the execution results
@@ -30,6 +66,7 @@ def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
         'status': '',
         'app_name': appname,
         'app_version': appversion,
+        'app_version_datetime': appversiondatetime,
         'opt_name': optname,
         'opt_content': optcontent,
         'opt_standalone': optstandalone,
@@ -41,10 +78,10 @@ def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
 
 
 def main():
-    """The collectRunResults scripts creates the json_results file which contains information about the 
+    """The collectRunResults scripts creates the json_results file which contains information about the
     the runned job(platform,host,status etc) along with the execution results, the output(logs, root files,xml files)
-     of a job are collected by handlers. Each handler knows which file must parse, so this script imports dynamically 
-     each handler(from the input handler list, --list-handlers option) and calls the collectResults function, of each handler, and 
+     of a job are collected by handlers. Each handler knows which file must parse, so this script imports dynamically
+     each handler(from the input handler list, --list-handlers option) and calls the collectResults function, of each handler, and
      passes to the function the directory(the default is the . <-- current directory) to the results(output of the runned job)"""
     # this is used for checking
     outputfile = 'json_results'
@@ -55,12 +92,16 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-r', '--results', default=".",
                         help='Directory which contains results, default is the current directory')
-    
+
     parser.add_argument('--app-name',
                         help='Application name (Brunel, Gauss, Moore, ...)',
                         required=True)
     parser.add_argument('--app-version',
-                        help='Application release/build version (v42r0, lhcb-gaudi-heade-111,...)',
+                        help='Application release/build version (v42r0, lhcb-gaudi-header-111,...)',
+                        required=True)
+    parser.add_argument('--app-version-datetime',
+                        help='Application release/build creation time (2015-10-13 11:00:00 +0200)',
+                        type=mkdatetime,
                         required=True)
     parser.add_argument('--opt-name',
                         help='Option name (PRTEST-COLLISION12-1000, PRTEST-Callgrind-300evts,...)',
@@ -77,7 +118,7 @@ def main():
     parser.add_argument('--setup-content',
                         help='Setup content ("--no-user-area --use PRConfig", "--use PRConfig", ...)',
                         required=True)
-   
+
     parser.add_argument('-s', '--start-time',
                         dest='startTime', help='The start time of the job.',
                         required=True)
@@ -115,6 +156,7 @@ def main():
         options.platform,
         options.app_name,
         options.app_version,
+        str(options.app_version_datetime),
         options.opt_name,
         options.opt_content,
         options.opt_standalone,
@@ -162,7 +204,7 @@ def main():
         exit(1)
 
     unique_results_id = str(uuid.uuid1())
-    zipper = zipfile.ZipFile(unique_results_id+'.zip', mode='w')
+    zipper = zipfile.ZipFile(unique_results_id + '.zip', mode='w')
 
     for i in range(len(jobAttributes)):
         if jobAttributes[i]['type'] == 'File':
@@ -194,12 +236,12 @@ def main():
     # close the zipfile object
     zipper.close()
 
-    logger.info(unique_results_id+'.zip')
+    logger.info(unique_results_id + '.zip')
 
     if options.send:
         logger.info(
             'Automatically sending the zip results file to the database...')
-        sendToDB.run(unique_results_id+'.zip', False)
+        sendToDB.run(unique_results_id + '.zip', False)
 
 if __name__ == '__main__':
     main()
