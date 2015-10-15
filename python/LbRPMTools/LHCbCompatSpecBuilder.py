@@ -9,8 +9,7 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 '''
-Class to generate RPM Spec for metadapackages that require all the needed packages from
-externals.
+Class to generate RPM Spec for LHCb Compat
 
 Created on Feb 27, 2014
 
@@ -174,7 +173,7 @@ if [ $? -ne 0 ]; then
   exit $?
 fi
 
-rsync -avrz %{releasedir}/%{projectUp}/%{projectUp}_%{lbversion} ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+rsync -avrz %{releasedir}/%{projectUp}/%{projectUp}_%{lbversion} ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}
 
 if [ $? -ne 0 ]; then
   exit $?
@@ -199,29 +198,9 @@ else
 PREFIX=%{prefix}
 fi
 
-if [ -f $PREFIX/etc/update.d/%{package}_Update.py ]; then
-rm -f $PREFIX/etc/update.d/%{package}_Update.py
-fi
-
-if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py ]; then
-echo "Creating link in update.d"
-mkdir -p -v $PREFIX/etc/update.d
-ln -s $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py $PREFIX/etc/update.d/%{package}_Update.py
-echo "Running Update script"
-. $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
-echo "Now using python:"
-which python
-echo "PYTHONPATH: $PYTHONPATH"
-echo "PATH: $PATH"
-echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/Update.py
-fi
-
-if [ -f $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py ]; then
-echo "Running PostInstall script"
-. $PREFIX/LbLogin.sh --silent --mysiteroot=$PREFIX
-python $PREFIX/lhcb/%{versiondir}/%{lbversion}/cmt/PostInstall.py
-fi
+# Setting the COMPAT_prod link to this version
+echo "Creating link %{projectUp}_prod pointing to %{projectUp}_%{lbversion}"
+ln -nsf $PREFIX/lhcb/%{projectUp}/%{projectUp}_%{lbversion} $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod
 
 %postun -p /bin/bash
 if [ "$MYSITEROOT" ]; then
@@ -230,10 +209,14 @@ else
 PREFIX=%{prefix}
 fi
 echo "In uninstall script"
-if [ -h $PREFIX/etc/update.d/%{package}_Update.py ]; then
-echo "Removing link to update script:  $PREFIX/etc/update.d/%{package}_Update.py"
-rm $PREFIX/etc/update.d/%{package}_Update.py
+# Removing the link if broken !
+if [ -h $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod ]; then
+  if [ ! -e $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod ]; then
+    echo "Removing link to update script:  $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod"
+    rm -f $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod
+  fi
 fi
+
 
 %files
 %defattr(-,root,root)
@@ -258,11 +241,16 @@ fi
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
-    Script to generate the Spec file for an LHCb project.
+    Script to generate the Spec file for the LHCb Compat project.
     '''
-    __usage__ = '''%prog [options] project version platform
+    __usage__ = '''%prog [options] compat_version
 
-e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
+e.g. %prog v1r19 -o tmp.spec
+
+The spec can then be built with:
+QA_RPATHS=0x003 rpmbuild -bb tmp.spec 
+
+'''
     __version__ = ''
 
     def addBasicOptions(self, parser):
@@ -326,7 +314,7 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
         project = "Compat"
         version = self.args[0]
 
-        self.log.warning("Packaging LbScripts %s" % version)
+        self.log.warning("Packaging Compat %s" % version)
 
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version)
@@ -339,4 +327,3 @@ e.g. %prog LHCbExternals v68r0 x86_64-slc6-gcc48-opt'''
                 outputfile.write(spec.getSpec())
         else:
             print spec.getSpec()
-
