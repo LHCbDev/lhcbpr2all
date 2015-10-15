@@ -22,7 +22,7 @@ class GeantStandaloneHandler(BaseHandler):
         """ Collect  results """
 
         # Files
-        exts = ['*.png', '*.C']
+        exts = ['*.gif', '*.png', '*.pdf', '*.C']
         for file in os.listdir(directory):
             for ext in exts:
                 if fnmatch.fnmatch(file, ext):
@@ -36,20 +36,26 @@ class GeantStandaloneHandler(BaseHandler):
 
         for table_file in glob.glob(
                 os.path.join(directory, 'tables', '*.txt')):
+            self.saveFile(
+                os.path.basename(table_file),
+                os.path.join(directory, table_file)
+            )
             table_name = os.path.splitext(os.path.basename(table_file))[0]
+            cur_pos = 0
             with open(table_file, 'rb') as fh:
                 reader = csv.reader(fh, delimiter=' ')
                 next(reader)  # skip header
                 for raw in reader:
-                    if energies:
-                        e = raw[0]
-                        if e == energies[0][1]:
-                            for i, name in enumerate(
-                                    ['Elastic', 'Inelastic', 'Total']):
-                                self.saveFloat('%s_%s_%s' %
-                                                (
-                                                    table_name,
-                                                    name,
-                                                    energies[0][0]
-                                                ), float(raw[i+1]))
-                            del energies[0]
+                    if cur_pos >= len(energies):
+                        break
+                    e = raw[0]
+                    if e == energies[cur_pos][1]:
+                        for i, name in enumerate(
+                                ['Elastic', 'Inelastic', 'Total']):
+                            self.saveFloat('%s_%s_%s' %
+                                           (
+                                               table_name,
+                                               name,
+                                               energies[cur_pos][0]
+                                           ), float(raw[i + 1]))
+                        cur_pos += 1
