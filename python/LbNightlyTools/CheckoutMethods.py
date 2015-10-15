@@ -572,7 +572,7 @@ default = getpack # pylint: disable=C0103
 # use git to checkout projects with
 for proj_name in GIT_URLS:
     if proj_name not in dir():
-        exec '{} = git'.format(proj_name)
+        exec '{0} = git'.format(proj_name)
 del proj_name
 
 def getMethod(method=None):
