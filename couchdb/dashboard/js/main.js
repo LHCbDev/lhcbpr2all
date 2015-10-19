@@ -9,13 +9,16 @@ var FILTER_DEFAULT = {
 };
 
 // special artifacts locations
-var flavour = /\/nightlies-([^/]+)\//.exec(window.location);
-if (flavour) {
-    ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour[1] + "/";
-    if (flavour[1] == 'testing') {
-        // special url for testing slots
-        JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
-    }
+var flavour = /:\/\/[^/]+\/(nightlies-)?([^/]+)\//.exec(window.location);
+if (!flavour || flavour[2] == 'nightlies') {
+    flavour = 'nightly';
+} else {
+    flavour = flavour[2];
+}
+ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour + "/";
+if (flavour == 'testing') {
+    // special url for testing slots
+    JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
 }
 
 function getParameterByName(name) {
