@@ -9,13 +9,16 @@ var FILTER_DEFAULT = {
 };
 
 // special artifacts locations
-var flavour = /\/nightlies-([^/]+)\//.exec(window.location);
-if (flavour) {
-    ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour[1] + "/";
-    if (flavour[1] == 'testing') {
-        // special url for testing slots
-        JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
-    }
+var flavour = /:\/\/[^/]+\/(nightlies-)?([^/]+)\//.exec(window.location);
+if (!flavour || flavour[2] == 'nightlies') {
+    flavour = 'nightly';
+} else {
+    flavour = flavour[2];
+}
+ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour + "/";
+if (flavour == 'testing') {
+    // special url for testing slots
+    JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
 }
 
 function getParameterByName(name) {
@@ -29,6 +32,9 @@ var REQUESTED_SLOT = getParameterByName("slot");
 var REQUESTED_PROJECT = getParameterByName("project");
 var REQUESTED_DAY = getParameterByName("day");
 var REQUESTED_BUILD_ID = getParameterByName("build_id");
+
+if (flavour == 'release')
+    REQUESTED_SLOT = 'lhcb-release';
 
 // variables set from cookies
 if (!$.cookie("filters")) {
@@ -82,10 +88,115 @@ function jenkinsIcon(build_id) {
 }
 
 function hostMonitorLink(hostname) {
-	var host = hostname.replace(/\..*/,'');
+    var host = hostname.replace(/\..*/,'');
     return $('<a href="' + HOST_MONITOR_PREFIX + host + '" target="_blank">')
         .append('<img src="images/kibana_16.png" alt="Lemon stats" ' +
             'title="Stats for ' + host + '"/>').tooltip();
+}
+
+function DelayTimeOut(data){
+    return alert("Rebuild " + data  + "Started").delay(8);
+}
+
+function prepareRebuildInfo(data){
+
+    //Transform the project and platform data to strings
+
+    var projects = "";
+    //make string of projects with spacing
+    $.each(data.projects,function(idx,project){
+        projects+=project.name+" "+project.version+" ";
+    });
+    //remove the last space
+    projects = projects.substring(0, projects.length - 1);
+
+
+    var platforms = "";
+    //make string of platforms with spacing
+    for (var platform in data.platforms){
+        platform =(data.platforms[platform]).toString();
+        platforms+= platform + " ";
+    }
+    //remove the last space
+    platforms = platforms.substring(0, platforms.length - 1);
+
+    //fill in the form for the post request
+    var form = $('#rebuild_info');
+    (form.find('input[name="projects_list"]')).val(projects);
+    (form.find('input[name="platforms"]')).val(platforms);
+    (form.find('input[name="build_tool"]')).val(data.build_tool);
+
+    //prepare the information to display in the dialog
+
+    var tableprojects = $('<table id=tprojects></table>');
+
+    tableprojects.append('<tbody/>');
+    tableprojects.append('<tr><td>Projects:</td><td>Version:</td></tr>');
+
+    for(var i=0;i <data.projects.length;i++){
+        tableprojects.append('<tr><td><b>'+data.projects[i].name+
+        '</b></td><td><b>'+data.projects[i].version+'</b></td></tr>');
+    }
+
+    //prepare the platform information to display in the dialog
+
+    var tableplatforms = $('<table id=tplatforms></table>');
+
+    tableplatforms.append('<tbody/>');
+    tableplatforms.append('<tr><td>Platforms:</td></tr>');
+
+    for(var i=0;i <data.platforms.length;i++){
+        tableplatforms.append('<tr><td><b>'+data.platforms[i]+'</b></td><tr>');
+    }
+
+
+    //fill in confirmation build info table dialog
+    $('#confirm-build-info > tbody:last').append('<tr><td><b>Would you like to rebuild slot ' +
+                    data.build_id + ' with the following parameters?</b></td></tr>');
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append(tableprojects);
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append(tableplatforms);
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append('<table><tr><td>Build System: <b>' + data.build_tool + '</b></td></tr></table>');
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append('<tr><td><img style="width:20px;" alt="!"'+
+                'src="images/exclamation.png"/>'+
+                '<i>rebuild is set to start in 60 secs</i></td></tr>');
+
+
+        $('#dialog-confirm').dialog({
+        autoOpen: false,
+        resizable: false,
+        height: 'auto',
+        width: 'auto',
+        modal: true,
+        buttons: {
+            //In case of cancel clean the dialog table
+            Cancel: function() {
+                $('#confirm-build-info > tbody').empty();
+                $( this ).dialog( "close" );
+            },
+            //process to rebuild submiting the form
+            "OK": function() {
+                $('#confirm-build-info > tbody').empty();
+                form.submit();
+                $( this ).dialog( "close" );
+            },
+        },
+        close: function(){
+            $('#confirm-build-info > tbody').empty();
+        }
+    });
+
+}
+
+//when rebuild button pressed
+jQuery.fn.rebuild_btn = function(data){
+    return this.button().click(function(){
+        prepareRebuildInfo(data);
+        $('#dialog-confirm').dialog('open');
+    }).text('Rebuild');
 }
 
 // fill an element in side a "div.day" and "div.slot" with
@@ -289,19 +400,33 @@ jQuery.fn.lbSlotTable = function(value, spinkey) {
 }
 
 function slotBlock(data) {
+    var isRelease = flavour == 'release';
+
     var build_tool_logo = "";
     if (data.build_tool) {
         build_tool_logo = '<img class="build-logo" src="images/' + data.build_tool + '.png"/> ';
     }
-    var build_date = data.date ? (" (" + data.date + ")") : "";
+
+    var title = isRelease ? ("Release build " + data.build_id) : data.slot;
+    title += data.date ? (" (" + data.date + ")") : "";
+
+    var header = '<table><tr><td nowrap>' + build_tool_logo +
+        '<a class="permalink" title="Permalink to slot ' + data.slot + ', build ' + data.build_id +
+        '" href="?slot=' + data.slot + '&build_id=' + data.build_id + '">' +
+        title + '</a>' + (isRelease ? '' : ':') +
+        '</td><td>';
+    if (isRelease) {
+        header += '<button id="'+ data.build_id + '"class="rebuild-button"/>';
+        header += '<a href="' + ARTIFACTS_BASE_URL + 'lhcb-release/' + data.build_id +
+                  '" target="_blank"><img class="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>';
+    } else {
+        header += data.description;
+    }
+    header += '</td></tr></table>';
+
     var slot = $('<div class="slot" slot="' + data.slot + '" build_id="' + data.build_id + '"/>');
     slot.append($('<h4/>').append('<span class="alerts"/> ')
-        .append('<table><tr><td nowrap>' + build_tool_logo +
-            '<a class="permalink" title="Permalink to slot ' + data.slot + ', build ' + data.build_id +
-                '" href="?slot=' + data.slot + '&build_id=' + data.build_id + '">' +
-            data.slot + build_date+ '</a>:' +
-            '</td><td>' + data.description +
-            '</td></tr></table>'));
+        .append(header));
     return slot;
 }
 
@@ -517,9 +642,11 @@ function applyFilters() {
 function prepareFilterDialog() {
     // prepare the dialog data
 
-    // the list of days is known, the others are retrieved
-    $('#filter-dialog-days').attr("loaded", "true")
-    initFilterCheckboxes('days');
+    if (flavour != 'release') {
+        // the list of days is known, the others are retrieved
+        $('#filter-dialog-days').attr("loaded", "true")
+        initFilterCheckboxes('days');
+    }
 
     // bind buttons
     $("#filter-dialog-tabs > div > table button").button().click(function() {
@@ -533,7 +660,8 @@ function prepareFilterDialog() {
 
     // initialize tabbed view
     $("#filter-dialog-tabs").tabs();
-    $('#filter-dialog-slots > table').hide();
+    if (flavour != 'release')
+        $('#filter-dialog-slots > table').hide();
     $('#filter-dialog-projects > table').hide();
 
     // initialize dialog
@@ -542,8 +670,10 @@ function prepareFilterDialog() {
         modal: true,
         buttons: {
             OK: function() {
-                getFilterCheckboxes('days');
-                getFilterCheckboxes('slots');
+                if (flavour != 'release') {
+                    getFilterCheckboxes('days');
+                    getFilterCheckboxes('slots');
+                }
                 getFilterCheckboxes('projects');
 
                 applyFilters();
@@ -552,8 +682,10 @@ function prepareFilterDialog() {
             },
             Cancel: function() {
                 // restore previous settings
-                initFilterCheckboxes('days');
-                initFilterCheckboxes('slots');
+                if (flavour != 'release') {
+                    initFilterCheckboxes('days');
+                    initFilterCheckboxes('slots');
+                }
                 initFilterCheckboxes('projects');
                 $(this).dialog("close");
             },
@@ -562,8 +694,10 @@ function prepareFilterDialog() {
                 filters = FILTER_DEFAULT;
                 applyFilters();
 
-                initFilterCheckboxes('days');
-                initFilterCheckboxes('slots');
+                if (flavour != 'release') {
+                    initFilterCheckboxes('days');
+                    initFilterCheckboxes('slots');
+                }
                 initFilterCheckboxes('projects');
                 $(this).dialog("close");
             }
@@ -573,7 +707,7 @@ function prepareFilterDialog() {
     $("#set-filter")
         .button()
         .click(function() {
-            fillDialogTab('slots');
+            if (flavour != 'release') fillDialogTab('slots');
             fillDialogTab('projects');
             $("#filter-dialog").dialog("open");
         });
@@ -603,6 +737,27 @@ function prepareRssForm() {
 }
 
 $(function() {
+    $('#banner h1').text('LHCb ' + flavour[0].toUpperCase() + flavour.slice(1) + ' Builds');
+    var top_links = [['https://buildlhcb.cern.ch/jenkins/follow-builds-status', 'Jenkins Status'],
+                     ['https://cern.ch/lhcb-nightlies/cgi-bin/overview_nightlies.py', 'Configuration overview'],
+                     ['https://cern.ch/lhcb-nightlies/editor.html', 'Configuration editor'],
+                     ['https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk/configuration.xml', 'Configuration (SVN)'],
+                     ['https://lhcb-coverity.cern.ch:8443', 'LHCb Coverity'],
+                     ['https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1' ,'Report a bug']
+                    ];
+    if (flavour == 'release') {
+        top_links = [['https://twiki.cern.ch/twiki/bin/view/LHCb/ProjectRelease', 'Project Deployment Instructions'],
+                     ['https://sft.its.cern.ch/jira/browse/LHCBDEP', 'LHCb Deployment (JIRA)'],
+                     ['https://buildlhcb.cern.ch/jenkins/plugin/follow-builds-status/filter?selectedView=release', 'Jenkins Status'],
+                     ['https://buildlhcb.cern.ch/jenkins/job/lhcb-release/build', 'Manually Start lhcb-release'],
+                     ['https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1' ,'Report a bug']
+                    ];
+    }
+    var toolbar = $('#links ul');
+    $.each(top_links, function(idx, link_data){
+        toolbar.append('<li><a href="' + link_data[0] + '" target="_blank">' + link_data[1] + '</a>');
+    });
+
     if (REQUESTED_DAY || REQUESTED_SLOT || REQUESTED_PROJECT) {
         // when there is a specific selection we filters do not make sense...
         $("#toolbar").hide();
@@ -627,13 +782,39 @@ $(function() {
             .done(function(data) {
                 var slot = "Cannot find build " + REQUESTED_BUILD_ID +
                            " for slot " + REQUESTED_SLOT;
-                if (data.rows) slot = slotBlock(data.rows[0].doc);
+                if (data.rows.length) slot = slotBlock(data.rows[0].doc);
                 $('#summaries')
                 .append($('<div class="slots"/>')
                         .append(slot));
                 slot.lbSlotTable(data.rows[0].doc, null);
             });
+    } else if (flavour == 'release') {
+        var today = moment();
+        var day = moment(today).subtract('days', 7); // we get builds for the last 7 days
 
+        $.ajax({url:'_view/slotsByDay',
+            data: {'startkey': JSON.stringify(day.format("YYYY-MM-DD"))},
+            dataType: "json"})
+        .done(function(data) {
+            var slots = $('<div class="slots"/>')
+            $('#summaries').append(slots);
+            if (data.rows.length) {
+                data.rows.sort(function(row1, row2){
+                    return row2.value.build_id - row1.value.build_id;
+                });
+                $.each(data.rows, function(idx, row) {
+                    row.value.date = row.key;
+                    var slot = slotBlock(row.value);
+                    slots.append(slot);
+                    slot.lbSlotTable(row.value, null);
+                    slot.find('.alerts').lbSlotDiskSpace();
+                    slot.find('button.rebuild-button').rebuild_btn(row.value);
+                });
+            } else {
+                slots.append("No " + REQUESTED_SLOT + " builds since " +
+                        day.fromNow());
+            }
+        });
     } else {
         var today = moment();
         for (var day = 0; day < 7; day++) {

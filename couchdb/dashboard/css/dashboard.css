@@ -4,10 +4,37 @@ body {
 	padding: 0;
 }
 
+#confirm-build-info.*{
+	text-align:center;
+
+}
+
+#dialog-confirm{
+	text-align: center;
+}
+
+
+.rebuild-button{
+	/*font-size: 110%;*/
+	padding-bottom:0px;
+	padding-left:2px;
+	padding-right:2px;
+
+}
+
+img.rpm{
+	height: 23px;
+	width: 35px;
+	vertical-align: middle;
+}
+
 h4 {
-	vertical-align: baseline;
 	margin-bottom: 0.5em;
 	font-size: 140%;
+}
+
+.slot h4 td {
+	vertical-align: baseline;
 }
 
 #links {
