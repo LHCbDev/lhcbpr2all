@@ -630,7 +630,7 @@ $(function() {
             .done(function(data) {
                 var slot = "Cannot find build " + REQUESTED_BUILD_ID +
                            " for slot " + REQUESTED_SLOT;
-                if (data.rows) slot = slotBlock(data.rows[0].doc);
+                if (data.rows.length) slot = slotBlock(data.rows[0].doc);
                 $('#summaries')
                 .append($('<div class="slots"/>')
                         .append(slot));
