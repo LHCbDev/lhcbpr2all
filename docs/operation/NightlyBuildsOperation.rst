@@ -83,24 +83,19 @@ Common Tasks
 
 Create a New Slot
 -----------------
-1. choose the slot configuration style: XML (can use the web-based configuration editor, but not the new features of the build system) or JSON (requires manual editing from a checkout of LHCbNightlyConf_)
+1. choose the slot configuration style:
+  * XML (can use the web-based configuration editor, but not the new features of the build system)
+  * JSON (requires manual editing from a checkout of LHCbNightlyConf_)
+  * Python (most powerful, requires manual editing)
 
-2. prepare the configuration of the slot (it is usually a good idea to clone an existing slot configuration and change it)
+2. prepare the configuration of the slot, making sure that the ``disabled`` field
+   is unset or set to ``false`` (it is usually a good idea to clone an
+   existing slot configuration and change it)
 
 3. if the build products have to be installed on AFS
 
   1. create the slot directories and volumes in ``$LHCBNIGHTLIES`` (they can be symlinks to other directories, if needed)
   2. add the slot name to the special file ``slots_on_afs.txt`` in LHCbNightlyConf_
-
-4. create a new *slot job* in Jenkins
-
-  1. go to the `Nightly Builds view`_
-  2. click on `New Job <https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/newJob>`_ in the menu on the left
-  3. use the exact slot name as name of the job
-  4. select the option *Copy existing Job* and use `nightly-slot-template` as job to copy from and click on the *OK* button
-  5. change the description of the job (it's not used at the moment, but it might be used in the future)
-  6. (optionally) enable the slot by un-checking the checkbox *Disable Build*
-  7. (optionally) change when the build is started by editing the field *Build periodically/Schedule* (starting the job later in the day will mean that it will have to wait for other builds to complete before being executed)
 
 
 Stop a Build
@@ -109,7 +104,8 @@ Sometimes it is necessary to stop a slot before it completes (for example to res
 
 Stop One Platform
 ~~~~~~~~~~~~~~~~~
-If there are pathologic problems with the build of a slot on one platform, or before triggering its rebuild, we can stop it following these steps:
+If there are pathologic problems with the build of a slot on one platform, or
+before triggering its rebuild, we can stop it following these steps:
 
 1. go to the `Nightly Builds Dashboard`_
 2. locate on the page the slot/platform to stop
@@ -122,16 +118,18 @@ Stop the Whole Slot
 ~~~~~~~~~~~~~~~~~~~
 If the slot is still in the checkout step, stopping the checkout job will be enough:
 
-1. go to the `checkout status page`_
-2. identify the running checkout job you want to stop in the list on the left (*Build History*)
-3. click on the corresponding red square with an X
+1. go to the `Jenkins Jobs Status page`_
+2. identify the running checkout job you want to stop in the *checkout* column
+3. click on the job link
+4. click on the small red square icon with an X at the top right, close to the text *Progress:*
 
 If the checkout was completed, you need to stop all the building platforms and the wrapper build job:
 
-1. got to the `platform build status page`_
-2. identify the running build jobs you want to stop in the list on the left (*Build History*)
-3. click on the corresponding red square with an X
-4. go to the `build wrappers status page`_ and repeat steps 2 and 3 (it may not be needed if the builds were terminated quickly enough and if the job is not waiting for some external conditions)
+1. got to the `Jenkins Jobs Status page`_
+2. identify the running build job you want to stop in the *precondition-build* column
+3. click on the job link
+4. click on the small red square icon with an X at the top right, close to the text *Progress:*
+5. repeat for all the platforms (it may not be needed if the builds were terminated quickly enough and if the job is not waiting for some external conditions)
 
 
 Trigger a Rebuild
@@ -144,12 +142,15 @@ Re-building can be triggered at different levels:
 
 Full Rebuild
 ~~~~~~~~~~~~
-This is the easiest option and should be preferred to the others if we can afford the time it takes for a checkout (for slots with several projects it may take more than one hour).
+This is the easiest option and should be preferred to the others if we can
+afford the time it takes for a checkout (for slots with several projects it may
+take more than one hour).
 
 This is also the only option in case we need a fresh checkout.
 
-1. go to the `Nightly Builds view`_
-2. click on the schedule icon at the far right corresponding to the slot that need to be triggered
+1. go to the `Jenkins Jobs Status page`_
+2. click on the checkout job of the slot you want to restart
+3. click on the *Rebuild* button in the column on the left
 3. (optionally) if you want to override the default list of platforms to build, fill the *platforms* field with a space-separated list of the required platforms
 4. click on the *Build* button
 
@@ -181,7 +182,10 @@ Dashboard Database Manipulation
 
 Remove a Build
 ~~~~~~~~~~~~~~
-In principle there is no need to remove builds from the database, because each new complete build of a slot will be reported in its own table and new partial builds will overwrite the old entries, but sometimes a broken (or aborted) build is just noise in the web page.
+In principle there is no need to remove builds from the database, because each
+new complete build of a slot will be reported in its own table and new partial
+builds will overwrite the old entries, but sometimes a broken (or aborted) build
+is just noise in the web page.
 
 1. if you need to remove the current build of the day:
     1. connect to ``buildlhcb.cern.ch`` as *lhcbsoft*
@@ -199,29 +203,33 @@ Update the Dashboard CouchApp
 To update the dashboard CouchApp avoiding downtime of the web page, we need to use a fallback replica.
 
 1. Replicate the dashboard database to a backup instance
-    1. connect to http://buildlhcb.cern.ch:5984/_utils/replicator.html (only a few machines can do it)
-    2. select the local database ``nightly-builds`` as source and ``nb-backup`` as destination
+    1. connect to http://lbcouchdb.cern.ch:5984/_utils/replicator.html (only a few machines can do it)
+    2. select the local database ``nightlies-nightly`` as source and ``bk-nightlies-nightly`` as destination
     3. click on the *Replicate* button and wait
 2. Ensure that the views' caches of the backup database are up to date
     a. either from the web
-        1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup
-        2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+        1. go to http://lbcouchdb.cern.ch:5984/_utils/database.html?bk-nightlies-nightly
+        2. select a view (under _dashboard_) in the dropdown list (all views of
+           the dashboard will be cached, which will take some time, but you can check the
+           progress at http://lbcouchdb.cern.ch:5984/_utils/status.html)
     b. or with a script (from LbNightlyTools)::
 
-            ./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nb-backup/_design/dashboard
+            ./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/bk-nightlies-nightly/_design/dashboard
 
 3. Repeat step 1 to ensure that the most recent data is replicated to the backup copy
 4. Redirect the dashboard web page traffic to the backup database
-    1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightly-builds`` with ``nb-backup``
+    1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightlies-nightly`` with ``bk-nightlies-nightly``
     2. (as root) call ``service httpd reload``
 5. Update/modify the Dashboard CouchApp in the main database
 6. Regenerate the views' caches of the main database
     a. either from the web
-        1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds
-        2. select all the views, one by one, in the dropdown list (each view will take some time to be cached)
+        1. go to http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly
+        2. select a view (under _dashboard_) in the dropdown list (all views of
+           the dashboard will be cached, which will take some time, but you can check the
+           progress at http://lbcouchdb.cern.ch:5984/_utils/status.html)
     b. or with a script (from LbNightlyTools)::
 
-            ./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nightly-builds/_design/dashboard
+            ./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly/_design/dashboard
 
 7. Replicate new documents from the backup instance to the main one
     1. same as step 1, but swapping source and target
@@ -229,7 +237,7 @@ To update the dashboard CouchApp avoiding downtime of the web page, we need to u
 8. Restore the original web page configuration (see step 4)
 9. Replicate once more from the backup instance to the main one (see step 7)
 
-*Note*: The replication an the view caching may take a lot of time, unless the are performed regularly (less data to copy/cache).
+*Note*: The replication and the view caching may take a lot of time, unless the are performed regularly (less data to copy/cache).
 
 .. _Jenkins: http://jenkins-ci.org/
 .. _CouchDB: http://couchdb.apache.org/
@@ -237,11 +245,7 @@ To update the dashboard CouchApp avoiding downtime of the web page, we need to u
 .. _LHCbNightlyConf: https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk
 
 .. _Nightly Builds View: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/
-.. _Nightly Builds Dashboard: https://buildlhcb.cern.ch/nightlies/
+.. _Nightly Builds Dashboard: https://lhcb-nightlies.cern.ch/
 
 
-.. _slot status: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot/buildTimeTrend
-.. _checkout status page: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-checkout/buildTimeTrend
-.. _build wrappers status page: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build/buildTimeTrend
-.. _platform build status page: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build-platform/buildTimeTrend\
-
+.. _Jenkins Jobs Status page: https://buildlhcb.cern.ch/jenkins/follow-builds-status

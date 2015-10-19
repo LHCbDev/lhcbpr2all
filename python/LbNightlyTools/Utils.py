@@ -378,10 +378,7 @@ class Dashboard(object):
         '''
         Return server URL and database name for the given flavour.
         '''
-        if flavour == 'nightly':
-            return ('https://buildlhcb.cern.ch/nightlies/', '_db')
-        else:
-            return ('https://buildlhcb.cern.ch/nightlies-%s/' % flavour, '_db')
+        return ('https://lhcb-nightlies.cern.ch/{0}/'.format(flavour), '_db')
 
     @classmethod
     def artifactsRoot(cls, flavour):
@@ -962,7 +959,7 @@ class JobParams(object):
 
 
 MR_COMMENT_TMPL = ('Validation started with [{name}#{id}]('
-                   'https://buildlhcb.cern.ch/nightlies/index.html'
+                   'http://lhcb-nightlies.cern.ch/nightly/index.html'
                    '?slot={name}&build_id={id})')
 def getMRsource(name_or_id, mreq_iid, token=None, slot=None):
     '''
