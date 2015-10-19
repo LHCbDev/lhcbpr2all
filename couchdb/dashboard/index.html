@@ -63,20 +63,7 @@
             </div>
 
             <div id="links" class="toolbar" style="text-align: center; padding: 0;">
-                <ul>
-                    <li><a href="https://buildlhcb.cern.ch/jenkins/follow-builds-status" target="_blank">Jenkins Status</a>
-                    </li>
-                    <li><a href="http://cern.ch/lhcb-nightlies/cgi-bin/overview_nightlies.py" target="_blank">Configuration overview</a>
-                    </li>
-                    <li><a href="http://cern.ch/lhcb-nightlies/editor.html" target="_blank">Configuration editor</a>
-                    </li>
-                    <li><a href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk/configuration.xml" target="_blank">Configuration SVN</a>
-                    </li>
-                    <li><a href="https://lhcb-coverity.cern.ch:8443" target="_blank">LHCb Coverity</a>
-                    </li>
-                    <li><a href="https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1" target="_blank">Report a bug</a>
-                    </li>
-                </ul>
+                <ul/>
             </div>
 
             <div id="summaries"></div>
@@ -201,6 +188,20 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <form id = "rebuild_info" target="_blank" method="POST" action="https://buildlhcb.cern.ch/jenkins/job/lhcb-release/buildWithParameters" style="display:none">
+	<fieldset>
+	<input type="text" name="platforms"/><br/>
+	<input type="text" name="projects_list"/><br/>
+	<input type="text" name="build_tool"/><br/>
+	<input type="hidden" name="delay" value="60sec"/>
+	<input type="submit" value="Submit"/>
+	</fieldset>
+    </form>
+
+    <div id="dialog-confirm" title="Rebuild slot?" style="display:none">
+      <p><table id="confirm-build-info"><tbody></tbody></table></p>
     </div>
 
     <!--  Custom rss configurator: -->

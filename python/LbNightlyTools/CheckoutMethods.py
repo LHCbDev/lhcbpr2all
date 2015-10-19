@@ -117,16 +117,30 @@ def ignore(desc, export=False):
     log.info('checkout not requested for %s', desc)
     return (0, 'checkout not requested for %s' % desc, '')
 
-def git(desc, url, commit='master', export=False, merge=None):
+# default URLs for known projects (project names must be lowercase)
+GIT_URLS = {'gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
+            'lhcbintegrationtests':
+                'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
+            'lhcbgrid': 'https://gitlab.cern.ch/lhcb/LHCbGrid.git',
+            }
+
+def git(desc, url=None, commit=None, export=False, merge=None):
     '''
     Checkout from a git repository.
 
     @param desc: Configuration.Project instance
-    @param url: git repository URL
-    @param commit: commit id to checkout
+    @param url: git repository URL (default derived from desc.name)
+    @param commit: commit id to checkout (default derived from desc.version)
     @param export: whether to use git "checkout" or "archive"
-    @param merge: merge options as (<url>, <commit> [, <remote_name>)
+    @param merge: merge options as (<url>, <commit> [, <remote_name>])
     '''
+    if not url:
+        url = GIT_URLS[desc.name.lower()]
+    if not commit:
+        if desc.version.lower() == 'head':
+            commit = 'master'
+        else:
+            commit = desc.version
     log = __log__.getChild('git')
     log.debug('checking out %s from %s (%s)', desc, url, commit)
     dest = desc.baseDir
@@ -475,27 +489,34 @@ def lhcbdirac(desc, export=False):
 
     return _merge_outputs(outputs)
 
-
-def lhcbgrid(desc, url=None, export=False):
+def lhcbgrid(proj, url=None, export=False, merge=None):
     '''
-    Special hybrid checkout needed to release LHCbGrid.
+    Special checkout needed to release LHCbGrid.
     '''
     log = __log__.getChild('lhcbgrid')
-    if url is None:
-        if desc.version.lower() == 'head':
-            url = 'http://svn.cern.ch/guest/lhcb/LHCbGrid/trunk'
-        else:
-            url = ('http://svn.cern.ch/guest/lhcb/LHCbGrid/tags/' +
-                   'LHCBGRID/LHCBGRID_' + desc.version)
+    import re
 
-    svn(desc, url=url, export=export)
+    if proj.version.lower() == 'head':
+        commit = 'master'
+    elif re.match(r'mr[0-9]+$', proj.version):
+        commit = 'master'
+        try:
+            merge = merge or getMRsource('lhcb/LHCbGrid', int(proj.version[2:]))
+        except:
+            log.error('error: failed to get details for merge request %s',
+                      proj.version[2:])
+            raise
+    else:
+        commit = proj.version
 
     outputs = []
+    outputs.append(git(proj, url, commit, export, merge))
+
     def call(*args, **kwargs):
         'helper to simplify the code'
         outputs.append(log_call(*args, **kwargs))
 
-    dest = desc.baseDir
+    dest = proj.baseDir
     log.debug('fixing requirements files')
     call(['make', 'clean'], cwd=dest)
     call(['make', 'requirements'], cwd=dest)
@@ -503,8 +524,7 @@ def lhcbgrid(desc, url=None, export=False):
     return _merge_outputs(outputs)
 
 
-GAUDI_GIT_URL = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
-def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
+def gaudi(proj, url=None, export=False, merge=None):
     '''
     Wrapper around the git function for Gaudi.
     '''
@@ -527,17 +547,6 @@ def gaudi(proj, url=GAUDI_GIT_URL, export=False, merge=None):
     return git(proj, url, commit, export, merge)
 
 
-LIT_GIT_URL = 'http://git.cern.ch/pub/LHCbIntegrationTests'
-def lhcbintegrationtests(proj, url=LIT_GIT_URL, export=False):
-    '''
-    Wrapper around the git function for LHCbIntegrationTests.
-    '''
-    if proj.version.lower() == 'head':
-        commit = 'master'
-    else:
-        commit = proj.version
-    return git(proj, url, commit, export)
-
 def ganga(desc, rootdir='.'):
     '''
     Special hybrid checkout needed to release Ganga.
@@ -559,6 +568,12 @@ def ganga(desc, rootdir='.'):
 
 # set default checkout method
 default = getpack # pylint: disable=C0103
+
+# use git to checkout projects with
+for proj_name in GIT_URLS:
+    if proj_name not in dir():
+        exec '{0} = git'.format(proj_name)
+del proj_name
 
 def getMethod(method=None):
     '''
