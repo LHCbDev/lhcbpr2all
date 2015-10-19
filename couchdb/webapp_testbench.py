@@ -3,6 +3,7 @@
 import SimpleHTTPServer
 import os
 import shutil
+import gzip
 
 from subprocess import call
 
@@ -47,6 +48,13 @@ class ForwardHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 cmd = ['curl', '-k', self.forward_url + self.path, '-o', path]
                 self.log_message('forward request: %s', cmd)
                 call(cmd)
+                try:
+                    with gzip.open(path) as f:
+                        data = f.read()
+                    with open(path, 'wb') as f:
+                        f.write(data)
+                except IOError:
+                    pass
 
         try:
             # Always read in binary mode. Opening files in text mode may cause
