@@ -244,30 +244,31 @@ use a fallback replica.
 
 1. Replicate the dashboard database to a backup instance
 
-  1. connect to http://buildlhcb.cern.ch:5984/_utils/replicator.html (only a
+  1. connect to http://lbcouchdb.cern.ch:5984/_utils/replicator.html (only a
      few machines can do it)
-  2. select the local database ``nightly-builds`` as source and ``nb-backup``
-     as destination
+  2. select the local database ``nightlies-nightly`` as source and
+     ``nightlies-nightly-bk`` as destination
   3. click on the *Replicate* button and wait
 
 2. Ensure that the views' caches of the backup database are up to date
 
   a. either from the web
 
-    1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup
-    2. select all the views, one by one, in the dropdown list (each view
-       will take some time to be cached)
+    1. go to http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly-bk
+    2. select a view (under _dashboard_) in the dropdown list (all views of
+       the dashboard will be cached, which will take some time, but you can check the
+       progress at http://lbcouchdb.cern.ch:5984/_utils/status.html)
 
   b. or with a script (from LbNightlyTools)::
 
-         ./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nb-backup/_design/dashboard
+         ./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly-bk/_design/dashboard
 
 3. Repeat step 1 to ensure that the most recent data is replicated to the backup
    copy
 4. Redirect the dashboard web page traffic to the backup database
 
-  1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightly-builds``
-     with ``nb-backup``
+  1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightlies-nightly``
+     with ``nightlies-nightly-bk``
   2. (as root) call ``service httpd reload``
 
 5. Update/modify the Dashboard CouchApp in the main database
@@ -275,13 +276,14 @@ use a fallback replica.
 
   a. either from the web
 
-    1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds
-    2. select all the views, one by one, in the dropdown list (each view
-       will take some time to be cached)
+    1. go to http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly
+    2. select a view (under _dashboard_) in the dropdown list (all views of
+       the dashboard will be cached, which will take some time, but you can check the
+       progress at http://lbcouchdb.cern.ch:5984/_utils/status.html)
 
   b. or with a script (from LbNightlyTools)::
 
-         ./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nightly-builds/_design/dashboard
+         ./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly/_design/dashboard
 
 7. Replicate new documents from the backup instance to the main one
 
@@ -292,7 +294,7 @@ use a fallback replica.
 9. Replicate once more from the backup instance to the main one (see step 7)
 
 *Note*: The replication and the view caching may take a lot of time, unless the
-        are performed regularly (less data to copy/cache).
+        updates are performed regularly (less data to copy/cache).
 
 .. _Jenkins: http://jenkins-ci.org/
 .. _CouchDB: http://couchdb.apache.org/
@@ -300,6 +302,6 @@ use a fallback replica.
 .. _LHCbNightlyConf: https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk
 
 .. _Nightly Builds View: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/
-.. _Nightly Builds Dashboard: https://buildlhcb.cern.ch/nightlies/
+.. _Nightly Builds Dashboard: https://lhcb-nightlies.cern.ch/
 
 .. _Jenkins Jobs Status page: https://buildlhcb.cern.ch/jenkins/follow-builds-status

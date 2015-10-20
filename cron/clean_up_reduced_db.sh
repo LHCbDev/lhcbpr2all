@@ -13,6 +13,8 @@
 # Ensure that the dasboard's database contains all the summaries from the
 # builds.
 
+# Note: this script must be run from the machine where CouchDB is installed
+
 # prepare environment
 rootdir=$(dirname $0)/..
 cd $rootdir
@@ -29,7 +31,7 @@ from datetime import date, timedelta, datetime
 print('%s: removing old data from reduced db' % datetime.now())
 # we keep only 14 days
 end_date = (date.today() - timedelta(days=15)).isoformat()
-d = Dashboard(db_info=('http://buildlhcb.cern.ch:5984', 'nightlies-reduced'))
+d = Dashboard(db_info=('http://localhost:5984', 'nightlies-reduced'))
 for day, slot, id in d.slotsByDay(end=end_date):
     print('-> cleaning %s %s %s' % (day, slot, id))
     d.dropBuild(slot, id)

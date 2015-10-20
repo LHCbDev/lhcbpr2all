@@ -479,7 +479,7 @@ restart the builds).</p>
 <p>If there are pathologic problems with the build of a slot on one platform, or
 before triggering its rebuild, we can stop it following these steps:</p>
 <ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/nightlies/">Nightly Builds Dashboard</a></li>
+<li>go to the <a class="reference external" href="https://lhcb-nightlies.cern.ch/">Nightly Builds Dashboard</a></li>
 <li>locate on the page the slot/platform to stop</li>
 <li>click on the corresponding Jenkins icon</li>
 <li>click on the small red square icon with an X at the top right, close to the
@@ -565,7 +565,7 @@ Platform</a>), if needed</li>
 <li>click on the <em>Rebuild</em> button not modifying the content of the fields</li>
 </ol>
 <p>Note that you can access the specific build page from the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status
-page</a> if you cannot find it through the <a class="reference external" href="https://buildlhcb.cern.ch/nightlies/">Nightly Builds Dashboard</a>.</p>
+page</a> if you cannot find it through the <a class="reference external" href="https://lhcb-nightlies.cern.ch/">Nightly Builds Dashboard</a>.</p>
 </div>
 </div>
 <div class="section" id="dashboard-database-manipulation">
@@ -617,10 +617,10 @@ use a fallback replica.</p>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>connect to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/replicator.html">http://buildlhcb.cern.ch:5984/_utils/replicator.html</a> (only a
+<li>connect to <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/replicator.html">http://lbcouchdb.cern.ch:5984/_utils/replicator.html</a> (only a
 few machines can do it)</li>
-<li>select the local database <tt class="docutils literal"><span class="pre">nightly-builds</span></tt> as source and <tt class="docutils literal"><span class="pre">nb-backup</span></tt>
-as destination</li>
+<li>select the local database <tt class="docutils literal"><span class="pre">nightlies-nightly</span></tt> as source and
+<tt class="docutils literal"><span class="pre">nightlies-nightly-bk</span></tt> as destination</li>
 <li>click on the <em>Replicate</em> button and wait</li>
 </ol>
 </blockquote>
@@ -633,15 +633,16 @@ as destination</li>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup">http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup</a></li>
-<li>select all the views, one by one, in the dropdown list (each view
-will take some time to be cached)</li>
+<li>go to <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly-bk">http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly-bk</a></li>
+<li>select a view (under _dashboard_) in the dropdown list (all views of
+the dashboard will be cached, which will take some time, but you can check the
+progress at <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/status.html">http://lbcouchdb.cern.ch:5984/_utils/status.html</a>)</li>
 </ol>
 </blockquote>
 <ol class="loweralpha" start="2">
 <li><p class="first">or with a script (from LbNightlyTools):</p>
 <pre class="literal-block">
-./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nb-backup/_design/dashboard
+./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly-bk/_design/dashboard
 </pre>
 </li>
 </ol>
@@ -653,8 +654,8 @@ copy</li>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>edit <tt class="docutils literal">/etc/httpd/conf.d/couchdb.conf</tt> replacing  <tt class="docutils literal"><span class="pre">nightly-builds</span></tt>
-with <tt class="docutils literal"><span class="pre">nb-backup</span></tt></li>
+<li>edit <tt class="docutils literal">/etc/httpd/conf.d/couchdb.conf</tt> replacing  <tt class="docutils literal"><span class="pre">nightlies-nightly</span></tt>
+with <tt class="docutils literal"><span class="pre">nightlies-nightly-bk</span></tt></li>
 <li>(as root) call <tt class="docutils literal">service httpd reload</tt></li>
 </ol>
 </blockquote>
@@ -668,15 +669,16 @@ with <tt class="docutils literal"><span class="pre">nb-backup</span></tt></li>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds">http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds</a></li>
-<li>select all the views, one by one, in the dropdown list (each view
-will take some time to be cached)</li>
+<li>go to <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly">http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly</a></li>
+<li>select a view (under _dashboard_) in the dropdown list (all views of
+the dashboard will be cached, which will take some time, but you can check the
+progress at <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/status.html">http://lbcouchdb.cern.ch:5984/_utils/status.html</a>)</li>
 </ol>
 </blockquote>
 <ol class="loweralpha" start="2">
 <li><p class="first">or with a script (from LbNightlyTools):</p>
 <pre class="literal-block">
-./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nightly-builds/_design/dashboard
+./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly/_design/dashboard
 </pre>
 </li>
 </ol>
@@ -697,7 +699,7 @@ will take some time to be cached)</li>
 </ol>
 <dl class="docutils">
 <dt><em>Note</em>: The replication and the view caching may take a lot of time, unless the</dt>
-<dd>are performed regularly (less data to copy/cache).</dd>
+<dd>updates are performed regularly (less data to copy/cache).</dd>
 </dl>
 </div>
 </div>

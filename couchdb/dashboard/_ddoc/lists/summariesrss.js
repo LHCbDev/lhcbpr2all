@@ -1,18 +1,14 @@
 function(head, req) {
     // server URLs (default values)
-	var baseUrl = 'https://buildlhcb.cern.ch/';
+	var baseUrl = 'http://lhcb-nightlies.cern.ch/';
 
     var rssServerLocation;
     var resultServerLocation;
 
     var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
-    if (flavour) {
-        rssServerLocation = baseUrl + 'nightlies-' + flavour[1] + '/';
-        resultServerLocation = baseUrl + 'artifacts/' + flavour[1] + '/';
-    } else {
-        rssServerLocation = baseUrl + 'nightlies/';
-        resultServerLocation = baseUrl + 'artifacts/';
-    }
+    flavour = flavour ? flavour[1] : 'nightly';
+    rssServerLocation = baseUrl + flavour + '/';
+    resultServerLocation = baseUrl + 'artifacts/' + flavour + '/';
 
     //protecting regex
     var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");
