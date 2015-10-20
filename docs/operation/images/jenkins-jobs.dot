@@ -1,0 +1,30 @@
+digraph "Jenkins-scripts" {
+
+"cron" [shape=circle];
+
+cron -> { rank = same; node [shape=box3d];
+  "nightly-slot";
+  // "nightly-release-poll";
+  "nightly-slot-tests-poll";
+  "periodic-slot-tests-poll";
+}
+
+// Jenkins jobs
+subgraph jobs {
+  node [shape=box3d];
+  //label = "Jenkins jobs";
+
+  "nightly-slot" -> "nightly-slot-checkout";
+  "nightly-slot-checkout" -> "nightly-slot-precondition";
+  "nightly-slot-checkout" -> "nightly-slot-build-platform";
+  "nightly-slot-precondition" -> "nightly-slot-build-platform";
+
+  "nightly-slot-tests-poll" -> "nightly-slot-test-project-platform";
+
+  "periodic-slot-tests-poll" -> "nightly-slot-test-project-platform";
+
+  // "nightly-release-poll" -> "lhcb-release" -> "nightly-slot-checkout";
+  // "lhcb-gaudi-merge" -> "nightly-slot-checkout";
+}
+
+}
