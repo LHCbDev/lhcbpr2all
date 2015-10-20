@@ -8,16 +8,22 @@ var FILTER_DEFAULT = {
     projects: []
 };
 
-// special artifacts locations
-var flavour = /:\/\/[^/]+\/(nightlies-)?([^/]+)\//.exec(window.location);
-if (!flavour || flavour[2] == 'nightlies') {
-    flavour = 'nightly';
-} else {
-    flavour = flavour[2];
+// default values
+var DB_INFO = {
+    flavour: "",
+    links: []
 }
-document.title = 'Summaries of ' + flavour + ' builds for LHCb';
-ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour + "/";
-if (flavour == 'testing') {
+$.ajax({
+    async: false,
+    url: "_db/db-info",
+    dataType: "json",
+    success: function(data){ DB_INFO = data; }
+});
+
+document.title = 'Summaries of ' + DB_INFO.flavour + ' builds for LHCb';
+
+ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + DB_INFO.flavour + "/";
+if (DB_INFO.flavour == 'testing') {
     // special url for testing slots
     JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
 }
@@ -34,7 +40,7 @@ var REQUESTED_PROJECT = getParameterByName("project");
 var REQUESTED_DAY = getParameterByName("day");
 var REQUESTED_BUILD_ID = getParameterByName("build_id");
 
-if (flavour == 'release')
+if (DB_INFO.flavour == 'release')
     REQUESTED_SLOT = 'lhcb-release';
 
 // variables set from cookies
@@ -401,7 +407,7 @@ jQuery.fn.lbSlotTable = function(value, spinkey) {
 }
 
 function slotBlock(data) {
-    var isRelease = flavour == 'release';
+    var isRelease = DB_INFO.flavour == 'release';
 
     var build_tool_logo = "";
     if (data.build_tool) {
@@ -643,7 +649,7 @@ function applyFilters() {
 function prepareFilterDialog() {
     // prepare the dialog data
 
-    if (flavour != 'release') {
+    if (DB_INFO.flavour != 'release') {
         // the list of days is known, the others are retrieved
         $('#filter-dialog-days').attr("loaded", "true")
         initFilterCheckboxes('days');
@@ -661,7 +667,7 @@ function prepareFilterDialog() {
 
     // initialize tabbed view
     $("#filter-dialog-tabs").tabs();
-    if (flavour != 'release')
+    if (DB_INFO.flavour != 'release')
         $('#filter-dialog-slots > table').hide();
     $('#filter-dialog-projects > table').hide();
 
@@ -671,7 +677,7 @@ function prepareFilterDialog() {
         modal: true,
         buttons: {
             OK: function() {
-                if (flavour != 'release') {
+                if (DB_INFO.flavour != 'release') {
                     getFilterCheckboxes('days');
                     getFilterCheckboxes('slots');
                 }
@@ -683,7 +689,7 @@ function prepareFilterDialog() {
             },
             Cancel: function() {
                 // restore previous settings
-                if (flavour != 'release') {
+                if (DB_INFO.flavour != 'release') {
                     initFilterCheckboxes('days');
                     initFilterCheckboxes('slots');
                 }
@@ -695,7 +701,7 @@ function prepareFilterDialog() {
                 filters = FILTER_DEFAULT;
                 applyFilters();
 
-                if (flavour != 'release') {
+                if (DB_INFO.flavour != 'release') {
                     initFilterCheckboxes('days');
                     initFilterCheckboxes('slots');
                 }
@@ -708,7 +714,7 @@ function prepareFilterDialog() {
     $("#set-filter")
         .button()
         .click(function() {
-            if (flavour != 'release') fillDialogTab('slots');
+            if (DB_INFO.flavour != 'release') fillDialogTab('slots');
             fillDialogTab('projects');
             $("#filter-dialog").dialog("open");
         });
@@ -738,25 +744,11 @@ function prepareRssForm() {
 }
 
 $(function() {
+    var flavour = DB_INFO.flavour;
     $('#banner h1').text('LHCb ' + flavour[0].toUpperCase() + flavour.slice(1) + ' Builds');
-    var top_links = [['https://buildlhcb.cern.ch/jenkins/follow-builds-status', 'Jenkins Status'],
-                     ['https://cern.ch/lhcb-nightlies/cgi-bin/overview_nightlies.py', 'Configuration overview'],
-                     ['https://cern.ch/lhcb-nightlies/editor.html', 'Configuration editor'],
-                     ['https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk/configuration.xml', 'Configuration (SVN)'],
-                     ['https://lhcb-coverity.cern.ch:8443', 'LHCb Coverity'],
-                     ['https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1' ,'Report a bug']
-                    ];
-    if (flavour == 'release') {
-        top_links = [['https://twiki.cern.ch/twiki/bin/view/LHCb/ProjectRelease', 'Project Deployment Instructions'],
-                     ['https://sft.its.cern.ch/jira/browse/LHCBDEP', 'LHCb Deployment (JIRA)'],
-                     ['https://buildlhcb.cern.ch/jenkins/plugin/follow-builds-status/filter?selectedView=release', 'Jenkins Status'],
-                     ['https://buildlhcb.cern.ch/jenkins/job/lhcb-release/build', 'Manually Start lhcb-release'],
-                     ['https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1' ,'Report a bug']
-                    ];
-    }
     var toolbar = $('#links ul');
-    $.each(top_links, function(idx, link_data){
-        toolbar.append('<li><a href="' + link_data[0] + '" target="_blank">' + link_data[1] + '</a>');
+    $.each(DB_INFO.links, function(idx, link_data){
+        toolbar.append('<li><a href="' + link_data.url + '" target="_blank">' + link_data.name + '</a>');
     });
 
     if (REQUESTED_DAY || REQUESTED_SLOT || REQUESTED_PROJECT) {
