@@ -15,6 +15,7 @@ if (!flavour || flavour[2] == 'nightlies') {
 } else {
     flavour = flavour[2];
 }
+document.title = 'Summaries of ' + flavour + ' builds for LHCb';
 ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour + "/";
 if (flavour == 'testing') {
     // special url for testing slots
