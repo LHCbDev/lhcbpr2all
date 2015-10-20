@@ -780,13 +780,18 @@ $(function() {
                        'include_docs': 'true'},
                 dataType: "json"})
             .done(function(data) {
-                var slot = "Cannot find build " + REQUESTED_BUILD_ID +
-                           " for slot " + REQUESTED_SLOT;
-                if (data.rows.length) slot = slotBlock(data.rows[0].doc);
-                $('#summaries')
-                .append($('<div class="slots"/>')
-                        .append(slot));
-                slot.lbSlotTable(data.rows[0].doc, null);
+                var slots = $('<div class="slots"/>')
+                $('#summaries').append(slots);
+                if (data.rows.length) {
+                    var value = data.rows[0].doc;
+                    var slot = slotBlock(value);
+                    slots.append(slot);
+                    slot.lbSlotTable(value, null);
+                    slot.find('button.rebuild-button').rebuild_btn(value);
+                } else {
+                    slots.append("Cannot find build " + REQUESTED_BUILD_ID +
+                                 " for slot " + REQUESTED_SLOT);
+                }
             });
     } else if (flavour == 'release') {
         var today = moment();
