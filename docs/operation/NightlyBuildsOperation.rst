@@ -26,21 +26,22 @@ converted to it.
 
 A *project* in a *slot* is a well defined version of a LHCb software project,
 which could be a *tagged* version (as it can be released) or the latest version
-in the repository (using the special version tag `HEAD`). A *project* can also
+in the repository (using the special version tag ``HEAD``). A *project* can also
 be tuned by changing the version used for one (or more) of its packages with
 respect to the one that is implied by the specified version of the project (for
-example use a released version of a package in the `HEAD` version of the project
+example use a released version of a package in the ``HEAD`` version of the project
 or vice versa).
 
 Each *project* in each *slot* is built and tested on one or more *platforms*,
 i.e. combinations of CPU architecture, Operating System (OS), compiler and
 optimization level.  A *platform* is identified by a string where the four parts
-of its definition are separated by a `-`, for example `x86_64-slc6-gcc46-opt`
+of its definition are separated by a ``-``, for example ``x86_64-slc6-gcc46-opt``
 means Intel/AMD (x86) 64 bits architecture, Scientific Linux CERN 6 (SLC6), gcc
 4.6.x and optimized build.
 
 Configuration
 =============
+**TO-DO**
 
 
 Scheduling
@@ -219,8 +220,8 @@ is just noise in the web page.
 1. if you need to remove the current build of the day:
 
   1. connect to ``buildlhcb.cern.ch`` as *lhcbsoft*
-  2. remove the symlink ``/data/artifacts/<slot>/<day>``, where ``<day>`` is
-     the current date as yyyy-mm-dd
+  2. remove the symlink ``/data/artifacts/nightly/<slot>/<day>``, where
+     ``<day>`` is the current date as yyyy-mm-dd
 
 2. as *lhcbsoft* set up the environment for the Nightly Build tools
 
@@ -252,7 +253,7 @@ use a fallback replica.
 2. Ensure that the views' caches of the backup database are up to date
 
   a. either from the web
-  
+
     1. go to http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup
     2. select all the views, one by one, in the dropdown list (each view
        will take some time to be cached)

@@ -393,21 +393,22 @@ on top of a released version version of Gaudi (and the externals), while
 converted to it.</p>
 <p>A <em>project</em> in a <em>slot</em> is a well defined version of a LHCb software project,
 which could be a <em>tagged</em> version (as it can be released) or the latest version
-in the repository (using the special version tag <cite>HEAD</cite>). A <em>project</em> can also
+in the repository (using the special version tag <tt class="docutils literal">HEAD</tt>). A <em>project</em> can also
 be tuned by changing the version used for one (or more) of its packages with
 respect to the one that is implied by the specified version of the project (for
-example use a released version of a package in the <cite>HEAD</cite> version of the project
+example use a released version of a package in the <tt class="docutils literal">HEAD</tt> version of the project
 or vice versa).</p>
 <p>Each <em>project</em> in each <em>slot</em> is built and tested on one or more <em>platforms</em>,
 i.e. combinations of CPU architecture, Operating System (OS), compiler and
 optimization level.  A <em>platform</em> is identified by a string where the four parts
-of its definition are separated by a <cite>-</cite>, for example <cite>x86_64-slc6-gcc46-opt</cite>
+of its definition are separated by a <tt class="docutils literal">-</tt>, for example <tt class="docutils literal"><span class="pre">x86_64-slc6-gcc46-opt</span></tt>
 means Intel/AMD (x86) 64 bits architecture, Scientific Linux CERN 6 (SLC6), gcc
 4.6.x and optimized build.</p>
 </div>
 </div>
 <div class="section" id="configuration">
 <h1><a class="toc-backref" href="#id3">Configuration</a></h1>
+<p><strong>TO-DO</strong></p>
 </div>
 <div class="section" id="scheduling">
 <h1><a class="toc-backref" href="#id4">Scheduling</a></h1>
@@ -581,8 +582,8 @@ is just noise in the web page.</p>
 <blockquote>
 <ol class="arabic simple">
 <li>connect to <tt class="docutils literal">buildlhcb.cern.ch</tt> as <em>lhcbsoft</em></li>
-<li>remove the symlink <tt class="docutils literal"><span class="pre">/data/artifacts/&lt;slot&gt;/&lt;day&gt;</span></tt>, where <tt class="docutils literal">&lt;day&gt;</tt> is
-the current date as yyyy-mm-dd</li>
+<li>remove the symlink <tt class="docutils literal"><span class="pre">/data/artifacts/nightly/&lt;slot&gt;/&lt;day&gt;</span></tt>, where
+<tt class="docutils literal">&lt;day&gt;</tt> is the current date as yyyy-mm-dd</li>
 </ol>
 </blockquote>
 <ol class="arabic simple" start="2">
