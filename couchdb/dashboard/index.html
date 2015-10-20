@@ -16,20 +16,20 @@
 
     <link href="css/lhcb.css" rel="stylesheet" type="text/css" media="screen" />
 
-    <link href="css/lhcb-theme/jquery-ui-1.10.2.custom.min.css" rel="stylesheet">
+    <link href="css/lhcb-theme/jquery-ui-1.11.4.custom.min.css" rel="stylesheet">
 
     <link href="css/dashboard.css" rel="stylesheet">
 
     <link rel="stylesheet" type="text/css" href="css/rssform.css" />
 
     <script src="js/moment.min.js"></script>
-    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/jquery-2.1.4.min.js"></script>
     <script src="js/jquery.cookie.js"></script>
     <script src="js/main.js"></script>
 
 
     <script src="js/rssform.js"></script>
-    <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
+    <script src="js/jquery-ui-1.11.4.custom.min.js"></script>
 
 </head>
 
@@ -47,7 +47,7 @@
 
     <div id="container" class="clear-block">
         <div id="banner">
-            <a href="http://lhcb.cern.ch" id="link_lhcb" name="link_lhcb">
+            <a href="http://lhcb.cern.ch" id="link_lhcb">
                 <img src="images/lhcb_logo.png" alt="LHCb" />
             </a>
             <h1></h1>
@@ -74,7 +74,7 @@
         <div id="footer">
             <p>CERN - European Laboratory for Particle Physics, CH-1211, Genève 23, Switzerland</p>
             <!-- THE CERN_LOGO IS REQUIRED BY THE GRAPHIC CHARTER -->
-            <a id="cern_logo" class="badge_80" href="http://www.cern.ch" name="cern_logo">
+            <a id="cern_logo" class="badge_80" href="http://www.cern.ch">
                 <span>cern.ch</span>
             </a>
         </div>
@@ -190,7 +190,7 @@
         </div>
     </div>
 
-    <form id = "rebuild_info" target="_blank" method="POST" action="https://buildlhcb.cern.ch/jenkins/job/lhcb-release/buildWithParameters" style="display:none">
+    <form id = "rebuild_info" target="_blank" method="GET" action="https://buildlhcb.cern.ch/jenkins/userContent/rebuild-lhcb-release.html" style="display:none">
 	<fieldset>
 	<input type="text" name="platforms"/><br/>
 	<input type="text" name="projects_list"/><br/>
@@ -201,7 +201,7 @@
     </form>
 
     <div id="dialog-confirm" title="Rebuild slot?" style="display:none">
-      <p><table id="confirm-build-info"><tbody></tbody></table></p>
+      <table id="confirm-build-info"><tbody></tbody></table>
     </div>
 
     <!--  Custom rss configurator: -->
