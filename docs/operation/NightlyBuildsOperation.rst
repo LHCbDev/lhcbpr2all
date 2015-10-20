@@ -204,21 +204,21 @@ To update the dashboard CouchApp avoiding downtime of the web page, we need to u
 
 1. Replicate the dashboard database to a backup instance
     1. connect to http://lbcouchdb.cern.ch:5984/_utils/replicator.html (only a few machines can do it)
-    2. select the local database ``nightlies-nightly`` as source and ``bk-nightlies-nightly`` as destination
+    2. select the local database ``nightlies-nightly`` as source and ``nightlies-nightly-bk`` as destination
     3. click on the *Replicate* button and wait
 2. Ensure that the views' caches of the backup database are up to date
     a. either from the web
-        1. go to http://lbcouchdb.cern.ch:5984/_utils/database.html?bk-nightlies-nightly
+        1. go to http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly-bk
         2. select a view (under _dashboard_) in the dropdown list (all views of
            the dashboard will be cached, which will take some time, but you can check the
            progress at http://lbcouchdb.cern.ch:5984/_utils/status.html)
     b. or with a script (from LbNightlyTools)::
 
-            ./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/bk-nightlies-nightly/_design/dashboard
+            ./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly-bk/_design/dashboard
 
 3. Repeat step 1 to ensure that the most recent data is replicated to the backup copy
 4. Redirect the dashboard web page traffic to the backup database
-    1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightlies-nightly`` with ``bk-nightlies-nightly``
+    1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightlies-nightly`` with ``nightlies-nightly-bk``
     2. (as root) call ``service httpd reload``
 5. Update/modify the Dashboard CouchApp in the main database
 6. Regenerate the views' caches of the main database
