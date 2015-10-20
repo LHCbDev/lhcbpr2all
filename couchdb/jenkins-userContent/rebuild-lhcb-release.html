@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script>
+<meta charset="UTF-8">
+<script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+<script>
     var JENKINS_JOB = 'https://buildlhcb.cern.ch/jenkins/job/lhcb-release';
     function getParameterByName(name) {
         name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -12,23 +12,31 @@
         return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
     }
     $(function(){
-        $.ajax({
-            url: JENKINS_JOB + '/buildWithParameters',
-            method: 'POST',
-            data: {
-                delay: '60sec',
-                projects_list: getParameterByName('projects_list'),
-                platforms: getParameterByName('platforms'),
-                build_tool: getParameterByName('build_tool')
-            }
-        }).done(function(){
+        var data = {
+            delay: '60sec',
+            projects_list: getParameterByName('projects_list'),
+            platforms: getParameterByName('platforms'),
+            build_tool: getParameterByName('build_tool')
+        };
+        if (data.projects_list && data.platforms){
+            $.ajax({
+                url: JENKINS_JOB + '/buildWithParameters',
+                method: 'POST',
+                data: data
+            }).done(function(){
+                document.location = JENKINS_JOB;
+            }).fail(function(){
+                alert('Error starting the job.');
+                document.location = JENKINS_JOB;
+            });
+        } else {
+            alert('Missing parameters for the rebuild.');
             document.location = JENKINS_JOB;
-        }).fail(function(){
-            alert('Error starting the job.');
-            document.location = JENKINS_JOB;
-        });
+        }
     });
     </script>
 </head>
-<body>Redirecting to Jenkins...</body>
+<body>
+	<p>Redirecting to Jenkins...</p>
+</body>
 </html>
