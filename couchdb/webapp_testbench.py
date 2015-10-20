@@ -74,7 +74,7 @@ class ForwardHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     webapp = os.path.join(os.path.dirname(__file__), 'dashboard')
-    baseurl = 'http://lhcb-nightlies.cern.ch'
+    baseurl = 'https://lhcb-nightlies.cern.ch'
     import sys
     if '-h' in sys.argv or '--help' in sys.argv:
         print 'Usage: %s [WebApp-dir [forward-url [port]]' % sys.argv[0]

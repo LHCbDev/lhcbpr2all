@@ -1,6 +1,6 @@
 function(head, req) {
     // server URLs (default values)
-	var baseUrl = 'http://lhcb-nightlies.cern.ch/';
+	var baseUrl = 'https://lhcb-nightlies.cern.ch/';
 
     var rssServerLocation;
     var resultServerLocation;

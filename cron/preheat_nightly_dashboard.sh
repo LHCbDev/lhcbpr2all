@@ -50,8 +50,8 @@ else
 fi
 
 if [ -z "$ddocurl" ] ; then
-    ddocurl=http://lhcb-nightlies.cern.ch/${page}/_ddoc
-    viewbase=http://lhcb-nightlies.cern.ch/${page}/_view
+    ddocurl=https://lhcb-nightlies.cern.ch/${page}/_ddoc
+    viewbase=https://lhcb-nightlies.cern.ch/${page}/_view
 else
     viewbase=${ddocurl}/_view
 fi

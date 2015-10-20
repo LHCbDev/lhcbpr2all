@@ -959,7 +959,7 @@ class JobParams(object):
 
 
 MR_COMMENT_TMPL = ('Validation started with [{name}#{id}]('
-                   'http://lhcb-nightlies.cern.ch/nightly/index.html'
+                   'https://lhcb-nightlies.cern.ch/nightly/index.html'
                    '?slot={name}&build_id={id})')
 def getMRsource(name_or_id, mreq_iid, token=None, slot=None):
     '''
