@@ -82,10 +82,12 @@ class Script(BaseScript):
         with chdir(self.build_dir):
             def before(proj):
                 self.dump_json({'project': proj.name,
-                                'started': datetime.now().isoformat()})
-            for proj, _result in self.slot.testGen(projects=opts.projects, before=before):
+                                'started': datetime.now().isoformat()},
+                               update=False)
+            for proj, _result in self.slot.testGen(projects=opts.projects,
+                                                   before=before):
                 html_src = self._buildDir(proj,
-                                          'build.{}'.format(self.platform),
+                                          'build.{0}'.format(self.platform),
                                           'html')
                 summary_json = os.path.join(html_src, 'summary.json')
                 html_dst = self._summaryDir(proj, 'html')

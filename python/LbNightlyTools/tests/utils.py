@@ -38,6 +38,7 @@ class MockFunc(object):
     def __init__(self):
         self.args = None
         self.kwargs = None
+        self.__name__ = 'mock'
     def __call__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs

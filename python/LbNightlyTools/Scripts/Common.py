@@ -284,15 +284,16 @@ class BaseScript(LbUtils.Script.PlainScript):
         '''
         return os.path.join(self.build_dir, proj.baseDir, *subdirs)
 
-    def dump_json(self, data):
+    def dump_json(self, data, update=True):
         '''
         Write a JSON file into the special artifacts 'db' directory.
 
         @param data: mapping with the data to write
+        @param update: whether to update existing data or to replace it
         '''
         output_data = dict(self.json_tmpl)
         output_data.update(data)
-        self.dashboard.publish(output_data)
+        self.dashboard.publish(output_data, update=update)
 
     def deploy_artifacts(self):
         '''

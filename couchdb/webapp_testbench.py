@@ -3,6 +3,7 @@
 import SimpleHTTPServer
 import os
 import shutil
+import gzip
 
 from subprocess import call
 
@@ -47,6 +48,13 @@ class ForwardHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 cmd = ['curl', '-k', self.forward_url + self.path, '-o', path]
                 self.log_message('forward request: %s', cmd)
                 call(cmd)
+                try:
+                    with gzip.open(path) as f:
+                        data = f.read()
+                    with open(path, 'wb') as f:
+                        f.write(data)
+                except IOError:
+                    pass
 
         try:
             # Always read in binary mode. Opening files in text mode may cause
@@ -66,7 +74,7 @@ class ForwardHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     webapp = os.path.join(os.path.dirname(__file__), 'dashboard')
-    baseurl = 'https://buildlhcb.cern.ch/nightlies'
+    baseurl = 'https://lhcb-nightlies.cern.ch'
     import sys
     if '-h' in sys.argv or '--help' in sys.argv:
         print 'Usage: %s [WebApp-dir [forward-url [port]]' % sys.argv[0]

@@ -378,10 +378,7 @@ class Dashboard(object):
         '''
         Return server URL and database name for the given flavour.
         '''
-        if flavour == 'nightly':
-            return ('https://buildlhcb.cern.ch/nightlies/', '_db')
-        else:
-            return ('https://buildlhcb.cern.ch/nightlies-%s/' % flavour, '_db')
+        return ('https://lhcb-nightlies.cern.ch/{0}/'.format(flavour), '_db')
 
     @classmethod
     def artifactsRoot(cls, flavour):
@@ -447,7 +444,7 @@ class Dashboard(object):
                 os.makedirs(dumpdir)
             self._log.debug('keep JSON back-ups in %s', dumpdir)
 
-    def publish(self, data, name=None):
+    def publish(self, data, name=None, update=True):
         '''
         Store the given dictionary in the dashboard database.
 
@@ -473,9 +470,14 @@ class Dashboard(object):
                 self._log.debug('sending')
                 self.db[name] = data
             except ResourceConflict:
-                self._log.debug('%s already present: update', name)
+                self._log.debug('%s already present: %s', name,
+                                'update' if update else 'overwrite')
                 new_data = self.db[name]
-                new_data.update(data)
+                if update:
+                    new_data.update(data)
+                else:
+                    data['_rev'] = new_data['_rev']
+                    new_data = data
                 self.db[name] = new_data
             except (Unauthorized, ServerError), ex:
                 self._log.warning('could not send %s: %s', name, ex)
@@ -956,7 +958,10 @@ class JobParams(object):
         return '\n'.join(data)
 
 
-def getMRsource(name_or_id, mreq_iid, token=None):
+MR_COMMENT_TMPL = ('Validation started with [{name}#{id}]('
+                   'https://lhcb-nightlies.cern.ch/nightly/index.html'
+                   '?slot={name}&build_id={id})')
+def getMRsource(name_or_id, mreq_iid, token=None, slot=None):
     '''
     Retrieve details of a merge request in gitlab.cern.ch.
 
@@ -989,7 +994,11 @@ def getMRsource(name_or_id, mreq_iid, token=None):
                    mreq['source_branch'],
                    mreq['author']['username'])
 
-    except RuntimeError, err:
+        if slot and slot.build_id:
+            note = MR_COMMENT_TMPL.format(name=slot.name, id=slot.build_id)
+            server.addcommenttomergerequest(project['id'], mreq['id'], note)
+
+    except Exception, err:
         logging.error(str(err))
         raise
 

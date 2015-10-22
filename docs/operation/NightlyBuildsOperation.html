@@ -393,40 +393,44 @@ on top of a released version version of Gaudi (and the externals), while
 converted to it.</p>
 <p>A <em>project</em> in a <em>slot</em> is a well defined version of a LHCb software project,
 which could be a <em>tagged</em> version (as it can be released) or the latest version
-in the repository (using the special version tag <cite>HEAD</cite>). A <em>project</em> can also
+in the repository (using the special version tag <tt class="docutils literal">HEAD</tt>). A <em>project</em> can also
 be tuned by changing the version used for one (or more) of its packages with
 respect to the one that is implied by the specified version of the project (for
-example use a released version of a package in the <cite>HEAD</cite> version of the project
+example use a released version of a package in the <tt class="docutils literal">HEAD</tt> version of the project
 or vice versa).</p>
 <p>Each <em>project</em> in each <em>slot</em> is built and tested on one or more <em>platforms</em>,
 i.e. combinations of CPU architecture, Operating System (OS), compiler and
 optimization level.  A <em>platform</em> is identified by a string where the four parts
-of its definition are separated by a <cite>-</cite>, for example <cite>x86_64-slc6-gcc46-opt</cite>
+of its definition are separated by a <tt class="docutils literal">-</tt>, for example <tt class="docutils literal"><span class="pre">x86_64-slc6-gcc46-opt</span></tt>
 means Intel/AMD (x86) 64 bits architecture, Scientific Linux CERN 6 (SLC6), gcc
 4.6.x and optimized build.</p>
 </div>
 </div>
 <div class="section" id="configuration">
 <h1><a class="toc-backref" href="#id3">Configuration</a></h1>
+<p><strong>TO-DO</strong></p>
 </div>
 <div class="section" id="scheduling">
 <h1><a class="toc-backref" href="#id4">Scheduling</a></h1>
-<p>The scheduling of the nightly builds follows the logical organization, mapped
-into Jenkins jobs.</p>
-<p>Each configured <em>slot</em> must have a corresponding <em>job</em> in Jenkins, this job can be enabled or disabled to trigger or not the build of the slot. Usually the slot jobs are run regularly (using the Jenkins <em>cron trigger</em>) every morning, but they can be triggered by hand at any moment, for example to pick up changes fixing bugs that caused troubles during the night (note that we can have concurrent builds for a slot).</p>
-<p>The slot job triggers the <em>parameterized job</em> <tt class="docutils literal"><span class="pre">nightly-slot</span></tt> passing the job name as argument. <tt class="docutils literal"><span class="pre">nightly-slot</span></tt> coordinates the actual build phases (checkout, build and test) by triggeting other parameterized job (as shown in the figure below):</p>
-<blockquote>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">nightly-slot-checkout</span></tt>: to check out the sources for the build</li>
-<li><tt class="docutils literal"><span class="pre">nightly-slot-build</span></tt>: to trigger the actual builds and tests</li>
-</ul>
-</blockquote>
+<p>There is no particular scheduling (or throttling) for the nightly builds slots.</p>
+<p>Every night, around midnight, the nightly bootstrap Jenkins job
+(<tt class="docutils literal"><span class="pre">nightly-slot</span></tt>) is started.  It is a <em>parameterized job</em> that can be used to
+start any slot, but in the default configuration it triggers all the slot
+flagged as <em>enabled</em> (or, better, not disabled) in the configuration.</p>
+<p>The <tt class="docutils literal"><span class="pre">nightly-slot</span></tt> job triggers one <tt class="docutils literal"><span class="pre">nightly-slot-checkout</span></tt> job per enabled
+slot, which will then trigger <tt class="docutils literal"><span class="pre">nightly-slot-build-platform</span></tt> either directly or
+via <tt class="docutils literal"><span class="pre">nightly-slot-precondition</span></tt> (as shown in the figure below).</p>
 <div class="figure align-center">
-<img alt="images/Jenkins_sequence_diagram.png" src="images/Jenkins_sequence_diagram.png" />
-<p class="caption">Sequence diagram of the jobs controlling the nightly builds in Jenkins.</p>
+<img alt="images/jenkins-jobs.dot.png" src="images/jenkins-jobs.dot.png" />
+<p class="caption">Trigger diagram of the jobs controlling the nightly builds in Jenkins.</p>
 </div>
-<p>The parameterized job <tt class="docutils literal"><span class="pre">nightly-slot-build</span></tt> is a Jenkins <em>matrix job</em>, which spawns one sub-job per required platform, which then triggers <tt class="docutils literal"><span class="pre">nightly-slot-build-platform</span></tt> to actually build and test the slot.</p>
-<p>Failures of the jobs infrastructure is propagated from the triggered jobs to the caller ones.  It must be noted that only failures of the Nightly Build System are shown as failures in Jenkins, and failures of the builds or tests are considered succesful run of the Jenkins jobs.</p>
+<p>We try to recover from temporary failures of the jobs infrastructure by
+automatically restarting the failed jobs (up to 3 times).  An overview of the
+status of the nightly build jobs can be found in the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status
+page</a>.</p>
+<p>It must be noted that only failures of the Nightly Build System
+are shown as failures in Jenkins, and failures of the builds or tests are
+considered successful run of the Jenkins jobs.</p>
 </div>
 <div class="section" id="checkout-build-and-test">
 <h1><a class="toc-backref" href="#id5">Checkout, Build and Test</a></h1>
@@ -441,59 +445,72 @@ into Jenkins jobs.</p>
 <div class="section" id="create-a-new-slot">
 <h2><a class="toc-backref" href="#id8">Create a New Slot</a></h2>
 <ol class="arabic simple">
-<li>choose the slot configuration style: XML (can use the web-based configuration editor, but not the new features of the build system) or JSON (requires manual editing from a checkout of <a class="reference external" href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk">LHCbNightlyConf</a>)</li>
-<li>prepare the configuration of the slot (it is usually a good idea to clone an existing slot configuration and change it)</li>
+<li>choose the slot configuration style:</li>
+</ol>
+<blockquote>
+<ul class="simple">
+<li>XML (can use the web-based configuration editor, but not the new features of
+the build system)</li>
+<li>JSON (requires manual editing from a checkout of <a class="reference external" href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk">LHCbNightlyConf</a>)</li>
+<li>Python (most powerful, requires manual editing)</li>
+</ul>
+</blockquote>
+<ol class="arabic simple" start="2">
+<li>prepare the configuration of the slot, making sure that the <tt class="docutils literal">disabled</tt>
+field is unset or set to <tt class="docutils literal">false</tt> (it is usually a good idea to clone an
+existing slot configuration and change it)</li>
 <li>if the build products have to be installed on AFS</li>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>create the slot directories and volumes in <tt class="docutils literal">$LHCBNIGHTLIES</tt> (they can be symlinks to other directories, if needed)</li>
-<li>add the slot name to the special file <tt class="docutils literal">slots_on_afs.txt</tt> in <a class="reference external" href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk">LHCbNightlyConf</a></li>
-</ol>
-</blockquote>
-<ol class="arabic simple" start="4">
-<li>create a new <em>slot job</em> in Jenkins</li>
-</ol>
-<blockquote>
-<ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/">Nightly Builds view</a></li>
-<li>click on <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/newJob">New Job</a> in the menu on the left</li>
-<li>use the exact slot name as name of the job</li>
-<li>select the option <em>Copy existing Job</em> and use <cite>nightly-slot-template</cite> as job to copy from and click on the <em>OK</em> button</li>
-<li>change the description of the job (it's not used at the moment, but it might be used in the future)</li>
-<li>(optionally) enable the slot by un-checking the checkbox <em>Disable Build</em></li>
-<li>(optionally) change when the build is started by editing the field <em>Build periodically/Schedule</em> (starting the job later in the day will mean that it will have to wait for other builds to complete before being executed)</li>
+<li>create the slot directories and volumes in <tt class="docutils literal">$LHCBNIGHTLIES</tt> (they can be
+symlinks to other directories, if needed)</li>
+<li>add the slot name to the special file <tt class="docutils literal">slots_on_afs.txt</tt> in
+<a class="reference external" href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk">LHCbNightlyConf</a></li>
 </ol>
 </blockquote>
 </div>
 <div class="section" id="stop-a-build">
 <h2><a class="toc-backref" href="#id9">Stop a Build</a></h2>
-<p>Sometimes it is necessary to stop a slot before it completes (for example to restart the builds).</p>
+<p>Sometimes it is necessary to stop a slot before it completes (for example to
+restart the builds).</p>
 <div class="section" id="stop-one-platform">
 <h3><a class="toc-backref" href="#id10">Stop One Platform</a></h3>
-<p>If there are pathologic problems with the build of a slot on one platform, or before triggering its rebuild, we can stop it following these steps:</p>
+<p>If there are pathologic problems with the build of a slot on one platform, or
+before triggering its rebuild, we can stop it following these steps:</p>
 <ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/nightlies/">Nightly Builds Dashboard</a></li>
+<li>go to the <a class="reference external" href="https://lhcb-nightlies.cern.ch/">Nightly Builds Dashboard</a></li>
 <li>locate on the page the slot/platform to stop</li>
 <li>click on the corresponding Jenkins icon</li>
-<li>click on the small red square icon with an X at the top right, close to the text <em>Progress:</em></li>
+<li>click on the small red square icon with an X at the top right, close to the
+text <em>Progress:</em></li>
 </ol>
-<p>The build will terminate shortly, after some Jenkins internal book keeping operations.</p>
+<p>The build will terminate shortly, after some Jenkins internal book keeping
+operations.</p>
 </div>
 <div class="section" id="stop-the-whole-slot">
 <h3><a class="toc-backref" href="#id11">Stop the Whole Slot</a></h3>
-<p>If the slot is still in the checkout step, stopping the checkout job will be enough:</p>
+<p>If the slot is still in the checkout step, stopping the checkout job will be
+enough:</p>
 <ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-checkout/buildTimeTrend">checkout status page</a></li>
-<li>identify the running checkout job you want to stop in the list on the left (<em>Build History</em>)</li>
-<li>click on the corresponding red square with an X</li>
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>identify the running checkout job you want to stop in the <em>checkout</em> column</li>
+<li>click on the job link</li>
+<li>click on the small red square icon with an X at the top right, close to the
+text <em>Progress:</em></li>
 </ol>
-<p>If the checkout was completed, you need to stop all the building platforms and the wrapper build job:</p>
+<p>If the checkout was completed, you need to stop all the building platforms and
+the wrapper build job:</p>
 <ol class="arabic simple">
-<li>got to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build-platform/buildTimeTrend">platform build status page</a></li>
-<li>identify the running build jobs you want to stop in the list on the left (<em>Build History</em>)</li>
-<li>click on the corresponding red square with an X</li>
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build/buildTimeTrend">build wrappers status page</a> and repeat steps 2 and 3 (it may not be needed if the builds were terminated quickly enough and if the job is not waiting for some external conditions)</li>
+<li>got to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>identify the running build job you want to stop in the <em>precondition-build</em>
+column</li>
+<li>click on the job link</li>
+<li>click on the small red square icon with an X at the top right, close to the
+text <em>Progress:</em></li>
+<li>repeat for all the platforms (it may not be needed if the builds were
+terminated quickly enough and if the job is not waiting for some external
+conditions)</li>
 </ol>
 </div>
 </div>
@@ -507,158 +524,183 @@ into Jenkins jobs.</p>
 </ul>
 <div class="section" id="full-rebuild">
 <h3><a class="toc-backref" href="#id13">Full Rebuild</a></h3>
-<p>This is the easiest option and should be preferred to the others if we can afford the time it takes for a checkout (for slots with several projects it may take more than one hour).</p>
+<p>This is the easiest option and should be preferred to the others if we can
+afford the time it takes for a checkout (for slots with several projects it may
+take more than one hour).</p>
 <p>This is also the only option in case we need a fresh checkout.</p>
 <ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/">Nightly Builds view</a></li>
-<li>click on the schedule icon at the far right corresponding to the slot that need to be triggered</li>
-<li>(optionally) if you want to override the default list of platforms to build, fill the <em>platforms</em> field with a space-separated list of the required platforms</li>
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>click on the checkout job of the slot you want to restart</li>
+<li>click on the <em>Rebuild</em> button in the column on the left</li>
+<li>(optionally) if you want to override the default list of platforms to build,
+fill the <em>platforms</em> field with a space-separated list of the required
+platforms</li>
 <li>click on the <em>Build</em> button</li>
 </ol>
-<p>The field <em>os_label</em> allows you to override the system a build is run on. For example to build <em>slc5</em> binaries on a <em>slc6</em> machine or to force the build on a specific host. In most cases it must be left empty.</p>
+<p>The field <em>os_label</em> allows you to override the system a build is run on. For
+example to build <em>slc5</em> binaries on a <em>slc6</em> machine or to force the build on a
+specific host. In most cases it must be left empty.</p>
 </div>
 <div class="section" id="no-checkout">
 <h3><a class="toc-backref" href="#id14">No Checkout</a></h3>
-<p>Useful if the checkout of a slot was correct, but all the builds failed for some reason.</p>
+<p>Useful if the checkout of a slot was correct, but all the builds failed for some
+reason.</p>
 <ol class="arabic simple">
 <li>stop the build of the whole slot following the instructions above</li>
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build/buildTimeTrend">build wrappers status page</a></li>
-<li>identify the job corresponding to the slot you need to restart and click on its link</li>
+<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>identify the job corresponding to the slot you need to restart and click on
+its link</li>
 <li>click on <em>Rebuild</em> in the menu on the left</li>
 <li>click on the <em>Rebuild</em> button not modifying the content of the fields</li>
 </ol>
 </div>
 <div class="section" id="one-platform">
 <h3><a class="toc-backref" href="#id15">One Platform</a></h3>
-<p>If, for example, there has been a problem with a machine you can rebuild only one platform:</p>
+<p>If, for example, there has been a problem with a machine you can rebuild only
+one platform:</p>
 <ol class="arabic simple">
-<li>stop the build of the platform following the instructions above (<a class="reference internal" href="#stop-one-platform">Stop One Platform</a>), if needed</li>
+<li>stop the build of the platform following the instructions above (<a class="reference internal" href="#stop-one-platform">Stop One
+Platform</a>), if needed</li>
 <li>from the job page, click on <em>Rebuild</em> in the menu on the left</li>
 <li>click on the <em>Rebuild</em> button not modifying the content of the fields</li>
 </ol>
-<p>Note that you can access the specific build page from the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/job/nightly-slot-build-platform/buildTimeTrend">platform build status page</a> if you cannot find it through the <a class="reference external" href="https://buildlhcb.cern.ch/nightlies/">Nightly Builds Dashboard</a>.</p>
+<p>Note that you can access the specific build page from the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status
+page</a> if you cannot find it through the <a class="reference external" href="https://lhcb-nightlies.cern.ch/">Nightly Builds Dashboard</a>.</p>
 </div>
 </div>
 <div class="section" id="dashboard-database-manipulation">
 <h2><a class="toc-backref" href="#id16">Dashboard Database Manipulation</a></h2>
 <div class="section" id="remove-a-build">
 <h3><a class="toc-backref" href="#id17">Remove a Build</a></h3>
-<p>In principle there is no need to remove builds from the database, because each new complete build of a slot will be reported in its own table and new partial builds will overwrite the old entries, but sometimes a broken (or aborted) build is just noise in the web page.</p>
-<ol class="arabic">
-<li><dl class="first docutils">
-<dt>if you need to remove the current build of the day:</dt>
-<dd><ol class="first last arabic simple">
-<li>connect to <tt class="docutils literal">buildlhcb.cern.ch</tt> as <em>lhcbsoft</em></li>
-<li>remove the symlink <tt class="docutils literal"><span class="pre">/data/artifacts/&lt;slot&gt;/&lt;day&gt;</span></tt>, where <tt class="docutils literal">&lt;day&gt;</tt> is the current date as yyyy-mm-dd</li>
+<p>In principle there is no need to remove builds from the database, because each
+new complete build of a slot will be reported in its own table and new partial
+builds will overwrite the old entries, but sometimes a broken (or aborted) build
+is just noise in the web page.</p>
+<ol class="arabic simple">
+<li>if you need to remove the current build of the day:</li>
 </ol>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>as <em>lhcbsoft</em> set up the environment for the Nightly Build tools</dt>
-<dd><ol class="first last arabic simple">
+<blockquote>
+<ol class="arabic simple">
+<li>connect to <tt class="docutils literal">buildlhcb.cern.ch</tt> as <em>lhcbsoft</em></li>
+<li>remove the symlink <tt class="docutils literal"><span class="pre">/data/artifacts/nightly/&lt;slot&gt;/&lt;day&gt;</span></tt>, where
+<tt class="docutils literal">&lt;day&gt;</tt> is the current date as yyyy-mm-dd</li>
+</ol>
+</blockquote>
+<ol class="arabic simple" start="2">
+<li>as <em>lhcbsoft</em> set up the environment for the Nightly Build tools</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
 <li>cd ~/LbNightlyTools</li>
 <li>source setup.csh</li>
 </ol>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>start a Python shell and type the following commands (replacing &lt;slot&gt; with the slot name and &lt;build_id&gt; with build numeric id, which can be seen in the URL of the build or tests results)</dt>
-<dd><ol class="first last arabic simple">
+</blockquote>
+<ol class="arabic simple" start="3">
+<li>start a Python shell and type the following commands (replacing &lt;slot&gt; with
+the slot name and &lt;build_id&gt; with build numeric id, which can be seen in the
+URL of the build or tests results)</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
 <li>from LbNightlyTools.Utils import Dashboard</li>
 <li>d = Dashboard()</li>
 <li>d.dropBuild(&lt;slot&gt;, &lt;build_id&gt;)</li>
 </ol>
-</dd>
-</dl>
-</li>
-</ol>
+</blockquote>
 </div>
 <div class="section" id="update-the-dashboard-couchapp">
 <h3><a class="toc-backref" href="#id18">Update the Dashboard CouchApp</a></h3>
-<p>To update the dashboard CouchApp avoiding downtime of the web page, we need to use a fallback replica.</p>
-<ol class="arabic">
-<li><dl class="first docutils">
-<dt>Replicate the dashboard database to a backup instance</dt>
-<dd><ol class="first last arabic simple">
-<li>connect to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/replicator.html">http://buildlhcb.cern.ch:5984/_utils/replicator.html</a> (only a few machines can do it)</li>
-<li>select the local database <tt class="docutils literal"><span class="pre">nightly-builds</span></tt> as source and <tt class="docutils literal"><span class="pre">nb-backup</span></tt> as destination</li>
+<p>To update the dashboard CouchApp avoiding downtime of the web page, we need to
+use a fallback replica.</p>
+<ol class="arabic simple">
+<li>Replicate the dashboard database to a backup instance</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
+<li>connect to <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/replicator.html">http://lbcouchdb.cern.ch:5984/_utils/replicator.html</a> (only a
+few machines can do it)</li>
+<li>select the local database <tt class="docutils literal"><span class="pre">nightlies-nightly</span></tt> as source and
+<tt class="docutils literal"><span class="pre">nightlies-nightly-bk</span></tt> as destination</li>
 <li>click on the <em>Replicate</em> button and wait</li>
 </ol>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>Ensure that the views' caches of the backup database are up to date</dt>
-<dd><ol class="first last loweralpha">
-<li><dl class="first docutils">
-<dt>either from the web</dt>
-<dd><ol class="first last arabic simple">
-<li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup">http://buildlhcb.cern.ch:5984/_utils/database.html?nb-backup</a></li>
-<li>select all the views, one by one, in the dropdown list (each view will take some time to be cached)</li>
+</blockquote>
+<ol class="arabic simple" start="2">
+<li>Ensure that the views' caches of the backup database are up to date</li>
 </ol>
-</dd>
-</dl>
-</li>
+<blockquote>
+<ol class="loweralpha simple">
+<li>either from the web</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
+<li>go to <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly-bk">http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly-bk</a></li>
+<li>select a view (under _dashboard_) in the dropdown list (all views of
+the dashboard will be cached, which will take some time, but you can check the
+progress at <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/status.html">http://lbcouchdb.cern.ch:5984/_utils/status.html</a>)</li>
+</ol>
+</blockquote>
+<ol class="loweralpha" start="2">
 <li><p class="first">or with a script (from LbNightlyTools):</p>
 <pre class="literal-block">
-./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nb-backup/_design/dashboard
+./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly-bk/_design/dashboard
 </pre>
 </li>
 </ol>
-</dd>
-</dl>
-</li>
-<li><p class="first">Repeat step 1 to ensure that the most recent data is replicated to the backup copy</p>
-</li>
-<li><dl class="first docutils">
-<dt>Redirect the dashboard web page traffic to the backup database</dt>
-<dd><ol class="first last arabic simple">
-<li>edit <tt class="docutils literal">/etc/httpd/conf.d/couchdb.conf</tt> replacing  <tt class="docutils literal"><span class="pre">nightly-builds</span></tt> with <tt class="docutils literal"><span class="pre">nb-backup</span></tt></li>
+</blockquote>
+<ol class="arabic simple" start="3">
+<li>Repeat step 1 to ensure that the most recent data is replicated to the backup
+copy</li>
+<li>Redirect the dashboard web page traffic to the backup database</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
+<li>edit <tt class="docutils literal">/etc/httpd/conf.d/couchdb.conf</tt> replacing  <tt class="docutils literal"><span class="pre">nightlies-nightly</span></tt>
+with <tt class="docutils literal"><span class="pre">nightlies-nightly-bk</span></tt></li>
 <li>(as root) call <tt class="docutils literal">service httpd reload</tt></li>
 </ol>
-</dd>
-</dl>
-</li>
-<li><p class="first">Update/modify the Dashboard CouchApp in the main database</p>
-</li>
-<li><dl class="first docutils">
-<dt>Regenerate the views' caches of the main database</dt>
-<dd><ol class="first last loweralpha">
-<li><dl class="first docutils">
-<dt>either from the web</dt>
-<dd><ol class="first last arabic simple">
-<li>go to <a class="reference external" href="http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds">http://buildlhcb.cern.ch:5984/_utils/database.html?nightly-builds</a></li>
-<li>select all the views, one by one, in the dropdown list (each view will take some time to be cached)</li>
+</blockquote>
+<ol class="arabic simple" start="5">
+<li>Update/modify the Dashboard CouchApp in the main database</li>
+<li>Regenerate the views' caches of the main database</li>
 </ol>
-</dd>
-</dl>
-</li>
+<blockquote>
+<ol class="loweralpha simple">
+<li>either from the web</li>
+</ol>
+<blockquote>
+<ol class="arabic simple">
+<li>go to <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly">http://lbcouchdb.cern.ch:5984/_utils/database.html?nightlies-nightly</a></li>
+<li>select a view (under _dashboard_) in the dropdown list (all views of
+the dashboard will be cached, which will take some time, but you can check the
+progress at <a class="reference external" href="http://lbcouchdb.cern.ch:5984/_utils/status.html">http://lbcouchdb.cern.ch:5984/_utils/status.html</a>)</li>
+</ol>
+</blockquote>
+<ol class="loweralpha" start="2">
 <li><p class="first">or with a script (from LbNightlyTools):</p>
 <pre class="literal-block">
-./cron/preheat_nightly_dashboard.sh -v -d http://buildlhcb.cern.ch:5984/nightly-builds/_design/dashboard
+./cron/preheat_nightly_dashboard.sh -v -d http://lbcouchdb.cern.ch:5984/nightlies-nightly/_design/dashboard
 </pre>
 </li>
 </ol>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>Replicate new documents from the backup instance to the main one</dt>
-<dd><ol class="first last arabic simple">
+</blockquote>
+<ol class="arabic" start="7">
+<li><p class="first">Replicate new documents from the backup instance to the main one</p>
+<blockquote>
+<ol class="arabic simple">
 <li>same as step 1, but swapping source and target</li>
 <li>check for conflicts</li>
 </ol>
-</dd>
-</dl>
+</blockquote>
 </li>
 <li><p class="first">Restore the original web page configuration (see step 4)</p>
 </li>
 <li><p class="first">Replicate once more from the backup instance to the main one (see step 7)</p>
 </li>
 </ol>
-<p><em>Note</em>: The replication an the view caching may take a lot of time, unless the are performed regularly (less data to copy/cache).</p>
+<dl class="docutils">
+<dt><em>Note</em>: The replication and the view caching may take a lot of time, unless the</dt>
+<dd>updates are performed regularly (less data to copy/cache).</dd>
+</dl>
 </div>
 </div>
 </div>

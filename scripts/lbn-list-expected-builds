@@ -85,7 +85,8 @@ class Script(BaseScript):
                              now,
                              os_label)
                             for proj in self.slot.activeProjects
-                            for platform in opts.platforms]
+                            for platform in opts.platforms
+                            if not proj.no_test ]
 
         self.log.debug('expecting %d builds', len(expected_builds))
 

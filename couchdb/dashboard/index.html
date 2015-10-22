@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Summaries of nightly builds for LHCb</title>
+    <title></title>
     <link href="images/lhcb_logo_icon.png" rel="icon" type="image/png">
 
     <link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
@@ -16,20 +16,20 @@
 
     <link href="css/lhcb.css" rel="stylesheet" type="text/css" media="screen" />
 
-    <link href="css/lhcb-theme/jquery-ui-1.10.2.custom.min.css" rel="stylesheet">
+    <link href="css/lhcb-theme/jquery-ui-1.11.4.custom.min.css" rel="stylesheet">
 
     <link href="css/dashboard.css" rel="stylesheet">
 
     <link rel="stylesheet" type="text/css" href="css/rssform.css" />
 
     <script src="js/moment.min.js"></script>
-    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/jquery-2.1.4.min.js"></script>
     <script src="js/jquery.cookie.js"></script>
     <script src="js/main.js"></script>
 
 
     <script src="js/rssform.js"></script>
-    <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
+    <script src="js/jquery-ui-1.11.4.custom.min.js"></script>
 
 </head>
 
@@ -47,10 +47,10 @@
 
     <div id="container" class="clear-block">
         <div id="banner">
-            <a href="http://lhcb.cern.ch" id="link_lhcb" name="link_lhcb">
+            <a href="http://lhcb.cern.ch" id="link_lhcb">
                 <img src="images/lhcb_logo.png" alt="LHCb" />
             </a>
-            <h1>LHCb Nightly Builds</h1>
+            <h1></h1>
         </div>
 
         <div id="middle" class="clear-block cwf grid-fluid">
@@ -63,22 +63,7 @@
             </div>
 
             <div id="links" class="toolbar" style="text-align: center; padding: 0;">
-                <ul>
-                    <li><a href="https://buildlhcb.cern.ch/jenkins/follow-builds-status" target="_blank">Jenkins Status</a>
-                    </li>
-                    <li><a href="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/cgi-bin/overview_nightlies.py" target="_blank">Configuration overview</a>
-                    </li>
-                    <li><a href="http://lhcb-nightlies.web.cern.ch/lhcb-nightlies/editor.html" target="_blank">Configuration editor</a>
-                    </li>
-                    <li><a href="https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk/configuration.xml" target="_blank">Configuration SVN</a>
-                    </li>
-                    <li><a href="https://lhcb-coverity.cern.ch:8443" target="_blank">LHCb Coverity</a>
-                    </li>
-                    <li><a href="https://sls.cern.ch/sls/service.php?id=LHCb_Nightlies" target="_blank">System sensors</a>
-                    </li>
-                    <li><a href="https://its.cern.ch/jira/secure/CreateIssueDetails!init.jspa?pid=11500&amp;components=11303&amp;issuetype=1" target="_blank">Report a bug</a>
-                    </li>
-                </ul>
+                <ul></ul>
             </div>
 
             <div id="summaries"></div>
@@ -89,7 +74,7 @@
         <div id="footer">
             <p>CERN - European Laboratory for Particle Physics, CH-1211, Genève 23, Switzerland</p>
             <!-- THE CERN_LOGO IS REQUIRED BY THE GRAPHIC CHARTER -->
-            <a id="cern_logo" class="badge_80" href="http://www.cern.ch" name="cern_logo">
+            <a id="cern_logo" class="badge_80" href="http://www.cern.ch">
                 <span>cern.ch</span>
             </a>
         </div>
@@ -203,6 +188,20 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <form id = "rebuild_info" target="_blank" method="GET" action="https://buildlhcb.cern.ch/jenkins/userContent/rebuild-lhcb-release.html" style="display:none">
+	<fieldset>
+	<input type="text" name="platforms"/><br/>
+	<input type="text" name="projects_list"/><br/>
+	<input type="text" name="build_tool"/><br/>
+	<input type="hidden" name="delay" value="60sec"/>
+	<input type="submit" value="Submit"/>
+	</fieldset>
+    </form>
+
+    <div id="dialog-confirm" title="Rebuild slot?" style="display:none">
+      <table id="confirm-build-info"><tbody></tbody></table>
     </div>
 
     <!--  Custom rss configurator: -->

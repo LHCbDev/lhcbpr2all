@@ -131,6 +131,16 @@ def test_Project():
     p.checkout()
     assert cb.args == (p,), cb.args
     assert cb.kwargs == {}, cb.kwargs
+    assert hasattr(p, 'checkout_log')
+    assert p.checkout_log
+
+    # test setting checkout_opts via checkout descriptor
+    cb = MockFunc()
+    p = Project('Gaudi', 'v23r5', checkout=(cb, {'special': False}))
+    p.checkout()
+    assert cb.args == (p,), cb.args
+    assert cb.kwargs == {'special': False}, cb.kwargs
+
 
 def test_Slot():
     'Configuration.Slot'

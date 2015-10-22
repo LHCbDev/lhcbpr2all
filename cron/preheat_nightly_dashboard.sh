@@ -46,12 +46,12 @@ if [ -n "$page" ] ; then
         exit 1
     fi
 else
-    page=nightlies
+    page=nightly
 fi
 
 if [ -z "$ddocurl" ] ; then
-    ddocurl=https://buildlhcb.cern.ch/${page}/_ddoc
-    viewbase=https://buildlhcb.cern.ch/${page}/_view
+    ddocurl=https://lhcb-nightlies.cern.ch/${page}/_ddoc
+    viewbase=https://lhcb-nightlies.cern.ch/${page}/_view
 else
     viewbase=${ddocurl}/_view
 fi

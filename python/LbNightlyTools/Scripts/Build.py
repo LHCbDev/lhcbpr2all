@@ -303,7 +303,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         self.dump_json({'type': 'job-start',
                         'host': socket.gethostname(),
                         'build_number': os.environ.get('BUILD_NUMBER', 0),
-                        'started': self.starttime.isoformat()})
+                        'started': self.starttime.isoformat()},
+                       update=False)
 
         self._prepareBuildDir()
 
@@ -317,7 +318,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
             def record_start(proj):
                 '''helper function to keep track of the start of the build'''
                 self.dump_json({'project': proj.name,
-                                'started': datetime.now().isoformat()})
+                                'started': datetime.now().isoformat()},
+                               update=False)
             for proj, result in self.slot.buildGen(projects=opts.projects,
                                                    jobs=opts.jobs,
                                                    max_load=opts.load_average,
@@ -439,7 +441,8 @@ class BuildReporter(object):
                             re.IGNORECASE)
     ERROR_RE = re.compile('|'.join([r'\berror\b',
                                     r'\*\*\* Break \*\*\*',
-                                    r'^Traceback \(most recent call last\):']),
+                                    r'^Traceback \(most recent call last\):',
+                                    r'^make: \*\*\* No rule to make target']),
                           re.IGNORECASE)
     def __init__(self, summary_dir, project, platform, slot, result):
         '''

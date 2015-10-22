@@ -1,6 +1,6 @@
 var ARTIFACTS_BASE_URL = 'https://buildlhcb.cern.ch/artifacts/';
 var JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-slot-build-platform/';
-var LEMON_SEARCH_PREFIX = 'https://lemon.cern.ch/lemon-web/index.php?target=process_search&amp;fb=';
+var HOST_MONITOR_PREFIX = 'https://meter.cern.ch/public/_plugin/kibana/#/dashboard/elasticsearch/Metrics:%20Host?query=@fields.entity:';
 var MAX_BUILD_IDLE_TIME = 180; // minutes
 var FILTER_DEFAULT = {
     days: ["Today"],
@@ -8,14 +8,24 @@ var FILTER_DEFAULT = {
     projects: []
 };
 
-// special artifacts locations
-var flavour = /\/nightlies-([^/]+)\//.exec(window.location);
-if (flavour) {
-    ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + flavour[1] + "/";
-    if (flavour[1] == 'testing') {
-        // special url for testing slots
-        JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
-    }
+// default values
+var DB_INFO = {
+    flavour: "",
+    links: []
+}
+$.ajax({
+    async: false,
+    url: "_db/db-info",
+    dataType: "json",
+    success: function(data){ DB_INFO = data; }
+});
+
+document.title = 'Summaries of ' + DB_INFO.flavour + ' builds for LHCb';
+
+ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + DB_INFO.flavour + "/";
+if (DB_INFO.flavour == 'testing') {
+    // special url for testing slots
+    JENKINS_JOB_URL = 'https://buildlhcb.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
 }
 
 function getParameterByName(name) {
@@ -28,6 +38,10 @@ function getParameterByName(name) {
 var REQUESTED_SLOT = getParameterByName("slot");
 var REQUESTED_PROJECT = getParameterByName("project");
 var REQUESTED_DAY = getParameterByName("day");
+var REQUESTED_BUILD_ID = getParameterByName("build_id");
+
+if (DB_INFO.flavour == 'release')
+    REQUESTED_SLOT = 'lhcb-release';
 
 // variables set from cookies
 if (!$.cookie("filters")) {
@@ -47,22 +61,24 @@ function testsURL(slot, build_id, platform, project) {
     return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/summaries.' + platform + '/' + project + '/html';
 }
 
-function spinInit(day) {
-    var spin = $('<img id="spinner-' + day + '" src="images/ajax-loader.gif" title="loading...">');
+function spinInit(spinkey) {
+    var spin = $('<img id="spinner-' + spinkey + '" src="images/ajax-loader.gif" title="loading...">');
     spin.data('count', 0);
     spin.hide();
     return spin;
 }
 
-function spinIncrease(day) {
-    var spin = $('#spinner-' + day);
+function spinIncrease(spinkey) {
+    if (!spinkey) return;
+    var spin = $('#spinner-' + spinkey);
     var count = spin.data('count');
     spin.data('count', count + 1);
     spin.show();
 }
 
-function spinDecrease(day) {
-    var spin = $('#spinner-' + day);
+function spinDecrease(spinkey) {
+    if (!spinkey) return;
+    var spin = $('#spinner-' + spinkey);
     var count = spin.data('count');
     count = count - 1;
     if (count <= 0) {
@@ -78,10 +94,116 @@ function jenkinsIcon(build_id) {
             'title="Jenkins build"/>').tooltip();
 }
 
-function lemonIcon(hostname) {
-    return $('<a href="' + LEMON_SEARCH_PREFIX + hostname + '" target="_blank">')
-        .append('<img src="images/lemon_16.png" alt="Lemon stats" ' +
-            'title="Lemon stats for ' + hostname + '"/>').tooltip();
+function hostMonitorLink(hostname) {
+    var host = hostname.replace(/\..*/,'');
+    return $('<a href="' + HOST_MONITOR_PREFIX + host + '" target="_blank">')
+        .append('<img src="images/kibana_16.png" alt="Lemon stats" ' +
+            'title="Stats for ' + host + '"/>').tooltip();
+}
+
+function DelayTimeOut(data){
+    return alert("Rebuild " + data  + "Started").delay(8);
+}
+
+function prepareRebuildInfo(data){
+
+    //Transform the project and platform data to strings
+
+    var projects = "";
+    //make string of projects with spacing
+    $.each(data.projects,function(idx,project){
+        projects+=project.name+" "+project.version+" ";
+    });
+    //remove the last space
+    projects = projects.substring(0, projects.length - 1);
+
+
+    var platforms = "";
+    //make string of platforms with spacing
+    for (var platform in data.platforms){
+        platform =(data.platforms[platform]).toString();
+        platforms+= platform + " ";
+    }
+    //remove the last space
+    platforms = platforms.substring(0, platforms.length - 1);
+
+    //fill in the form for the post request
+    var form = $('#rebuild_info');
+    (form.find('input[name="projects_list"]')).val(projects);
+    (form.find('input[name="platforms"]')).val(platforms);
+    (form.find('input[name="build_tool"]')).val(data.build_tool);
+
+    //prepare the information to display in the dialog
+
+    var tableprojects = $('<table id=tprojects></table>');
+
+    tableprojects.append('<tbody/>');
+    tableprojects.append('<tr><td>Projects:</td><td>Version:</td></tr>');
+
+    for(var i=0;i <data.projects.length;i++){
+        tableprojects.append('<tr><td><b>'+data.projects[i].name+
+        '</b></td><td><b>'+data.projects[i].version+'</b></td></tr>');
+    }
+
+    //prepare the platform information to display in the dialog
+
+    var tableplatforms = $('<table id=tplatforms></table>');
+
+    tableplatforms.append('<tbody/>');
+    tableplatforms.append('<tr><td>Platforms:</td></tr>');
+
+    for(var i=0;i <data.platforms.length;i++){
+        tableplatforms.append('<tr><td><b>'+data.platforms[i]+'</b></td><tr>');
+    }
+
+
+    //fill in confirmation build info table dialog
+    $('#confirm-build-info > tbody:last').append('<tr><td><b>Would you like to rebuild slot ' +
+                    data.build_id + ' with the following parameters?</b></td></tr>');
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append(tableprojects);
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append(tableplatforms);
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append('<table><tr><td>Build System: <b>' + data.build_tool + '</b></td></tr></table>');
+    $('#confirm-build-info > tbody:last').append('<br/>');
+    $('#confirm-build-info > tbody:last').append('<tr><td><img style="width:20px;" alt="!"'+
+                'src="images/exclamation.png"/>'+
+                '<i>rebuild is set to start in 60 secs</i></td></tr>');
+
+
+        $('#dialog-confirm').dialog({
+        autoOpen: false,
+        resizable: false,
+        height: 'auto',
+        width: 'auto',
+        modal: true,
+        buttons: {
+            //In case of cancel clean the dialog table
+            Cancel: function() {
+                $('#confirm-build-info > tbody').empty();
+                $( this ).dialog( "close" );
+            },
+            //process to rebuild submiting the form
+            "OK": function() {
+                $('#confirm-build-info > tbody').empty();
+                form.submit();
+                $( this ).dialog( "close" );
+            },
+        },
+        close: function(){
+            $('#confirm-build-info > tbody').empty();
+        }
+    });
+
+}
+
+//when rebuild button pressed
+jQuery.fn.rebuild_btn = function(data){
+    return this.button().click(function(){
+        prepareRebuildInfo(data);
+        $('#dialog-confirm').dialog('open');
+    }).text('Rebuild');
 }
 
 // fill an element in side a "div.day" and "div.slot" with
@@ -122,23 +244,23 @@ jQuery.fn.lbSlotDiskSpace = function() {
     });
 }
 
-jQuery.fn.lbSlotTable = function(data) {
+jQuery.fn.lbSlotTable = function(value, spinkey) {
     var tab = $('<table class="summary" border="1"/>');
     // header
     var hdr = $('<tr class="slot-header"/>');
     hdr.append('<th>Project</th><th>Version</th>');
-    $.each(data.value.platforms, function(idx, val) {
+    $.each(value.platforms, function(idx, val) {
         hdr.append('<th platform="' + val + '" nowrap>' +
             val + '<div class="slot-info"/></th>');
     });
     tab.append(hdr);
 
     // rows
-    $.each(data.value.projects, function(idx, val) {
+    $.each(value.projects, function(idx, val) {
         var proj_name = val.name;
         if (!val.disabled) {
             proj_name = '<a href="' +
-                checkoutURL(data.value.slot, data.value.build_id, val.name) +
+                checkoutURL(value.slot, value.build_id, val.name) +
                 '" title="show checkout log" target="_blank">' + val.name + '</a>';
         }
         var proj_vers = val.version;
@@ -151,10 +273,16 @@ jQuery.fn.lbSlotTable = function(data) {
             tr.addClass('disabled');
         }
 
-        $.each(data.value.platforms, function(idx, val) {
+        if (!value.platforms && value.default_platforms) {
+            value.platforms = value.default_platforms;
+        }
+        var proj_no_test = (value.no_test || val.no_test);
+        $.each(value.platforms, function(idx, val) {
             tr.append('<td platform="' + val + '">' +
                 '<table class="results"><tr>' +
-                '<td class="build"/><td class="tests"/></tr></table>');
+                '<td class="build">&nbsp;</td><td class="tests' +
+                ((proj_no_test) ? " disabled" : "") +
+                '"/></tr></table>');
         });
         if (! isProjectRequested(val.name)) {
             tr.hide();
@@ -164,19 +292,19 @@ jQuery.fn.lbSlotTable = function(data) {
     this.append(tab);
 
     // trigger load of the results of each platform
-    $.each(data.value.platforms, function(idx, val) {
+    $.each(value.platforms, function(idx, val) {
         var query = {
-            'key': JSON.stringify([data.value.slot, data.value.build_id, val])
+            'key': JSON.stringify([value.slot, value.build_id, val])
         };
-        spinIncrease(data.key);
+        spinIncrease(spinkey);
 
         var jqXHR = $.ajax({
             dataType: "json",
             url: '_view/summaries',
             data: query
         });
-        jqXHR.day = data.key;
-        jqXHR.key = [data.value.slot, data.value.build_id, val];
+        jqXHR.spinkey = spinkey;
+        jqXHR.key = [value.slot, value.build_id, val];
         jqXHR.done(function(data, textStatus, jqXHR) {
             var last_update = moment('1970-01-01');
             var started = last_update;
@@ -207,6 +335,12 @@ jQuery.fn.lbSlotTable = function(data) {
                             } else {
                                 b.addClass('success');
                             }
+                        } else {
+                            if (value.started) {
+                                b.html((value.build_url) ?
+                                        ('<a href="' + value.build_url + '/console" target="_blank">running</a>') :
+                                        'running');
+                            }
                         }
                     }
                     if (value.tests) {
@@ -219,6 +353,12 @@ jQuery.fn.lbSlotTable = function(data) {
                                 t.addClass('warning').append(' (0)');
                             } else {
                                 t.addClass('success');
+                            }
+                        } else {
+                            if (value.started) {
+                                t.html((value.build_url) ?
+                                        ('<a href="' + value.build_url + '/console" target="_blank">running</a>') :
+                                        'running');
                             }
                         }
                     }
@@ -237,7 +377,7 @@ jQuery.fn.lbSlotTable = function(data) {
                         h.append('&nbsp;')
                             .append(jenkinsIcon(value.build_number))
                             .append('&nbsp;')
-                            .append(lemonIcon(value.host));
+                            .append(hostMonitorLink(value.host));
                     }
                     if (started.isAfter(last_update)) {
                         last_update = started;
@@ -260,10 +400,41 @@ jQuery.fn.lbSlotTable = function(data) {
                         .tooltip();
                 }
             }
-            spinDecrease(jqXHR.day);
+            spinDecrease(jqXHR.spinkey);
         });
     });
     return this;
+}
+
+function slotBlock(data) {
+    var isRelease = DB_INFO.flavour == 'release';
+
+    var build_tool_logo = "";
+    if (data.build_tool) {
+        build_tool_logo = '<img class="build-logo" src="images/' + data.build_tool + '.png"/> ';
+    }
+
+    var title = isRelease ? ("Release build " + data.build_id) : data.slot;
+    title += data.date ? (" (" + data.date + ")") : "";
+
+    var header = '<table><tr><td nowrap>' + build_tool_logo +
+        '<a class="permalink" title="Permalink to slot ' + data.slot + ', build ' + data.build_id +
+        '" href="?slot=' + data.slot + '&build_id=' + data.build_id + '">' +
+        title + '</a>' + (isRelease ? '' : ':') +
+        '</td><td>';
+    if (isRelease) {
+        header += '<button id="'+ data.build_id + '"class="rebuild-button"/>';
+        header += '<a href="' + ARTIFACTS_BASE_URL + 'lhcb-release/' + data.build_id +
+                  '" target="_blank"><img class="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>';
+    } else {
+        header += data.description;
+    }
+    header += '</td></tr></table>';
+
+    var slot = $('<div class="slot" slot="' + data.slot + '" build_id="' + data.build_id + '"/>');
+    slot.append($('<h4/>').append('<span class="alerts"/> ')
+        .append(header));
+    return slot;
 }
 
 jQuery.fn.loadButton = function() {
@@ -287,26 +458,16 @@ jQuery.fn.loadButton = function() {
                 var el = $('.day[day="' + jqXHR.day + '"] div.slots');
                 if (data.rows.length) {
                     $.each(data.rows, function(idx, row) {
-                        var value = row.value;
-                        var build_tool_logo = "";
-                        if (value.build_tool) {
-                            build_tool_logo = '<img class="build-logo" src="images/' + value.build_tool + '.png"/> ';
-                        }
-                        var slot = $('<div class="slot" slot="' + value.slot + '" build_id="' + value.build_id + '"/>');
-                        slot.append($('<h4/>').append('<span class="alerts"/> ')
-                            .append('<table><tr><td nowrap>' + build_tool_logo +
-                                '<a class="permalink" title="Permalink to this slot/day" href="?day=' + day + '&slot=' + value.slot + '">' + value.slot + '</a>:' +
-                                '</td><td>' + value.description +
-                                '</td></tr></table>'));
+                        var slot = slotBlock(row.value);
                         el.append(slot);
 
                         // do show/load only non-hidden slots
-                        if (! isSlotRequested(value.slot)) {
+                        if (! isSlotRequested(row.value.slot)) {
                             slot.append($('<p>Data for this slot not loaded. </p>')
                                 .append('<a href="' + window.location.href + '">Reload the page</a>'));
                             slot.hide();
                         } else {
-                            slot.lbSlotTable(row);
+                            slot.lbSlotTable(row.value, row.key);
                             slot.find('.alerts').lbSlotDiskSpace();
                         }
                     });
@@ -488,9 +649,11 @@ function applyFilters() {
 function prepareFilterDialog() {
     // prepare the dialog data
 
-    // the list of days is known, the others are retrieved
-    $('#filter-dialog-days').attr("loaded", "true")
-    initFilterCheckboxes('days');
+    if (DB_INFO.flavour != 'release') {
+        // the list of days is known, the others are retrieved
+        $('#filter-dialog-days').attr("loaded", "true")
+        initFilterCheckboxes('days');
+    }
 
     // bind buttons
     $("#filter-dialog-tabs > div > table button").button().click(function() {
@@ -504,7 +667,8 @@ function prepareFilterDialog() {
 
     // initialize tabbed view
     $("#filter-dialog-tabs").tabs();
-    $('#filter-dialog-slots > table').hide();
+    if (DB_INFO.flavour != 'release')
+        $('#filter-dialog-slots > table').hide();
     $('#filter-dialog-projects > table').hide();
 
     // initialize dialog
@@ -513,8 +677,10 @@ function prepareFilterDialog() {
         modal: true,
         buttons: {
             OK: function() {
-                getFilterCheckboxes('days');
-                getFilterCheckboxes('slots');
+                if (DB_INFO.flavour != 'release') {
+                    getFilterCheckboxes('days');
+                    getFilterCheckboxes('slots');
+                }
                 getFilterCheckboxes('projects');
 
                 applyFilters();
@@ -523,8 +689,10 @@ function prepareFilterDialog() {
             },
             Cancel: function() {
                 // restore previous settings
-                initFilterCheckboxes('days');
-                initFilterCheckboxes('slots');
+                if (DB_INFO.flavour != 'release') {
+                    initFilterCheckboxes('days');
+                    initFilterCheckboxes('slots');
+                }
                 initFilterCheckboxes('projects');
                 $(this).dialog("close");
             },
@@ -533,8 +701,10 @@ function prepareFilterDialog() {
                 filters = FILTER_DEFAULT;
                 applyFilters();
 
-                initFilterCheckboxes('days');
-                initFilterCheckboxes('slots');
+                if (DB_INFO.flavour != 'release') {
+                    initFilterCheckboxes('days');
+                    initFilterCheckboxes('slots');
+                }
                 initFilterCheckboxes('projects');
                 $(this).dialog("close");
             }
@@ -544,7 +714,7 @@ function prepareFilterDialog() {
     $("#set-filter")
         .button()
         .click(function() {
-            fillDialogTab('slots');
+            if (DB_INFO.flavour != 'release') fillDialogTab('slots');
             fillDialogTab('projects');
             $("#filter-dialog").dialog("open");
         });
@@ -574,6 +744,13 @@ function prepareRssForm() {
 }
 
 $(function() {
+    var flavour = DB_INFO.flavour;
+    $('#banner h1').text('LHCb ' + flavour[0].toUpperCase() + flavour.slice(1) + ' Builds');
+    var toolbar = $('#links ul');
+    $.each(DB_INFO.links, function(idx, link_data){
+        toolbar.append('<li><a href="' + link_data.url + '" target="_blank">' + link_data.name + '</a>');
+    });
+
     if (REQUESTED_DAY || REQUESTED_SLOT || REQUESTED_PROJECT) {
         // when there is a specific selection we filters do not make sense...
         $("#toolbar").hide();
@@ -590,6 +767,52 @@ $(function() {
         $('#summaries').append('<div class="day" ' +
                 'day="' + d.format('YYYY-MM-DD') + '"' +
                 'day_id="' + d.format('ddd') + '"/>');
+    } else if (REQUESTED_SLOT && REQUESTED_BUILD_ID) {
+        $.ajax({url:'_view/docsBySlotBuild',
+                data: {'key': JSON.stringify([REQUESTED_SLOT, parseInt(REQUESTED_BUILD_ID)]),
+                       'include_docs': 'true'},
+                dataType: "json"})
+            .done(function(data) {
+                var slots = $('<div class="slots"/>')
+                $('#summaries').append(slots);
+                if (data.rows.length) {
+                    var value = data.rows[0].doc;
+                    var slot = slotBlock(value);
+                    slots.append(slot);
+                    slot.lbSlotTable(value, null);
+                    slot.find('button.rebuild-button').rebuild_btn(value);
+                } else {
+                    slots.append("Cannot find build " + REQUESTED_BUILD_ID +
+                                 " for slot " + REQUESTED_SLOT);
+                }
+            });
+    } else if (flavour == 'release') {
+        var today = moment();
+        var day = moment(today).subtract('days', 7); // we get builds for the last 7 days
+
+        $.ajax({url:'_view/slotsByDay',
+            data: {'startkey': JSON.stringify(day.format("YYYY-MM-DD"))},
+            dataType: "json"})
+        .done(function(data) {
+            var slots = $('<div class="slots"/>')
+            $('#summaries').append(slots);
+            if (data.rows.length) {
+                data.rows.sort(function(row1, row2){
+                    return row2.value.build_id - row1.value.build_id;
+                });
+                $.each(data.rows, function(idx, row) {
+                    row.value.date = row.key;
+                    var slot = slotBlock(row.value);
+                    slots.append(slot);
+                    slot.lbSlotTable(row.value, null);
+                    slot.find('.alerts').lbSlotDiskSpace();
+                    slot.find('button.rebuild-button').rebuild_btn(row.value);
+                });
+            } else {
+                slots.append("No " + REQUESTED_SLOT + " builds since " +
+                        day.fromNow());
+            }
+        });
     } else {
         var today = moment();
         for (var day = 0; day < 7; day++) {

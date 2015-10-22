@@ -9,9 +9,9 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 '''
-Class to generate RPM Spec for LHCb Compat
+Class to generate RPM Spec for generic packages 
 
-Created on Feb 27, 2014
+Created on Sep 25, 2015
 
 @author: Ben Couturier
 '''
@@ -26,86 +26,62 @@ from subprocess import Popen, PIPE
 from LHCbRPMSpecBuilder import LHCbBaseRpmSpec
 from LbLegacy.Utils import getStatusOutput
 from LbUtils.Temporary import TempDir
-from LbUtils.CMT.Common import CMTCommand as CMT
 
-tmpdir = TempDir(prefix="LHCbCompatRpmSpec")
-PREFIX="/opt/LHCbSoft"
+tmpdir = TempDir(prefix="LHCbGenericRpmSpec")
 
 __log__ = logging.getLogger(__name__)
 
-def parseVersion(version):
-    '''
-    Parse the version string
-    '''
-    maj_version = 1
-    min_version = 0
-    patch_version = 0
-
-    m = re.match("v([\d]+)r([\d]+)$", version)
-    if m != None:
-        maj_version = m.group(1)
-        min_version = m.group(2)
-    else:
-        # Checking whether the version matches vXrYpZ in that case
-        m = re.match("v([\d]+)r([\d]+)p([\d]+)", version)
-        if m != None:
-            maj_version = m.group(1)
-            min_version = m.group(2)
-            patch_version = m.group(3)
-        else:
-            raise Exception("Version %s does not match format vXrY or vXrYpZ" % version)
-
-    return (maj_version, min_version, patch_version)
 
 #
 # Spec for binary RPMs
 #
 ###############################################################################
-class LHCbLbScriptsRpmSpec(LHCbBaseRpmSpec):
+class LHCbGenericRpmSpec(LHCbBaseRpmSpec):
     """ Class representing a LHCb project"""
 
-    def __init__(self, project, version, buildarea, releasedir):
+    def __init__(self, project, version, giturl, requires, buildarea, release=None):
         """ Constructor taking the actual file name """
-        super(LHCbLbScriptsRpmSpec, self).__init__(project, version)
+        super(LHCbGenericRpmSpec, self).__init__(project, version)
         __log__.debug("Creating RPM for %s/%s" % (project, version))
+
         self._project = project
         self._version = version
+        self._giturl = giturl
+        self._lhcb_release_version =  release
         self._buildarea = buildarea
-        (self._lhcb_maj_version,
-         self._lhcb_min_version,
-         self._lhcb_patch_version) = parseVersion(version)
-        self._lhcb_release_version = 0
-        self._releasedir = releasedir
+        self._requires = requires
+        self._arch = "noarch"
+        self._postinstall = None
+        self._srcroot = None
+        
+
+    def setsrcroot(self, srcroot):
+        ''' Set the dir to use as top of the rpm content '''
+        self._srcroot = srcroot
+
+    def setpostinstall(self, postinstall):
+        ''' Set the post install script to call '''
+        self._postinstall = postinstall
         
     def getRPMName(self, norelease=False):
         ''' Return the architecture, always noarch for our packages'''
-        projname =  "_".join([self._project.upper(),
-                              self._version])
-        projver = ".".join([str(n) for n in [ self._lhcb_maj_version,
-                                              self._lhcb_min_version,
-                                              self._lhcb_patch_version]])
         if norelease:
-            return "-".join([projname, projver])
-        full = "-".join([projname, projver, str(self._lhcb_release_version)])
+            return  "-".join([self._project, self._version])
+        full = "-".join([self._project, self._version, str(self._lhcb_release_version)])
         final = ".".join([full, self._arch, "rpm"])
         return final
-
+                             
     def _createHeader(self):
         '''
         Prepare the RPM header
         '''
         header = Template("""
-%define lhcb_maj_version ${lhcb_maj_version}
-%define lhcb_min_version ${lhcb_min_version}
-%define lhcb_patch_version ${lhcb_patch_version}
-%define lhcb_release_version ${lhcb_release_version}
 %define buildarea ${buildarea}
 %define project ${project}
-%define projectUp ${projectUp}
-%define lbversion ${version}
-%define _postshell /bin/bash
-%define prefix ${prefix}
-%define releasedir ${releasedir}
+%define version ${version}
+%define release ${release}
+%define arch    ${arch}
+%define giturl  ${giturl}
 
 %global __os_install_post /usr/lib/rpm/check-buildroot
 
@@ -113,49 +89,47 @@ class LHCbLbScriptsRpmSpec(LHCbBaseRpmSpec):
 %define tmpdir %{buildarea}/tmpbuild
 %define _tmppath %{buildarea}/tmp
 
-Name: %{projectUp}
-Version: %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
-Release: %{lhcb_release_version}
+Name: %{project}
+Version: %{version}
+Release: ${release}
 Vendor: LHCb
 Summary: %{project}
 License: GPL
 Group: LHCb
 BuildRoot: %{tmpdir}/%{name}-buildroot
-BuildArch: noarch
+BuildArch: %{arch}
 AutoReqProv: no
-Prefix: %{prefix}
+Prefix: /opt/LHCbSoft
 Provides: /bin/sh
 Provides: /bin/bash
+Provides: %{project} = %{version}
 
-Provides: %{projectUp} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
-Provides: %{projectUp}_v%{lhcb_maj_version} = %{lhcb_maj_version}.%{lhcb_min_version}.%{lhcb_patch_version}
-        \n""").substitute(buildarea = self._buildarea,
-                          project = self._project,
-                          projectUp = self._project.upper(),
-                          version = self._version,
-                          lhcb_maj_version = self._lhcb_maj_version,
-                          lhcb_min_version = self._lhcb_min_version,
-                          lhcb_patch_version = self._lhcb_patch_version,
-                          lhcb_release_version = self._lhcb_release_version,
-                          prefix = PREFIX,
-                          releasedir = self._releasedir
-                          )
-
+\n""").substitute(buildarea = self._buildarea,
+                  project = self._project,
+                  version = self._version,
+                  release = self._lhcb_release_version,
+                  arch = self._arch,
+                  giturl = self._giturl
+                  )
         return header
-
 
     def _createRequires(self):
         '''
         Prepare the Requires section of the RPM
         '''
-        return ""
-    
+        tmp = ""
+        for r in self._requires:
+
+            tmp +=  "Requires: %s\n" % r
+                                 
+        return tmp
+
     def _createDescription(self):
         '''
         Prepare the Requires section of the RPM
         '''
         tmp  = "%description\n"
-        tmp += "%{fullname} %{version}\n\n"
+        tmp += "%{project}\n\n"
         return tmp
 
     def _createInstall(self):
@@ -163,65 +137,77 @@ Provides: %{projectUp}_v%{lhcb_maj_version} = %{lhcb_maj_version}.%{lhcb_min_ver
         Prepare the Install section of the RPM
         '''
         spec = "%install\n"
-        spec += '''
+        spec += """ 
 
 [ -d ${RPM_BUILD_ROOT} ] && rm -rf ${RPM_BUILD_ROOT}
 
-mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
-
-if [ $? -ne 0 ]; then
-  exit $?
+mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft
+"""
+        if self._srcroot != None:
+            spec +=Template("""
+if [ -z $${TMPDIR} ]; then
+  cd /tmp
+else
+  cd $${TMPDIR}
 fi
+git clone --branch %{version} %{giturl}
+cp -r %{project}/${srcroot}/* $${RPM_BUILD_ROOT}/opt/LHCbSoft
 
-rsync -avrz %{releasedir}/%{projectUp}/%{projectUp}_%{lbversion} ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}
+""").substitute(srcroot=self._srcroot)
+        else:
+            spec +="""
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft
+git clone --branch %{version} %{giturl}
 
-if [ $? -ne 0 ]; then
-  exit $?
-fi
-
-
-        '''
+""" 
+        spec += "\n\n"
         return spec
 
     def _createTrailer(self):
         '''
         Prepare the RPM header
         '''
-        trailer = '''
-%clean
 
-%post -p /bin/bash
-
-if [ "$MYSITEROOT" ]; then
-PREFIX=$MYSITEROOT
-else
-PREFIX=%{prefix}
-fi
-
-# Setting the COMPAT_prod link to this version
-echo "Creating link %{projectUp}_prod pointing to %{projectUp}_%{lbversion}"
-ln -nsf $PREFIX/lhcb/%{projectUp}/%{projectUp}_%{lbversion} $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod
-
-%postun -p /bin/bash
-if [ "$MYSITEROOT" ]; then
-PREFIX=$MYSITEROOT
-else
-PREFIX=%{prefix}
-fi
-echo "In uninstall script"
-# Removing the link if broken !
-if [ -h $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod ]; then
-  if [ ! -e $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod ]; then
-    echo "Removing link to update script:  $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod"
-    rm -f $PREFIX/lhcb/%{projectUp}/%{projectUp}_prod
-  fi
-fi
-
-
+        # Prepare the files list
+        if self._srcroot != None:
+            import os
+            trailer ="""
 %files
 %defattr(-,root,root)
-%{prefix}/lhcb/%{projectUp}/%{projectUp}_%{lbversion}
+%{prefix}/*
+"""
+        else:
+            trailer ="""
+%files
+%defattr(-,root,root)
+%{prefix}/%{project}
+"""
 
+        # Adding the post install script if requested
+        if self._postinstall != None:
+            trailer +='''
+%%post -p /bin/bash
+
+if [ "${MYSITEROOT}" ]; then
+PREFIX=${MYSITEROOT}
+else
+PREFIX=%%{prefix}
+fi
+
+${MYSITEROOT}/%s
+
+''' % self._postinstall
+        else:
+            trailer +="""
+%post
+"""
+
+
+            
+        trailer +="""
+%postun
+
+%clean
 
 %define date    %(echo `LC_ALL=\"C\" date +\"%a %b %d %Y\"`)
 
@@ -229,8 +215,7 @@ fi
 
 * %{date} User <ben.couturier..rcern.ch>
 - first Version
-
-        '''
+"""
 
         return trailer
 
@@ -239,24 +224,34 @@ fi
 #
 ###############################################################################
 import LbUtils.Script
-class Script(LbUtils.Script.PlainScript):
+class GenericScript(LbUtils.Script.PlainScript):
     '''
-    Script to generate the Spec file for the LHCb Compat project.
+    Script to generate the Spec file for an LHCb project.
     '''
-    __usage__ = '''%prog [options] compat_version
+    __usage__ = '''%prog [options] rpmname rpmversion requirement1 requirement2 [...]
 
-e.g. %prog v1r19 -o tmp.spec
-
-The spec can then be built with:
-QA_RPATHS=0x003 rpmbuild -bb tmp.spec 
-
-'''
+e.g. %prog -o tmp.spec LbEnv 1.0.0 ssh://git@gitlab.cern.ch:7999/lhcb-core/LbEnv.git LBSCRIPTS_v8r4p2'''
     __version__ = ''
 
     def addBasicOptions(self, parser):
         '''
         Add some basic (common) options to the option parser
         '''
+        parser.add_option('-v', '--version',
+                          dest="version",
+                          default=None,
+                          action="store",
+                          help="Force LCG version")
+        parser.add_option('-p', '--platform',
+                          dest="platform",
+                          default=None,
+                          action="store",
+                          help="Force platform")
+        parser.add_option('-n', '--name',
+                          dest="name",
+                          default=None,
+                          action="store",
+                          help="Force the name of the RPM generated")
         parser.add_option('-b', '--buildarea',
                           dest="buildarea",
                           default="/tmp",
@@ -267,12 +262,17 @@ QA_RPATHS=0x003 rpmbuild -bb tmp.spec
                           default = None,
                           action="store",
                           help="File name for the generated specfile [default output to stdout]")
-        parser.add_option('-e', '--releasedir',
-                          dest="releasedir",
-                          default=os.environ["LHCBRELEASES"],
+        parser.add_option('--srcroot',
+                          dest="srcroot",
+                          default = None,
                           action="store",
-                          help="LHCb Releases area")
-
+                          help="Subdirectory of the git package to use as a root for the installation")
+        parser.add_option('--post-install',
+                          dest="postinstall",
+                          default = None,
+                          action="store",
+                          help="Script to include as post install for the RPM")
+ 
         return parser
 
     def defineOpts(self):
@@ -307,23 +307,35 @@ QA_RPATHS=0x003 rpmbuild -bb tmp.spec
         '''
         Main method for the script
         '''
-        if len(self.args) != 1:
+        if len(self.args) < 2:
             self.parser.error('wrong number of arguments')
 
         # Extracting info from filename
-        project = "Compat"
-        version = self.args[0]
+        project = self.args[0]
+        version = self.args[1]
+        giturl  = self.args[2]
 
-        self.log.warning("Packaging Compat %s" % version)
+        requires = self.args[3:]
+
+        self.log.warning("Generating Generic RPM for %s %s - source: %s" % (project, version, giturl))
 
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version)
-        releasedir = self.options.releasedir
-        
-        spec = LHCbLbScriptsRpmSpec(project, version, buildarea, releasedir)
 
+        specname = project
+        if self.options.name != None:
+            specname = self.options.name
+
+        spec = LHCbGenericRpmSpec(specname, version, giturl, requires,  buildarea)
+        if self.options.srcroot != None:
+            spec.setsrcroot(self.options.srcroot)
+
+        if self.options.postinstall != None:
+            spec.setpostinstall(self.options.postinstall)
+            
         if self.options.output:
             with open(self.options.output, "w") as outputfile:
                 outputfile.write(spec.getSpec())
         else:
             print spec.getSpec()
+

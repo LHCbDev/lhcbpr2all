@@ -302,7 +302,7 @@ def test_custom_projects():
     assert p._checkout == ignore, (p._checkout, ignore)
 
     class Gaudi(Project):
-        __url__ = 'http://git.cern.ch/pub/gaudi'
+        __url__ = 'https://gitlab.cern.ch/gaudi/Gaudi.git'
         def commitId(self):
             import re
             if self.version.lower() == 'head':
@@ -320,7 +320,7 @@ def test_custom_projects():
     assert g.name == 'Gaudi'
     assert g.version == 'v26r1'
     assert g.commitId() == 'GAUDI/GAUDI_v26r1'
-    expected = (0, str({'url': 'http://git.cern.ch/pub/gaudi',
+    expected = (0, str({'url': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
                         'commit': 'GAUDI/GAUDI_v26r1',
                         'verbose': True}), '')
     output = g.checkout(verbose=True)
@@ -402,3 +402,49 @@ def test_no_patch_flag():
         assert False, "ValueError expected"
     except ValueError:
         pass
+
+def test_no_test_flag():
+    s = Slot('lhcb-no-test')
+    assert s.no_test == False
+
+    d = s.toDict()
+    assert d.get('no_test', False) == False
+
+    s = Slot.fromDict(d)
+    assert s.no_test == False
+
+    s = Slot('lhcb-no-test', no_test=True)
+    assert s.no_test == True
+
+    d = s.toDict()
+    assert d.get('no_test', False) == True
+
+    s = Slot.fromDict(d)
+    assert s.no_test == True
+
+    try:
+        s.test()
+        assert False, "ValueError expected"
+    except ValueError:
+        pass
+
+    p = Project('Gaudi', 'HEAD')
+    assert p.no_test == False
+
+    d = p.toDict()
+    assert d.get('no_test', False) == False
+
+    s = Project.fromDict(d)
+    assert s.no_test == False
+
+    p = Project('Gaudi', 'HEAD', no_test=True)
+    assert p.no_test == True
+
+    d = p.toDict()
+    assert d.get('no_test', False) == True
+
+    s = Project.fromDict(d)
+    assert p.no_test == True
+
+    p = DBASE()
+    assert p.no_test == True

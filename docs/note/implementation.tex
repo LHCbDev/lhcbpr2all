@@ -29,7 +29,10 @@ is separated from the build part, we started from a minimal configuration file
 describing a single slot.  To simplify the prototyping phase, we have chosen the
 JSON format (semi-structured) instead of XML (structured), and, because of the
 way JSON objects are converted in Python, inside the code we used simple nested
-Python dictionaries.
+Python dictionaries.  The format and the internal representation of the
+configuration are still under discussion and they will probably change in a
+production version of the system to include, for example, a validation
+mechanism.
 
 The configuration of a slot consists of a JSON object with the following format:
 \begin{description}
@@ -207,8 +210,8 @@ mechanism has been devised: we can use the configuration field
 \emph{preconditions} (the only one used in this step) to declare functions to be
 called before building the slot.
 
-At the time of writing, there is only one function that can be used as a
-precondition, \emph{waitForFile}, which accepts as arguments:
+The old ``wait for'' functionality is obtained via the precondition function
+\emph{waitForFile}, which accepts the arguments:
 \begin{description}
   \item[path] the path to the file we have to wait for
   \item[timeout] time before giving up waiting (\texttt{datetime.timedelta},
@@ -361,11 +364,10 @@ change the default \emph{Availability} to take the node off line if idle
 (\emph{Idle delay}: 20 minutes) and to connect if needed (\emph{In demand
 delay}: 1 minute).  Because of the particular configuration of the build
 machines, we have to set the \emph{Remote FS root} to point to a directory on
-the dedicated disk (\texttt{/build/jenkins}).  We do not have Java installed on
-the slave (or the version is too old), so, because to download it from the
-Oracle web site requires authentication, we install the JRE\footnote{Java
+the dedicated disk (\texttt{/build/jenkins}).  During the tests we did not have Java installed on
+the slaves (or the version was too old), so we installed the JRE\footnote{Java
 Runtime Environment\cite{JRE}.} by hand on each node in the \texttt{jre}
-directory under the configured \emph{Remote FS root} and declare it in the
+directory under the configured \emph{Remote FS root} and declared it in the
 configuration (field \emph{JavaPath} in the advanced section of \emph{Launch
 method}).  The number of executors (\emph{\# of executors}) is usually set to
 the number of CPUs of the slave, but our builds and tests use on average two
