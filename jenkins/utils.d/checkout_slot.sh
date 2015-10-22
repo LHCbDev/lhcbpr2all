@@ -168,7 +168,7 @@ checkout_slot flavour slot slot_build_id
         lbn-checkout ${loglevel_opt} --build-id "${slot}.${slot_build_id}" --artifacts-dir "${dest_dir}" ${submit_opt} ${ignore_error_opt} ${slot}
 
         # We need to copy the configuration at the end because
-        # StachCkeckout.py cleans the artifacts before starting
+        # lbn-checkout cleans the artifacts before starting
         for f in "${config_dir}/configuration.py" "${config_dir}/${slot}.json" "${config_dir}/configuration.xml" ${env_log} ; do
             test -e "$f" && cp "$f" ${dest_dir}
         done

@@ -12,20 +12,10 @@
 
 PERIOD=${1:-3600}
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+. $(dirname $0)/utils.sh
 
-# Set common environment
-. $(dirname $0)/common.sh
+set_common
 
-export CMTCONFIG=$platform
+get_configs_folder --dest-dir "configs"
 
-if [ "$JENKINS_MOCK" != "true" -o ! -e configs ] ; then
-  # Get the slot configuration files from Subversion
-  lbn-get-configs
-fi
-
-lbp-check-periodic-tests configs/test_schedule.xml -i $PERIOD -o periodic_tests_list.txt
-
-
-
+lbp-check-periodic-tests configs/test_schedule.xml -i $PERIOD

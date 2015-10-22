@@ -1,0 +1,107 @@
+digraph "Jenkins-scripts" {
+
+"cron" [shape=circle];
+
+cron -> { rank = same; node [shape=box3d];
+  "nightly-slot";
+  "nightly-slot-tests-poll";
+  "periodic-slot-tests-poll";
+  "nightly-release-poll";
+}
+
+// Jenkins jobs
+subgraph jobs {
+  node [shape=box3d];
+  //label = "Jenkins jobs";
+
+  "nightly-slot" -> "nightly-slot-checkout";
+  "nightly-slot-checkout" -> "nightly-slot-precondition";
+  "nightly-slot-checkout" -> "nightly-slot-build-platform";
+  "nightly-slot-precondition" -> "nightly-slot-build-platform";
+
+  "nightly-slot-tests-poll" -> "nightly-slot-test-project-platform";
+
+  "periodic-slot-tests-poll" -> "nightly-slot-test-project-platform";
+
+  "nightly-release-poll" -> "lhcb-release" -> "nightly-slot-checkout";
+
+  "lhcb-gaudi-merge" -> "nightly-slot-checkout";
+}
+
+// Scripts
+subgraph cluster_scripts {
+  node [shape=box];
+  rank = same;
+  label = "shell scripts";
+
+  "nightly-slot.sh";
+  "nightly-slot-checkout.sh";
+  "nightly-slot-precondition.sh";
+  "nightly-slot-build-platform.sh";
+  "nightly-slot-tests-poll.sh";
+  "nightly-slot-test-project-platform.sh" [label = "nightly-slot-test-project-platform.sh\n(testrunners)"];
+  "nightly-release-poll.sh";
+
+  "periodic-slot-tests-poll.sh";
+}
+
+// Shell commands (aliases)
+subgraph cluster_commands {
+  node [shape=ellipse];
+  rank = same;
+  label = "shell commands";
+
+  get_configs_folder;
+  extract_enabled_slots;
+  checkout_slot;
+  push_artifact;
+  check_preconditions;
+  get_artifact;
+  execute_preconditions;
+  build_slot;
+  create_alias;
+
+  build_slot -> { create_alias push_artifact }
+};
+
+// Connections jobs->scripts
+edge [style=dashed];
+"nightly-slot" -> "nightly-slot.sh";
+"nightly-slot-checkout" -> "nightly-slot-checkout.sh";
+"nightly-slot-precondition" -> "nightly-slot-precondition.sh";
+"nightly-slot-build-platform" -> "nightly-slot-build-platform.sh";
+"nightly-slot-tests-poll" -> "nightly-slot-tests-poll.sh";
+"nightly-slot-test-project-platform" -> "nightly-slot-test-project-platform.sh";
+"periodic-slot-tests-poll" -> "periodic-slot-tests-poll.sh";
+"nightly-release-poll" -> "nightly-release-poll.sh";
+
+// Connections scripts->commands
+// fake level
+edge [style=dotted];
+"nightly-slot.sh" -> {
+  get_configs_folder
+  extract_enabled_slots
+};
+
+"nightly-slot-checkout.sh" -> {
+  get_configs_folder
+  checkout_slot
+  push_artifact
+  check_preconditions
+};
+
+"nightly-slot-precondition.sh" -> {
+  get_artifact
+  execute_preconditions
+};
+
+"nightly-slot-build-platform.sh" -> {
+  get_artifact
+  build_slot
+};
+
+"periodic-slot-tests-poll.sh" -> {
+  get_configs_folder
+};
+//"nightly-slot-test-project-platform.sh" -> { node [shape=folder]; testrunners };
+}

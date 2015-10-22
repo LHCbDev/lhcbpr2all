@@ -10,21 +10,13 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-# hack because of a bug with non-writable home (this script is run by tomcat)
-export HOME=$PWD
+. $(dirname $0)/utils.sh
 
 # Set common environment
-. $(dirname $0)/common.sh
+set_common
 
-export CMTCONFIG=$platform
+# 5 minutes grace time before getting data from the URL
+# see https://its.cern.ch/jira/browse/LBCORE-883
+sleep 300
 
-if [ -z "${platforms}" ] ; then
-  platforms=$(lbn-list-platforms ${config_file})
-fi
-
-if [ -z "${platforms}" ] ; then
-  echo "ERROR: list of platforms not specified neither in the configuration nor in the parameters"
-  exit 1
-fi
-
-echo "platforms=${platforms}" > ${ARTIFACTS_DIR}/platforms_list.txt
+lbn-release-poll --debug http://buildlhcb.cern.ch/cgi-bin/getreleases

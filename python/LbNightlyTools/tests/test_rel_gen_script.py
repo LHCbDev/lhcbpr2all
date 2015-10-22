@@ -12,7 +12,7 @@
 # Uncomment to disable the tests.
 #__test__ = False
 
-from LbNightlyTools import Release
+from LbNightlyTools.Scripts import Release
 
 import os
 import json

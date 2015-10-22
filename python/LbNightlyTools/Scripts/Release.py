@@ -186,6 +186,9 @@ class Poll(LbUtils.Script.PlainScript):
     need to be built.
     '''
     __usage__ = '%prog [options] url'
+    PARAM_PREFIX = 'release-params-'
+    PARAM_SUFFIX = '.txt'
+    DEFAULT_BUILD_TOOL = 'cmt'
 
     def defineOpts(self):
         '''
@@ -194,14 +197,8 @@ class Poll(LbUtils.Script.PlainScript):
         self.parser.add_option('--state-file', action='store',
                                help='file where to keep the latest state of the'
                                     ' stacks to be built')
-        self.parser.add_option('--output-param-file', action='store',
-                               help='file where to store the parameter for the '
-                                    'release trigger job in Jenkins. If '
-                                    'there is nothing to build, the file is '
-                                    'removed (for integration with Jenkins).')
 
-        self.parser.set_defaults(state_file='stacks.json',
-                                 output_param_file='params.txt')
+        self.parser.set_defaults(state_file='stacks.json')
 
     def main(self):
         '''
@@ -214,7 +211,6 @@ class Poll(LbUtils.Script.PlainScript):
         url = self.args[0]
 
         state_file = self.options.state_file
-        output_param_file = self.options.output_param_file
 
         # get the stacks triggered last time
         self.log.debug('load previous state')
@@ -240,75 +236,36 @@ class Poll(LbUtils.Script.PlainScript):
         with codecs.open(state_file, 'w', 'utf-8') as output:
             json.dump(stacks, output)
 
-        # check which entries need to be built
-        indexes = [str(i)
-                   for i, s in enumerate(stacks)
-                   if s not in previous]
-
-        if indexes:
-            self.log.debug('write parameters file')
-            with open(output_param_file, 'w') as output:
-                output.write('indexes=%s\n' % ' '.join(indexes))
-                output.write('stacks=%s\n' % json.dumps(stacks))
-        else:
-            # prevent further triggering
-            self.log.debug('nothing to build')
-            if os.path.exists(output_param_file):
-                os.remove(output_param_file)
-
+        # ensure that we will not trigger by mistake
+        self._clean_stacks_params()
+        # generate one param file for each stack to be built
+        for idx, stack in enumerate([s for s in stacks if s not in previous]):
+            self._gen_stack_params(idx, stack)
         return 0
 
-class Trigger(LbUtils.Script.PlainScript):
-    '''
-    Poll a URL for the list of stacks not yet released and return those that
-    need to be built.
-    '''
-    __usage__ = '%prog [options] <stacks JSON file> <index>'
-
-    def defineOpts(self):
+    def _clean_stacks_params(self):
         '''
-        Options specific to this script.
+        Remove param files matching the produced file names.
         '''
-        self.parser.add_option('--output-param-file', action='store',
-                               help='file where to store the parameter for the '
-                                    'release trigger job in Jenkins. If '
-                                    'there is nothing to build, the file is '
-                                    'removed (for integration with Jenkins).')
+        self.log.debug('removing old param files')
+        map(os.remove, [filename
+                        for filename in os.listdir(os.curdir)
+                        if filename.startswith(self.PARAM_PREFIX) and
+                           filename.endswith(self.PARAM_SUFFIX)])
 
-        self.parser.set_defaults(output_param_file='params.txt')
-
-    def main(self):
-        '''
-        Script logic.
-        '''
-        if len(self.args) != 2:
-            self.parser.error('wrong number of arguments')
-
-        # URL to poll
-        stacks_file = self.args[0]
-        try:
-            index = int(self.args[1])
-        except:
-            self.parser.error('invalid argument "%s": it should be an int' %
-                              self.args[1])
-
-        if os.path.exists(stacks_file):
-            with codecs.open(stacks_file, 'r', 'utf-8') as state:
-                stacks = json.load(state)
-        else:
-            self.log.error('file %s not found', stacks_file)
-            return 1
-
-        stack = stacks[index]
-
+    def _gen_stack_params(self, idx, stack):
         projects_list = ' '.join(' '.join(project_version)
                                  for project_version
                                      in stack.get('projects', []))
         platforms = ' '.join(stack.get('platforms', []))
-        build_tool = stack.get('build_tool', 'cmt')
+        build_tool = stack.get('build_tool', self.DEFAULT_BUILD_TOOL)
 
-        output_param_file = self.options.output_param_file
+        output_param_file = '{0}{1}{2}'.format(self.PARAM_PREFIX,
+                                               idx,
+                                               self.PARAM_SUFFIX)
         if projects_list and platforms:
+            self.log.info('generating %s', output_param_file)
+            self.log.debug('projects: %s', projects_list)
             data = ('projects_list={0}\n'
                     'platforms={1}\n'
                     'build_tool={2}\n').format(projects_list,
@@ -320,9 +277,7 @@ class Trigger(LbUtils.Script.PlainScript):
             self.log.error('invalid stack configuration')
             if os.path.exists(output_param_file):
                 os.remove(output_param_file)
-            return 1
 
-        return 0
 
 _manifest_template = u'''<?xml version='1.0' encoding='UTF-8'?>
 <manifest>
