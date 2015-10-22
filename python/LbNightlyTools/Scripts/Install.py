@@ -24,6 +24,7 @@ import logging
 import time
 import shutil
 import json
+import sys
 
 from subprocess import Popen, PIPE, call
 from tempfile import mkstemp
@@ -31,6 +32,19 @@ from datetime import datetime
 from socket import gethostname
 
 ARTIFACTS_URL = 'https://buildlhcb.cern.ch/artifacts'
+
+CHECK_SSL = True
+
+def urlopen(url):
+    '''
+    Wrapper for urllib2.urlopen to enable or disable SSL verification.
+    '''
+    if not CHECK_SSL and sys.version_info >= (2, 7, 9):
+        # with Python >= 2.7.9 SSL certificates are validated by default
+        # but we can ignore them
+        from ssl import SSLContext, PROTOCOL_SSLv23
+        return urllib2.urlopen(url, context=SSLContext(PROTOCOL_SSLv23))
+    return urllib2.urlopen(url)
 
 def _list_http(url):
     '''
@@ -58,7 +72,7 @@ def _list_http(url):
                 if '?' not in href and href not in url:
                     self.data.append(href)
     parser = ListHTMLParser()
-    parser.feed(urllib2.urlopen(url).read())
+    parser.feed(urlopen(url).read())
     return parser.data
 
 def _list_ssh(url):
@@ -104,7 +118,7 @@ def getURL(url, dst):
         fsrc = None
         fdst = None
         try:
-            fsrc = urllib2.urlopen(url)
+            fsrc = urlopen(url)
             fdst = open(dst, 'wb')
             shutil.copyfileobj(fsrc, fdst)
         finally:
@@ -339,6 +353,11 @@ class Script(LbUtils.Script.PlainScript):
                                '[default: False]',
                           default=False)
 
+        parser.add_option('-k', '--insecure',
+                          action='store_true',
+                          help='skip SSL validation',
+                          default=False)
+
         parser.set_defaults(artifacts_root=ARTIFACTS_URL,
                             flavour='nightly')
 
@@ -357,6 +376,11 @@ class Script(LbUtils.Script.PlainScript):
             slot, build_id = self.args
         except ValueError:
             self.parser.error('wrong number of arguments')
+
+        if opts.insecure:
+            global CHECK_SSL
+            CHECK_SSL = False
+            self.log.debug('ignoring SSL certificates')
 
         dest = opts.dest or os.path.join(slot, build_id)
         if not os.path.exists(dest):
