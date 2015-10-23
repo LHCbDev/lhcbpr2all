@@ -309,8 +309,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
             opts.use_ccache = False
 
         self.slot.cache_entries['CMAKE_USE_CCACHE'] = opts.use_ccache
-        if str(self.slot.build_tool) == 'CMT' and opts.use_ccache:
-            self.slot.env.append('CMTEXTRATAGS=use-ccache')
+        # See LBCORE-637, LBCORE-953
+        # if str(self.slot.build_tool) == 'CMT' and opts.use_ccache:
+        #     self.slot.env.append('CMTEXTRATAGS=use-ccache')
 
         if opts.submit and not opts.projects:
             # ensure that results for the current slot/build/platform are
