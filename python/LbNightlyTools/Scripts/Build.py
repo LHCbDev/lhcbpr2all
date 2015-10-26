@@ -136,6 +136,16 @@ class Script(BaseScript):
                               '$LBN_LOAD_AVERAGE or N of cores x %g)'
                               % LOAD_AVERAGE_SCALE)
 
+        group.add_option('--ccache',
+                         action='store_true', dest='use_ccache',
+                         help='use ccache to speed up builds (default if '
+                         'the environment variable CCACHE_DIR is defined)')
+
+        group.add_option('--no-ccache',
+                         action='store_false', dest='use_ccache',
+                         help='do not use ccache (default if '
+                         'the environment variable CCACHE_DIR is not defined)')
+
         group.add_option('--coverity',
                          action='store_true',
                          help='enable special Coverity static analysis on the '
@@ -148,6 +158,7 @@ class Script(BaseScript):
             load_average = cpu_count()*LOAD_AVERAGE_SCALE
         self.parser.set_defaults(jobs=cpu_count() + 1,
                                  load_average=load_average,
+                                 use_ccache='CCACHE_DIR' in os.environ,
                                  coverity=False)
 
     def defineOpts(self):
@@ -291,6 +302,16 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                           r'(\.git)|(\.svn)|'
                                           r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
                                           ).format(self.platform))
+
+        # See LBCORE-637 (we do not want ccache for releases)
+        if opts.use_ccache and os.environ.get('flavour') == 'release':
+            self.log.warning('cannot use ccache for releases')
+            opts.use_ccache = False
+
+        self.slot.cache_entries['CMAKE_USE_CCACHE'] = opts.use_ccache
+        # See LBCORE-637, LBCORE-953
+        # if str(self.slot.build_tool) == 'CMT' and opts.use_ccache:
+        #     self.slot.env.append('CMTEXTRATAGS=use-ccache')
 
         if opts.submit and not opts.projects:
             # ensure that results for the current slot/build/platform are
