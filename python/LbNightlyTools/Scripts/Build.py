@@ -109,6 +109,23 @@ def genPackageName(proj, platform, build_id=None, artifacts_dir=None):
     return packname
 
 
+def which(cmd):
+    '''
+    Find the given command in the directories specified in the environment
+    variable PATH.
+
+    >>> which('ls')
+    '/bin/ls'
+    '''
+    if os.path.isfile(cmd):
+        return os.path.abspath(cmd)
+    for full_cmd in [os.path.join(path, cmd)
+                     for path in os.environ.get('PATH', '').split(os.pathsep)]:
+        if os.path.isfile(full_cmd):
+            return full_cmd
+    return None
+
+
 from LbNightlyTools.Scripts.Common import BaseScript
 class Script(BaseScript):
     '''
@@ -310,8 +327,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
         self.slot.cache_entries['CMAKE_USE_CCACHE'] = opts.use_ccache
         # See LBCORE-637, LBCORE-953
-        # if str(self.slot.build_tool) == 'CMT' and opts.use_ccache:
-        #     self.slot.env.append('CMTEXTRATAGS=use-ccache')
+        if (str(self.slot.build_tool) == 'CMT' and opts.use_ccache and
+            which('ccache')): # CMT requires ccache in the PATH
+            self.slot.env.append('CMTEXTRATAGS=use-ccache')
 
         if opts.submit and not opts.projects:
             # ensure that results for the current slot/build/platform are
