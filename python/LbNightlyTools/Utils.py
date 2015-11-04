@@ -493,6 +493,8 @@ class Dashboard(object):
         @param platform: optional platform, to remove only the documents for one
                          platform
         '''
+        if not self.db:
+            return
         viewname = 'dashboard/docsBySlotBuild'
         if platform is not None:
             view = self.db.view(viewname, key=[slot, build_id, platform])
