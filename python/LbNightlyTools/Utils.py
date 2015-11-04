@@ -431,6 +431,7 @@ class Dashboard(object):
                 self.db = self.server[db]
             except (couchdb.ResourceNotFound,
                     couchdb.ServerError,
+                    couchdb.Unauthorized,
                     socket.error):
                 self._log.warning('failed to access %s%s', server, db)
                 # ignore connection failures
