@@ -19,4 +19,4 @@ set_common
 # see https://its.cern.ch/jira/browse/LBCORE-883
 sleep 300
 
-lbn-release-poll --debug http://buildlhcb.cern.ch/cgi-bin/getreleases
+lbn-release-poll --debug http://ariadne-lhcb.cern.ch/cgi-bin/getreleases
