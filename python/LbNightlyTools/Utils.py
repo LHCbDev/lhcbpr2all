@@ -385,7 +385,7 @@ class Dashboard(object):
         '''
         Return the path to the artifacts directory for the given flavour.
         '''
-        root = os.path.join(os.path.sep, 'data', 'artifacts')
+        root = os.path.join(os.path.sep, 'data', 'archive', 'artifacts')
         if flavour == 'nightly':
             return root
         else:
@@ -536,7 +536,7 @@ class Dashboard(object):
 
     def publishFromArtifacts(self, day=None):
         '''
-        Push the JSON files in /data/artifacts for the given day to the
+        Push the JSON files in /data/archive/artifacts for the given day to the
         dashboard, if not already present.
 
         @param day: anything that can be converted to a string in the format

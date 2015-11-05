@@ -426,7 +426,7 @@ via <tt class="docutils literal"><span class="pre">nightly-slot-precondition</sp
 </div>
 <p>We try to recover from temporary failures of the jobs infrastructure by
 automatically restarting the failed jobs (up to 3 times).  An overview of the
-status of the nightly build jobs can be found in the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status
+status of the nightly build jobs can be found in the <a class="reference external" href="https://lhcb-jenkins.cern.ch/follow-builds-status">Jenkins Jobs Status
 page</a>.</p>
 <p>It must be noted that only failures of the Nightly Build System
 are shown as failures in Jenkins, and failures of the builds or tests are
@@ -493,7 +493,7 @@ operations.</p>
 <p>If the slot is still in the checkout step, stopping the checkout job will be
 enough:</p>
 <ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>go to the <a class="reference external" href="https://lhcb-jenkins.cern.ch/follow-builds-status">Jenkins Jobs Status page</a></li>
 <li>identify the running checkout job you want to stop in the <em>checkout</em> column</li>
 <li>click on the job link</li>
 <li>click on the small red square icon with an X at the top right, close to the
@@ -502,7 +502,7 @@ text <em>Progress:</em></li>
 <p>If the checkout was completed, you need to stop all the building platforms and
 the wrapper build job:</p>
 <ol class="arabic simple">
-<li>got to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>got to the <a class="reference external" href="https://lhcb-jenkins.cern.ch/follow-builds-status">Jenkins Jobs Status page</a></li>
 <li>identify the running build job you want to stop in the <em>precondition-build</em>
 column</li>
 <li>click on the job link</li>
@@ -529,7 +529,7 @@ afford the time it takes for a checkout (for slots with several projects it may
 take more than one hour).</p>
 <p>This is also the only option in case we need a fresh checkout.</p>
 <ol class="arabic simple">
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>go to the <a class="reference external" href="https://lhcb-jenkins.cern.ch/follow-builds-status">Jenkins Jobs Status page</a></li>
 <li>click on the checkout job of the slot you want to restart</li>
 <li>click on the <em>Rebuild</em> button in the column on the left</li>
 <li>(optionally) if you want to override the default list of platforms to build,
@@ -547,7 +547,7 @@ specific host. In most cases it must be left empty.</p>
 reason.</p>
 <ol class="arabic simple">
 <li>stop the build of the whole slot following the instructions above</li>
-<li>go to the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status page</a></li>
+<li>go to the <a class="reference external" href="https://lhcb-jenkins.cern.ch/follow-builds-status">Jenkins Jobs Status page</a></li>
 <li>identify the job corresponding to the slot you need to restart and click on
 its link</li>
 <li>click on <em>Rebuild</em> in the menu on the left</li>
@@ -564,7 +564,7 @@ Platform</a>), if needed</li>
 <li>from the job page, click on <em>Rebuild</em> in the menu on the left</li>
 <li>click on the <em>Rebuild</em> button not modifying the content of the fields</li>
 </ol>
-<p>Note that you can access the specific build page from the <a class="reference external" href="https://buildlhcb.cern.ch/jenkins/follow-builds-status">Jenkins Jobs Status
+<p>Note that you can access the specific build page from the <a class="reference external" href="https://lhcb-jenkins.cern.ch/follow-builds-status">Jenkins Jobs Status
 page</a> if you cannot find it through the <a class="reference external" href="https://lhcb-nightlies.cern.ch/">Nightly Builds Dashboard</a>.</p>
 </div>
 </div>
@@ -581,8 +581,8 @@ is just noise in the web page.</p>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>connect to <tt class="docutils literal">buildlhcb.cern.ch</tt> as <em>lhcbsoft</em></li>
-<li>remove the symlink <tt class="docutils literal"><span class="pre">/data/artifacts/nightly/&lt;slot&gt;/&lt;day&gt;</span></tt>, where
+<li>connect to <tt class="docutils literal"><span class="pre">lhcb-archive.cern.ch</span></tt> as <em>lhcbsoft</em></li>
+<li>remove the symlink <tt class="docutils literal"><span class="pre">/data/archive/artifacts/nightly/&lt;slot&gt;/&lt;day&gt;</span></tt>, where
 <tt class="docutils literal">&lt;day&gt;</tt> is the current date as yyyy-mm-dd</li>
 </ol>
 </blockquote>
@@ -654,7 +654,7 @@ copy</li>
 </ol>
 <blockquote>
 <ol class="arabic simple">
-<li>edit <tt class="docutils literal">/etc/httpd/conf.d/couchdb.conf</tt> replacing  <tt class="docutils literal"><span class="pre">nightlies-nightly</span></tt>
+<li>edit <tt class="docutils literal"><span class="pre">/etc/httpd/conf.d/25-lbcouchdb443.conf</span></tt> replacing  <tt class="docutils literal"><span class="pre">nightlies-nightly</span></tt>
 with <tt class="docutils literal"><span class="pre">nightlies-nightly-bk</span></tt></li>
 <li>(as root) call <tt class="docutils literal">service httpd reload</tt></li>
 </ol>

@@ -18,7 +18,7 @@
 export LHCBNIGHTLIES=/afs/cern.ch/lhcb/software/nightlies
 
 logfile=$LHCBNIGHTLIES/www/logs/cleanup_artifacts.log
-artifacts_dir=/data/artifacts
+artifacts_dir=/data/archive/artifacts
 
 flavours=$(ls ${artifacts_dir} | grep -v lhcb-)
 start_dirs=

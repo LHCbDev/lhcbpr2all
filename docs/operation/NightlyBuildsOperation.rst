@@ -219,8 +219,8 @@ is just noise in the web page.
 
 1. if you need to remove the current build of the day:
 
-  1. connect to ``buildlhcb.cern.ch`` as *lhcbsoft*
-  2. remove the symlink ``/data/artifacts/nightly/<slot>/<day>``, where
+  1. connect to ``lhcb-archive.cern.ch`` as *lhcbsoft*
+  2. remove the symlink ``/data/archive/artifacts/nightly/<slot>/<day>``, where
      ``<day>`` is the current date as yyyy-mm-dd
 
 2. as *lhcbsoft* set up the environment for the Nightly Build tools
@@ -267,7 +267,7 @@ use a fallback replica.
    copy
 4. Redirect the dashboard web page traffic to the backup database
 
-  1. edit ``/etc/httpd/conf.d/couchdb.conf`` replacing  ``nightlies-nightly``
+  1. edit ``/etc/httpd/conf.d/25-lbcouchdb443.conf`` replacing  ``nightlies-nightly``
      with ``nightlies-nightly-bk``
   2. (as root) call ``service httpd reload``
 
@@ -301,7 +301,7 @@ use a fallback replica.
 
 .. _LHCbNightlyConf: https://svnweb.cern.ch/trac/lhcb/browser/LHCbNightlyConf/trunk
 
-.. _Nightly Builds View: https://buildlhcb.cern.ch/jenkins/view/Nightly%20Builds/
+.. _Nightly Builds View: https://lhcb-jenkins.cern.ch/view/Nightly%20Builds/
 .. _Nightly Builds Dashboard: https://lhcb-nightlies.cern.ch/
 
-.. _Jenkins Jobs Status page: https://buildlhcb.cern.ch/jenkins/follow-builds-status
+.. _Jenkins Jobs Status page: https://lhcb-jenkins.cern.ch/follow-builds-status

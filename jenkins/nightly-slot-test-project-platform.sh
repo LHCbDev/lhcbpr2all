@@ -36,7 +36,7 @@ else
   fi
 
   submit_opt="--submit --flavour ${flavour}"
-  rsync_opt="--rsync-dest buildlhcb.cern.ch:${deploybase}/${slot_build_id}"
+  rsync_opt="--rsync-dest lhcb-archive.cern.ch:${deploybase}/${slot_build_id}"
 
   lbn-install --verbose \
               --flavour ${input_flavour} \
