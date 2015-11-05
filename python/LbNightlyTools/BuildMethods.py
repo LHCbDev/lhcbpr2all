@@ -31,6 +31,15 @@ def log_call(*args, **kwargs):
     return _log_call(*args, **kwargs)
 
 
+def ensure_dir(cls, path):
+    '''
+    Make sure that a directory exist, creating it and printing a warning if not.
+    '''
+    if not os.path.exists(path):
+        __log__.warning('directory %s is missing, I create it', path)
+        os.makedirs(path)
+
+
 class BuildResults(object):
     '''
     Class used to analyze the build reports of projects.
@@ -86,6 +95,8 @@ class make(object):
             cmd.append('-l%.1f' % max_load)
         cmd.extend(kwargs.get('args', []))
         cmd.append(target)
+
+        ensure_dir(cmd_kwargs['cwd'])
 
         __log__.debug('running %s', ' '.join(cmd))
         started = datetime.now()
@@ -202,7 +213,9 @@ class cmake(make):
                           for n in ('COMPILE', 'LINK', 'CUSTOM')] +
                          cache_entries)
 
-        with open(self._cache_preload_file(proj), 'w') as cache:
+        cache_file = self._cache_preload_file(proj)
+        ensure_dir(os.path.dirname(cache_file))
+        with open(cache_file, 'w') as cache:
             cache.writelines(['set(%s "%s" CACHE STRING "override")\n' % item
                               for item in cache_entries])
 
