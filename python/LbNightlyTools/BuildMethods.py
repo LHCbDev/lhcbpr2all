@@ -31,7 +31,7 @@ def log_call(*args, **kwargs):
     return _log_call(*args, **kwargs)
 
 
-def ensure_dir(cls, path):
+def ensure_dir(path):
     '''
     Make sure that a directory exist, creating it and printing a warning if not.
     '''
