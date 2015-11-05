@@ -730,6 +730,7 @@ def _packcmd(srcs, dest, cwd='.', dereference=True, exclude=None):
     cmd.extend(['--bzip2', '--file', dest])
     cmd.extend(srcs)
     return call(cmd, cwd=cwd)
+
 def _packtestcmd(srcs_, dest, cwd='.', dereference=True, exclude=None):
     '''
     Helper function to call the package test command.
@@ -743,10 +744,29 @@ def _packtestcmd(srcs_, dest, cwd='.', dereference=True, exclude=None):
     cmd.extend(['--bzip2', '--file', dest])
     return call(cmd, cwd=cwd)
 
+def _find_broken_links(*args, **kwargs):
+    '''
+    Find all broken links in the paths passed as arguments.
+
+    Optionally, one can pass the root directory to start from as cwd.
+    '''
+    cwd = kwargs.get('cwd', '.')
+    for rel_src in args:
+        src = os.path.join(cwd, rel_src)
+        if os.path.isdir(src):
+            for brklnk in _find_broken_links(*[os.path.join(rel_src, f)
+                                               for f in os.listdir(src)
+                                               if f not in (os.curdir,
+                                                            os.pardir)],
+                                             cwd=cwd):
+                yield brklnk
+        elif os.path.islink(src) and not os.path.exists(src):
+            yield rel_src
+
 def pack(srcs, dest, cwd='.', checksum=None, dereference=True, exclude=None):
     '''
-    Package the directory 'src' into the package (tarball) 'dest' working from
-    the directory 'cwd'.
+    Package the directories 'srcs' into the package (tarball) 'dest' working
+    from the directory 'cwd'.
     If a string is passed as 'checksum', together with the package a checksum
     file is produced with name <dest>.<checksum>.  The supported checksum types
     are those understood by the hashlib module (e.g. 'md5', 'sha1', etc.).
@@ -755,6 +775,18 @@ def pack(srcs, dest, cwd='.', checksum=None, dereference=True, exclude=None):
     the files to be packed, the packing is retried up to 3 times.
     '''
     log = logging.getLogger('pack')
+
+    if dereference:
+        # check that we do not have broken links
+        if not exclude:
+            exclude = []
+        def broken_link(path):
+            'helper to report broken links'
+            log.warning('ignore broken link %s', path)
+            return path
+        exclude.extend(broken_link(bl)
+                       for bl in _find_broken_links(*srcs, cwd=cwd))
+
     ok = False
     retry = 3
     while (not ok) and (retry >= 0):
