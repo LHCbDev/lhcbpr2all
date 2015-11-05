@@ -9,8 +9,8 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
-export RSYNC_SERVER=${RSYNC_SERVER:-buildlhcb.cern.ch}
-export RSYNC_WORKDIR=${RSYNC_WORKDIR:-/data/artifacts}
+export RSYNC_SERVER=${RSYNC_SERVER:-lhcb-archive.cern.ch}
+export RSYNC_WORKDIR=${RSYNC_WORKDIR:-/data/archive/artifacts}
 
 function get_remote_directory {
 

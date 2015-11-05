@@ -8,7 +8,7 @@ function(head, req) {
     var flavour = /\/nightlies-([^/]+)\//.exec('/' + req.path.join("/") +'/');
     flavour = flavour ? flavour[1] : 'nightly';
     rssServerLocation = baseUrl + flavour + '/';
-    resultServerLocation = baseUrl + 'artifacts/' + flavour + '/';
+    resultServerLocation = 'https://lhcb-archive.cern.ch/artifacts/' + flavour + '/';
 
     //protecting regex
     var listValidPatern = new RegExp("^([a-zA-Z0-9\-_]+,)*[a-zA-Z0-9\-_]+$");

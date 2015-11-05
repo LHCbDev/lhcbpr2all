@@ -118,7 +118,7 @@ build_slot flavour slot slot_build_id platform
                                  ${config_file}
         if [ "$JENKINS_MOCK" != "true" ] ; then
             datadir=${JENKINS_HOME}/nightlies/${flavour}/running_builds
-            scp expected_builds.json buildlhcb.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
+            scp expected_builds.json lhcb-jenkins.cern.ch:${datadir}/expected_builds.${slot}.${slot_build_id}.${platform}.json
         fi
     fi
 
@@ -140,7 +140,7 @@ build_slot flavour slot slot_build_id platform
         push_artifact "${directory}" "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")"
     fi
 
-    # if possible and requested, generate glimpse indexes and upload them to buildlhcb
+    # if possible and requested, generate glimpse indexes and upload them to lhcb-archive
     if [ "${flavour}" = "release" -o -n "${run_indexer}" ] ; then
         if which glimpseindex &> /dev/null ; then
             # clean up the build dir before indexing
