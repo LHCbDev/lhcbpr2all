@@ -76,6 +76,7 @@ def test_links():
         os.symlink(os.path.join(os.pardir, 'a.txt'),
                    os.path.join(linksdir, 'dir_a', 'a.txt'))
         os.symlink('dir_a', os.path.join(linksdir, 'dir_b'))
+        os.symlink('no_file', os.path.join(linksdir, 'broken'))
 
         dest = os.path.join(tmpdir, 'links.tar.bz2')
         Utils.pack(['links'], dest, cwd=tmpdir, checksum='md5')
@@ -86,6 +87,7 @@ def test_links():
         assert list_tar.returncode == 0
         found_files = set(map(str.strip, out.splitlines()))
         expected_files = set(_getfilelist('links', tmpdir))
+        expected_files.remove('links/broken')
         assert expected_files == found_files
         md5sum_check = Popen(['md5sum', '--check',
                               os.path.basename(dest + '.md5')],
