@@ -329,7 +329,13 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         # See LBCORE-637, LBCORE-953
         if (str(self.slot.build_tool) == 'CMT' and opts.use_ccache and
             which('ccache')): # CMT requires ccache in the PATH
-            self.slot.env.append('CMTEXTRATAGS=use-ccache')
+            for e in self.slot.env:
+                if e.startswith('CMTEXTRATAGS='):
+                    self.slot.env.append('CMTEXTRATAGS=${CMTEXTRATAGS},'
+                                         'use-ccache')
+                    break
+            else: # this must match the 'for'
+                self.slot.env.append('CMTEXTRATAGS=use-ccache')
 
         if opts.submit and not opts.projects:
             # ensure that results for the current slot/build/platform are
