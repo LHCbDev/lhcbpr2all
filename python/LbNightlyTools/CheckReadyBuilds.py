@@ -32,7 +32,7 @@ import codecs
 
 from stat import ST_CTIME
 
-DATA_DIR = '/data'
+DATA_DIR = '/data/archive'
 
 from LbNightlyTools.Utils import JobParams
 
