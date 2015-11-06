@@ -1,5 +1,5 @@
 var ARTIFACTS_BASE_URL = 'https://lhcb-archive.cern.ch/artifacts/';
-var JENKINS_JOB_URL = 'https://lhcb-jenkins.cern.ch/job/nightly-slot-build-platform/';
+var JENKINS_JOB_URL = 'https://lhcb-jenkins.cern.ch/jenkins/job/nightly-slot-build-platform/';
 var HOST_MONITOR_PREFIX = 'https://meter.cern.ch/public/_plugin/kibana/#/dashboard/elasticsearch/Metrics:%20Host?query=@fields.entity:';
 var MAX_BUILD_IDLE_TIME = 180; // minutes
 var FILTER_DEFAULT = {
@@ -25,7 +25,7 @@ document.title = 'Summaries of ' + DB_INFO.flavour + ' builds for LHCb';
 ARTIFACTS_BASE_URL = ARTIFACTS_BASE_URL + DB_INFO.flavour + "/";
 if (DB_INFO.flavour == 'testing') {
     // special url for testing slots
-    JENKINS_JOB_URL = 'https://lhcb-jenkins.cern.ch/job/nightly-test-slot-build-platform/'
+    JENKINS_JOB_URL = 'https://lhcb-jenkins.cern.ch/jenkins/job/nightly-test-slot-build-platform/'
 }
 
 function getParameterByName(name) {
@@ -58,7 +58,7 @@ function buildURL(slot, build_id, platform, project) {
 }
 
 function testsURL(slot, build_id, platform, project) {
-    return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/summaries.' + platform + '/' + project + '/html';
+    return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/summaries.' + platform + '/' + project + '/html/index.html';
 }
 
 function spinInit(spinkey) {
