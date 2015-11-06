@@ -15,7 +15,7 @@
 set_common --build
 
 day=$(date +%a)
-deploybase=$(dirname /data/${ARTIFACTS_DIR})
+deploybase=$(dirname /data/archive/${ARTIFACTS_DIR})
 
 # special hack to get a dev version of the CMake configuration files
 export CMAKE_PREFIX_PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/cmake:$CMAKE_PREFIX_PATH
