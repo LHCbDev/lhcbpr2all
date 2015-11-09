@@ -49,6 +49,8 @@ if (!$.cookie("filters")) {
 }
 var filters = JSON.parse($.cookie("filters"));
 
+moment.tz.setDefault('Europe/Zurich');
+
 function checkoutURL(slot, build_id, project) {
     return ARTIFACTS_BASE_URL + slot + '/' + build_id + '/' + project + '.checkout.log.html';
 }
