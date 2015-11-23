@@ -105,7 +105,7 @@ class Script(LbUtils.Script.PlainScript):
             includes_param.append("*.src.*")
             includes_param.append("checkout_job_url.txt")
             excludes_param = ["*"]
-        if opts.get_sources:
+        if opts.get_ccache:
             includes_param.append("ccache_dir.*.tar.bz2")
             excludes_param = ["*"]
 
