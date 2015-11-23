@@ -20,6 +20,20 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
         --get-sources \
         "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
         "${ARTIFACTS_DIR}"
+
+    get_artifact \
+        --get-ccache \
+        "$(get_remote_directory "$flavour" "$slot" $(( $slot_build_id - 1 ))" \
+        "${ARTIFACTS_DIR}"
+fi
+
+if [ ! -e "${ARTIFACTS_DIR}/ccache_dir.${slot}.${platform}.tar.bz2" ] ; then
+    # if there is no previous ccache dir, we initialize an empty one
+    if which ccache &>/dev/null ; then
+        mkdir -p ${PWD}/build/.ccache
+        env CCACHE_DIR=${PWD}/build/.ccache ccache -M 10G
+        tar -c -j -f "${ARTIFACTS_DIR}/ccache_dir.${slot}.${platform}.tar.bz2" -C build .ccache
+    fi
 fi
 
 build_slot \
