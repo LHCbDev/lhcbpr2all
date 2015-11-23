@@ -72,8 +72,14 @@ class Script(LbUtils.Script.PlainScript):
                                dest='get_sources',
                                help='Synchronize sources files')
 
+        self.parser.add_option('--get-ccache',
+                               action='store_true',
+                               dest='get_ccache',
+                               help='Synchronize sources files')
+
         self.parser.set_defaults(get_config=False,
                                  get_sources=False,
+                                 get_ccache=False,
                                  source=None,
                                  destination=None)
 
@@ -98,6 +104,9 @@ class Script(LbUtils.Script.PlainScript):
         if opts.get_sources:
             includes_param.append("*.src.*")
             includes_param.append("checkout_job_url.txt")
+            excludes_param = ["*"]
+        if opts.get_ccache:
+            includes_param.append("ccache_dir.*.tar.bz2")
             excludes_param = ["*"]
 
         if self.log.level <= logging.INFO:
