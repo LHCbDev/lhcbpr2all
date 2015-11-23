@@ -21,10 +21,11 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
         "$(get_remote_directory "$flavour" "$slot" "$slot_build_id")" \
         "${ARTIFACTS_DIR}"
 
+    # note that we ignore errors when retrieving the ccache dir
     get_artifact \
         --get-ccache \
         $(get_remote_directory $flavour $slot $(( $slot_build_id - 1 )) ) \
-        "${ARTIFACTS_DIR}"
+        "${ARTIFACTS_DIR}" || true
 fi
 
 if [ ! -e "${ARTIFACTS_DIR}/ccache_dir.${slot}.${platform}.tar.bz2" ] ; then
