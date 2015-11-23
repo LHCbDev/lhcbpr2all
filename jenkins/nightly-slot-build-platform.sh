@@ -23,7 +23,7 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
 
     get_artifact \
         --get-ccache \
-        "$(get_remote_directory "$flavour" "$slot" $(( $slot_build_id - 1 ))" \
+        $(get_remote_directory $flavour $slot $(( $slot_build_id - 1 )) ) \
         "${ARTIFACTS_DIR}"
 fi
 
