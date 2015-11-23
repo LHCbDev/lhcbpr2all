@@ -122,6 +122,9 @@ build_slot flavour slot slot_build_id platform
         fi
     fi
 
+    # use a local ccache cache directory
+    export CCACHE_DIR=${PWD}/build/.ccache
+
     time lbn-build ${loglevel_opt} \
                    --build-id "${slot}.${slot_build_id}" \
                    --artifacts-dir "${directory}" \
@@ -130,6 +133,11 @@ build_slot flavour slot slot_build_id platform
                    ${rsync_opt} \
                    ${coverity_opt} \
                    ${config_file}
+
+    if [ -e build/.ccache ] ; then
+        # publish the local ccache directory as artifact
+        tar -c -j -f "${directory}/ccache_dir.${slot}.${platform}.tar.bz2" -C build .ccache
+    fi
 
     if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
         # Prepare the RPMs
