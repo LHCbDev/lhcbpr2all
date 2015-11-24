@@ -508,8 +508,8 @@ class Project(object):
             if (os.path.exists(toolchain) and
                 HT_EXP.search(open(toolchain).read())):
                 # we set explicit the version of heptools,
-                # so we depend on LCGCMT
-                deps.append('LCGCMT')
+                # so we depend on LCGCMT and LCG
+                deps.extend(['LCGCMT', 'LCG'])
             return deps
 
         def fromCMT():
@@ -647,7 +647,7 @@ class Project(object):
             # case insensitive list of projects
             projs = dict((p.name.lower(), p) for p in self.slot.projects)
             heptools_version = projs.get('heptools')
-            for name in ('heptools', 'lcgcmt'):
+            for name in ('heptools', 'lcgcmt', 'lcg'):
                 if name in projs:
                     heptools_version = projs[name].version
                     break
