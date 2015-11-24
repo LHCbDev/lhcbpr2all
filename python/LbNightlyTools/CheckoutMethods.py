@@ -548,6 +548,43 @@ def gaudi(proj, url=None, export=False, merge=None):
     return git(proj, url, commit, export, merge)
 
 
+LCG_MAKEFILE_TEMPLATE = '''
+configure:
+\tfor s in "{src}"/* ; do if [ -d "$$s" ] ; then ln -svf "$$s" . ; else cp -vf "$$s" . ; fi ; done
+\tfor s in LCG_externals_*.txt ; do sed -i 's*{src}*'$$(pwd)'*' "$$s" ; done
+
+all:
+install:
+\tmkdir -p InstallArea/$(CMTCONFIG)
+\ttouch InstallArea/$(CMTCONFIG)/.empty
+unsafe-install: install
+post-install:
+test:
+'''
+def lcg(proj, src=None):
+    '''
+    Special checkout method to create a shallow clone of the LCG special
+    project.
+    '''
+    log = __log__.getChild('lcg')
+
+    if not src:
+        src = proj.src
+    dest = proj.baseDir
+
+    if not os.path.exists(dest):
+        log.debug('created %s', dest)
+        os.makedirs(dest)
+
+    with open(os.path.join(dest, 'Makefile'), 'w') as mkf:
+        mkf.write(LCG_MAKEFILE_TEMPLATE.format(src=src))
+        log.debug('created %s', mkf.name)
+
+    log.info('created shallow project %s in %s', proj, dest)
+
+    return (0, '', '')
+
+
 def ganga(desc, rootdir='.'):
     '''
     Special hybrid checkout needed to release Ganga.
