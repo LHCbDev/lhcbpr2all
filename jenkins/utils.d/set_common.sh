@@ -124,6 +124,11 @@ set_common [--build] [--test]"
         . SetupProject.sh LCGCMT 66 Python
     fi
 
+    # temporary workaround for LCG 81
+    if [ "$(which python)" = "/usr/bin/python" ] ; then
+        .  SetupProject.sh LCGCMT 79 Python
+    fi
+
     if klist -5 > /dev/null 2>&1 ; then
         kinit -R
         klist -5
