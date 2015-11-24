@@ -423,7 +423,9 @@ class Script(LbUtils.Script.PlainScript):
 
         try:
             urllist = listdir(url)
-            tarfiles = [f for f in urllist if f.endswith('.tar.bz2')]
+            tarfiles = [f for f in urllist
+                        if f.endswith('.tar.bz2') and
+                           not f.startswith('ccache_dir.')]
             installed = {}
             if os.path.exists(history_file):
                 installed = dict([l.strip().split(':', 1)
