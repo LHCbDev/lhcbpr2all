@@ -201,7 +201,8 @@ class _BuildToolProperty(object):
         'setter'
         __meta_log__.debug('setting %s build tool to %s', instance, value)
         if hasattr(instance, 'slot') and instance.slot:
-            raise AttributeError("can't set attribute")
+            raise AttributeError("can't change build tool to a project "
+                                 "in a slot")
         from BuildMethods import getMethod as getBuildMethod
         instance._build_tool = getBuildMethod(value)()
 
