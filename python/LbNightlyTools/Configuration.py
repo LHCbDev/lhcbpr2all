@@ -201,7 +201,8 @@ class _BuildToolProperty(object):
         'setter'
         __meta_log__.debug('setting %s build tool to %s', instance, value)
         if hasattr(instance, 'slot') and instance.slot:
-            raise AttributeError("can't set attribute")
+            raise AttributeError("can't change build tool to a project "
+                                 "in a slot")
         from BuildMethods import getMethod as getBuildMethod
         instance._build_tool = getBuildMethod(value)()
 
@@ -507,8 +508,8 @@ class Project(object):
             if (os.path.exists(toolchain) and
                 HT_EXP.search(open(toolchain).read())):
                 # we set explicit the version of heptools,
-                # so we depend on LCGCMT
-                deps.append('LCGCMT')
+                # so we depend on LCGCMT and LCG
+                deps.extend(['LCGCMT', 'LCG'])
             return deps
 
         def fromCMT():
@@ -646,7 +647,7 @@ class Project(object):
             # case insensitive list of projects
             projs = dict((p.name.lower(), p) for p in self.slot.projects)
             heptools_version = projs.get('heptools')
-            for name in ('heptools', 'lcgcmt'):
+            for name in ('heptools', 'lcgcmt', 'lcg'):
                 if name in projs:
                     heptools_version = projs[name].version
                     break
