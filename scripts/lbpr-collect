@@ -23,8 +23,8 @@ unset $LD_LIBRARY_PATH
 . SetupProject.sh LHCbDirac ROOT
 
 # Download the LHCbPRHandlers
-python -c "import os,urllib,zipfile;urllib.urlretrieve('http://lhcbproject.web.cern.ch/lhcbproject/GIT/dist/LHCbPRHandlers/LHCbPRHandlers.zip','LHCbPRHandlers.zip');unzipper=zipfile.ZipFile('LHCbPRHandlers.zip');unzipper.extractall();os.remove('LHCbPRHandlers.zip')"
+git clone --quiet --depth=1 https://gitlab.cern.ch/lhcb-core/LHCbPR2HD.git
 
 # Collect the run results...
-python LHCbPRHandlers/collectRunResults.py $@
+python LHCbPRHD/collectRunResults.py $@
 
