@@ -23,7 +23,7 @@ if [ "$JENKINS_MOCK" != "true" ] ; then
 
     # note that we ignore errors when retrieving the ccache dir
     get_artifact \
-        --get-ccache \
+        --get-ccache ${platform} \
         $(get_remote_directory $flavour $slot $(( $slot_build_id - 1 )) ) \
         "${ARTIFACTS_DIR}" || true
 fi
