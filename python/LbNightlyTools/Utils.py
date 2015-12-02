@@ -572,6 +572,32 @@ class Dashboard(object):
             else:
                 yield (r[u'key'], v[u'slot'], v[u'build_id'])
 
+    def completed(self, slot, build_id, platform=None):
+        '''
+        Return the list of completed platforms for a (slot, build_id).
+
+        If a platform is specified, the list will contain at most one entry, if
+        that platform was completed.
+
+        @param slot: name of the slot
+        @param build_id: numeric id of the build to check
+        @param platform: optional platform to check
+        '''
+        if not self.db:
+            return
+        viewname = 'dashboard/summaries'
+        if platform is not None:
+            view = self.db.view(viewname, key=[slot, build_id, platform])
+        else:
+            # note: we assume that we will never have a platform called zzz12...
+            view = self.db.view(viewname,
+                                startkey=[slot, build_id],
+                                endkey=[slot, build_id, 'zzz'])
+
+        return [row.key[2] for row in view
+                if row.value.get('type') == 'job-end' and
+                   row.value.get('completed')]
+
 
 class TaskQueue(object):
     '''
