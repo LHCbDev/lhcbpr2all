@@ -26,5 +26,8 @@ if [ -e ${artifacts_dir} ] ; then
     find ${artifacts_dir} -mindepth 2 -maxdepth 3 \
         -daystart -mtime +30 -and -path '*/lhcb-*' \
         -print -exec rm -rf \{} \; >> $logfile 2>&1
+    find ${artifacts_dir} -mindepth 3 -maxdepth 4 \
+        -daystart -mtime +1 -type f -and -name 'ccache_dir.*.tar.bz2' \
+        -print -delete >> $logfile 2>&1
 fi
 echo "$(date): done" >> $logfile 2>&1
