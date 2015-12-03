@@ -16,7 +16,7 @@
 function set_common {
 
     local DESCRIPTION="DESCRIPTION : \
-Function to define common set up for all the Jenckins scripts"
+Function to define common set up for all the Jenkins scripts"
     local USAGE="USAGE : \
 set_common [--build] [--test]"
 
@@ -114,19 +114,9 @@ set_common [--build] [--test]"
         . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
     fi
 
-# FIXME: with gcc49 we do not get the right Python with LbLogin
-    if (echo $CMTCONFIG | grep -q gcc49) ; then
-        export PATH=/afs/cern.ch/sw/lcg/releases/LCG_68/Python/2.7.6/x86_64-slc6-gcc48-opt/bin:$PATH
-    fi
-
 # FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)
     if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
         . SetupProject.sh LCGCMT 66 Python
-    fi
-
-    # temporary workaround for LCG 81
-    if [ "$(which python)" = "/usr/bin/python" ] ; then
-        .  SetupProject.sh LCGCMT 79 Python
     fi
 
     if klist -5 > /dev/null 2>&1 ; then
