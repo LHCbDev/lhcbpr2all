@@ -26,5 +26,5 @@ unset $LD_LIBRARY_PATH
 git clone --quiet --depth=1 https://gitlab.cern.ch/lhcb-core/LHCbPR2HD.git
 
 # Collect the run results...
-python LHCbPRHD/collectRunResults.py $@
+python LHCbPR2HD/collectRunResults.py $@
 
