@@ -114,6 +114,11 @@ set_common [--build] [--test]"
         . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
     fi
 
+    # FIXME: workaround for the moving naming convention of CentOS 7 in LCG
+    if [ "${os_label}" = "centos7" ] ; then
+        export LCG_hostos=x86_64-cc7
+    fi
+
 # FIXME: on SLC5 LbScripts dev (LCG 68) does not get python (pick the system one)
     if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
         . SetupProject.sh LCGCMT 66 Python
