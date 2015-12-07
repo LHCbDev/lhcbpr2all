@@ -58,8 +58,15 @@ if [ "${testgroup}" != "" ] && [ "${testgroup}" != "None"  ] ; then
   export GAUDI_QMTEST_DEFAULT_SUITE=${testgroup}
 fi
 
+# Compare os_label with the platform
+default_os_label=${platform#*-}
+default_os_label=${default_os_label%%-*}
+if [ -n "${os_label}" -a "${os_label}" != "${default_os_label}" ] ; then
+  summary_prefix_opt="--summary-prefix ${os_label}."
+fi
+
 # And run it...
-export submit_opt rsync_opt prepare_opt config_file
+export submit_opt rsync_opt prepare_opt summary_prefix_opt config_file
 $(dirname $0)/testrunners/${used_test_runner}.sh ${testgroup} ${testenv}
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
