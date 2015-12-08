@@ -9,4 +9,5 @@ time lbn-test --debug \
               ${submit_opt} \
               ${rsync_opt} \
               ${coverity_opt} \
+              ${summary_prefix_opt} \
               ${config_file}

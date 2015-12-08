@@ -44,9 +44,15 @@ def addBasicOptions(parser):
                       help='comma-separated list of projects to consider'
                            ' [default: all]')
 
+    parser.add_option('--summary-prefix',
+                      action='store',
+                      help='prefix to use for generated summary directories'
+                           ' [default: none]')
+
     parser.set_defaults(build_id='{slot}',
                         slot_build_id=0,
-                        artifacts_dir='artifacts')
+                        artifacts_dir='artifacts',
+                        summary_prefix='')
     return parser
 
 def addBuildDirOptions(parser):
@@ -272,7 +278,9 @@ class BaseScript(LbUtils.Script.PlainScript):
         If extra arguments are given, the output is equivalent to
         os.path.join(self._summaryDir(proj), level1, level2).
         '''
-        return os.path.join(self.artifacts_dir, 'summaries.' + self.platform,
+        summary_name = '{0}summaries.{1}'.format(self.options.summary_prefix,
+                                                 self.platform)
+        return os.path.join(self.artifacts_dir, summary_name,
                             proj.name, *subdirs)
 
     def _buildDir(self, proj, *subdirs):
