@@ -121,7 +121,7 @@ def ignore(desc, export=False):
 GIT_URLS = {'gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
             'lhcbintegrationtests':
                 'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
-            'lhcbgrid': 'https://gitlab.cern.ch/lhcb/LHCbGrid.git',
+            'lhcbgrid': 'https://gitlab.cern.ch/lhcb-dirac/LHCbGrid.git',
             'lbscripts': 'https://gitlab.cern.ch/lhcb-core/LbScripts.git',
             }
 
@@ -610,7 +610,7 @@ def lbscripts(proj, url=None, export=False, merge=None, commit=None):
     '''
     from  LbScriptsUtils import updateInstallProject, updateLbConfigurationRequirements
     log = __log__.getChild('lbscripts')
-        
+
     # Setting commit
     if proj.version.lower() == 'head':
         commit = 'master'
