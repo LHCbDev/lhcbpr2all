@@ -63,6 +63,9 @@ default_os_label=${platform#*-}
 default_os_label=${default_os_label%%-*}
 if [ -n "${os_label}" -a "${os_label}" != "${default_os_label}" ] ; then
   summary_prefix_opt="--summary-prefix ${os_label}."
+  # when cross testing we do not want to send data to the dashboard DB
+  # (see LBCORE-999)
+  submit_opt="--flavour ${flavour}"
 fi
 
 # And run it...
