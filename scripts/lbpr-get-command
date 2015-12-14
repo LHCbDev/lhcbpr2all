@@ -177,7 +177,7 @@ echo "==> Return code: $RETCODE"
 # Gathering the results with LHCbPR
 if [ "$RETCODE" = "0" ] ; then
     echo "Run OK now gathering the results"
-    lbpr-collect -s `cat start.txt` -e `cat end.txt` -p `hostname` -c `cat platform.txt` -j %s -l "%s" -r %s -v %s -a
+    lbpr-collect -s `cat start.txt` -e `cat end.txt` -p `hostname` -c `cat platform.txt` -j %s -l "%s" -t %s -v %s -a
 else
     echo "Non 0 return code - Will NOT gather the results and push to LHCbPR"
 fi
