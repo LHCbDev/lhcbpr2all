@@ -15,8 +15,7 @@ Interface to the LHCbPR System.
 
 @author: Ben Couturier
 '''
-import httplib
-import urllib
+import urllib2
 import json
 
 HEADERS = {"Content-type": "application/x-www-form-urlencoded",
@@ -26,98 +25,43 @@ class JobManager(object):
     '''
     Interface to the LHCbPR system
     '''
-
-
-
     def __init__(self, lhcbpr_host=None, lhcbpr_url=None):
         '''
         Constructor taking the URL for the LHCbPR server
         '''
         if lhcbpr_host == None:
-            lhcbpr_host = "lhcb-pr.web.cern.ch"
+            lhcbpr_host = "lblhcbpr2.cern.ch"
         if lhcbpr_url == None:
-            lhcbpr_url = "/lhcb-pr/"
+            lhcbpr_url = "api"
 
         self._lhcbpr_host = lhcbpr_host
         self._lhcbpr_url = lhcbpr_url
 
-    def getOrCreateJobDescription(self, application, version,
-                                  options, setup_options):
-        '''
-        Returns the Job description ID for the requested parameters
-
-        Here is the equivalent wget command:
-        wget -q -O-  --post-data="application=${app}&version=${ver}&options=${optio}&optionsD=${optD}&setupprojectD=${setD}"\
-        http://lhcb-pr.web.cern.ch/lhcb-pr/newjobdescription
-
-        '''
-        params = urllib.urlencode({
-            'application' : application.upper(),
-            'version' : version,
-            'optionsD' : options,
-            'setupprojectD' : setup_options
-            })
-
-        headers = HEADERS
-
-        conn = httplib.HTTPConnection(self._lhcbpr_host)
-        conn.request("POST", self._lhcbpr_url + "newjobdescription",
-                     params, headers)
-        response = conn.getresponse()
-        if response.status != httplib.OK:
-            raise Exception("Connection error with %s: %s %s"
-                            % (self._lhcbpr_host, response.status,
-                               response.reason))
-        datastr = response.read()
-        conn.close()
-        data = json.loads(datastr)
-        if data['error']:
-            raise Exception(data['errorMessage'])
-        return data["jobdescription_id"]
-
-
     def getJobOptions(self, options_description):
-        ''' Get the list of options from LHCbPR '''
-        params = urllib.urlencode({
-            'optionsD' : options_description
-            })
+        ''' Get the list of options from LHCbPR2 '''
 
-        headers = HEADERS
+        resp = urllib2.urlopen('http://%s/%s/options/?description=%s' % (self._lhcbpr_host,
+                                                                         self._lhcbpr_url,
+                                                                         options_description)).read()
+        data = json.loads(resp)
+        if data["count"] == 0:
+            return None
+        prdata = data["results"][0]
+        return prdata["content"]
 
-        conn = httplib.HTTPConnection(self._lhcbpr_host)
-        conn.request("POST", self._lhcbpr_url + "getcontent",
-                     params, headers)
-        response = conn.getresponse()
-        if response.status != httplib.OK:
-            raise Exception("Connection error with %s: %s %s"
-                            % (self._lhcbpr_host, response.status,
-                               response.reason))
-        datastr = response.read()
-        conn.close()
-        data = json.loads(datastr)
-        if data['error']:
-            raise Exception(options_description + ":" + data['errorMessage'])
-        return data["content"]
+
 
     def getSetupOptions(self, setup_description):
-        ''' Get the SetupProject options from LHCbPR '''
-        params = urllib.urlencode({
-             'setupprojectD' : setup_description
-            })
+        ''' Get the SetupProject options from LHCbPR2 '''
 
-        headers = HEADERS
+        resp = urllib2.urlopen('http://%s/%s/setups/?description=%s' % (self._lhcbpr_host,
+                                                                         self._lhcbpr_url,
+                                                                         setup_description)).read()
+        data = json.loads(resp)
+        if data["count"] == 0:
+                return None
+        prdata = data["results"][0]
+        return prdata["content"]
 
-        conn = httplib.HTTPConnection(self._lhcbpr_host)
-        conn.request("POST", self._lhcbpr_url + "getcontent", params, headers)
-        response = conn.getresponse()
-        if response.status != httplib.OK:
-            raise Exception("Connection error with %s: %s %s"
-                            % (self._lhcbpr_host, response.status,
-                               response.reason))
-        datastr = response.read()
-        conn.close()
-        data = json.loads(datastr)
-        if data['error']:
-            raise Exception(setup_description + ":" + data['errorMessage'])
-        return data["content"]
+
 
