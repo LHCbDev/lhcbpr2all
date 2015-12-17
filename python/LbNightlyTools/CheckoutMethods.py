@@ -21,6 +21,7 @@ from subprocess import Popen, PIPE
 from LbNightlyTools.Utils import (retry_log_call as _retry_log_call,
                                   log_call as _log_call, ensureDirs,
                                   getMRsource)
+from  LbScriptsUtils import *
 
 __log__ = logging.getLogger(__name__)
 __log__.setLevel(logging.DEBUG)
@@ -602,6 +603,21 @@ def ganga(desc, rootdir='.'):
     __log__.debug('creating Makefile')
     with open(os.path.join(projdir, 'Makefile'), 'w') as f:
         f.write('include ${LBCONFIGURATIONROOT}/data/Makefile\n')
+
+
+def lbscripts(proj, url=None, export=False, merge=None, commit=None):
+    '''
+    Specific checkout wrapper for lbscripts
+    '''
+    log = __log__.getChild('lbscripts')
+
+    # First checking out LbScripts with GIT
+    res = git(proj, url, commit, export, merge)
+
+    # Now hacking the sources.
+    # We need to set the version in LbConfiguration and in install_project
+    updateInstallProject(proj.baseDir, proj.version)
+    updateLbConfigurationRequirements(proj.baseDir, proj.version)
 
 
 # set default checkout method
