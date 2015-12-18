@@ -38,7 +38,7 @@ WARN_EXCEPT = [".*/boost/.*",
                  "bounds"]
 
 # FIXME: we need a better way to define the default platforms
-DEFAULT_PLATFORMS = 'x86_64-slc6-gcc48-opt,x86_64-slc6-gcc48-dbg'
+DEFAULT_PLATFORMS = ''
 
 # get the correct case for projects
 try:
