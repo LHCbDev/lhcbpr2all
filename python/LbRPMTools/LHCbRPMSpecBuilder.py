@@ -1167,6 +1167,7 @@ fi
 
 if [ -f $PREFIX/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/%{project}Sys/cmt/PostInstall.py ]; then
 echo "Running PostInstall script"
+export LBRPM_INSTALL=1
 python $PREFIX/lhcb/%{projectUp}/%{projectUp}_%{lbversion}/%{project}Sys/cmt/PostInstall.py
 fi
 
