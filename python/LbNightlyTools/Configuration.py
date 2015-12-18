@@ -1245,7 +1245,7 @@ class Slot(object):
             desc = (self.__doc__ or '<no description>').strip()
         self.desc = desc
 
-        self.platforms = kwargs.get('platforms')
+        self.platforms = kwargs.get('platforms', [])
 
         self.error_exceptions = kwargs.get('error_exceptions', [])
         self.warning_exceptions = kwargs.get('warning_exceptions', [])
@@ -1291,8 +1291,7 @@ class Slot(object):
                                         for cont in self.projects
                                         if isinstance(cont, DataProject)))
         data['packages'] = pkgs
-        if self.platforms:
-            data['platforms'] = self.platforms
+        data['platforms'] = self.platforms
 
         return data
 
@@ -1316,7 +1315,7 @@ class Slot(object):
         slot = cls(name=data.get('slot', None), projects=containers.values(),
                    env=data.get('env', []),
                    desc=data.get('description'))
-        slot.platforms = data.get('platforms', data.get('default_platforms'))
+        slot.platforms = data.get('platforms', data.get('default_platforms', []))
 
         if data.get('USE_CMT'):
             slot.build_tool = 'cmt'
