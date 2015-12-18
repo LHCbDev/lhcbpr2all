@@ -106,3 +106,28 @@ def updateLbConfigurationRequirements(basedir, version):
                 else:
                     fout.write(line)
 
+
+
+def  _createVersionCmt(basedir, package, version):
+    '''
+    Create the version.cmt file in a specific package
+    '''
+    vfilename = os.path.join(basedir, package, "cmt", "version.cmt") 
+    with open(vfilename, "w") as f:
+        f.write("%s\n" % version)
+
+def updateVersionCmt(basedir, version):
+    '''
+    Update version.cmt in all the LbScripts packages
+    '''
+    log = logging.getLogger("updateVersionCmt")
+    packages = ["LbConfiguration",
+                "LbLegacy",
+                "LbRelease",
+                "LbScriptsPolicy",
+                "LbScriptsSys",
+                "LbUtils"]
+    
+    for p in packages:
+        _createVersionCmt(basedir, p, version)
+

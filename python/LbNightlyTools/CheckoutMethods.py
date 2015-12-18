@@ -608,7 +608,10 @@ def lbscripts(proj, url=None, export=False, merge=None, commit=None):
     '''
     Specific checkout wrapper for lbscripts
     '''
-    from  LbScriptsUtils import updateInstallProject, updateLbConfigurationRequirements
+    from  LbScriptsUtils import updateInstallProject, \
+        updateLbConfigurationRequirements, \
+        updateVersionCmt
+
     log = __log__.getChild('lbscripts')
         
     # Setting commit
@@ -638,6 +641,9 @@ def lbscripts(proj, url=None, export=False, merge=None, commit=None):
     # We need to set the version in LbConfiguration and in install_project
     updateInstallProject(proj.baseDir, proj.version)
     updateLbConfigurationRequirements(proj.baseDir, proj.version)
+
+    # Create the version.cmt file in all packages
+    updateVersionCmt(proj.baseDir, proj.version)
 
     # Now calling make directly after the checkout
     # This is needed to have the InstallArea directory in the source archive
