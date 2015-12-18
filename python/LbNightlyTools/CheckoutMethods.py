@@ -16,7 +16,7 @@ __author__ = 'Marco Clemencic <marco.clemencic@cern.ch>'
 import logging
 import shutil
 import os
-
+import re
 from subprocess import Popen, PIPE
 from LbNightlyTools.Utils import (retry_log_call as _retry_log_call,
                                   log_call as _log_call, ensureDirs,
@@ -122,6 +122,7 @@ GIT_URLS = {'gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
             'lhcbintegrationtests':
                 'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
             'lhcbgrid': 'https://gitlab.cern.ch/lhcb/LHCbGrid.git',
+            'lbscripts': 'https://gitlab.cern.ch/lhcb-core/LbScripts.git',
             }
 
 def git(desc, url=None, commit=None, export=False, merge=None):
@@ -609,7 +610,21 @@ def lbscripts(proj, url=None, export=False, merge=None, commit=None):
     '''
     from  LbScriptsUtils import updateInstallProject, updateLbConfigurationRequirements
     log = __log__.getChild('lbscripts')
-    log.setLevel(logging.DEBUG)
+        
+    # Setting commit
+    if proj.version.lower() == 'head':
+        commit = 'master'
+    elif re.match(r'mr[0-9]+$', proj.version):
+        commit = 'master'
+        try:
+            merge = merge or getMRsource('lhcb/LbScripts', int(proj.version[2:]))
+        except:
+            log.error('error: failed to get details for merge request %s',
+                      proj.version[2:])
+            raise
+    else:
+        commit = proj.version
+
     # Utilities to gather the results of our calls
     outputs = []
     def call(*args, **kwargs):
