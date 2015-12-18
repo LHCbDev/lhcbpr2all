@@ -295,6 +295,46 @@ class Script(LbUtils.Script.PlainScript):
         else:
             self.log.info("Keeping: %s " % rpmconf.buildarea)
 
+    def _buildLbScriptsRpm(self, project, version, rpmbuildarea, artifactdir, keeprpmdir):
+        ''' Build the RPM for the project them and copy them to the target area '''
+
+        rpmbuildname = "_".join([project, version])
+
+        # Creating the temp directories to prepare the RPMs
+        rpmconf = self._createRpmDirs(rpmbuildarea, rpmbuildname)
+
+        # Looking for archive with sources
+        srcArchive = self._findSrcArchive(project, version, artifactdir)
+        if srcArchive != None:
+            self.log.info("Taking sources from %s" % srcArchive)
+        else:
+            self.log.warning("Doing clean checkout of the sources")
+
+        # Now generating the spec
+        from LbRPMTools.LHCbRPMSpecBuilder import LHCbLbScriptsRpmSpec
+        spec = LHCbLbScriptsRpmSpec(project, version, srcArchive, rpmbuildarea)
+        # Check if a non default RPM release dir was specified
+        if self.options.rpmreldir != None:
+            self.log.warning("Setting RPM release dir from options: %s" % self.options.rpmreldir )
+            spec.setRPMReleaseDir(self.options.rpmreldir)
+
+        specfilename = os.path.join(rpmconf.topdir, rpmbuildname + ".spec" )
+        with open(specfilename, "w") as outputfile:
+            outputfile.write(spec.getSpec())
+
+        # Building the name of the expected RPM
+        rpmname =  spec.getRPMName()
+        fullrpmpath = os.path.join(rpmconf.rpmsdir, spec.getArch(), rpmname)
+        self._callRpmbuild(specfilename, fullrpmpath, artifactdir)
+
+        # Remove tmpdirectory
+        if not keeprpmdir:
+            rpmconf.removeBuildArea()
+            self.log.info("Removing: %s " % rpmconf.buildarea)
+        else:
+            self.log.info("Keeping: %s " % rpmconf.buildarea)
+
+
     def _buildDatapkgRpm(self, project, fulldatapkg, version, rpmbuildarea, artifactdir, keeprpmdir):
         ''' Build the RPM for the datapkg and copy them to the target area '''
         fulldatapkg
@@ -520,8 +560,12 @@ class Script(LbUtils.Script.PlainScript):
             version = p["version"]
 
             if self.options.shared:
-                self.log.info("Preparing RPM for project %s %s %s" % (project, version, "src"))
-                self._buildSharedRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
+                if project.lower() == "lbscripts":    
+                    self.log.info("Preparing RPM for LbScripts %s" %  version)
+                    self._buildLbScriptsRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
+                else:
+                    self.log.info("Preparing RPM for project %s %s %s" % (project, version, "src"))
+                    self._buildSharedRpm(project, version, rpmbuildarea, artifactdir, keeprpmdir)
             elif self.options.glimpse:
                 self.log.info("Preparing Glimpse RPM for project %s %s" % (project, version))
                 self._buildGlimpseRpm(project, version, platform, rpmbuildarea,  builddir, artifactdir, keeprpmdir)
