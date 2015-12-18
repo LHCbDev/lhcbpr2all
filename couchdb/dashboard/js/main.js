@@ -427,7 +427,7 @@ function slotBlock(data) {
     if (isRelease) {
         header += '<button id="'+ data.build_id + '"class="rebuild-button"/>';
         header += '<a href="' + ARTIFACTS_BASE_URL + 'lhcb-release/' + data.build_id +
-                  '" target="_blank"><img class="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>';
+                  '/" target="_blank"><img class="rpm" src="images/graphix-folder_283x283.png" title="artifacts directory"></a>';
     } else {
         header += data.description;
     }
