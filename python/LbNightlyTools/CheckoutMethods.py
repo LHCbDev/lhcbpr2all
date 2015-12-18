@@ -164,7 +164,6 @@ def git(desc, url=None, commit=None, export=False, merge=None):
 
     log.debug('cloning git repository %s', url)
     call(['git', 'clone', '--no-checkout', url, dest])
-
     if not os.path.exists(dest):
         # ensure the destination directory exists even when the cloning fails
         os.makedirs(dest)
@@ -602,6 +601,35 @@ def ganga(desc, rootdir='.'):
     __log__.debug('creating Makefile')
     with open(os.path.join(projdir, 'Makefile'), 'w') as f:
         f.write('include ${LBCONFIGURATIONROOT}/data/Makefile\n')
+
+
+def lbscripts(proj, url=None, export=False, merge=None, commit=None):
+    '''
+    Specific checkout wrapper for lbscripts
+    '''
+    from  LbScriptsUtils import updateInstallProject, updateLbConfigurationRequirements
+    log = __log__.getChild('lbscripts')
+    log.setLevel(logging.DEBUG)
+    # Utilities to gather the results of our calls
+    outputs = []
+    def call(*args, **kwargs):
+        'helper to simplify the code'
+        outputs.append(log_call(*args, **kwargs))
+
+    # First checking out LbScripts with GIT
+    outputs.append(git(proj, url, commit, export, merge))
+
+    # Now hacking the sources.
+    # We need to set the version in LbConfiguration and in install_project
+    updateInstallProject(proj.baseDir, proj.version)
+    updateLbConfigurationRequirements(proj.baseDir, proj.version)
+
+    # Now calling make directly after the checkout
+    # This is needed to have the InstallArea directory in the source archive
+    call(['make', 'USE_CMT=1'], cwd=proj.baseDir)
+
+    # Returning the checkout results
+    return _merge_outputs(outputs)
 
 
 # set default checkout method
