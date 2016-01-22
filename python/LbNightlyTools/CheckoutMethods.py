@@ -529,7 +529,6 @@ def gaudi(proj, url=None, export=False, merge=None):
     Wrapper around the git function for Gaudi.
     '''
     log = __log__.getChild('gaudi')
-    import re
     if proj.version.lower() == 'head':
         commit = 'master'
     elif re.match(r'mr[0-9]+$', proj.version):
@@ -541,8 +540,6 @@ def gaudi(proj, url=None, export=False, merge=None):
             log.error('error: failed to get details for merge request %s',
                       proj.version[2:])
             raise
-    elif re.match(r'v[0-9]+r[0-9]+', proj.version):
-        commit = '{0}/{0}_{1}'.format(proj.name.upper(), proj.version)
     else:
         commit = proj.version
     return git(proj, url, commit, export, merge)
