@@ -123,6 +123,10 @@ set_common [--build] [--test]"
     if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 24 ] ; then
         . SetupProject.sh LCGCMT 66 Python
     fi
+# FIXME: partial installation of LCG cause wrong Python (system) on SLC6
+    if [ $(python -c 'import sys; print "%d%d" % sys.version_info[:2]') = 26 ] ; then
+        . SetupProject.sh LCGCMT 82 Python
+    fi
 
     if klist -5 > /dev/null 2>&1 ; then
         kinit -R
