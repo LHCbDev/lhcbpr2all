@@ -362,6 +362,22 @@ cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/%{projectUp}
 ln -s %{projectUp}_%{lbversion} %{linkname}
 
         '''
+
+        # HACK ALERT XXX
+        # Need to find a better way to do this
+        if self._linkname == "prod" and self._project.upper() == "LBSCRIPTS":
+            spec += '''
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/
+ln -s lhcb/%{projectUp}/%{linkname}/InstallArea/scripts/LbLogin.sh
+ln -s lhcb/%{projectUp}/%{linkname}/InstallArea/scripts/LbLogin.csh 
+        '''
+        elif self._linkname == "dev" and self._project.upper() == "LBSCRIPTS":
+            spec += '''
+cd  ${RPM_BUILD_ROOT}/opt/LHCbSoft/
+ln -s lhcb/%{projectUp}/%{linkname}/InstallArea/scripts/LbLogin.sh LbLoginDev.sh
+ln -s lhcb/%{projectUp}/%{linkname}/InstallArea/scripts/LbLogin.csh LbLoginDev.csh
+'''
+
         return spec
 
     def _createTrailer(self):
@@ -378,8 +394,20 @@ ln -s %{projectUp}_%{lbversion} %{linkname}
 %files
 %defattr(-,root,root)
 %{prefix}/lhcb/%{projectUp}/%{linkname}
-
-
+'''
+        # Same hack as above XXX
+        if self._linkname == "prod" and self._project.upper() == "LBSCRIPTS":
+            trailer += '''
+%{prefix}/LbLogin.csh
+%{prefix}/LbLogin.sh
+'''
+        if self._linkname == "dev" and self._project.upper() == "LBSCRIPTS":
+            trailer += '''
+%{prefix}/LbLoginDev.csh
+%{prefix}/LbLoginDev.sh
+'''
+            
+        trailer += '''
 %define date    %(echo `LC_ALL=\"C\" date +\"%a %b %d %Y\"`)
 
 %changelog
