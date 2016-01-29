@@ -197,6 +197,7 @@ fi
 if [ "$MYSITEROOT" ]; then
 PREFIX=$MYSITEROOT
 else
+export MYSIETROOT=%{prefix}
 PREFIX=%{prefix}
 fi
 
