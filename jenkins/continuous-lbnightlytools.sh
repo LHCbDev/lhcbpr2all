@@ -14,8 +14,7 @@
 #. /cvmfs/lhcb.cern.ch/lib/lhcb/LBSCRIPTS/prod/InstallArea/scripts/LbLogin.sh
 . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/InstallArea/scripts/LbLogin.sh --no-cache
 
-# FIXME: We are forced to use LCG 66 because Python coverage does not work in 68
-. SetupProject.sh LCGCMT 66 Python pytools
+. SetupProject.sh LCGCMT 83 Python pytools
 
 set -ex
 
