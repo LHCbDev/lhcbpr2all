@@ -20,7 +20,7 @@ $(function(){
         }).done(function(){
             document.location = JENKINS_JOB;
         }).fail(function(){
-            alert('Error starting the job.');
+            alert('Error starting the job.\n\n"' + textStatus + '"\n\n' + errorThrown);
             document.location = JENKINS_JOB;
         });
     } else {
