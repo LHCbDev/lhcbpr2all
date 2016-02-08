@@ -7,5 +7,5 @@ When running in Tomcat, one can append these lines to the file `catalina.propert
 ```
 #
 # Relax Jenkins Content Security Policy settings
-hudson.model.DirectoryBrowserSupport.CSP=default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self';
+hudson.model.DirectoryBrowserSupport.CSP=default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self'; connect-src 'self';
 ```
