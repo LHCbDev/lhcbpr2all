@@ -122,6 +122,7 @@ GIT_URLS = {'gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
             'lhcbintegrationtests':
                 'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
             'lhcbgrid': 'https://gitlab.cern.ch/lhcb-dirac/LHCbGrid.git',
+            'lhcbdirac': 'https://gitlab.cern.ch/lhcb-dirac/LHCbDIRAC.git',
             'lbscripts': 'https://gitlab.cern.ch/lhcb-core/LbScripts.git',
             }
 
@@ -417,58 +418,37 @@ tests:
     return _merge_outputs(outputs)
 
 
-def lhcbdirac(desc, export=False):
+def lhcbdirac(proj, url=None, export=False):
     '''
     Special hybrid checkout needed to release LHCbDirac.
     '''
     from os.path import join, isdir, basename
+
     log = __log__.getChild('lhcbdirac')
-    if desc.version.lower() == 'head':
-        url = 'http://svn.cern.ch/guest/dirac/LHCbDIRAC/trunk/LHCbDIRAC'
+    if proj.version.lower() == 'head':
+        commit = 'devel'
     else:
-        url = ('http://svn.cern.ch/guest/dirac/LHCbDIRAC/tags/LHCbDIRAC/' +
-               desc.version)
+        commit = proj.version
 
-    protocol = os.environ.get('GETPACK_PROTOCOL', 'anonymous')
-    getpack_cmd = ['getpack', '--batch', '--no-config',
-                   '--no-eclipse', '--branches',
-                   '--protocol', protocol]
-    if export:
-        getpack_cmd.append('--export')
+    prjroot = proj.baseDir
 
-    prjroot = desc.baseDir
-    dest = join(prjroot, 'LHCbDIRAC')
+    output = git(proj, url, commit, export)
 
-    outputs = []
-    def call(*args, **kwargs):
-        'helper to simplify the code'
-        outputs.append(log_call(*args, **kwargs))
-    def rcall(*args, **kwargs):
-        'helper to simplify the code'
-        outputs.append(retry_log_call(*args, **kwargs))
-
-    log.debug('checking out project %s', desc)
-    rcall(getpack_cmd + ['--project', desc.name, desc.version], retry=3)
-    for pkg in ('LHCbDiracPolicy', 'LHCbDiracConfig', 'LHCbDiracSys'):
-        log.debug('checking out package %s', pkg)
-        rcall(getpack_cmd + [pkg, desc.version], cwd=prjroot, retry=3)
-
-    log.debug('checking out %s', url)
-    call(['svn', 'checkout' if not export else 'export', url , dest])
     log.debug('creating version.cmt files')
-    for root, dirs, files in os.walk(dest):
+    for root, dirs, files in os.walk(prjroot):
         if basename(root) == 'cmt':
             dirs[:] = [] # stop recursion
             if 'version.cmt' not in files:
                 log.debug('  writing %s/version.cmt', root)
-                open(join(root, 'version.cmt'), 'w').write('v*\n')
+                with open(join(root, 'version.cmt'), 'w') as f:
+                    f.write('v*\n')
 
-    log.debug('starting post-checkout step for %s', desc)
+    log.debug('starting post-checkout step for %s', proj)
     log.debug('deploying scripts')
     scripts_dir = join(prjroot, 'scripts')
     if not isdir(scripts_dir):
         os.makedirs(scripts_dir)
-    for root, dirs, files in os.walk(dest):
+    for root, dirs, files in os.walk(join(prjroot, 'LHCbDIRAC')):
         if 'scripts' in dirs:
             log.debug('  - %s', root)
             # we are only interested in the content of the scripts directories
@@ -487,14 +467,14 @@ def lhcbdirac(desc, export=False):
     with open(join(prjroot, 'Makefile'), 'a') as f:
         f.write('\nall:\n\t$(RM) InstallArea/python InstallArea/scripts\n')
 
-    return _merge_outputs(outputs)
+    return output
+
 
 def lhcbgrid(proj, url=None, export=False, merge=None):
     '''
     Special checkout needed to release LHCbGrid.
     '''
     log = __log__.getChild('lhcbgrid')
-    import re
 
     if proj.version.lower() == 'head':
         commit = 'master'
