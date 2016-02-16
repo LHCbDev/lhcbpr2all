@@ -514,7 +514,11 @@ def gaudi(proj, url=None, export=False, merge=None):
     elif re.match(r'mr[0-9]+$', proj.version):
         commit = 'master'
         try:
-            merge = merge or getMRsource('gaudi/Gaudi', int(proj.version[2:]),
+            # Temporary workaround for
+            # https://cern.service-now.com/service-portal/view-incident.do?n=INC0964521
+            #merge = merge or getMRsource('gaudi/Gaudi', int(proj.version[2:]),
+            #                             slot=proj.slot)
+            merge = merge or getMRsource(38, int(proj.version[2:]),
                                          slot=proj.slot)
         except:
             log.error('error: failed to get details for merge request %s',
