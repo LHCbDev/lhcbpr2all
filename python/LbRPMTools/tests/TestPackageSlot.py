@@ -36,15 +36,26 @@ class Test(unittest.TestCase):
         self._slotconfig = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'slot-config.json'])))
 
+        self._slotconfigdo0 = normpath(join(*([__file__] + [os.pardir] * 4
+                                                  + ['testdata', 'rpm', 'slot-configdo0.json'])))
+
         self._datapkgslotconfig = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'datapkg-slot-config.json'])))
 
         self._manifestxml = normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', 'manifest.xml'])))
 
+        self._manifestxmldo0 = normpath(join(*([__file__] + [os.pardir] * 4
+                                                  + ['testdata', 'rpm', 'manifest_do0.xml'])))
+
         self._binspecname = "Brunel_v46r0_x86_64-slc6-gcc48-opt.spec"
         self._fullbinspecname =  normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', self._binspecname])))
+
+        self._binspecnamedo0 = "Gaudi_v27r0_x86_64-slc6-gcc49-do0.spec"
+        self._fullbinspecnamedo0 =  normpath(join(*([__file__] + [os.pardir] * 4
+                                                  + ['testdata', 'rpm', self._binspecnamedo0])))
+
         self._sharedspecname = "Brunel_v46r0.spec"
         self._fullsharedspecname =  normpath(join(*([__file__] + [os.pardir] * 4
                                                   + ['testdata', 'rpm', self._sharedspecname])))
@@ -103,6 +114,50 @@ class Test(unittest.TestCase):
         shutil.rmtree(artifactdir)
 
 
+    def testBinarySpecDo0(self):
+        '''
+        Test the creation of do0 Binary RPMs by the PackageSlot script,
+        in the case where the manifest specifies a lcg_platform different from the binary tag
+        '''
+
+        from tempfile import mkdtemp
+        from LbRPMTools.PackageSlot import Script
+        artifactdir = mkdtemp()
+        script = Script()
+        script.run(['--dry-run', '--verbose',  '--build-id', 'lhcb-release.999',
+                             '--artifacts-dir',  artifactdir, '--manifest', self._manifestxmldo0,
+                             self._slotconfigdo0, '--platform',  'x86_64-slc6-gcc49-do0' ])
+
+
+        newspecfilename = os.path.join(artifactdir, self._binspecnamedo0)
+        newlines = [ l for l in open(newspecfilename, 'U').readlines()
+                     if "%define buildarea" not in l ]
+        oldlines = [ l for l in open(self._fullbinspecnamedo0, 'U').readlines()
+        if "%define buildarea" not in l ]
+
+        print "===>"
+        import sys
+        for n in newlines:
+            sys.stdout.write(n)
+        print "===>"
+        
+        from difflib import Differ, unified_diff
+        d = Differ()
+        #        result = list(d.compare(oldlines, newlines))
+        result = unified_diff(oldlines, newlines, fromfile=self._fullbinspecnamedo0,
+        tofile=newspecfilename, n=0)
+        diffFound = False
+        import sys
+        for l in result:
+            diffFound = True
+            sys.stdout.write(l)
+
+        self.assertFalse(diffFound)
+
+        import shutil
+        shutil.rmtree(artifactdir)
+
+
     def testSharedSpec(self):
         '''
         Test the creation of shared RPMs by the PackageSlot script
@@ -120,6 +175,7 @@ class Test(unittest.TestCase):
         newspecfilename = os.path.join(artifactdir, self._sharedspecname)
         newlines = [ l for l in open(newspecfilename, 'U').readlines()
                      if "%define buildarea" not in l ]
+
         oldlines = [ l for l in open(self._fullsharedspecname, 'U').readlines()
         if "%define buildarea" not in l ]
 

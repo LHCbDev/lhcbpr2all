@@ -1,5 +1,5 @@
 ###############################################################################
-# (c) Copyright 2014 CERN                                                     #
+# (c) Copyright 2014-2016 CERN                                                     #
 #                                                                             #
 # This software is distributed under the terms of the GNU General Public      #
 # Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
@@ -89,6 +89,16 @@ class LHCbBaseRpmSpec(object):
         heptools = self._manifest.getHEPTools()
         if heptools:
             (hver, hcmtconfig, packages) = heptools
+
+            # Checking whether the LCG_platform is defined
+            # if it is the case, e.g. for do0 build, the RPM depends
+            # on RPMs with different CMTCONFIGs
+            # e.g. do0 depends on dbg
+            (lcg_platform, lcg_system) =  self._manifest.getLCGConfig()
+            if lcg_platform != None:
+                hcmtconfig = lcg_platform
+
+            # Now normalizing to avoit "-" in the RPM name, simpler for parsing...
             hcmtconfig = hcmtconfig.replace("-", "_")
             if packages:
                 requires = ['Requires: LCGCMT_LCGCMT_{hver}\n'
@@ -1344,6 +1354,7 @@ class Script(LbUtils.Script.PlainScript):
 
         (project, version) =  manifest.getProject()
         (_LCGVerson, cmtconfig, _packages) = manifest.getHEPTools()
+        (lcg_platform, lcg_system) = manifest.getLCGConfig()
 
         buildarea = self.options.buildarea
         self.createBuildDirs(buildarea, project + "_" +  version + "_" + cmtconfig)

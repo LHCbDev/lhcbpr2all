@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <project name="Gaudi" version="HEAD" />
+  <heptools>
+    <version>83</version>
+    <binary_tag>x86_64-slc6-gcc49-do0</binary_tag>
+    <lcg_platform>x86_64-slc6-gcc49-dbg</lcg_platform>
+    <lcg_system>x86_64-slc6-gcc49</lcg_system>
+    <packages>
+      <package name="AIDA" version="3.2.1" />
+      <package name="Boost" version="1.59.0_python2.7" />
+      <package name="CLHEP" version="2.3.1.1" />
+      <package name="CppUnit" version="1.12.1_p1" />
+      <package name="GSL" version="1.10" />
+      <package name="HepPDT" version="2.06.01" />
+      <package name="Python" version="2.7.9.p1" />
+      <package name="QMtest" version="2.4.1_python2.7" />
+      <package name="RELAX" version="RELAX-root6" />
+      <package name="ROOT" version="6.06.00" />
+      <package name="XercesC" version="3.1.1p1" />
+      <package name="doxygen" version="1.8.9.1" />
+      <package name="jemalloc" version="3.6.0" />
+      <package name="libunwind" version="5c2cade" />
+      <package name="pyanalysis" version="1.5_python2.7" />
+      <package name="pytools" version="1.9_python2.7" />
+      <package name="tbb" version="42_20140122" />
+      <package name="tcmalloc" version="2.4" />
+    </packages>
+  </heptools>
+</manifest>
