@@ -75,6 +75,16 @@ class Test(unittest.TestCase):
         used = parser.getUsedDataPackages()
         self.assertEqual(len(used), 0, "Number of used data packages")
 
+    def testGetLCGSystem(self):
+        ''' test getting the value of the lcg_system tag '''
+        parser = Parser(join(self._data_dir, "manifest.xml"))
+        self.assertEqual(parser.getLCGConfig(), (None, "x86_64-slc6-gcc48"))
+
+    def testGetLCGPlatform(self):
+        ''' test getting the value of the lcg_system tag '''
+        parser = Parser(join(self._data_dir, "manifest_do0.xml"))
+        self.assertEqual(parser.getLCGConfig(), ("x86_64-slc6-gcc49-dbg", "x86_64-slc6-gcc49"))
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testLoadXML']

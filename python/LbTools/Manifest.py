@@ -68,6 +68,27 @@ class Parser(object):
         tagValues.append(pkgs)
         return tuple(tagValues)
 
+    def getLCGConfig(self):
+        ''' Returns the LCG_platform and LCG_system if specified in the XML, None otherwise
+        '''
+        # check if there is a dependency on heptools
+        node = self._tree.find('./heptools')
+        if node is None:
+            return None
+
+        tags = ["./heptools/lcg_platform",
+                "./heptools/lcg_system"]
+
+        tagValues = []
+        for t in tags:
+            node = self._tree.find(t)
+            if node == None:
+                tagValues.append(None)
+            else:
+                tagValues.append(node.text)
+
+        return tuple(tagValues)
+
     def getExtTools(self):
         ''' Returns a dictionary (name->version) of external packages.
         '''

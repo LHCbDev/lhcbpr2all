@@ -1,0 +1,36 @@
+{
+  "slot": "lhcb-release", 
+  "build_id": 999, 
+  "warning_exceptions": [
+    ".*/boost/.*", 
+    "^--->> genreflex: WARNING:.*", 
+    " note:", 
+    "distcc\\[", 
+    "Warning\\:\\ The\\ tag\\ (use-distcc|no-pyzip|LCG\\_NIGHTLIES\\_BUILD|COVERITY|use\\-dbcompression)\\ is\\ not\\ used.*", 
+    ".*#CMT---.*Warning: Structuring style used.*", 
+    ".*/Boost/.*warning:.*", 
+    ".*/ROOT/.*warning:.*", 
+    ".*stl_algo.h:[0-9]+: warning: array subscript is above array bounds"
+  ], 
+  "description": "Slot used for releasing projects.", 
+  "error_exceptions": [
+    "distcc\\[", 
+    "::error::", 
+    "^ *Error *$"
+  ], 
+  "USE_CMT": true, 
+  "no_patch": true, 
+  "default_platforms": [
+    "x86_64-slc6-gcc48-opt", 
+    "x86_64-slc6-gcc48-dbg"
+  ], 
+  "date": "2014-06-13", 
+  "type": "slot-config", 
+  "projects": [
+    {
+      "version": "v27r0", 
+      "name": "Gaudi", 
+      "dependencies": []
+    }
+  ]
+}
