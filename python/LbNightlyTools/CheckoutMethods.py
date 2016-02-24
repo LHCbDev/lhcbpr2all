@@ -94,15 +94,22 @@ def getpack(desc, recursive_head=None, export=False, protocol=None):
     outputs = [retry_log_call(cmd, cwd=rootdir, retry=3)]
 
     if hasattr(desc, 'overrides') and desc.overrides:
+        errors = False
         log.debug('overriding packages')
         for package, version in desc.overrides.items():
             if version:
                 cmd = getpack_cmd + [package, version]
-                outputs.append(retry_log_call(cmd, cwd=prjroot, retry=3))
+                try:
+                    outputs.append(retry_log_call(cmd, cwd=prjroot, retry=3))
+                except RuntimeError, x:
+                    log.warning(str(x))
+                    errors = True
             else:
                 log.debug('removing %s', package)
                 outputs.append((0, 'Removing %s\n' % package, ''))
                 shutil.rmtree(join(prjroot, package), ignore_errors=True)
+        if errors:
+            raise RuntimeError('problems handling overrides')
 
     log.debug('checkout of %s completed in %s', desc, prjroot)
     return _merge_outputs(outputs)
