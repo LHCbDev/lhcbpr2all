@@ -114,6 +114,11 @@ set_common [--build] [--test]"
         . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache
     fi
 
+    # FIXME: pick up the latest CMT makefiles from the latest LbScripts on SLC5
+    if ( echo $platform | grep -q slc5 ) ; then
+        export LBCONFIGRATIONROOT=/afs/cern.ch/lhcb/software/releases/LBSCRIPTS/dev/LbConfiguration
+    fi
+
     # FIXME: workaround for the moving naming convention of CentOS 7 in LCG
     if [ "${os_label}" = "centos7" ] ; then
         export LCG_hostos=x86_64-cc7
