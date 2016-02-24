@@ -87,6 +87,11 @@ set_common [--build] [--test]"
 
     LbScriptsVersion=dev
 
+    # FIXME: workaround for LBCORE-769
+    if ( echo $platform | grep -q slc5 ) ; then
+        LbScriptsVersion=LBSCRIPTS_v8r3
+    fi
+
     if [ "${special_config}" == "true" ] ; then
         export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr : \\n | grep -v /gcc/ | tr \\n :)
         # FIXME: this is usually set by the "group login" script, but it is not
