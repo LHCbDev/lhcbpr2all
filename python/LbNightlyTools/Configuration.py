@@ -110,10 +110,12 @@ class RecordLogger(object):
             hdlr = logging.StreamHandler(data)
             logger.addHandler(hdlr)
 
-            result = method(self, *args, **kwargs)
+            try:
+                result = method(self, *args, **kwargs)
+            finally:
+                setattr(self, data_member, data.getvalue())
+                logger.removeHandler(hdlr)
 
-            setattr(self, data_member, data.getvalue())
-            logger.removeHandler(hdlr)
             return result
         return log_recorder
 
