@@ -1,0 +1,3 @@
+package LbNightlyTools
+
+use LbScriptsPolicy v*

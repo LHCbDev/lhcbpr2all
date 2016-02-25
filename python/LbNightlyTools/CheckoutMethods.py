@@ -203,6 +203,10 @@ def git(desc, url=None, commit=None, export=False, merge=None):
         if merge:
             log.debug('merging %s', merge_commit)
             call(['git', 'merge', '--no-ff', merge_commit], cwd=dest)
+        # handle submodules
+        if os.path.exists(os.path.join(dest, '.gitmodules')):
+            call(['git', 'submodule', 'update', '--init', '--recursive'],
+                 cwd=dest)
         for subdir, version in desc.overrides.iteritems():
             if version is None:
                 log.debug('removing %s', subdir)
@@ -215,14 +219,34 @@ def git(desc, url=None, commit=None, export=False, merge=None):
     else:
         # FIXME: the outputs of git archive is not collected
         log.debug('export commit %s for %s', commit, desc)
-        proc1 = Popen(['git', 'archive', commit],
-                      cwd=dest, stdout=PIPE)
-        proc2 = Popen(['tar', '--extract', '--file', '-'],
-                      cwd=dest, stdin=proc1.stdout)
-        proc1.stdout.close()  # Allow proc1 to receive a SIGPIPE if proc2 exits.
-        if proc2.wait() or proc1.wait():
-            log.warning('problems exporting commit %s for %s', commit, desc)
-        shutil.rmtree(path=os.path.join(dest, '.git'), ignore_errors=True)
+        call(['git', 'checkout', commit], cwd=dest)
+        if os.path.exists(os.path.join(dest, '.gitmodules')):
+            call(['git', 'submodule', 'update', '--init', '--recursive'],
+                 cwd=dest)
+            submodules = [os.path.join(dest, l.split()[1])
+                          for l in Popen(['git', 'submodule',
+                                          'status', '--recursive'],
+                                         cwd=dest, stdout=PIPE)
+                          .communicate()[0].splitlines()]
+        else:
+            submodules = []
+
+
+        def git_export(path, commit):
+            log.debug('export commit %s in %s', commit, path)
+            proc1 = Popen(['git', 'archive', commit],
+                          cwd=path, stdout=PIPE)
+            proc2 = Popen(['tar', '--extract', '--overwrite', '--file', '-'],
+                          cwd=path, stdin=proc1.stdout)
+            proc1.stdout.close()  # Allow proc1 to receive a SIGPIPE if proc2 exits.
+            if proc2.wait() or proc1.wait():
+                log.warning('problems exporting commit %s in %s', commit, path)
+            shutil.rmtree(path=os.path.join(path, '.git'), ignore_errors=True)
+
+        git_export(dest, commit)
+        for path in submodules:
+            git_export(path, 'HEAD')
+
     f = open(os.path.join(dest, 'Makefile'), 'w')
     f.write('include $(LBCONFIGURATIONROOT)/data/Makefile\n')
     f.close()
