@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2016 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Receive messages that a build for a project has been done
+
+'''
+__author__ = 'Ben Couturier <ben.couturier@cern.ch>'
+
+import LbUtils.Script
+import sys
+import LbMsg.BuildMsg
+
+import LbUtils.Log
+LbUtils.Log._default_log_format = '%(asctime)s:' + LbUtils.Log._default_log_format
+
+
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Sends the message that a build has been done
+    '''
+    __usage__ = '%prog <slot> <project> <config> <buildId>'
+    __version__ = ''
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('-q', '--queue',
+                               default=None,
+                               help='Name of the (persistent) queue to store the messages')
+        self.parser.add_option('-b', '--bindings',
+                               default=None,
+                               help='Message bindings for this channel')
+
+        self.parser.add_option('-c', '--consume',
+                               action="store_true",
+                               default=False,
+                               help='Wait and loop on all messages coming from the server')
+
+
+    def main(self):
+        '''
+        Main function of the script.
+        '''
+
+        queueName = None
+        if self.options.queue:
+            queueName = self.options.queue
+
+        binds = None
+        if self.options.bindings:
+            binds = [ self.options.bindings ]
+            
+        msg = LbMsg.BuildMsg.NightliesMessenger()
+        if self.options.consume:
+
+            def callback(ch, method, properties, body):
+                print(" [x] %r:%r" % (method.routing_key, body))
+            msg.consumeBuildsDone(callback, queueName, binds)
+        else:
+            if queueName == None:
+                raise Exception("No point in just getting messages on a newly created queue. Name the queue with -q or use -c instead")
+            msg.getBuildsDone(queueName, binds)
+
+
+if __name__ == "__main__":
+    sys.exit(Script().run())
