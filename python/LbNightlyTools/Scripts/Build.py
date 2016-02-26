@@ -379,7 +379,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                      result.returncode)
 
                 if (self.slot.name == 'lhcb-release' and
-                    not isinstance(proj, DataProject)):
+                    not isinstance(proj, DataProject) and
+                    result.returncode == 0):
                     manifest_file = self._buildDir(proj, 'InstallArea',
                                                    self.platform,
                                                    'manifest.xml')
