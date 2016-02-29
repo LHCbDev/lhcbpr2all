@@ -72,6 +72,7 @@ class make(object):
         @param env: dictionary used to override environment variables from the
                     project configuration
         @param args: list of extra arguments to pass to make
+        @param make_cmd: command to be used to build [default: ['make']]
         '''
         jobs = kwargs.get('jobs')
         max_load = kwargs.get('max_load')
@@ -88,7 +89,9 @@ class make(object):
         if 'stderr' in kwargs:
             cmd_kwargs['stderr'] = kwargs['stderr']
 
-        cmd = ['make']
+        cmd = kwargs.get('make_cmd') or ['make']
+        if isinstance(cmd, basestring):
+            cmd = cmd.split()
         if jobs:
             cmd.append('-j%d' % jobs)
         if max_load:
