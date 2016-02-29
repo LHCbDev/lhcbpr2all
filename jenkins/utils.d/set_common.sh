@@ -108,6 +108,11 @@ set_common [--build] [--test]"
         # COMPILER_PATH (set by LbLogin --no-cache) create troubles
         unset COMPILER_PATH
 
+        # add Coverity tools to the path if available
+        if [ -e /coverity/cov-analysis/bin ] ; then
+            export PATH=/coverity/cov-analysis/bin:${PATH}
+        fi
+
         # FIXME: we need to get the latest compilers wrappers until we release LbScripts
         export PATH=/afs/cern.ch/work/m/marcocle/workspace/LbScripts/LbUtils/scripts:$PATH
     else
