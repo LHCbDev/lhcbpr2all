@@ -89,7 +89,7 @@ build_slot flavour slot slot_build_id platform
 
     local config_file=${directory}/slot-config.json
 
-    if [ "${os_label}" = "coverity" ] ; then
+    if [[ "${os_label}" = *-coverity ]] ; then
         coverity_opt='--coverity --no-ccache'
         # Coverity builds do not need to trigger tests
         with_tests=no
