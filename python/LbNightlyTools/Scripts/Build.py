@@ -24,7 +24,7 @@ import codecs
 from LbNightlyTools.Configuration import DataProject
 
 from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
-from LbNightlyTools.Utils import TaskQueue, wipeDir
+from LbNightlyTools.Utils import tee_call, TaskQueue, wipeDir
 
 from LbNightlyTools.Scripts.CollectBuildLogs import Script as CBLScript
 
@@ -472,17 +472,25 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 if opts.coverity and result.returncode == 0:
                     wipeDir(os.path.join(proj.baseDir,
                                          'cov-out', 'output'))
-                    call(['cov-analyze', '--dir', 'cov-out',
-                          '--all', '--enable-constraint-fpp',
-                          '--enable-fnptr', '--enable-single-virtual',
-                          '--force'], cwd=proj.baseDir)
+                    cov_result = tee_call(['cov-analyze', '--dir', 'cov-out',
+                                           '--all', '--enable-constraint-fpp',
+                                           '--enable-fnptr',
+                                           '--enable-single-virtual',
+                                           '--force'], cwd=proj.baseDir)
+                    with open(join(summary_dir, 'coverity.log'), 'w') as f:
+                        f.write(cov_result[1])
+                    with open(join(summary_dir, 'coverity-err.log'), 'w') as f:
+                        f.write(cov_result[2])
 
                     # add current project to the path strip settings
                     cov_strip.append('--strip-path')
                     cov_strip.append(os.path.dirname(
                                         os.path.abspath(proj.baseDir)))
 
-                    if 'COVERITY_PASSPHRASE' in os.environ:
+                    if cov_result[0] != 0:
+                        self.log.warning('Coverity analysis exited with code '
+                                         '%d, not committing', cov_result[0])
+                    elif 'COVERITY_PASSPHRASE' in os.environ:
                         call(['cov-commit-defects', '--dir', 'cov-out',
                               '--host', 'lcgapp10.cern.ch', '--port', '8080',
                               '--user', 'admin',
