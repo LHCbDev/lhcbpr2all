@@ -384,8 +384,10 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 ensureDirs([summary_dir])
 
                 if result.returncode != 0:
-                    self.log.warning('build exited with code %d',
-                                     result.returncode)
+                    self.log.warning('build of %s exited with code %d',
+                                     proj, result.returncode)
+                    if opts.coverity:
+                        self.log.warning('Coverity analysis skipped')
 
                 if (self.slot.name == 'lhcb-release' and
                     not isinstance(proj, DataProject) and
@@ -494,8 +496,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                         os.path.abspath(proj.baseDir)))
 
                     if cov_result[0] != 0:
-                        self.log.warning('Coverity analysis exited with code '
-                                         '%d, not committing', cov_result[0])
+                        self.log.warning('Coverity analysis for %d exited with '
+                                         'code %d, not committing',
+                                         proj, cov_result[0])
                     elif 'COVERITY_PASSPHRASE' in os.environ:
                         call(['cov-commit-defects', '--dir', 'cov-out',
                               '--host', 'lcgapp10.cern.ch', '--port', '8080',
