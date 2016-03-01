@@ -356,7 +356,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         else:
             tasks = None
 
-        make_cmd = ['cov-build', '--dir', 'cov-out'] if opts.coverity else None
+        make_cmd = (['cov-build', '--dir', 'cov-out', 'make']
+                    if opts.coverity else None)
         # FIXME: we should use the search path
         cov_strip = ['--strip-path', '/afs/cern.ch/sw/lcg/releases',
                      '--strip-path', '/cvmfs/sft.cern.ch/lcg/releases',
