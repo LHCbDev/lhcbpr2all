@@ -474,13 +474,15 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     tasks.add(self.deploy_artifacts)
 
                 if opts.coverity and result.returncode == 0:
+                    isDebug = self.log.level <= logging.DEBUG
                     wipeDir(os.path.join(proj.baseDir,
                                          'cov-out', 'output'))
                     cov_result = tee_call(['cov-analyze', '--dir', 'cov-out',
                                            '--all', '--enable-constraint-fpp',
                                            '--enable-fnptr',
                                            '--enable-single-virtual',
-                                           '--force'], cwd=proj.baseDir)
+                                           '--force'], cwd=proj.baseDir,
+                                          verbose=isDebug)
                     with open(join(summary_dir, 'coverity.log'), 'w') as f:
                         f.write(cov_result[1])
                     with open(join(summary_dir, 'coverity-err.log'), 'w') as f:
