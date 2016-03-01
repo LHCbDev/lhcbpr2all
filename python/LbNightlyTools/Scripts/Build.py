@@ -21,10 +21,10 @@ import re
 import socket
 import codecs
 
-from LbNightlyTools.Configuration import DataProject
+from LbNightlyTools.Configuration import DataProject, log_timing
 
-from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
-from LbNightlyTools.Utils import tee_call, TaskQueue, wipeDir
+from LbNightlyTools.Utils import timeout_call as call,  tee_call as _tee_call
+from LbNightlyTools.Utils import ensureDirs, pack, chdir, TaskQueue, wipeDir
 
 from LbNightlyTools.Scripts.CollectBuildLogs import Script as CBLScript
 
@@ -362,6 +362,10 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         cov_strip = ['--strip-path', '/afs/cern.ch/sw/lcg/releases',
                      '--strip-path', '/cvmfs/sft.cern.ch/lcg/releases',
                      '--strip-path', '/cvmfs/lhcb.cern.ch/lib/lcg/releases']
+
+        # add timing report
+        tee_call = log_timing(self.log)(_tee_call)
+
         from subprocess import STDOUT
         with chdir(self.build_dir):
             def record_start(proj):
