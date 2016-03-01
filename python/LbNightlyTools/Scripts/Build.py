@@ -50,9 +50,6 @@ except ImportError:
 
 __log__ = logging.getLogger(__name__)
 
-COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'),
-                                   'private', 'cov-admin')
-
 LOAD_AVERAGE_SCALE = 1.2
 
 def listAllFiles(path, excl=None):
@@ -317,7 +314,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         self._setup(json_type='build-result')
         self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
                                           r'(\.git)|(\.svn)|'
-                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
+                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)|'
+                                          r'(cov-out)$'
                                           ).format(self.platform))
 
         # See LBCORE-637 (we do not want ccache for releases)
@@ -358,6 +356,11 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         else:
             tasks = None
 
+        make_cmd = ['cov-build', '--dir', 'cov-out'] if opts.coverity else None
+        # FIXME: we should use the search path
+        cov_strip = ['--strip-path', '/afs/cern.ch/sw/lcg/releases',
+                     '--strip-path', '/cvmfs/sft.cern.ch/lcg/releases',
+                     '--strip-path', '/cvmfs/lhcb.cern.ch/lib/lcg/releases']
         from subprocess import STDOUT
         with chdir(self.build_dir):
             def record_start(proj):
@@ -369,6 +372,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                                    jobs=opts.jobs,
                                                    max_load=opts.load_average,
                                                    args=['-k'],
+                                                   make_cmd=make_cmd,
                                                    stderr=STDOUT,
                                                    before=record_start):
                 summary_dir = self._summaryDir(proj)
@@ -463,6 +467,30 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
                 if tasks:
                     tasks.add(self.deploy_artifacts)
+
+                if opts.coverity and result.returncode == 0:
+                    wipeDir(os.path.join(proj.baseDir,
+                                         'cov-out', 'output'))
+                    call(['cov-analyze', '--dir', 'cov-out',
+                          '--all', '--enable-constraint-fpp',
+                          '--enable-fnptr', '--enable-single-virtual',
+                          '--force'], cwd=proj.baseDir)
+
+                    # add current project to the path strip settings
+                    cov_strip.append('--strip-path')
+                    cov_strip.append(os.path.dirname(
+                                        os.path.abspath(proj.baseDir)))
+
+                    if 'COVERITY_PASSPHRASE' in os.environ:
+                        call(['cov-commit-defects', '--dir', 'cov-out',
+                              '--host', 'lcgapp10.cern.ch', '--port', '8080',
+                              '--user', 'admin',
+                              '--stream', 'LHCb-{0}-Stream'.format(proj.name)] +
+                             cov_strip,
+                             cwd=proj.baseDir)
+                    else:
+                        self.log.warning('Coverity analysis cannot be committed'
+                                         ': missing password')
 
         if tasks:
             self.log.info('waiting for pending tasks')
