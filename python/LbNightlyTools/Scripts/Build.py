@@ -520,6 +520,14 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     else:
                         self.log.warning('Coverity analysis cannot be committed'
                                          ': missing password')
+                    for extra_file in [join(proj.baseDir, 'cov-out',
+                                            'output', 'cov-blame',
+                                            'cov-blame-errors.log'),
+                                       ]:
+                        if os.path.exists(extra_file):
+                            shutil.copy(extra_file,
+                                        join(summary_dir,
+                                             os.path.basename(extra_file)))
 
         if tasks:
             self.log.info('waiting for pending tasks')
