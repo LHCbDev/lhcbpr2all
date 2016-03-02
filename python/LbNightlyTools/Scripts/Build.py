@@ -529,6 +529,9 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                         join(summary_dir,
                                              os.path.basename(extra_file)))
 
+                    if tasks:
+                        tasks.add(self.deploy_artifacts)
+
         if tasks:
             self.log.info('waiting for pending tasks')
             tasks.join()
