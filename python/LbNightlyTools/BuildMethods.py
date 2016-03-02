@@ -240,8 +240,11 @@ class cmake(make):
         env.update({'USE_CMAKE': '1',
                     'USE_MAKE': '1',
                     'CMAKEFLAGS': '-C' + preload_file})
-        if 'make_cmd' in kwargs and isinstance(kwargs['make_cmd'], dict):
+        try:
             kwargs['make_cmd'] = kwargs['make_cmd'].get(target)
+        except (KeyError, TypeError):
+            # no target-specific make_cmd
+            pass
         return make._make(self, target, proj, env=env, **kwargs)
 
     def build(self, proj, **kwargs):
