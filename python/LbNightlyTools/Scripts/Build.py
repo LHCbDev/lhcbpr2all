@@ -479,24 +479,25 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     tasks.add(self.deploy_artifacts)
 
                 if opts.coverity and result.returncode == 0:
+                    # add current project to the path strip settings
+                    cov_strip.append('--strip-path')
+                    cov_strip.append(os.path.dirname(
+                                     os.path.abspath(proj.baseDir)))
+
                     isDebug = self.log.level <= logging.DEBUG
                     wipeDir(join(proj.baseDir, 'cov-out', 'output'))
                     cov_result = tee_call(['cov-analyze', '--dir', 'cov-out',
                                            '--all', '--enable-constraint-fpp',
                                            '--enable-fnptr',
                                            '--enable-single-virtual',
-                                           '--force'], cwd=proj.baseDir,
+                                           '--force'] + cov_strip,
+                                          cwd=proj.baseDir,
                                           verbose=isDebug)
                     log_name = join(summary_dir, 'cov-analyze')
                     with open(log_name + '.log', 'w') as f:
                         f.write(cov_result[1])
                     with open(log_name + '.err.log', 'w') as f:
                         f.write(cov_result[2])
-
-                    # add current project to the path strip settings
-                    cov_strip.append('--strip-path')
-                    cov_strip.append(os.path.dirname(
-                                        os.path.abspath(proj.baseDir)))
 
                     if cov_result[0] != 0:
                         self.log.warning('Coverity analysis for %d exited with '
@@ -509,8 +510,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                            '--port', '8080',
                                            '--user', 'admin',
                                            '--stream',
-                                           'LHCb-{0}-Stream'.format(proj.name)
-                                           ] + cov_strip,
+                                           'LHCb-{0}-Stream'.format(proj.name)],
                                           cwd=proj.baseDir)
                         log_name = join(summary_dir, 'cov-commit-defects')
                         with open(log_name + '.log', 'w') as f:
