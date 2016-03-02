@@ -95,7 +95,7 @@ class make(object):
         else:
             # make a copy of make_cmd argumens to avoid modifying it
             cmd = list(cmd)
-	
+
         if jobs:
             cmd.append('-j%d' % jobs)
         if max_load:
@@ -230,6 +230,8 @@ class cmake(make):
         '''
         Override basic make call to set the environment variable USE_CMT=1.
         '''
+        # copy kwargs to be able to change it
+        kwargs = dict(kwargs)
         self._prepare_cache(proj,
                             cache_entries=kwargs.pop('cache_entries', None))
 
@@ -238,6 +240,8 @@ class cmake(make):
         env.update({'USE_CMAKE': '1',
                     'USE_MAKE': '1',
                     'CMAKEFLAGS': '-C' + preload_file})
+        if 'make_cmd' in kwargs and isinstance(kwargs['make_cmd'], dict):
+            kwargs['make_cmd'] = kwargs['make_cmd'].get(target)
         return make._make(self, target, proj, env=env, **kwargs)
 
     def build(self, proj, **kwargs):
