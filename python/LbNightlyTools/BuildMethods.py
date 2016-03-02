@@ -89,9 +89,13 @@ class make(object):
         if 'stderr' in kwargs:
             cmd_kwargs['stderr'] = kwargs['stderr']
 
-        cmd = kwargs.get('make_cmd') or ['make']
+        cmd = kwargs.get('make_cmd') or 'make'
         if isinstance(cmd, basestring):
             cmd = cmd.split()
+        else:
+            # make a copy of make_cmd argumens to avoid modifying it
+            cmd = list(cmd)
+	
         if jobs:
             cmd.append('-j%d' % jobs)
         if max_load:
