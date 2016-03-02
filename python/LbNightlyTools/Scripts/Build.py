@@ -480,17 +480,17 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
                 if opts.coverity and result.returncode == 0:
                     isDebug = self.log.level <= logging.DEBUG
-                    wipeDir(os.path.join(proj.baseDir,
-                                         'cov-out', 'output'))
+                    wipeDir(join(proj.baseDir, 'cov-out', 'output'))
                     cov_result = tee_call(['cov-analyze', '--dir', 'cov-out',
                                            '--all', '--enable-constraint-fpp',
                                            '--enable-fnptr',
                                            '--enable-single-virtual',
                                            '--force'], cwd=proj.baseDir,
                                           verbose=isDebug)
-                    with open(join(summary_dir, 'coverity.log'), 'w') as f:
+                    log_name = join(summary_dir, 'cov-analyze')
+                    with open(log_name + '.log', 'w') as f:
                         f.write(cov_result[1])
-                    with open(join(summary_dir, 'coverity-err.log'), 'w') as f:
+                    with open(log_name + '.err.log', 'w') as f:
                         f.write(cov_result[2])
 
                     # add current project to the path strip settings
@@ -503,12 +503,20 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                          'code %d, not committing',
                                          proj, cov_result[0])
                     elif 'COVERITY_PASSPHRASE' in os.environ:
-                        call(['cov-commit-defects', '--dir', 'cov-out',
-                              '--host', 'lcgapp10.cern.ch', '--port', '8080',
-                              '--user', 'admin',
-                              '--stream', 'LHCb-{0}-Stream'.format(proj.name)] +
-                             cov_strip,
-                             cwd=proj.baseDir)
+                        cov_result = call(['cov-commit-defects',
+                                           '--dir', 'cov-out',
+                                           '--host', 'lcgapp10.cern.ch',
+                                           '--port', '8080',
+                                           '--user', 'admin',
+                                           '--stream',
+                                           'LHCb-{0}-Stream'.format(proj.name)
+                                           ] + cov_strip,
+                                          cwd=proj.baseDir)
+                        log_name = join(summary_dir, 'cov-commit-defects')
+                        with open(log_name + '.log', 'w') as f:
+                            f.write(cov_result[1])
+                        with open(log_name + '.err.log', 'w') as f:
+                            f.write(cov_result[2])
                     else:
                         self.log.warning('Coverity analysis cannot be committed'
                                          ': missing password')
