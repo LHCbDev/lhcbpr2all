@@ -56,6 +56,7 @@ def add_defaults(expected):
                      'build_id': 0,
                      'disabled': False,
                      'env': [],
+                     'platforms': [],
                      'preconditions': [],
                      'error_exceptions': [],
                      'warning_exceptions': []}

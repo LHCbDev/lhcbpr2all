@@ -45,7 +45,7 @@ def test_empty_config():
         assert output['projects'] == []
         assert output['build_tool'] == 'cmake'
         assert output['no_patch'] is True
-        assert len(output['default_platforms']) == 2
+        assert len(output['default_platforms']) == 0
 
         assert output == s.genConfig()
 
