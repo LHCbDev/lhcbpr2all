@@ -378,8 +378,13 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                      '--strip-path', '/cvmfs/sft.cern.ch/lcg/releases',
                      '--strip-path', '/cvmfs/lhcb.cern.ch/lib/lcg/releases']
 
-        # add timing report
-        tee_call = log_timing(self.log)(_tee_call)
+        # add timing report and command echo
+        def echo_call(*args, **kwargs):
+            self.log.debug('running %s', ' '.join(args[0]))
+            result = _tee_call(*args, **kwargs)
+            __log__.debug('command exited with code %d', result[0])
+            return result
+        tee_call = log_timing(self.log)(echo_call)
 
         from subprocess import STDOUT
         with chdir(self.build_dir):
