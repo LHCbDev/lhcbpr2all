@@ -165,6 +165,17 @@ class Script(BaseScript):
                          help='enable special Coverity static analysis on the '
                               'build (Coverity commands must be on the PATH)')
 
+        group.add_option('--coverity-commit',
+                         action='store_true',
+                         help='commit Coverity detected defects to the '
+                              'database (default if the Coverity analysis is '
+                              'run)')
+
+        group.add_option('--coverity-no-commit',
+                         action='store_false', dest='coverity_commit',
+                         help='do not commit Coverity detected defects to the '
+                              'database')
+
         self.parser.add_option_group(group)
         if 'LBN_LOAD_AVERAGE' in os.environ:
             load_average = float(os.environ['LBN_LOAD_AVERAGE'])
@@ -173,7 +184,8 @@ class Script(BaseScript):
         self.parser.set_defaults(jobs=cpu_count() + 1,
                                  load_average=load_average,
                                  use_ccache='CCACHE_DIR' in os.environ,
-                                 coverity=False)
+                                 coverity=False,
+                                 coverity_commit=True)
 
     def defineOpts(self):
         '''
@@ -499,6 +511,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     with open(log_name + '.err.log', 'w') as f:
                         f.write(cov_result[2])
 
+                    if not opts.coverity_commit:
+                        continue
                     if cov_result[0] != 0:
                         self.log.warning('Coverity analysis for %d exited with '
                                          'code %d, not committing',
