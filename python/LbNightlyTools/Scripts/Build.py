@@ -490,11 +490,12 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                 if tasks:
                     tasks.add(self.deploy_artifacts)
 
+                # add current project to the path strip settings
+                cov_strip.append('--strip-path')
+                cov_strip.append(os.path.dirname(
+                                 os.path.abspath(proj.baseDir)))
+
                 if opts.coverity and result.returncode == 0:
-                    # add current project to the path strip settings
-                    cov_strip.append('--strip-path')
-                    cov_strip.append(os.path.dirname(
-                                     os.path.abspath(proj.baseDir)))
 
                     isDebug = self.log.level <= logging.DEBUG
                     wipeDir(join(proj.baseDir, 'cov-out', 'output'))
