@@ -129,7 +129,8 @@ GIT_URLS = {'gaudi': 'https://gitlab.cern.ch/gaudi/Gaudi.git',
             'lhcbintegrationtests':
                 'https://gitlab.cern.ch/lhcb/LHCbIntegrationTests.git',
             'lhcbgrid': 'https://gitlab.cern.ch/lhcb-dirac/LHCbGrid.git',
-            'lhcbdirac': 'https://gitlab.cern.ch/lhcb-dirac/LHCbDIRAC.git',
+            'lhcbdirac':
+                'ssh://git@gitlab.cern.ch:7999/lhcb-dirac/LHCbDIRAC.git',
             'lbscripts': 'https://gitlab.cern.ch/lhcb-core/LbScripts.git',
             }
 
