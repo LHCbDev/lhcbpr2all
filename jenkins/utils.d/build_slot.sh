@@ -87,17 +87,20 @@ build_slot flavour slot slot_build_id platform
         mkdir -pv $DISTCC_DIR
     fi
 
-    # ensure that Coverity is on the PATH
-    if [ -e /build/coverity/static-analysis/bin ] ; then
-        export PATH=/build/coverity/static-analysis/bin:/build/coverity:$PATH
-    fi
-
     local config_file=${directory}/slot-config.json
 
-    if [ "${os_label}" = "coverity" ] ; then
-        coverity_opt='--coverity'
-        # Coverity builds to not need to trigger tests
+    if [[ "${os_label}" = *-coverity ]] ; then
+        coverity_opt='--coverity --no-ccache'
+        # Coverity builds do not need to trigger tests
         with_tests=no
+ 	# ensure that Coverity is on the PATH
+        if [ -e /coverity/cov-analysis/bin ] ; then
+            export PATH=/coverity/cov-analysis/bin:${PATH}
+        fi
+        # set Coverity database password for commit
+        if [ -e ~/private/coverity.txt ] ; then
+            export COVERITY_PASSPHRASE=$(cat ~/private/coverity.txt)
+        fi
     fi
 
     if [ "$JENKINS_MOCK" != "true" ] ; then

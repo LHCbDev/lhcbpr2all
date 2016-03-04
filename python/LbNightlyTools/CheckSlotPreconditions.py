@@ -18,6 +18,8 @@ __author__ = 'Colas Pomies <colas.pomies@cern.ch>'
 from LbNightlyTools.Scripts.Common import findSlot
 from LbNightlyTools.Utils import JobParams
 
+import os
+
 import LbUtils.Script
 class Script(LbUtils.Script.PlainScript):
     '''
@@ -57,12 +59,15 @@ class Script(LbUtils.Script.PlainScript):
 
         platforms = opts.platforms.strip().split() or slot.platforms
 
-        label = '-build'
-        if (flavour == 'release'):
+        if flavour == 'release':
             label = '-release'
+        elif os.environ.get('os_label') == 'coverity':
+            label = '-coverity'
+        else:
+            label = '-build'
 
         for platform in platforms:
-            os_label = platform.split('-')[1]+label
+            os_label = platform.split('-')[1] + label
             output_file_name = output_file.format(slot.name, platform)
             open(output_file_name, 'w') \
                 .write(str(JobParams(slot=slot.name,

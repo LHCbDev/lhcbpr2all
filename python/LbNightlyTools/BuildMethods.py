@@ -72,6 +72,7 @@ class make(object):
         @param env: dictionary used to override environment variables from the
                     project configuration
         @param args: list of extra arguments to pass to make
+        @param make_cmd: command to be used to build [default: ['make']]
         '''
         jobs = kwargs.get('jobs')
         max_load = kwargs.get('max_load')
@@ -88,7 +89,13 @@ class make(object):
         if 'stderr' in kwargs:
             cmd_kwargs['stderr'] = kwargs['stderr']
 
-        cmd = ['make']
+        cmd = kwargs.get('make_cmd') or 'make'
+        if isinstance(cmd, basestring):
+            cmd = cmd.split()
+        else:
+            # make a copy of make_cmd argumens to avoid modifying it
+            cmd = list(cmd)
+
         if jobs:
             cmd.append('-j%d' % jobs)
         if max_load:
@@ -223,6 +230,8 @@ class cmake(make):
         '''
         Override basic make call to set the environment variable USE_CMT=1.
         '''
+        # copy kwargs to be able to change it
+        kwargs = dict(kwargs)
         self._prepare_cache(proj,
                             cache_entries=kwargs.pop('cache_entries', None))
 
@@ -231,6 +240,11 @@ class cmake(make):
         env.update({'USE_CMAKE': '1',
                     'USE_MAKE': '1',
                     'CMAKEFLAGS': '-C' + preload_file})
+        try:
+            kwargs['make_cmd'] = kwargs['make_cmd'].get(target)
+        except (KeyError, TypeError):
+            # no target-specific make_cmd
+            pass
         return make._make(self, target, proj, env=env, **kwargs)
 
     def build(self, proj, **kwargs):

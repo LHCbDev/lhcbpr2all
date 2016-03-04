@@ -21,10 +21,10 @@ import re
 import socket
 import codecs
 
-from LbNightlyTools.Configuration import DataProject
+from LbNightlyTools.Configuration import DataProject, log_timing
 
-from LbNightlyTools.Utils import timeout_call as call, ensureDirs, pack, chdir
-from LbNightlyTools.Utils import TaskQueue, wipeDir
+from LbNightlyTools.Utils import timeout_call as call,  tee_call as _tee_call
+from LbNightlyTools.Utils import ensureDirs, pack, chdir, TaskQueue, wipeDir
 
 from LbNightlyTools.Scripts.CollectBuildLogs import Script as CBLScript
 
@@ -49,9 +49,6 @@ except ImportError:
 #call = lambda *a,**k: None
 
 __log__ = logging.getLogger(__name__)
-
-COV_PASSPHRASE_FILE = os.path.join(os.path.expanduser('~'),
-                                   'private', 'cov-admin')
 
 LOAD_AVERAGE_SCALE = 1.2
 
@@ -168,6 +165,17 @@ class Script(BaseScript):
                          help='enable special Coverity static analysis on the '
                               'build (Coverity commands must be on the PATH)')
 
+        group.add_option('--coverity-commit',
+                         action='store_true',
+                         help='commit Coverity detected defects to the '
+                              'database (default if the Coverity analysis is '
+                              'run)')
+
+        group.add_option('--coverity-no-commit',
+                         action='store_false', dest='coverity_commit',
+                         help='do not commit Coverity detected defects to the '
+                              'database')
+
         self.parser.add_option_group(group)
         if 'LBN_LOAD_AVERAGE' in os.environ:
             load_average = float(os.environ['LBN_LOAD_AVERAGE'])
@@ -176,7 +184,8 @@ class Script(BaseScript):
         self.parser.set_defaults(jobs=cpu_count() + 1,
                                  load_average=load_average,
                                  use_ccache='CCACHE_DIR' in os.environ,
-                                 coverity=False)
+                                 coverity=False,
+                                 coverity_commit=True)
 
     def defineOpts(self):
         '''
@@ -317,7 +326,8 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         self._setup(json_type='build-result')
         self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
                                           r'(\.git)|(\.svn)|'
-                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)$'
+                                          r'(\.{0}\.d)|(Testing)|(.*\.pyc)|'
+                                          r'(cov-out)$'
                                           ).format(self.platform))
 
         # See LBCORE-637 (we do not want ccache for releases)
@@ -358,6 +368,24 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
         else:
             tasks = None
 
+        make_cmd = ({'all': ['cov-build', '--dir', 'cov-out',
+                             '--build-description',
+                             '{slot}-{build_id}'.format(**self.json_tmpl),
+                             'make']}
+                    if opts.coverity else None)
+        # FIXME: we should use the search path
+        cov_strip = ['--strip-path', '/afs/cern.ch/sw/lcg/releases',
+                     '--strip-path', '/cvmfs/sft.cern.ch/lcg/releases',
+                     '--strip-path', '/cvmfs/lhcb.cern.ch/lib/lcg/releases']
+
+        # add timing report and command echo
+        def echo_call(*args, **kwargs):
+            self.log.debug('running %s', ' '.join(args[0]))
+            result = _tee_call(*args, **kwargs)
+            __log__.debug('command exited with code %d', result[0])
+            return result
+        tee_call = log_timing(self.log)(echo_call)
+
         from subprocess import STDOUT
         with chdir(self.build_dir):
             def record_start(proj):
@@ -369,14 +397,17 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                                                    jobs=opts.jobs,
                                                    max_load=opts.load_average,
                                                    args=['-k'],
+                                                   make_cmd=make_cmd,
                                                    stderr=STDOUT,
                                                    before=record_start):
                 summary_dir = self._summaryDir(proj)
                 ensureDirs([summary_dir])
 
                 if result.returncode != 0:
-                    self.log.warning('build exited with code %d',
-                                     result.returncode)
+                    self.log.warning('build of %s exited with code %d',
+                                     proj, result.returncode)
+                    if opts.coverity:
+                        self.log.warning('Coverity analysis skipped')
 
                 if (self.slot.name == 'lhcb-release' and
                     not isinstance(proj, DataProject) and
@@ -465,6 +496,63 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
                 if tasks:
                     tasks.add(self.deploy_artifacts)
+
+                # add current project to the path strip settings
+                cov_strip.append('--strip-path')
+                cov_strip.append(os.path.dirname(
+                                 os.path.abspath(proj.baseDir)))
+
+                if opts.coverity and result.returncode == 0:
+
+                    isDebug = self.log.level <= logging.DEBUG
+                    wipeDir(join(proj.baseDir, 'cov-out', 'output'))
+                    cov_result = tee_call(['cov-analyze', '--dir', 'cov-out',
+                                           '--all', '--enable-constraint-fpp',
+                                           '--enable-fnptr',
+                                           '--enable-single-virtual',
+                                           '--force'] + cov_strip,
+                                          cwd=proj.baseDir,
+                                          verbose=isDebug)
+                    log_name = join(summary_dir, 'cov-analyze')
+                    with open(log_name + '.log', 'w') as f:
+                        f.write(cov_result[1])
+                    with open(log_name + '.err.log', 'w') as f:
+                        f.write(cov_result[2])
+
+                    if not opts.coverity_commit:
+                        continue
+                    if cov_result[0] != 0:
+                        self.log.warning('Coverity analysis for %d exited with '
+                                         'code %d, not committing',
+                                         proj, cov_result[0])
+                    elif 'COVERITY_PASSPHRASE' in os.environ:
+                        cov_result = call(['cov-commit-defects',
+                                           '--dir', 'cov-out',
+                                           '--host', 'lcgapp10.cern.ch',
+                                           '--port', '8080',
+                                           '--user', 'admin',
+                                           '--stream',
+                                           'LHCb-{0}-Stream'.format(proj.name)],
+                                          cwd=proj.baseDir)
+                        log_name = join(summary_dir, 'cov-commit-defects')
+                        with open(log_name + '.log', 'w') as f:
+                            f.write(cov_result[1])
+                        with open(log_name + '.err.log', 'w') as f:
+                            f.write(cov_result[2])
+                    else:
+                        self.log.warning('Coverity analysis cannot be committed'
+                                         ': missing password')
+                    for extra_file in [join(proj.baseDir, 'cov-out',
+                                            'output', 'cov-blame',
+                                            'cov-blame-errors.log'),
+                                       ]:
+                        if os.path.exists(extra_file):
+                            shutil.copy(extra_file,
+                                        join(summary_dir,
+                                             os.path.basename(extra_file)))
+
+                    if tasks:
+                        tasks.add(self.deploy_artifacts)
 
         if tasks:
             self.log.info('waiting for pending tasks')
