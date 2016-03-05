@@ -242,7 +242,7 @@ class cmake(make):
                     'CMAKEFLAGS': '-C' + preload_file})
         try:
             kwargs['make_cmd'] = kwargs['make_cmd'].get(target)
-        except (KeyError, TypeError):
+        except (KeyError, TypeError, AttributeError):
             # no target-specific make_cmd
             pass
         return make._make(self, target, proj, env=env, **kwargs)
