@@ -320,9 +320,6 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
 
         opts = self.options
 
-        if opts.coverity:
-            self.log.warning('Coverity analysis not implemented yet')
-
         self._setup(json_type='build-result')
         self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
                                           r'(\.git)|(\.svn)|'
