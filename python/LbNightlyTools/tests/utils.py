@@ -15,15 +15,17 @@ import os
 import shutil
 import tempfile
 import logging
+from os.path import normpath, join, exists
 
 __all__ = ('which', 'MockFunc', 'processFile', 'processFileWithName',
-           'MockLoggingHandler', 'TemporaryDir')
+           'MockLoggingHandler', 'TemporaryDir', 'TESTDATA_PATH')
+
+TESTDATA_PATH = normpath(join(*([__file__] + [os.pardir] * 4 + ['testdata'])))
 
 def which(cmd):
     '''
     find a command in the path
     '''
-    from os.path import join, exists
     try:
         return (join(d, cmd)
                 for d in os.environ['PATH'].split(os.pathsep)
