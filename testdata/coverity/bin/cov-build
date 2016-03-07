@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2016 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+
+import sys
+from subprocess import call
+from optparse import OptionParser
+
+parser = OptionParser()
+
+parser.allow_interspersed_args = False
+parser.add_option('--dir', action='store')
+parser.add_option('--build-description', action='store')
+
+print 'cov-build args:', sys.argv
+
+opts, args = parser.parse_args()
+
+sys.exit(call(args))
+
