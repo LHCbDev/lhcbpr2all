@@ -52,12 +52,27 @@ class TemporaryDir(object):
     An instance of this class can be used inside the 'with' statement and
     returns the path to the temporary directory.
     '''
-    def __init__(self, chdir=False, keep=False):
-        '''Constructor.'''
+    def __init__(self, chdir=False, keep=False, skel=None):
+        '''Constructor.
+
+        @param chdir: change to the temporary directory while inside the context
+        @param keep: do not delete the temporary directory once out of context
+        @param skel: fill the temporary directory with the content of the
+                     provided directory
+        '''
         self.chdir = chdir
         self.keep = keep
         self.path = tempfile.mkdtemp()
         self.old_dir = None
+        if skel:
+            for src, _dirs, files in os.walk(skel):
+                dst = join(self.path, os.path.relpath(src, skel))
+                if not os.path.exists(dst):
+                    os.makedirs(dst)
+                    shutil.copymode(src, dst)
+                for f in [join(src, f) for f in files]:
+                    shutil.copy(f, dst)
+
     def join(self, *args):
         '''
         Equivalent to os.path.join(self.path, *args).
