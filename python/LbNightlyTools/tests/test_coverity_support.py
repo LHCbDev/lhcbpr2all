@@ -106,9 +106,9 @@ def test_analyze():
 
 @in_temp_dir
 def test_failed_build():
-    with open(join('build', 'TEST', 'TEST_HEAD', 'TestPackage', 'main.cpp'), 'w') as f:
-        f.write('#error this is an error\n')
+    os.environ['COV_TEST_BUILD_ERROR'] = '1'
     run_build(['--coverity', 'test-slot'])
+    del os.environ['COV_TEST_BUILD_ERROR']
 
     reports = collect_reports(['build'])
     assert reports['build']['retcode'] != 0
@@ -137,8 +137,8 @@ def test_failed_analysis():
 def test_missing_password():
     if 'COVERITY_PASSPHRASE' in os.environ:
         del os.environ['COVERITY_PASSPHRASE']
-
     run_build(['--coverity', 'test-slot'])
+    os.environ['COVERITY_PASSPHRASE'] = 'dummy'
 
     reports = collect_reports(['build', 'analyze'])
     assert reports['build']['retcode'] == 0
