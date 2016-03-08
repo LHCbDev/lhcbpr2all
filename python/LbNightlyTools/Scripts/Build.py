@@ -171,7 +171,7 @@ class Script(BaseScript):
                               'database (default if the Coverity analysis is '
                               'run)')
 
-        group.add_option('--coverity-no-commit',
+        group.add_option('--no-coverity-commit',
                          action='store_false', dest='coverity_commit',
                          help='do not commit Coverity detected defects to the '
                               'database')
@@ -319,9 +319,6 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
             self.parser.error('wrong number of arguments')
 
         opts = self.options
-
-        if opts.coverity:
-            self.log.warning('Coverity analysis not implemented yet')
 
         self._setup(json_type='build-result')
         self._file_excl_rex = re.compile((r'^(InstallArea)|(build\.{0})|({0})|'
@@ -522,7 +519,7 @@ string(REPLACE "$${NIGHTLY_BUILD_ROOT}" "$${CMAKE_CURRENT_LIST_DIR}"
                     if not opts.coverity_commit:
                         continue
                     if cov_result[0] != 0:
-                        self.log.warning('Coverity analysis for %d exited with '
+                        self.log.warning('Coverity analysis for %s exited with '
                                          'code %d, not committing',
                                          proj, cov_result[0])
                     elif 'COVERITY_PASSPHRASE' in os.environ:
