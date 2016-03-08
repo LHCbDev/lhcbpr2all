@@ -10,7 +10,12 @@
 # or submit itself to any jurisdiction.                                       #
 ###############################################################################
 
+import os
 import sys
+
+from os.path import join
+from json import dump
+
 from subprocess import call
 from optparse import OptionParser
 
@@ -20,9 +25,21 @@ parser.allow_interspersed_args = False
 parser.add_option('--dir', action='store')
 parser.add_option('--build-description', action='store')
 
-print 'cov-build args:', sys.argv
+prog = os.path.basename(sys.argv[0])
+print prog, 'args:', sys.argv
 
 opts, args = parser.parse_args()
 
-sys.exit(call(args))
+rc = call(args)
+
+if not os.path.exists(opts.dir):
+    os.makedirs(opts.dir)
+with open(join(opts.dir, '{0}.report.json'.format(prog)), 'w') as report:
+    dump({prog: sys.argv,
+          'cmd': args,
+          'dir': opts.dir,
+          'desc': opts.build_description,
+          'retcode': rc}, report)
+
+sys.exit(rc)
 
