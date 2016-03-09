@@ -68,7 +68,7 @@ class Script(LbUtils.Script.PlainScript):
             # Here we writeout the files for Jenkins
             def processMsg(idx, testToRun):
                 (slot, buildId, project, config, group, env, runner, os_label) = testToRun
-                self.log.warning("Job %d: %s" % (idx, ",".join(testToRun))
+                self.log.warning("Job %d: %s" % (idx, ",".join(testToRun)))
                 jenkins_test = JenkinsTest(slot, buildId, project, config,
                                            os_label, group, runner, env)
                 with open(format.format(idx), 'w') as paramfile:
