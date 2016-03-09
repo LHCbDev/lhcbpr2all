@@ -31,6 +31,7 @@ class NightliesMessenger(Messenger):
         '''
         Messenger.__init__(self)
         self._topic_name = "topic.build_ready"
+
     
     def sendBuildDone(self, slot, project, config, buildId, date=datetime.datetime.now()):
         '''
