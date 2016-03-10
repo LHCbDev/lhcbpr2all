@@ -25,7 +25,7 @@ class Messenger(object):
     Class used to send messages to the build system message broker
     '''
     def __init__(self, host=None,
-                 user='lhcb', passwd=None,
+                 user=None, passwd=None,
                  port=5671, vhost='/lhcb'):
         '''
         Initialize the messenging class
@@ -34,9 +34,11 @@ class Messenger(object):
         if host == None:
             host = "lhcb-jenkins.cern.ch"
         self._host = host
-        if passwd == None:
-            passwd = self._getPwdFromSys()
-        self._credentials =  pika.PlainCredentials('lhcb', passwd)
+        if user == None or passwd == None:
+            (username, passwd) = self._getPwdFromSys()
+            if user == None:
+                user = username
+        self._credentials =  pika.PlainCredentials(user, passwd)
 
         # And the connection params
         self._port = port
@@ -69,7 +71,10 @@ class Messenger(object):
                     data = f.readlines()
                     if len(data) > 0:
                         res = data[0].strip()
-        return res
+
+        # Separate the username/password
+        (username, password) = res.split("/")
+        return (username, password)
 
     def _setupChannel(self, channel):
             channel.exchange_declare(exchange=self._topic_name,
