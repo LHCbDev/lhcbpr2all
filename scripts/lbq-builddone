@@ -35,7 +35,6 @@ class Script(LbUtils.Script.PlainScript):
         '''
         Main function of the script.
         '''
-        print len(self.args)
         # Checking the arguments
         if len(self.args) != 4:
             self.log.error('Please specify <slot> <project> <config> <buildId>')
@@ -48,8 +47,6 @@ class Script(LbUtils.Script.PlainScript):
         
         msg = LbMsg.BuildMsg.NightliesMessenger()
         msg.sendBuildDone(slot, project, config, buildId)
-
-
 
 
 if __name__ == "__main__":
