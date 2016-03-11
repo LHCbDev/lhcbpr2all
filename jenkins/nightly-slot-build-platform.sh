@@ -32,7 +32,7 @@ if [ ! -e "${ARTIFACTS_DIR}/ccache_dir.${slot}.${platform}.tar.bz2" ] ; then
     # if there is no previous ccache dir, we initialize an empty one
     if which ccache &>/dev/null ; then
         mkdir -p ${PWD}/build/.ccache
-        env CCACHE_DIR=${PWD}/build/.ccache ccache -M 10G
+        env CCACHE_DIR=${PWD}/build/.ccache ccache -M 2G
         tar -c -j -f "${ARTIFACTS_DIR}/ccache_dir.${slot}.${platform}.tar.bz2" -C build .ccache
     fi
 fi
