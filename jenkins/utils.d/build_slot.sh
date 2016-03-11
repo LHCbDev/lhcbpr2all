@@ -140,6 +140,11 @@ build_slot flavour slot slot_build_id platform
     if [ -e build/.ccache ] ; then
         # publish the local ccache directory as artifact
         tar -c -j -f "${directory}/ccache_dir.${slot}.${platform}.tar.bz2" -C build .ccache
+        if which ccache &>/dev/null ; then
+          echo "===== ccache stats ====="
+          ccache -s | tee ${directory}/ccache_dir.${slot}.${platform}.stats
+          echo "========================"
+        fi
     fi
 
     if [ "${flavour}" = "release" -o -n "${make_rpm}" ] ; then
