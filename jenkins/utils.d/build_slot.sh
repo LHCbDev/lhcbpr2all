@@ -142,8 +142,8 @@ build_slot flavour slot slot_build_id platform
           echo "===== ccache stats ====="
           ccache -s | tee ${directory}/ccache_dir.${slot}.${platform}.stats
           echo "========================"
-          # reset ccache stats before next build
-          ccache -z
+          # reset ccache stats and limits before next build
+          ccache -z -M 0 -F 12000
         fi
         # publish the local ccache directory as artifact
         tar -c -j -f "${directory}/ccache_dir.${slot}.${platform}.tar.bz2" -C build .ccache
