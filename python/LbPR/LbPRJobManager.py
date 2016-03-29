@@ -30,7 +30,7 @@ class JobManager(object):
         Constructor taking the URL for the LHCbPR server
         '''
         if lhcbpr_host == None:
-            lhcbpr_host = "lblhcbpr2.cern.ch"
+            lhcbpr_host = "lblhcbpr2.cern.ch:8080"
         if lhcbpr_url == None:
             lhcbpr_url = "api"
 
