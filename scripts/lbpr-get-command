@@ -79,7 +79,7 @@ class Script(LbUtils.Script.PlainScript):
         application = self.args[0]
         version = self.args[1]
         platform = self.args[2]
-        options = self.args[3]
+        job_options = self.args[3]
 
         testenv = self.args[4].split("|")
         setup_options = testenv[0]
@@ -102,10 +102,7 @@ class Script(LbUtils.Script.PlainScript):
         jobdescription_id = None
         try:
             # Now get the job description ID for the job
-            jobdescription_id = manager.getOrCreateJobDescription(application,
-                                                                  version,
-                                                                  options,
-                                                                  setup_options)
+            jobdescription_id = manager.getJobOptions(job_options)
         except Exception, exc:
             self.log.error("Count not get job description ID from LHCbPR: %s",
                            str(exc))
@@ -113,7 +110,7 @@ class Script(LbUtils.Script.PlainScript):
 
         try:
             # Get the actual options based on description
-            optionscontent = manager.getJobOptions(options)
+            optionscontent = manager.getJobOptions(job_options)
 
             # Get the actual options based on description
             setupcontent = manager.getSetupOptions(setup_options)
@@ -133,7 +130,6 @@ class Script(LbUtils.Script.PlainScript):
 
             with open(runfilename, 'w') as runfile:
                 runfile.write("#!/usr/bin/env sh\n")
-
                 #lblogin_cmd = ". LbLogin.sh -c %s" % platform
                 setup_cmd = ". SetupProject.sh --keep-CMTPROJECTPATH %s %s %s"\
                                 % (application, project_version, setupcontent)
