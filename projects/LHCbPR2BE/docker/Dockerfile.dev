@@ -5,6 +5,5 @@ WORKDIR /code
 ADD . /code
 ADD data /lhcbprdata
 VOLUME ["/lhcbprdata"]
-EXPOSE 80
 
 CMD ["./scripts/runserver"]

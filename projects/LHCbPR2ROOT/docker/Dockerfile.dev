@@ -1,26 +1,21 @@
-FROM centos:latest
-LABEL description=ROOT
-
-RUN yum -y install epel-release gcc-c++ bzip2 git vim libpng libjpeg \
-     && yum -y clean all
-RUN yum -y install python-pip && yum -y clean all
-RUN pip install --upgrade pip
+FROM mazurov/cern-root:latest
+LABEL description="ROOT json service"
 
 ENV CODE /code
 ENV ROOT_DATA /data
-ENV PREFIX /usr/local
+
 ENV FLASK_PORT 8080
 ENV FLASK_HOST 0.0.0.0
-ENV ROOTSYS $PREFIX/root
-
-ADD https://root.cern.ch/download/root_v6.06.00.Linux-centos7-x86_64-gcc4.8.tar.gz /var/tmp/root.tar.gz
-RUN tar xzf /var/tmp/root.tar.gz -C $PREFIX && rm /var/tmp/root.tar.gz
 
 RUN mkdir $ROOT_DATA
+ADD . $CODE
 WORKDIR $CODE
+
 RUN pip install -r requirements.txt
-RUN COPY data/* $ROOT_DATA/
+COPY data/* $ROOT_DATA/
+
 VOLUME $ROOT_DATA
 VOLUME $CODE
+
 EXPOSE $FLASK_PORT
 CMD ["./scripts/bootstrap"]
