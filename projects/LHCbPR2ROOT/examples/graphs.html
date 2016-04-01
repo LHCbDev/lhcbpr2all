@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Graphs</title>
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+	<!-- <link rel="stylesheet" href="style.css"> -->
+	<link rel="icon" type="image/png" href="favicon.png">
+    	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    	<!--[if lt IE 9]>
+      	<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      	<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    	<![endif]-->
+	<script src="//code.jquery.com/jquery.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.0.1/lodash.min.js"></script>
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script src="//root.cern.ch/js/dev/scripts/JSRootCore.min.js"></script>
+
+
+</head>
+<body>
+	<div id="gui" style="width:600px;height:400px"></div>
+	<script type="text/javascript">
+		var host  = "prl-dev";
+		var files = ["FTFP_BERT_kaon+_Be.root", "QGSP_BERT_kaon+_Al.root"];
+		var items = ["Elastic"];
+		// --------------------------------------
+
+		var encodedFiles = _.map(files, encodeURIComponent);
+		var encodedItems = _.map(items, encodeURIComponent);
+		var url = "//prl-dev/?files=" +
+			    _.join(encodedFiles, ',') +
+			    "&items=" + _.join(encodedItems, ',') +
+
+			    "&callback=?";
+		// --------------------------------------
+		$(document).ready(draw);
+		function draw() {
+			JSROOT.source_dir = "//root.cern.ch/js/dev/";
+			$.getJSON(url,
+				function(data){
+					rootDraw(data["result"]);
+				}, function(err){ console.error(data);});
+		}
+
+		function rootDraw(results) {
+			var graph, mg;
+			var graphs = [];
+			_.forEach(results, function(value){
+
+				_.forEach(value["items"], function(value, key){
+					graphs.push(JSROOT.JSONR_unref(value));
+				});
+			});
+
+			mg = JSROOT.CreateTMultiGraph.apply(this, graphs);
+			JSROOT.draw("gui", mg, "AP");
+
+		}
+		// --------------------------------------
+	</script>
+</body>
