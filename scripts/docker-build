@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cd docker && docker build -f Dockerfile.release -t mazurov/cern-root-server .
