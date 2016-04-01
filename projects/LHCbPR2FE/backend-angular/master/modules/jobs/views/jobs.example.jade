@@ -1,0 +1,10 @@
+h3 Jobs
+  small.text-muted LHCbPR
+.row.traditional(ng-class="csspinner")
+  .col-lg-4
+    div(search-jobs on-jobs-found="onJobsFound(jobs)")
+  .col-lg-8
+    | {{jobs}}
+
+
+

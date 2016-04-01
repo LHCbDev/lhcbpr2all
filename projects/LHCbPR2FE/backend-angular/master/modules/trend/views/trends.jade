@@ -1,0 +1,30 @@
+h3 Trends
+  small.text-muted Attributes values by version
+.row.traditional(ng-class="csspinner")
+  .col-lg-4
+    search-jobs(on-found="requestStatistics(searchParams)")
+  .col-lg-8
+    form
+      .form-group
+        label Filter Attributes
+        input.form-control(ng-model='attrFilter', ng-change='update()', type='text')
+    .alert.alert-warning(ng-show="!options || options.length == 0") Please select at least one option
+    .alert.alert-info(ng-show="noData") No data was found !
+    div(ng-hide="noData")
+      table.table.table-striped.table-bordered.table-hover.be-responsive(ng-table="attrsTableParams")
+        thead
+          th ID
+          th Name
+          th 
+        tbody
+          tr(ng-repeat="a in $data")
+            td {{a.id}}
+            td {{a.name}}
+            td
+              button.btn.btn-primary(ng-click="showChart(a)") Show
+script(type="text/ng-template", id="chartTemplate")
+  .row
+    .col-lg-10.col-lg-offset-1.col-md-10.col-md-offset-1.col-sx-10.col-sx-offset-1
+      h2 {{name}}
+      .chart
+        canvas(id="attrChart", linechart='', options='lineOptions', data='lineData', height='chartHeight()', width='chartWidth()')

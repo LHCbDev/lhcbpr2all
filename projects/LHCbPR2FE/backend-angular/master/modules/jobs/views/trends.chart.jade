@@ -1,0 +1,10 @@
+h3 Trends
+  small.text-muted LHCbPR
+
+
+.container-fluid
+  .row.mb-lg
+    .col-lg-12
+      h4 {{attr.name}} - {{option.content}} 
+      div
+        canvas(linechart='', options='lineOptions', data='lineData', height='400', width='600', legend='true')

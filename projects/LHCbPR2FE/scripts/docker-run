@@ -1,0 +1,2 @@
+#!/bin/sh
+docker run -d --name lhcbprfe2fe -p 80:80 lhcbpr2fe

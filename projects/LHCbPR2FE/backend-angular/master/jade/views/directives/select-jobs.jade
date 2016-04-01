@@ -1,0 +1,28 @@
+.row.traditional(ng-class="csspinner")
+  .col-lg-4
+    search-jobs(selected-app="{{selectedApp}}" selected-options="{{selectedOptions}}" on-found="onJobsFound(searchParams)")
+  .col-lg-8
+    .alert.alert-info(ng-show="noData") No data was found !
+    div(id="jobsTableWrapper", ng-hide="noData")
+      button.btn.btn-primary(type="button" ng-disabled="jobsIds.length < 1", ng-click="callback()")
+        | Analyze
+      table.table.table-striped.table-bordered.table-hover.be-responsive(ng-table="jobsTableParams", data-with-titles="true")
+          thead
+            th 
+            th ID
+            th Job description
+            th Host
+            th Start/End
+          tr(ng-repeat="job in $data")
+            td
+              .c-checkbox.needsclick.checkbox
+                label
+                  input(type="checkbox", checklist-model="jobsIds", checklist-value="job.id", checklist-change="update()")
+                  span.fa.fa-check
+            td {{job.id}}
+            td {{job.job_description.application_version.application.name}}
+               {{job.job_description.application_version.version}},
+               {{job.job_description.option.content}}
+            td {{job.host.hostname}}, {{job.platform.cmtconfig}}
+            td {{job.time_start | date:'yyyy-MM-dd HH:mm:ss Z'}} / 
+               {{job.time_end | date:'yyyy-MM-dd HH:mm:ss Z'}}
