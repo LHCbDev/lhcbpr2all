@@ -1,0 +1,4 @@
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ fcgi/lhcbpr-api.fcgi/$1 [QSA,L]
