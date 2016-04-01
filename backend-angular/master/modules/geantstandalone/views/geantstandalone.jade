@@ -1,0 +1,49 @@
+h3 GEANT standalone tests 
+  small.text-muted
+#panelGeant1.panel.panel-default
+  .panel-heading
+    paneltool(tool-collapse)
+    .panel-title Search GEANT Standalone tests
+  .panel-wrapper(collapse="panelGeant1")
+    .panel-body
+      select-jobs(selected-app="GEANT" selected-options="GEANT_RUNHADRONIC" on-jobs-selected="analyze(jobIds)")
+
+#panelGeant2.panel.panel-default
+  .panel-heading
+    paneltool(tool-collapse)
+    .panel-title Options
+  .panel-wrapper(collapse="panelGeant2")
+    .panel-body
+       form.form-inline(role='form')
+        fieldset
+          .form-group.col-sm-6
+            label.col-sm-2.control-label Models:
+            .col-sm-10
+              label.checkbox.checkbox-inline(ng-repeat="model in models")
+                input(type="checkbox", checklist-model="selectedModels", checklist-value="model.value")
+                |  {{model.text}}
+          .form-group.col-sm-6
+            label.col-sm-2.control-label Material:
+            .col-sm-10
+              label.checkbox.checkbox-inline(ng-repeat="mat in materials")
+                input(type="checkbox", checklist-model="selectedMaterials", checklist-value="mat.value")
+                |  {{mat.text}}
+        fieldset.raw
+          .form-group.col-sm-6
+            label.col-sm-2.control-label Particles:
+            .col-sm-10
+              label.checkbox.checkbox-inline(ng-repeat="particle in particles")
+                input(type="checkbox", checklist-model="selectedParticles", checklist-value="particle.value")
+                |  {{particle.text}}
+          .form-group.col-sm-6
+            label.col-sm-2.control-label Graphs:
+            .col-sm-10
+              label.checkbox.checkbox-inline(ng-repeat="plot in plots")
+                input(type="checkbox", checklist-model="selectedPlots", checklist-value="plot.value")
+                |  {{plot.text}}
+          
+
+rootjsserver(entrypoint="url" 
+    files="files_and_titles"
+    items="graphs"
+    width="800" height="600")

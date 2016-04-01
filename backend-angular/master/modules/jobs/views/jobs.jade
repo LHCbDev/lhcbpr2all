@@ -1,0 +1,53 @@
+h3 Jobs
+  small.text-muted LHCbPR
+div(select-jobs on-jobs-selected="compare(jobIds)", ng-show="isShowSearchForm")
+.row.traditional(ng-class="csspinner", ng-show="!isShowSearchForm && !isShowTrend")
+  .col-lg-4
+    button.btn.btn-primary(type="button" ng-disabled="isShowSearchForm", ng-click="showSearchForm()")
+      | Show search form
+.row(style="margin-top: 10px")
+.row(style="margin-top: 10px", ng-show="!isShowTrend")
+  .col-lg-12
+    .form-group
+      input.form-control(type="text" placeholder="Filter attributes" ng-model="attrFilter" ng-model-options="{ debounce: 1000 }")
+    table.table.table-striped.table-bordered.table-hover.be-responsive(ng-table="attrsTableParams", data-with-titles="true")
+      thead
+        th ID
+        th Name
+        th Description
+        th Type
+        th Values
+        th Actions
+      tr(ng-repeat="attr in $data")
+        td {{attr.id}}
+        td {{attr.name}}
+        td {{attr.description}}
+        td {{attr.dtype}}
+        td 
+          table.table-condensed
+            tr(ng-repeat="jv in attr.jobvalues")
+              td
+                  a(ng-if="attr.dtype=='File'" href="{{media_url}}/{{jv.job.id}}/{{jv.value}}" target="_blank")
+                    | {{jv.value}}
+                  strong(ng-if="attr.dtype!='File'")
+                    | {{jv.value}}
+              td
+                | {{getJobName(jv.job.id)}}
+        td
+          button.btn.btn-info(ng-if="showCompareButton(attr.dtype, attr.jobvalues)" ng-click="showCompareDialog(attr)")
+            | Compare
+script(type="text/ng-template", id="chartTemplate")
+  .row
+    .col-lg-12
+      h2 {{attr.name}}
+      div
+        mark {{mean | number}} &#177; {{err | number}}
+      canvas(id="attrChart", linechart='',data='lineData', height='chartHeight()', width='chartWidth()')
+script(type="text/ng-template", id="filesTemplate")
+  .row
+    .col-lg-12
+      h2 {{attr.name}}
+      div(style="height: {{chartHeight()}}px; width: {{chartWidth()}}px; overflow: scroll")
+        div(ng-repeat="file in files")
+          img(ng-if="file.type == 'image'" ng-src="{{file.url}}")
+          embed(ng-if="file.type == 'gif'" ng-src="{{file.url}}" style="width: {{chartWidth()}}px; height: 400px;")

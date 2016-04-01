@@ -1,0 +1,118 @@
+h3 Add  Job Description
+  small.text-muted LHCbPR
+
+// START panel
+.panel.panel-default
+  .panel-heading  New job description
+  .panel-body
+    form(action='/', method='POST', form-wizard="", validate-steps="true", validate-form="", steps="4")
+      .form-wizard.wizard-horizontal
+        // START wizard steps indicator
+        ol.row
+          li.col-md-3(ng-class="{'active':wizard.active(1)}", ng-click="wizard.go(1)")
+            h4 Application
+            small.text-muted Select application and its version. 
+          li.col-md-3(ng-class="{'active':wizard.active(2)}", ng-click="wizard.go(2)")
+            h4 Options
+            small.text-muted Select job options and project setup. 
+          li.col-md-3(ng-class="{'active':wizard.active(3)}", ng-click="wizard.go(3)")
+            h4 Contact
+            small.text-muted Sed elementum lorem dolor, id fermentum metus. 
+          li.col-md-3(ng-class="{'active':wizard.active(4)}", ng-click="wizard.go(4)")
+            h4 Done!
+            small.text-muted Nullam sit amet magna vestibulum libero.
+        // END wizard steps indicator
+
+        // START Wizard Step inputs 
+        div#step1(ng-show="wizard.active(1)")
+          fieldset
+            legend Application
+            // START row 
+            .row
+              .col-md-4
+                .form-group
+                  label Application name
+                  .controls
+                    .input-group
+                       input.form-control(type='text', name='username', data-parsley-group="step1", placeholder='Name here', required)
+                       span.input-group-btn
+                         button.btn.btn-default(type='button')
+                           em.icon-plus
+              .col-md-4
+                .form-group
+                  label Version
+                  .controls
+                    input.form-control(type='password', name='password', data-parsley-group="step1", placeholder='Your password', required)
+              .col-md-4
+                .form-group
+                  label Retype Password
+                  .controls
+                    input.form-control(type='password', name='password2', data-parsley-group="step1", placeholder='Confirmed password', required)
+            // END row 
+          ul.pager
+            li.next
+              a(href='#', ng-click="wizard.go(2)")
+                | Next 
+                span &rarr;
+        // END Wizard Step inputs 
+        // START Wizard Step inputs 
+        div#step2(ng-show="wizard.active(2)")
+          fieldset
+            legend Personal
+            // START row 
+            .row
+              .col-md-6
+                .form-group
+                  label First Name
+                  input.form-control(type='text', name='first-name', data-parsley-group="step2", placeholder='John', required)
+              .col-md-6
+                .form-group
+                  label Last Name
+                  input.form-control(type='text', name='last-name', data-parsley-group="step2", placeholder='Snow', required)
+            // END row 
+          ul.pager
+            li.previous
+              a(href='#', ng-click="wizard.go(1)")
+                span &larr; Previous
+            li.next
+              a(href='#', ng-click="wizard.go(3)")
+                | Next 
+                span &rarr;
+        // END Wizard Step inputs 
+        // START Wizard Step inputs 
+        div#step3(ng-show="wizard.active(3)")
+          fieldset
+            legend Contact
+            // START row 
+            .row
+              .col-md-6
+                .form-group
+                  label Email
+                  input.form-control(type='text', name='email', data-parsley-group="step3", placeholder='john@snow.com', required)
+              .col-md-6
+                .form-group
+                  label Phone
+                  input.form-control(type='text', name='phone', data-parsley-group="step3", placeholder='11-2345-6789', required)
+            // END row 
+          ul.pager
+            li.previous
+              a(href='#', ng-click="wizard.go(2)")
+                span &larr; Previous
+            li.next
+              a(href='#', ng-click="wizard.go(4)")
+                | Next 
+                span &rarr;
+        // END Wizard Step inputs 
+        // START Wizard Step inputs 
+        div#step4(ng-show="wizard.active(4)")
+          .jumbotron
+            h1 Done!
+            p In vulputate mattis ipsum vitae vehicula. Praesent at arcu non arcu convallis pellentesque. Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+            p
+              button.btn.btn-info.btn-lg(type='button') You can Proceed Now
+          ul.pager
+            li.previous
+              a(href='#', ng-click="wizard.go(3)")
+                span &larr; Previous
+        // END Wizard Step inputs 
+// END panel 
