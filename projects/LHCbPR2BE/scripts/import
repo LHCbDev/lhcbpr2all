@@ -1,0 +1,2 @@
+#!/bin/sh
+site/manage.py lhcbpr_import data/zips

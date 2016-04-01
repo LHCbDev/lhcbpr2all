@@ -1,0 +1,6 @@
+#!/bin/sh
+
+echo "Bootstrap..."
+./scripts/bootstrap
+
+./site/manage.py runserver

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+pip install -r requirements.txt
+./site/manage.py migrate
+
+check=$(./site/manage.py dumpdata  --pks 1 lhcbpr_api.jobresult| tail -n1)
+if [ "$check" == "[]" ] ;
+then
+  dump="fixtures/dump10.json"
+  echo "Load $dump"
+  ./site/manage.py loaddata $dump
+fi

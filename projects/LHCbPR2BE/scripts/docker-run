@@ -1,0 +1,2 @@
+#docker run  --name lhcbpr2be --rm -it  --env-file envs/private.env -v /lhcbprdata:/lhcbprdata -p 8080:80 lhcbpr2be
+docker run  --rm -it --name lhcbpr2be  -e ENV=private -v /lhcbprdata:/lhcbprdata -p 8080:80 lhcbpr2be
