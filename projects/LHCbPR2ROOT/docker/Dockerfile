@@ -1,10 +1,9 @@
 FROM mazurov/cern-root:latest
 LABEL description="ROOT json service"
+ENV CODE /app
+ENV ROOT_DATA /lhcbprdata
 
-ENV CODE /code
-ENV ROOT_DATA /data
-
-ENV FLASK_PORT 8080
+ENV FLASK_PORT 80
 ENV FLASK_HOST 0.0.0.0
 
 RUN mkdir $ROOT_DATA
@@ -14,8 +13,6 @@ WORKDIR $CODE
 RUN pip install -r requirements.txt
 COPY data/* $ROOT_DATA/
 
-VOLUME $ROOT_DATA
-VOLUME $CODE
-
 EXPOSE $FLASK_PORT
+
 CMD ["./scripts/bootstrap"]
