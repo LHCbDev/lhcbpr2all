@@ -1,3 +1,11 @@
 #!/bin/bash
+
+SERVER_TYPE=${FLASK_SERVER_TYPE:-dev}
+
 source $ROOTSYS/bin/thisroot.sh
-python run.py
+if [ $SERVER_TYPE = "dev" ]
+then
+	python run.py
+else
+	python run.py --gunicorn
+fi

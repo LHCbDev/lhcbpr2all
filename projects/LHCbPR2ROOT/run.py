@@ -2,6 +2,7 @@
 # STD:
 # =============================================================================
 import os
+import sys
 import json
 from dotenv import load_dotenv
 # =============================================================================
@@ -11,6 +12,8 @@ import ROOT
 
 from flask import (Flask, request, abort, jsonify, current_app)
 from functools import wraps
+
+app = Flask("ROOT service")
 # =============================================================================
 def env_var(key, default=None):
     """Retrieves env vars and makes Python boolean replacements"""
@@ -133,8 +136,8 @@ def process_file(filename, items, folders):
 # =============================================================================
 # Routes:
 # =============================================================================
-app = Flask("ROOT service")
-@app.route('/')
+
+@app.route('/root/')
 @jsonp
 def service():
     """
@@ -155,7 +158,9 @@ def service():
     files = request.args.get(KEY_FILES, None)
     items = request.args.get(KEY_ITEMS, '')
     folders = request.args.get(KEY_FOLDERS, '')
+    sys.stderr.write('IN0\n')
     if not files:
+        sys.stderr.write('IN1\n')
         abort(404)
 
     # -------------------------------------------------------------------------
@@ -167,5 +172,34 @@ def service():
     # -------------------------------------------------------------------------
     return jsonify(result=result)
 
+def run_gunicorn_server(app):
+    """run application use gunicorn http server
+    """
+
+    from gunicorn.app.base import Application
+
+    class FlaskApplication(Application):
+        def init(self, parser, opts, args):
+            return {
+                'bind': '{0}:{1}'.format(FLASK_HOST, FLASK_PORT),
+                'workers': 4
+            }
+
+        def load(self):
+            return app
+
+    FlaskApplication().run()
+
+def run_devel_server(app):
+   app.run(host=FLASK_HOST, port=FLASK_PORT, debug=DEBUG)
+
+
 if __name__ == '__main__':
-    app.run(host=FLASK_HOST, port=FLASK_PORT, debug=DEBUG)
+    if "--gunicorn" in sys.argv:
+        sys.argv.pop(sys.argv.index("--gunicorn"))
+        run_gunicorn_server(app)
+    else:
+        run_devel_server(app)
+
+
+
