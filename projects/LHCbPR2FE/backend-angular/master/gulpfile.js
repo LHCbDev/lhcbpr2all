@@ -34,7 +34,7 @@ var ignored_files = '!'+hidden_files;
 // BUILD PARAMS
 // ============================================================================
 var params = {
-	dist: '../../dist/' + (gutil.env.output || 'dev'),
+	dist: gutil.env.output || '../../dist/dev',
     url_api: gutil.env.urlapi || 'http://lblhcbpr2.cern.ch:8080/api',
     url_root: gutil.env.urlroot || 'http://lblhcbpr2.cern.ch:8081',
     port: gutil.env.port || '9000',
