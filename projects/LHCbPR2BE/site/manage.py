@@ -9,8 +9,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 os.environ.setdefault("ENV", "default")
 
 
-
-
 def run_gunicorn_server(addr, port):
     """run application use gunicorn http server
     """

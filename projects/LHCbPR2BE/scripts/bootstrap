@@ -10,3 +10,5 @@ then
   echo "Load $dump"
   ./site/manage.py loaddata $dump
 fi
+
+./site/manage.py collectstatic --no-input
