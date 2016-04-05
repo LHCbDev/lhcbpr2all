@@ -1,4 +1,4 @@
-FROM mazurov/node-nginx:latest
+FROM mazurov/node-nginx-base:latest
 
 RUN npm install -g bower gulp
 RUN echo '{ "allow_root": true }' > /root/.bowerrc
