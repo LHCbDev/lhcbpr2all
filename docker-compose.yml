@@ -4,24 +4,21 @@ services:
     build: projects/LHCbPR2BE
     volumes:
         - ./var/data:/lhcbprdata
-        - ./projects/LHCbPR2BE:/app
     env_file: projects/LHCbPR2BE/envs/default.env
     environment:
+        DJANGO_SERVER_TYPE: gunicorn
         DJANGO_HTTP_PORT: 80
-    ports:
-     - "8082:80"
+        DJANGO_STATIC_ROOT: /html/api/static
 
   lhcbpr2root:
     build: projects/LHCbPR2ROOT
     volumes:
-        - ./var/data:/lhcbprdata
-        - ./projects/LHCbPR2ROOT:/app
+        - ./var/data:/lhcbprdata:ro
     env_file: projects/LHCbPR2ROOT/envs/default.env
     environment:
+        FLASK_SERVER_TYPE: gunicorn
         FLASK_PORT: 80
         ROOT_DATA: /lhcbprdata
-    ports:
-     - "8081:80" 
 
   lhcbpr2fe:
     build: projects/lhcbpr2fe
@@ -29,15 +26,10 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        - FE_URL_API=/api
-        - FE_URL_ROOT=/root
-        - FE_PORT=80
-        - FE_LIVE_PORT=35729
-    volumes:
-        - ./projects/lhcbpr2fe:/app
-    ports:
-        - "8080:80"
-        - "35729:35729"
+        FE_DIST_DIR: /usr/share/nginx/www
+        FE_SERVER_TYPE: nginx
+        FE_URL_API: /api
+        FE_URL_ROOT: /root
   
   lhcbpr2all:
     build: .
