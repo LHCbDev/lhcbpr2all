@@ -5,20 +5,56 @@ services:
         context: projects/LHCbPR2BE
         dockerfile: docker/Dockerfile.dev
     volumes:
-        - ./data:/lhcbprdata
+        - ./var/data:/lhcbprdata
+        - ./projects/LHCbPR2BE:/app
     env_file: projects/LHCbPR2BE/envs/default.env
     environment:
         DJANGO_HTTP_PORT: 80
     ports:
-     - "8080:80" 
+     - "8080:80"
+
   lhcbpr2root:
-    build:
-        context: projects/LHCbPR2ROOT
-        dockerfile: docker/Dockerfile.dev
+    build: projects/LHCbPR2ROOT
     volumes:
-        - ./data:/lhcbprdata
-    env_file: projects/LHCbPR2BE/envs/default.env
+        - ./var/data:/lhcbprdata
+        - ./projects/LHCbPR2ROOT:/app
+    env_file: projects/LHCbPR2ROOT/envs/default.env
     environment:
-        DJANGO_HTTP_PORT: 80
+        FLASK_PORT: 80
+        ROOT_DATA: /lhcbprdata
     ports:
-     - "8080:80" 
+     - "8081:80" 
+
+  lhcbpr2fe:
+    build:
+        context: projects/lhcbpr2fe
+        dockerfile: docker/Dockerfile.dev
+    links:
+        - lhcbpr2be
+        - lhcbpr2root
+    environment:
+        - FE_URL_API=/api
+        - FE_URL_ROOT=/root
+        - FE_PORT=9000
+        - FE_LIVE_PORT=35729
+    volumes:
+        - ./projects/lhcbpr2fe:/app
+    ports:
+        - "9000:9000"
+        - "35729:35729"
+  
+  lhcbpr2all:
+    image: "nginx:stable-alpine"
+    volumes:
+        - ./docker/data/nginx:/etc/nginx
+        - ./var/log/nginx:/var/log/nginx
+    volumes_from:
+        - lhcbpr2be
+    links:
+        - lhcbpr2fe
+        - lhcbpr2be
+        - lhcbpr2root
+    ports:
+        - "80:80"
+
+ 
