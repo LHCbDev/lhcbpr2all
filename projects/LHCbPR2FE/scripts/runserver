@@ -1,8 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+FE_URL_API=${FE_URL_API:="http://127.0.0.1:8000/api"}
+FE_URL_ROOT=${FE_URL_ROOT:="http://127.0.0.1:8081"}
+FE_PORT=${FE_PORT:="9000"}
+FE_LIVE_PORT=${FE_PORT:="35729"}
+
 cd backend-angular/master
 npm install &&\
 	bower install && \
-	gulp --output dev --urlapi "http://127.0.0.1:8000/api" --urlroot "http://127.0.0.1:8081"
+	gulp --output dev --port $FE_PORT --liveport $FE_LIVE_PORT --urlapi $FE_URL_API --urlroot $FE_URL_ROOT
 
-
-#gulp --output dev --urlapi "http://lblhcbpr2.cern.ch:8080/api" --urlroot "http://lblhcbpr2.cern.ch:8081"

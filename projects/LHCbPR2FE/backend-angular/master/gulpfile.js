@@ -26,8 +26,6 @@ var gulp        = require('gulp'),
 		uglify      = require('gulp-uglify'),
 		w3cjs       = require('gulp-w3cjs');
 // ============================================================================
-// LiveReload port. Change it only if there's a conflict
-var lvr_port = 35729;
 
 // ignore everything that begins with underscore
 var hidden_files = '**/_*.*';
@@ -39,6 +37,8 @@ var params = {
 	dist: '../../dist/' + (gutil.env.output || 'dev'),
     url_api: gutil.env.urlapi || 'http://lblhcbpr2.cern.ch:8080/api',
     url_root: gutil.env.urlroot || 'http://lblhcbpr2.cern.ch:8081',
+    port: gutil.env.port || '9000',
+    lvr_port: gutil.env.liveport || 35729,
 	minify:  gutil.env.minify !== undefined,
 	sourcemaps: gutil.env.sourcemaps !== undefined
 };
@@ -130,7 +130,7 @@ var build = {
 // ----------------------------------------------------------------------------
 gulp.task('scripts:app', function() {
 		// Minify and copy all JavaScript (except vendor scripts)
-		var constants = ngConstant(
+		ngConstant(
 			{
 				stream: true,
 				name: "buildParams",
@@ -140,8 +140,8 @@ gulp.task('scripts:app', function() {
 						url_root: params.url_root
 					}
 				}
-			});
-		return  merge(constants, gulp.src(source.scripts.app))
+			}).pipe(gulp.dest(build.scripts.app.dir));
+		return  gulp.src(source.scripts.app)
 				.pipe( params.sourcemaps ? sourcemaps.init() : gutil.noop())
 				.pipe(concat(build.scripts.app.main))
 				.pipe(ngAnnotate())
@@ -295,7 +295,7 @@ gulp.task('templates:views', function() {
 gulp.task('connect', function() {
 	connect.server({
 		root: params.dist,
-		port: '9000',
+		port: params.port,
 		livereload: true
 	});
 });
@@ -363,7 +363,7 @@ gulp.task('modules:views', function() {
 
 // Rerun the task when a file changes
 gulp.task('watch', function() {
-	livereload.listen();
+	livereload.listen({port: params.lvr_port});
 
 	gulp.watch(source.scripts.watch,           ['scripts:app']);
 	gulp.watch(source.styles.app.watch,        ['styles:app', 'styles:app:rtl']);

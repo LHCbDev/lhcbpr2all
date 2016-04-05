@@ -1,0 +1,15 @@
+FROM node:wheezy
+
+RUN npm install -g bower gulp
+RUN echo '{ "allow_root": true }' > /root/.bowerrc
+RUN mkdir /app
+COPY . /app
+WORKDIR /app
+
+ENV FE_PORT 9000
+ENV FE_LIVE_PORT 35729
+
+EXPOSE 9000 35729
+VOLUME /app
+
+CMD ["./scripts/runserver"]
