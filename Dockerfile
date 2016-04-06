@@ -21,8 +21,8 @@ RUN openssl req \
     -nodes \
     -x509 \
     -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
-    -keyout  /etc/ssl/nginx/${APP_SERVER_NAME}.key \
-    -out  /etc/ssl/nginx/${APP_SERVER_NAME}.crt
+    -keyout  /etc/ssl/nginx/server.key \
+    -out  /etc/ssl/nginx/server.crt
 
 EXPOSE 80 443
 
