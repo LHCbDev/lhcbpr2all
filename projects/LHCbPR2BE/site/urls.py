@@ -92,7 +92,6 @@ router_jd.register(r'options', views.OptionViewSet, base_name="jobdescription-op
 urlpatterns = [
     url(r'^api/', include(router.urls)),
     url(r'^api/', include(default_router.urls)),
-
     url(r'^api-auth/',
         include('rest_framework.urls', namespace='rest_framework')),
     url(r'^api/docs/', include('rest_framework_swagger.urls')),
