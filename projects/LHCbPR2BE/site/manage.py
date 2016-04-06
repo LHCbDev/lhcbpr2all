@@ -21,7 +21,8 @@ def run_gunicorn_server(addr, port):
         def init(self, parser, opts, args):
             return {
                 'bind': '{0}:{1}'.format(addr, port),
-                'workers': 4
+                'workers': 4,
+                'accesslog': '-'
             }
 
         def load(self):
