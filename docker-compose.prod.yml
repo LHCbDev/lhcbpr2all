@@ -4,10 +4,13 @@ services:
     image: mazurov/lhcbpr2be
     volumes:
         - /lhcbprdata:/lhcbprdata
+    env_file: .private
     environment:
         DJANGO_SERVER_TYPE: gunicorn
+        DJANGO_HTTP_ADDR: 0.0.0.0
         DJANGO_HTTP_PORT: 80
-        DJANGO_STATIC_ROOT: /html/api/static
+        DJANGO_LOG_LEVEL: INFO
+        DATA_ROOT: /lhcbprdata
 
   lhcbpr2root:
     image: mazurov/lhcbpr2root
@@ -38,7 +41,9 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        APP_SERVER_NAME: lblhcpr2.cern.ch
+        APP_SERVER_NAME_1: lblhcpr2.cern.ch
+        APP_SERVER_NAME: prl-dev
+
     ports:
         - "80:80"
         - "443:443"

@@ -11,9 +11,6 @@ COPY ./docker/nginx /etc/nginx
 ENV APP_SERVER_NAME prl-dev
 
 RUN mkdir /etc/ssl/nginx
-# RUN openssl genrsa -des3 -out /etc/ssl/nginx/${APP_SERVER_NAME}.key 2048 &&\
-#     openssl req -new -key /etc/ssl/nginx/${APP_SERVER_NAME}.key -out /etc/nginx/ssl/nginx/${APP_SERVER_NAME}.csr && \
-#     openssl x509 -req -days 365 -in /etc/nginx/ssl/nginx/${APP_SERVER_NAME}.csr -signkey /etc/nginx/ssl/nginx/${APP_SERVER_NAME}.key -out /etc/nginx/ssl/${APP_SERVER_NAME}.crt
 RUN openssl req \
     -new \
     -newkey rsa:4096 \
