@@ -4,7 +4,7 @@ from lhcbpr_api.models import (Application, ApplicationVersion,
                                JobDescription, AttributeGroup,
                                AttributeThreshold, Handler, JobHandler,
                                HandlerResult, AddedResult, Job,
-                               JobResult, Platform, Host)
+                               JobResult, Platform, Host, Executable)
 
 from rest_framework import viewsets
 from rest_framework import generics
@@ -35,6 +35,10 @@ class ApplicationVersionViewSet(viewsets.ModelViewSet):
     queryset = ApplicationVersion.objects.all()
     serializer_class = ApplicationVersionSerializer
 
+
+class ExecutableViewSet(viewsets.ModelViewSet):
+    queryset = Executable.objects.all()
+    serializer_class = ExecutableSerializer
 
 class OptionViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
     queryset = Option.objects.all()

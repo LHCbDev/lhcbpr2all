@@ -19,8 +19,6 @@ class Host(models.Model):
     cpu_info = models.CharField(max_length=200)
     memory_info = models.CharField(max_length=200)
 
-    old_id = models.IntegerField(null=True, db_index=True)
-
     def __unicode__(self):
         return self.hostname
 
@@ -61,7 +59,8 @@ class ApplicationVersion(models.Model):
 
         self.is_nightly = ApplicationVersion.is_it_nightly(self.version)
         if self.is_nightly:
-            slotname, number, _ = ApplicationVersion.get_slot_and_number(self.version)
+            slotname, number, _ = ApplicationVersion.get_slot_and_number(
+                self.version)
             self.slot, created = Slot.objects.get_or_create(name=slotname)
 
         super(ApplicationVersion, self).save(*args, **kwargs)
@@ -103,12 +102,19 @@ class ApplicationVersion(models.Model):
             return None
 
 
+class Executable(models.Model):
+    name = models.CharField(max_length=200)
+    content = models.CharField(max_length=200)
+
+    def __unicode__(self):
+        return '{%s: "%s"}' % (self.name, self.content)
+
+
 class Option(models.Model):
     content = models.CharField(max_length=2000)
     description = models.CharField(max_length=2000)
-    is_standalone = models.BooleanField(default=False)
-
-    old_id = models.IntegerField(null=True)
+    executable = models.ForeignKey(
+        Executable, null=True, related_name='options', db_index=False)
 
     def __unicode__(self):
         return self.description
@@ -118,8 +124,6 @@ class SetupProject(models.Model):
     content = models.CharField(max_length=200)
     description = models.CharField(max_length=200)
 
-    old_id = models.IntegerField(null=True)
-
     def __unicode__(self):
         return self.description
 
@@ -127,12 +131,12 @@ class SetupProject(models.Model):
 class JobDescription(models.Model):
     application_version = models.ForeignKey(
         ApplicationVersion, related_name='job_descriptions')
+    execulatble = models.ForeignKey(
+        Executable, null=True, related_name='jobdescriptions', db_index=False)
     option = models.ForeignKey(
         Option, null=True, related_name='job_descriptions')
     setup_project = models.ForeignKey(
         SetupProject, null=True, related_name='job_descriptions')
-
-    old_id = models.IntegerField(null=True)
 
     def __unicode__(self):
         return '{0} (id)   {1}  {2}  {3}'.format(
@@ -144,26 +148,23 @@ class JobDescription(models.Model):
 
 
 class Platform(models.Model):
-    cmtconfig = models.CharField(max_length=100, unique=True)
-
-    old_id = models.IntegerField(null=True)
+    content = models.CharField(max_length=100, unique=True)
 
     def __unicode__(self):
-        return self.cmtconfig
+        return self.content
 
 
 class RequestedPlatform(models.Model):
-    job_description = models.ForeignKey(JobDescription, related_name="job_descriptions")
-    cmtconfig = models.ForeignKey(Platform)
-
-    old_id = models.IntegerField(null=True)
+    job_description = models.ForeignKey(
+        JobDescription, related_name="job_descriptions")
+    config = models.ForeignKey(Platform)
 
     class Meta:
-        unique_together = ("job_description", "cmtconfig")
+        unique_together = ("job_description", "config")
 
     def __unicode__(self):
         return '{0} (job_description_id)   ---   {1}'.format(
-            self.job_description.id, self.cmtconfig
+            self.job_description.id, self.content
         )
 
 
@@ -177,8 +178,6 @@ class Job(models.Model):
     time_end = models.DateTimeField()
     status = models.CharField(max_length=50)
     is_success = models.BooleanField(default=False)
-
-    old_id = models.IntegerField(null=True)
 
     def save(self, *args, **kwargs):
         # Call the "real" save() method.
@@ -196,15 +195,13 @@ class Job(models.Model):
         return '{0} (id) -- {1} (job_description_id)  ---  {2}  ---  {3}'\
                '  ---  {4} --- {5}'.format(
                    self.id, self.job_description.id, self.time_end,
-                   self.platform.cmtconfig, self.host.hostname, self.is_success
+                   self.platform.content, self.host.hostname, self.is_success
                )
 
 
 class Handler(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=200)
-
-    old_id = models.IntegerField(null=True)
 
     def __unicode__(self):
         return self.name
@@ -213,8 +210,6 @@ class Handler(models.Model):
 class JobHandler(models.Model):
     job_description = models.ForeignKey(JobDescription)
     handler = models.ForeignKey(Handler)
-
-    old_id = models.IntegerField(null=True)
 
     class Meta:
         unique_together = ("job_description", "handler")
@@ -234,8 +229,6 @@ class Attribute(models.Model):
     dtype = models.CharField(max_length=10, choices=DATA_TYPE_CHOICES)
     description = models.CharField(max_length=500)
     groups = models.ManyToManyField(AttributeGroup, related_name='attributes')
-
-    old_id = models.IntegerField(null=True)
 
     def get_result_type(self):
         return globals()["Result" + self.dtype]
@@ -266,8 +259,6 @@ class JobResult(models.Model):
     job = models.ForeignKey(Job, related_name='results')
     attr = models.ForeignKey(
         Attribute, related_name='jobresults')
-
-    old_id = models.IntegerField(null=True)
 
     def get_value(self):
         subtype = self.attr.get_result_type()
@@ -344,8 +335,6 @@ class HandlerResult(models.Model):
     handler = models.ForeignKey(Handler)
     is_success = models.BooleanField(default=False)
 
-    old_id = models.IntegerField(null=True)
-
     def __unicode__(self):
         return '{0} (job_id) {1} --- {2}'.format(
             self.job.id, self.handler.name, self.is_success
@@ -354,8 +343,6 @@ class HandlerResult(models.Model):
 
 class AddedResult(models.Model):
     identifier = models.CharField(max_length=64)
-
-    old_id = models.IntegerField(null=True)
 
     def __unicode__(self):
         return self.identifier

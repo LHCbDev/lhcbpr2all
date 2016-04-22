@@ -3,7 +3,7 @@ from lhcbpr_api.models import (Application, ApplicationVersion, Option,
                                AttributeGroup,
                                AttributeThreshold, Handler, HandlerResult,
                                JobHandler, AddedResult, Job, Host,
-                               JobResult, Platform)
+                               JobResult, Platform, Executable)
 from rest_framework import serializers
 from rest_framework_extensions.fields import ResourceUriField
 
@@ -25,14 +25,21 @@ class AttributeThresholdSerializer(serializers.HyperlinkedModelSerializer):
         model = AttributeThreshold
         fields = ('attribute', 'option', 'up_value', 'down_value', 'start')
 
+class ExecutableSerializer(serializers.HyperlinkedModelSerializer):
+
+    class Meta:
+        model = Executable
+        fields = (
+            'id', 'name', 'content')
 
 class OptionSerializer(serializers.HyperlinkedModelSerializer):
+    executable = ExecutableSerializer(many=False)
     thresholds = AttributeThresholdSerializer(many=True, read_only=True)
 
     class Meta:
         model = Option
         fields = (
-            'id', 'content', 'description', 'is_standalone', 'thresholds')
+            'id', 'content', 'description', 'executable', 'thresholds')
 
 
 class SetupProjectSerializer(serializers.HyperlinkedModelSerializer):
@@ -165,7 +172,7 @@ class PlatformSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Platform
-        fields = ('cmtconfig',)
+        fields = ('content',)
 
 class JobResultNoJobSerializer(serializers.HyperlinkedModelSerializer):
     attr = AttributeSerializer(many=False, read_only=True)

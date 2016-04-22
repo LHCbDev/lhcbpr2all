@@ -14,6 +14,7 @@ default_router = DefaultRouter()
 
 router.register(r'applications', views.ApplicationViewSet)
 router.register(r'versions', views.ApplicationVersionViewSet)
+router.register(r'executables', views.ExecutableViewSet)
 router_options = router.register(r'options', views.OptionViewSet)
 router.register(r'groups', views.AttributeGroupViewSet)
 router.register(r'attributes', views.AttributeViewSet)
