@@ -1,0 +1,9 @@
+{"slot": "testing-slot-env",
+ "description": "slot used for unit testing of LbNighltyTools",
+ "projects": [{"name": "TestProject",
+               "version": "HEAD",
+               "checkout": "ignore"}],
+ "USE_CMT": true,
+ "env": ["CMTPROJECTPATH=/some/path:${CMTPROJECTPATH}",
+         "CMAKE_PREFIX_PATH=/another/path:${PWD}/build/inner:${CMAKE_PREFIX_PATH}"]
+}

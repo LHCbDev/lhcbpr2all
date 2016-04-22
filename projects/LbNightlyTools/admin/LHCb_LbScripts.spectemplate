@@ -1,0 +1,84 @@
+%define cmtconfig %{config}
+%define filename %{project}_%{project}_%{lbversion}%{cmtconfig}.tar.gz
+%define url http://lhcbproject.web.cern.ch/lhcbproject/dist/%{project}/%{filename}
+%define cmtconfig_rpm %( echo %{cmtconfig} | tr '-' '_' )
+%define rpmversion %{lbversion}%{cmtconfig_rpm}
+
+%define _topdir %{build_area}/rpmbuild
+%define tmpdir %{build_area}/tmpbuild
+%define _tmppath %{build_area}/tmp
+
+%global __os_install_post /usr/lib/rpm/check-buildroot
+
+Name: %{project}
+Version:%{maj_version}.%{min_version}.%{patch_version}
+Release: %{release}
+Vendor: LHCb
+Summary: %{project}
+License: GPL
+Group: LHCb
+Source0: %{url}
+BuildRoot: %{tmpdir}/%{name}-buildroot
+BuildArch: %{packarch}
+AutoReqProv: no
+Prefix: /opt/LHCbSoft
+Provides: /bin/sh
+Requires: COMPAT
+Requires: CMT
+
+%description
+%{project}
+
+%prep
+echo "Building <%{project}><%{lbversion}><%{cmtconfig}>"
+
+%build
+
+%install
+
+cd %_topdir/SOURCES
+wget -nc %url
+if [ $? -ne 0 ]; then
+  exit $?
+fi
+
+[ -d ${RPM_BUILD_ROOT} ] && rm -rf ${RPM_BUILD_ROOT}
+
+/bin/mkdir -p ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/
+if [ $? -ne 0 ]; then
+  exit $?
+fi
+
+cd ${RPM_BUILD_ROOT}/opt/LHCbSoft/lhcb/
+gzip -dc %_topdir/SOURCES/%{filename} | tar -xvvf -
+if [ $? -ne 0 ]; then
+  exit $?
+fi
+
+%post
+
+if [ "$MYSITEROOT" ]; then
+  PREFIX=$MYSITEROOT
+else
+  PREFIX=/opt/LHCbSoft/lhcb
+fi
+
+echo "Invoking LbScripts post-install script"
+${PREFIX}/lhcb/LBSCRIPTS/LBSCRIPTS_%{lbversion}/LbScriptsSys/cmt/PostInstall.py
+
+
+%postun
+
+%clean
+
+%files
+%defattr(-,root,root)
+/opt/LHCbSoft/lhcb/%{project}/%{project}_%{lbversion}/
+
+%define date    %(echo `LC_ALL="C" date +"%a %b %d %Y"`)
+
+%changelog
+
+* %{date} User <ben.couturier..rcern.ch>
+- first Version
+

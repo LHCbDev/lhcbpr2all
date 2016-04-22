@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Publish to the dashboard disk usage statistics for all the directories specified
+on the command line.
+'''
+
+import sys
+import os
+import urllib
+
+from LbNightlyTools.Monitoring import getDirInfos
+from LbNightlyTools.Utils import Dashboard
+
+from datetime import datetime
+
+import LbUtils.Script
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Collect disk usage statistics and publish them to the Dashboard.
+    '''
+    __usage__ = '%prog [options] directory'
+
+    def defineOpts(self):
+        '''
+        Options specific to this script.
+        '''
+        self.parser.add_option('-s', '--slot',
+                               help='name of the slot to add to the JSON data')
+        self.parser.add_option('-b', '--build-id',
+                               help='build id to add to the JSON data')
+
+    def main(self):
+        '''
+        Script logic.
+        '''
+        dash = Dashboard()
+        if len(self.args) != 1:
+            self.parser.error('wrong number of arguments')
+
+        # gather infos
+        path = os.path.realpath(self.args[0])
+        data = getDirInfos(path)
+        data['type'] = 'disk-usage'
+        data['updated'] = datetime.now().isoformat()
+
+        # prepare object id
+        if self.options.slot:
+            data['slot'] = self.options.slot
+        if self.options.build_id:
+            data['build_id'] = self.options.build_id
+        if not self.options.slot and not self.options.build_id:
+            data['_id'] = urllib.quote(path, safe='')
+
+        # publish
+        dash.publish(data)
+
+        return 0
+
+if __name__ == '__main__':
+    sys.exit(Script().run())

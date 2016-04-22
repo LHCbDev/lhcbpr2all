@@ -1,0 +1,82 @@
+% $Id: appendix.tex 30551 2013-01-25 19:09:21Z uegede $
+% ===============================================================================
+% Purpose: appendix to the standard template: standard symbol alises from Ulrik
+% Author: Tomasz Skwarnicki
+% Created on: 2009-09-24
+% ===============================================================================
+
+\clearpage
+
+{\noindent\bf\Large Appendix}
+
+\appendix
+
+\section{List of Required Jenkins Plug-Ins}
+\label{sec:JenkinsPlugIns}
+Here is summarized the list of plug-ins that are required to configure Jenkins
+to run the nightly builds
+\newcommand{\JPI}[2]{\item \link{#2}{#1}}
+\begin{itemize}
+  \JPI{Build Name Setter Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/Build+Name+Setter+Plugin}
+  \JPI{Copy Artifact Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/Copy+Artifact+Plugin}
+  \JPI{Dynamic Axis Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/DynamicAxis+Plugin}
+  \JPI{EnvInject Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/EnvInject+Plugin}
+  \JPI{Groovy Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/Groovy+plugin}
+  \JPI{Jenkins GIT Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin}
+  \JPI{Jenkins Parameterized Trigger Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/Parameterized+Trigger+Plugin}
+  \JPI{Jenkins SSH Slaves Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/SSH+Slaves+plugin}
+  \JPI{Jenkins Workspace Cleanup Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/Workspace+Cleanup+Plugin}
+  \JPI{Matrix Tie Parent Plugin}%
+  {http://wiki.hudson-ci.org/display/HUDSON/Matrix+Tie+Parent+Plugin}
+  \JPI{Node and Label Parameter Plugin}%
+  {http://wiki.jenkins-ci.org/display/JENKINS/NodeLabel+Parameter+Plugin}
+\end{itemize}
+
+The following list contains the plug-ins not needed for the jobs configuration,
+but useful for management tasks
+\begin{itemize}
+  \JPI{Bulk
+Builder}{http://wiki.jenkins-ci.org/display/JENKINS/Bulk+Builder+Plugin}
+  \JPI{Jenkins Disk Usage
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Disk+Usage+Plugin}
+  \JPI{Rebuilder}{http://wiki.jenkins-ci.org/display/JENKINS/Rebuild+Plugin}
+  \JPI{Recipe Plugin}{https://wiki.jenkins-ci.org/display/JENKINS/Recipe+Plugin}
+  \JPI{Shelve Project
+Plugin}{http://wiki.jenkins-ci.org/display/JENKINS/Shelve+Project+Plugin}
+\end{itemize}
+
+% \section{To-Do List}
+% \begin{itemize}
+%   \item Configuration
+%   \begin{itemize}
+%     \item allow inclusion of shared configuration files (e.g. for the
+% environment)
+%     \item use the environment settings in all the steps
+%     \item review the \emph{plug-in} mechanism
+%     \item define where to store the configuration of the slots
+%   \end{itemize}
+%   \item Build
+%   \begin{itemize}
+%     \item check if the build produced files in the source directories
+%   \end{itemize}
+%   \item Tests
+%   \begin{itemize}
+%     \item integration between QMTest and CTest
+%   \end{itemize}
+%   \item Dashboard
+%   \item Jenkins
+%   \begin{itemize}
+%     \item simplified node labels and matching (e.g. x86\_64-slc5-gcc46-dbg
+% $\rightarrow$ slc5)
+%   \end{itemize}
+%
+% \end{itemize}

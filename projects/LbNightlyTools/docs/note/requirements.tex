@@ -1,0 +1,27 @@
+\section{Requirements}
+\label{sec:Requirements}
+For the past experience we collected a minimal set of functionalities that a
+Nightly Build System must provide. It must provide the same functionalities of the old one, such as
+\begin{itemize}
+  \item build and test several slots on several platforms
+  \item easy configuration of the content of the slots
+  \item separate the builds of different platforms
+  \item allow customized checkouts (i.e. non default versions of the packages)
+  \item run the tests of a project while building the following one on the stack
+  \item configurable parsing of the build logs (ignore some warnings and errors)
+  \item distribute efficiently the load on a pool of build machines
+  \item a dashboard updated incrementally with accessible links to problems and
+an overview on all the slots
+\end{itemize}
+but, wherever possible, they should be improved and with a simpler and more maintainable
+implementation.
+
+In addition we want to have some long awaited new features:
+\begin{itemize}
+  \item monitoring of the status of the builds
+  \item easy restart at different levels: everything, one slot, one platform of
+one slot
+  \item produce archives of the checkout and of the builds
+  \item easy creation of new slots (both production and testing)
+  \item manageable procedure for the development of the system itself
+\end{itemize}

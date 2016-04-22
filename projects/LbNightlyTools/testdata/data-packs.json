@@ -1,0 +1,6 @@
+{"slot": "data-packs",
+ "description": "slot used for unit testing of LbNighltyTools",
+ "projects": [],
+ "packages": [{"name": "AppConfig", "version": "v3r198"},
+              {"name": "TMVAWeights", "version": "v1r1", "container": "PARAM"}]
+}

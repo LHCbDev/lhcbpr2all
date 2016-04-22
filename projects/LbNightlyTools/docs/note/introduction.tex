@@ -1,0 +1,41 @@
+% $Id: introduction.tex 14593 2012-01-27 14:43:32Z uegede $
+
+\section{Introduction}
+\label{sec:Introduction}
+
+We have been using the Nightly Build System based the the LCG Application Area
+one for several years\cite{Kruzelecki:2010zz}.  The system works, but it has got
+limitations that make it very difficult to extend and manage.  A couple of years
+ago, the SFT group had planned a rewrite of their code base, to overcome the
+limitations, still allowing extensions like the ones needed by LHCb.  We decided to
+wait their new implementation before reviewing our code.  Only recently the SFT
+group opted for a completely different implementation based on a commercial
+continuous integration solution.  We will not be able to extend their new system
+for our use case without a complete rewrite of our code (and expensive license
+costs), so we decided to investigate the possibility of a new implementation of
+the Nightly Build System based on the the open source continuous integration
+system Jenkins\cite{Jenkins}.
+
+The outcome of the investigation is the working prototype described in this
+note.
+
+\subsection{LHCb Software in the Nightly Builds}
+To better understand the following sections, it is useful to get acquainted with
+some concepts and terms used in the context of the LHCb Software.
+
+LHCb Software is divided in projects (releasable entities) with dependencies
+between them, meaning that a project uses libraries produced in another project.
+So, changes in a software project do not only affect the project itself, but
+also the projects depending on it.  To validate the software, then, we need to
+build a consistent stack (dependency chain) of projects, which, in the Nightly
+Build terminology, we call a \emph{slot}.
+
+As part of our Quality Assurance policies and for portability, we can build our
+software on a few Linux OS flavors, using different compilers and different
+options (mainly optimized and debug).  We call the combination of CPU
+architecture, OS, compiler and flags a \emph{platform}.
+
+To validate the changes of the software in the widest possible range of cases,
+in our Nightly Builds we build several slots (with different configurations) on
+several platform.  In some cases, we also need to prepare ad-hoc slot
+configurations for special temporary validation tests.

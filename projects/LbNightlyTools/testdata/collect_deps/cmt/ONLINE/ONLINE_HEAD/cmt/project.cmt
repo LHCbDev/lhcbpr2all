@@ -1,0 +1,4 @@
+use GAUDI GAUDI_HEAD
+
+# just to check that it does not appear in the lists of dependencies
+use DUMMY DUMMY_VERSION

@@ -1,0 +1,11 @@
+{"slot": "testing-slot-lbcore-664",
+ "description": "testing https://its.cern.ch/jira/browse/LBCORE-664",
+ "projects": [{"name": "DummyProject",
+               "version": "HEAD"},
+              {"name": "Brunel",
+               "version": "HEAD"}],
+ "packages": [{"name": "DummyPackage",
+               "version": "HEAD"},
+              {"name": "Det/SQLDDDB",
+               "version": "HEAD"}]
+}

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link href="images/lhcb_logo_icon.png" rel="icon" type="image/png">
+
+    <link href='https://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css'>
+
+    <link href="https://framework.web.cern.ch/framework/2.0/cern_toolbar/css/toolbar.css" rel="stylesheet" type="text/css" media="screen" />
+
+    <link href="https://framework.web.cern.ch/framework/1.0/print.css" rel="stylesheet" type="text/css" media="print" />
+    <link href="https://framework.web.cern.ch/framework/1.0/screen.css" rel="stylesheet" type="text/css" media="screen" />
+    <link media="only screen and (max-device-width: 480px)" href="https://framework.web.cern.ch/framework/1.0/css/iphone.css" type="text/css" rel="stylesheet" />
+
+    <link href="css/lhcb.css" rel="stylesheet" type="text/css" media="screen" />
+
+    <link href="css/lhcb-theme/jquery-ui-1.11.4.custom.min.css" rel="stylesheet">
+
+    <link href="css/dashboard.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="css/rssform.css" />
+
+    <script src="js/moment.min.js"></script>
+    <script src="js/moment-timezone-with-data-2010-2020.js"></script>
+
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <script src="js/jquery.cookie.js"></script>
+    <script src="js/main.js"></script>
+
+
+    <script src="js/rssform.js"></script>
+    <script src="js/jquery-ui-1.11.4.custom.min.js"></script>
+
+</head>
+
+<body class="lang-en fluid">
+
+    <div id="cern-toolbar">
+        <h1><a href="http://cern.ch" title="CERN">CERN <span>Accelerating science</span></a></h1>
+        <ul>
+            <!-- <li class="cern-accountlinks active"><a class="cern-account" href="https://home.web.cern.ch/Shibboleth.sso/?target=https%3A%2F%2Fhome.web.cern.ch%2F%3Fq%3Dshib_login%2Fnode%2F225" title="Sign in to your CERN account">Sign in</a></li> -->
+            <li><a class="cern-directory" href="http://cern.ch/directory" title="Search CERN resources and browse the directory">Directory</a>
+            </li>
+        </ul>
+    </div>
+    <!-- /#cern-toolbar -->
+
+    <div id="container" class="clear-block">
+        <div id="banner">
+            <a href="http://lhcb.cern.ch" id="link_lhcb">
+                <img src="images/lhcb_logo.png" alt="LHCb" />
+            </a>
+            <h1></h1>
+        </div>
+
+        <div id="middle" class="clear-block cwf grid-fluid">
+
+            <div id="toolbar" class="box">
+                <div>
+                    <button id="set-filter">Set filtering rules</button>
+                    <button id="open-rssform">Custom rss feed</button>
+                </div>
+            </div>
+
+            <div id="links" class="toolbar" style="text-align: center; padding: 0;">
+                <ul></ul>
+            </div>
+
+            <div id="summaries"></div>
+
+        </div>
+        <!-- / middle -->
+
+        <div id="footer">
+            <p>CERN - European Laboratory for Particle Physics, CH-1211, Genève 23, Switzerland</p>
+            <!-- THE CERN_LOGO IS REQUIRED BY THE GRAPHIC CHARTER -->
+            <a id="cern_logo" class="badge_80" href="http://www.cern.ch">
+                <span>cern.ch</span>
+            </a>
+        </div>
+        <!-- / footer -->
+    </div>
+    <!-- / container -->
+
+    <div id="filter-dialog" title="Filtering rules" style="display: none;">
+        <div id="filter-dialog-tabs">
+            <ul>
+                <li><a href="#filter-dialog-days">Days</a>
+                </li>
+                <li><a href="#filter-dialog-slots">Slots</a>
+                </li>
+                <li><a href="#filter-dialog-projects">Projects</a>
+                </li>
+            </ul>
+            <div id="filter-dialog-days">
+                <table>
+                    <tr>
+                        <td>
+                            <table class="buttons">
+                                <tr>
+                                    <td>
+                                        <button>all</button>
+                                    </td>
+                                    <td>
+                                        <button>none</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Today">Today</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Yesterday">Yesterday</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Monday">Monday</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Tuesday">Tuesday</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Wednesday">Wednesday</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Thursday">Thursday</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Friday">Friday</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Saturday">Saturday</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="Sunday">Sunday</td>
+                    </tr>
+                </table>
+            </div>
+            <div id="filter-dialog-slots">
+                <img src="images/ajax-loader.gif" title="loading..." alt="loading" />
+                <table>
+                    <tr>
+                        <td>
+                            <table class="buttons">
+                                <tr>
+                                    <td>
+                                        <button>all</button>
+                                    </td>
+                                    <td>
+                                        <button>none</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div id="filter-dialog-projects">
+                <img src="images/ajax-loader.gif" title="loading..." alt="loading" />
+                <table>
+                    <tr>
+                        <td>
+                            <table class="buttons">
+                                <tr>
+                                    <td>
+                                        <button>all</button>
+                                    </td>
+                                    <td>
+                                        <button>none</button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <form id = "rebuild_info" target="_blank" method="GET" action="https://lhcb-jenkins.cern.ch/jenkins/userContent/rebuild-lhcb-release.html" style="display:none">
+	<fieldset>
+	<input type="text" name="platforms"/><br/>
+	<input type="text" name="projects_list"/><br/>
+	<input type="text" name="build_tool"/><br/>
+	<input type="hidden" name="delay" value="60sec"/>
+	<input type="submit" value="Submit"/>
+	</fieldset>
+    </form>
+
+    <div id="dialog-confirm" title="Rebuild slot?" style="display:none">
+      <table id="confirm-build-info"><tbody></tbody></table>
+    </div>
+
+    <!--  Custom rss configurator: -->
+    <div id="rssform" style="display: none;">
+
+        <fieldset id="tabs" class="tabs">
+            <legend id="rssConfigurator">Custom rss feed configuration</legend>
+            <ul>
+                <li><a href="#tab-1">Tests and Builds RSS</a>
+                </li>
+                <li><a href="#tab-2">Disk Space RSS</a>
+                </li>
+            </ul>
+            <div id="tab-1">
+                <section id="high">
+                    <div id="left">
+                        <div id="advancedoption" class="tabs">
+                            <ul>
+                                <li><a href="#simple-tab">Simple</a>
+                                </li>
+                                <li><a href="#advanced-tab">Advanced</a>
+                                </li>
+                            </ul>
+                            <div id="simple-tab">
+                                <div class="accordion">
+                                    <h3 id="slot"> Slot </h3>
+                                    <div class="tohover">
+                                        <div>
+                                            <button class="containeroptions checkall check" value="slot">check all</button>
+                                            <button class="containeroptions checkall uncheck" value="slot">uncheck all</button>
+                                            Uncheck all options is equivalent to check all.
+                                        </div>
+                                        <div>
+                                            <ul id="slotcontainer" class="expandable">
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <h3 id="platform"> Platform </h3>
+                                    <div class="tohover">
+                                        <div>
+                                            <button class="containeroptions checkall check" value="platform">check all</button>
+                                            <button class="containeroptions checkall uncheck" value="platform">uncheck all</button>
+                                            Uncheck all options is equivalent to check all.
+                                        </div>
+                                        <div>
+                                            <ul id="platformcontainer" class="expandable">
+                                            </ul>
+                                        </div>
+
+                                    </div>
+                                    <h3 id="project"> Project</h3>
+                                    <div class="tohover">
+                                        <div>
+                                            <button class="containeroptions checkall check" value="project">check all</button>
+                                            <button class="containeroptions checkall uncheck" value="project">uncheck all</button>
+                                            Uncheck all options is equivalent to check all.
+                                        </div>
+                                        <div>
+                                            <ul id="projectcontainer" class="expandable">
+                                            </ul>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div id="advanced-tab">
+                                <div id="slotregexinput" class="regexinputdiv">
+
+                                    <fieldset>
+                                        <legend>Slot regular expression</legend>
+                                        <input id="slotregex" class="regexinput" type="text" name="slotpattern" />
+                                    </fieldset>
+
+                                </div>
+                                <div id="platformregexinput" class="regexinputdiv">
+                                    <fieldset>
+                                        <legend>Platform regular expression</legend>
+                                        <input id="platformregex" class="regexinput" type="text" name="platformpattern" />
+                                    </fieldset>
+                                </div>
+                                <div id="projectregexinput" class="regexinputdiv">
+                                    <fieldset>
+                                        <legend>Project regular expression</legend>
+                                        <input id="projectregex" class="regexinput" type="text" name="projectpattern" />
+                                    </fieldset>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="right">
+                        <div id="nature">
+
+                            <fieldset class="radiocontainer">
+                                <legend><span>Type</span>
+                                </legend>
+                                <span>
+                            <input id="build" type="radio" value="build" name="nature"></input>
+                            <label for="build" > build </label>
+                        </span>
+                                <span>
+                            <input id="tests" type="radio" value="tests" name="nature"></input>
+                            <label for="tests"> test </label>
+                        </span>
+                                <span>
+                            <input id="all" type="radio" value="" name="nature" checked="checked"></input>
+                            <label for="all"> all </label>
+                        </span>
+                            </fieldset>
+                        </div>
+                        <div class="radiocontainer" id="alertlevel">
+
+                            <fieldset>
+                                <legend><span>Alert level</span>
+                                </legend>
+                                <span>
+                            <input id="error" type="radio" value="2" name="alertlevel"></input>
+                            <label for="error"> error </label>
+                        </span>
+                                <span>
+                            <input id="warnings" type="radio" value="1" name="alertlevel"></input>
+                            <label for="warnings"> warning </label>
+                        </span>
+                                <span>
+                            <input id="allalertlevel" type="radio" value="" name="alertlevel" checked="checked"></input>
+                            <label for="allalertlevel"> all </label>
+                        </span>
+                            </fieldset>
+                        </div>
+
+
+                    </div>
+
+                    <div class="icondiv">
+                        <img src="images/ajax-loader.gif" class="rssicon" title="rss" alt="loading icon" />
+                    </div>
+                </section>
+
+                <section id="bottom">
+                    <div id="resultdiv">
+                        <a id="result"></a>
+                    </div>
+                    <div id="selected">
+                        <div>Selected</div>
+                    </div>
+                </section>
+            </div>
+            <div id="tab-2">
+                <div id="rssicontab2" class="icondiv">
+                    <img src="images/ajax-loader.gif" class="rssicon" title="rss" alt="loading icon" />
+                </div>
+                <div>
+                    <h5>Free space threshold :</h5>
+                    <p>
+                        The disk space RSS feed sends news describing the hard drive state of slots which have less free space than the threshold in percentage.
+                    </p>
+                    <input type="number" name="disklevel" min="1" max="100" readonly="readonly" value="1" id="slidervalue" />%
+
+                    <div id="slider">
+
+                    </div>
+                </div>
+
+                <div id="diskresultdiv">
+                    <a id="diskresult"></a>
+                </div>
+            </div>
+        </fieldset>
+
+
+    </div>
+</body>
+
+</html>

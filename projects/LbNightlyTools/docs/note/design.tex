@@ -1,0 +1,39 @@
+\section{Design}
+\label{sec:Design}
+The new Nightly Build System is divided in three main parts to address the different concerns: the
+configuration of Jenkins jobs (for the coordination and distribution of the
+tasks), the core tools (for the actual checkout and build tasks), the dashboard
+(summarized presentation of the results of the builds).
+
+Although Jenkins allows arbitrary complex scripts in the build steps, it is
+suggested in the documentation to keep the build steps simple, wrapping the
+complexity of the build in tools that are distributed and developed together
+with the project.  The main reasons are that the web interface provides only a
+simple text field (not suitable for development) and that it is not possible to
+keep track of the evolution of the code of a configuration with a version
+control system.
+
+In our case, the scripts used for the heavy-lifting part of the builds are
+hosted on a dedicated GIT\cite{GIT} repository, instead of living withing the
+software projects, because they are generic and apply to whole software stacks,
+i.e. interdependent sets of projects.
+
+An important difference in the design of the new system with respect to the old
+one is that the various actions required in the nightly builds (checkout, build,
+test, etc.) are performed by dedicated independent scripts instead of being
+phases of a monolithic script.  Thus it is possible to develop and test a
+single action without having to restart the whole process from scratch.
+Moreover, the core tools are meant to work and produce files in any directory,
+instead of using fixed locations as in the old system, simplifying furthermore
+the development. Of course, whenever feasible, common code is factored out and
+shared between all the scripts.
+
+The configuration of Jenkins required the installation of several plug-ins on
+top of a vanilla installation of the application.  The jobs, in Jenkins terms,
+configured are of two main categories: jobs representing the nightly build slots
+and generic jobs for the individual steps.
+
+The dashboard is still under investigation.  The two main options investigated
+are CDash\cite{CDash} and the dashboard of the old system.  It is also possible
+to use something integrated with Jenkins or a completely new custom dashboard.
+The details will be discussed in a dedicated section.

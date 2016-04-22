@@ -1,0 +1,10 @@
+{"slot": "broken",
+ "projects": [{"name": "BadCMT",
+               "version": "HEAD"},
+              {"name": "BadCMake",
+               "version": "HEAD"},
+              {"name": "Missing",
+               "version": "HEAD"},
+              {"name": "Gaudi",
+               "version": "HEAD"}]
+}

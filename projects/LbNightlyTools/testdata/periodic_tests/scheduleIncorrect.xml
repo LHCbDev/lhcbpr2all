@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<periodictests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TestSchedule.xsd">
+  <periodictest>
+    <schedule>Lun,Wed,Fri</schedule>
+    <slot>test-slot</slot>
+    <project>project</project>
+    <platform>plaftorm</platform>
+    <test group="testname"/>
+    <os_label>os_label</os_label>
+  </periodictest>
+</periodictests>

@@ -1,0 +1,195 @@
+#!/usr/bin/env python
+###############################################################################
+# (c) Copyright 2013 CERN                                                     #
+#                                                                             #
+# This software is distributed under the terms of the GNU General Public      #
+# Licence version 3 (GPL Version 3), copied verbatim in the file "COPYING".   #
+#                                                                             #
+# In applying this licence, CERN does not waive the privileges and immunities #
+# granted to it by virtue of its status as an Intergovernmental Organization  #
+# or submit itself to any jurisdiction.                                       #
+###############################################################################
+'''
+Run a LHCbPR job
+
+'''
+__author__ = 'Ben Couturier <ben.couturier@cern.ch>'
+
+import LbUtils.Script
+import re
+import sys
+from LbPR.LbPRJobManager import JobManager
+from LbNightlyTools import Configuration
+
+
+def getProjectVersionFromConfig(config, project):
+    ''' Look up the project version for SetupProject '''
+    retval = None
+    for proj in config[u'projects']:
+        if proj['name'].lower() == project.lower():
+            retval = proj['version']
+            break
+    return retval
+
+
+class Script(LbUtils.Script.PlainScript):
+    '''
+    Script to create the commands to run a LHCbPR Job
+    '''
+    __usage__ = '%prog  <command> <project> <version> <platform>' \
+                ' <options> <setup-options> <slot config>'
+    __version__ = ''
+
+    def defineOpts(self):
+        '''Define options.'''
+        from LbNightlyTools.Scripts.Common import addBasicOptions
+        self.parser.add_option('-s', '--server', action='store',
+                               help='LHCbPR Server')
+        self.parser.add_option('-u', '--url', action='store',
+                               help='URL for the LHCbPR REST service')
+        self.parser.add_option('-o', '--output', action='store',
+                               help='output file name ' \
+                                    '[default: runlhcbpr.sh]')
+        addBasicOptions(self.parser)
+
+    def interpretOptions(self, options):
+        '''  Filters the option to see if a command runner is defined
+        It returns  the filtered a tuple with (the runner, the options). '''
+        myre = re.compile('\s*runner=["\']+(.*?)["\']+(.*)$', re.IGNORECASE)
+        m = myre.match(options)
+        if m == None:
+            # No match, we have normal options, just use Gaudirun.py
+            self.log.warning("No runner defined, we use gaudirun.py")
+            return ("gaudirun.py", options)
+        else:
+            self.log.warning("Runner defined in options: %s" % m.group(1))
+            return (m.group(1), m.group(2))
+
+    def main(self):
+        '''
+        Main function of the script.
+        '''
+
+        # Checking the arguments
+        if len(self.args) != 6:
+            self.parser.error('Please specify <project> <version> <platform> '
+                              '<options> <setup-options> <slot config>')
+            exit(1)
+
+        application = self.args[0]
+        version = self.args[1]
+        platform = self.args[2]
+        job_options = self.args[3]
+
+        testenv = self.args[4].split("|")
+        setup_options = testenv[0]
+        handlers = "TimingHandler,BrunelMemHandler"
+        if len(testenv) > 1:
+            handlers = testenv[1]
+
+        slot_config = self.args[5]
+
+
+        # Parsing the slot config to extract relevant information
+        self.log.info("Parsing config file %s" % slot_config)
+        config = Configuration.load(slot_config)
+        project_version = getProjectVersionFromConfig(config, application)
+        self.log.info("Using %s %s", application, project_version)
+
+        # Now create the interface with LHCbPR
+        manager = JobManager(self.options.server, self.options.url)
+
+        jobdescription_id = None
+        try:
+            # Now get the job description ID for the job
+            jobdescription_id = manager.getJobOptions(job_options)
+        except Exception, exc:
+            self.log.error("Count not get job description ID from LHCbPR: %s",
+                           str(exc))
+            raise exc
+
+        try:
+            # Get the actual options based on description
+            optionscontent = manager.getJobOptions(job_options)
+
+            # Get the actual options based on description
+            setupcontent = manager.getSetupOptions(setup_options)
+
+        except Exception, exc:
+            self.log.error("Count not get job description options "
+                           "from LHCbPR: %s",
+                           str(exc))
+            raise exc
+        try:
+            runfilename = "runlhcbpr.sh"
+            if self.options.output != None:
+                runfilename = self.options.output
+
+            self.log.warning("Writing file: %s", runfilename)
+
+
+            with open(runfilename, 'w') as runfile:
+                runfile.write("#!/usr/bin/env sh\n")
+                #lblogin_cmd = ". LbLogin.sh -c %s" % platform
+                setup_cmd = ". SetupProject.sh --keep-CMTPROJECTPATH %s %s %s"\
+                                % (application, project_version, setupcontent)
+                (runner, realopts) = self.interpretOptions(optionscontent)
+                run_cmd = "%s %s " %  (runner, realopts)
+                #setCMTPROJECTPATH=config["env"][0]
+                runfile.write('''
+#!/bin/bash
+#
+# File generated by lbpr-get-command to run the LHCbPR Job
+#
+
+set -v
+
+# Setting the CMTPROJECTPATH for the software installed locally
+. ./build/setupSearchPath.sh
+
+# Setting the environment and cleanup
+%s
+rm -f start.txt end.txt platform.txt
+echo $CMTCONFIG > platform.txt
+
+# Add valgrind from AFS to the PATH
+if [ -f /afs/cern.ch/lhcb/group/rich/vol4/jonrob/scripts/new-valgrind.sh ]; then
+ source /afs/cern.ch/lhcb/group/rich/vol4/jonrob/scripts/new-valgrind.sh
+fi
+
+# Adding jemalloc for the perf jobs
+if [ -d /opt/dirac/lhcbpr/sw/jemalloc-3.6.0/lib ]; then
+  export LD_LIBRARY_PATH=/opt/dirac/lhcbpr/sw/jemalloc-3.6.0/lib:$LD_LIBRARY_PATH
+fi
+
+echo $LD_LIBRARY_PATH
+# Now running the test itself
+set -o pipefail
+date +"%%Y-%%m-%%d,%%T" > start.txt
+%s | tee run.log
+RETCODE=$?
+date +"%%Y-%%m-%%d,%%T" > end.txt
+echo "==> Return code: $RETCODE"
+# Gathering the results with LHCbPR
+if [ "$RETCODE" = "0" ] ; then
+    echo "Run OK now gathering the results"
+    lbpr-collect -s `cat start.txt` -e `cat end.txt` -p `hostname` -c `cat platform.txt` -j %s -l "%s" -t %s -v %s -a
+else
+    echo "Non 0 return code - Will NOT gather the results and push to LHCbPR"
+fi
+
+exit $RETCODE
+
+                ''' % (setup_cmd, run_cmd, jobdescription_id, handlers, application, version))
+
+        except Exception, exc:
+            self.log.error("Error generating runfile: %s",
+                           str(exc))
+            raise exc
+
+
+
+
+
+# __main__
+sys.exit(Script().run())

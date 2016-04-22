@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <project name="Brunel" version="HEAD" />
+  <heptools>
+    <version>70root6</version>
+    <binary_tag>x86_64-slc6-gcc48-opt</binary_tag>
+    <lcg_system>x86_64-slc6-gcc48</lcg_system>
+    <packages>
+      <package name="RELAX" version="RELAX_1_4_1" />
+      <package name="Boost" version="1.55.0_python2.7" />
+      <package name="libunwind" version="5c2cade" />
+      <package name="Python" version="2.7.6" />
+      <package name="Qt" version="4.8.4" />
+      <package name="ROOT" version="6.02.01" />
+      <package name="QMtest" version="2.4.1_python2.7" />
+      <package name="CASTOR" version="2.1.13-6" />
+    </packages>
+  </heptools>
+  <exttools>
+    <binary_tag>x86_64-slc6-gcc48-opt</binary_tag>
+    <packages>
+      <package name="pygsi"           version="0.5_python2.7" />
+      <package name="voms"            version="2.0.12"        />
+      <package name="epel"            version="20141030"      />
+      <package name="dm-utils"        version="1.16.0-2"      />
+    </packages>
+  </exttools>
+</manifest>
