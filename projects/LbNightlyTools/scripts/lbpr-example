@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+BASEDIR=$(dirname "$0")
+export lhcbpr_api_url="https://prl-dev/api"
+export lhcbpr_check_ssl="false"
+
+export testenv='|GeantStandaloneHandler'
+export testgroup='GEANT_RUNHADRONIC'
+export testrunner=lhcbpr
+export slot=lhcb-gauss-dev
+export slot_build_id=888
+export platform=x86_64-slc6-gcc48-opt
+export project=Geant4
+export input_flavour=nightly
+export flavour=periodic
+export os_label=perf
+#$BASEDIR/../jenkins/mock.sh nightly-slot-test-project-platform2 lhcb-gauss-dev  x86_64-slc6-gcc48-opt Geant4
+$BASEDIR/../jenkins/nightly-slot-test-project-platform2.sh

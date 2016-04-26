@@ -17,51 +17,54 @@ Interface to the LHCbPR System.
 '''
 import urllib2
 import json
+import ssl
+import sys
 
 HEADERS = {"Content-type": "application/x-www-form-urlencoded",
-                   "Accept": "text/plain"}
+           "Accept": "text/plain"}
+
+
+CHECK_SSL = False
+
+
+def urlopen(url, check_ssl=True):
+    '''
+    Wrapper for urllib2.urlopen to enable or disable SSL verification.
+    '''
+    if not check_ssl and sys.version_info >= (2, 7, 9):
+        # with Python >= 2.7.9 SSL certificates are validated by default
+        # but we can ignore them
+        from ssl import SSLContext, PROTOCOL_SSLv23
+        return urllib2.urlopen(url, context=ssl._create_unverified_context())
+    return urllib2.urlopen(url)
+
 
 class JobManager(object):
+
     '''
     Interface to the LHCbPR system
     '''
-    def __init__(self, lhcbpr_host=None, lhcbpr_url=None):
+
+    def __init__(self, lhcbpr_api_url, check_ssl=True):
         '''
         Constructor taking the URL for the LHCbPR server
         '''
-        if lhcbpr_host == None:
-            lhcbpr_host = "lblhcbpr2.cern.ch:8080"
-        if lhcbpr_url == None:
-            lhcbpr_url = "api"
-
-        self._lhcbpr_host = lhcbpr_host
-        self._lhcbpr_url = lhcbpr_url
+        self._lhcbpr_api_url = lhcbpr_api_url
+        self._check_ssl = check_ssl
 
     def getJobOptions(self, options_description):
         ''' Get the list of options from LHCbPR2 '''
 
-        resp = urllib2.urlopen('http://%s/%s/options/?description=%s' % (self._lhcbpr_host,
-                                                                         self._lhcbpr_url,
-                                                                         options_description)).read()
+        resp = urlopen(
+            '%s/options/?description=%s' % (self._lhcbpr_api_url,
+                                                       options_description), self._check_ssl).read()
         data = json.loads(resp)
-        if data["count"] == 0:
-            return None
-        prdata = data["results"][0]
-        return prdata["content"]
-
-
+        return data["results"][0] if data["count"] else None
 
     def getSetupOptions(self, setup_description):
         ''' Get the SetupProject options from LHCbPR2 '''
 
-        resp = urllib2.urlopen('http://%s/%s/setups/?description=%s' % (self._lhcbpr_host,
-                                                                         self._lhcbpr_url,
-                                                                         setup_description)).read()
+        resp = urlopen('%s/setups/?description=%s' % (self._lhcbpr_api_url,
+                                                                 setup_description), self._check_ssl).read()
         data = json.loads(resp)
-        if data["count"] == 0:
-                return None
-        prdata = data["results"][0]
-        return prdata["content"]
-
-
-
+        return data["results"][0] if data["count"] else None

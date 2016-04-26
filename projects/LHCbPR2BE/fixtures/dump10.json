@@ -15,7 +15,7 @@
 },
 {
     "fields": {
-        "content": "SetupProject -c {platform} {app_name} HEAD --no-user-area",
+        "content": "SetupProject -c {platform} {app_name} {app_version} --no-user-area",
         "description": "Default"
     },
     "model": "lhcbpr_api.setupproject",
