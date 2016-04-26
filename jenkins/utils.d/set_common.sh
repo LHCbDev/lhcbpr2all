@@ -68,7 +68,7 @@ set_common [--build] [--test]"
 
     # used by some tests to reduce the number of concurrent tests
     export LHCB_NIGHTLY_MAX_THREADS=1
-
+    export WORKSPACE=${WORKSPACE:-$(readlink -e $(dirname ${BASH_SOURCE[0]})/../..)}
     export ARTIFACTS_DIR=${ARTIFACTS_DIR:-artifacts/${flavour}/${slot}/${slot_build_id}}
     mkdir -p ${ARTIFACTS_DIR}
     export RSYNC_SERVER=${RSYNC_SERVER:-lhcb-archive.cern.ch}
@@ -85,7 +85,7 @@ set_common [--build] [--test]"
     echo Artifacts dir: $ARTIFACTS_DIR
     echo ===================================================================
 
-    LbScriptsVersion=dev
+    LbScriptsVersion=prod
 
     # FIXME: workaround for LBCORE-769
     if ( echo $platform | grep -q slc5 ) ; then
@@ -99,7 +99,7 @@ set_common [--build] [--test]"
         export GROUP_DIR=/afs/cern.ch/group/z5
         export LOGIN_POST_SCRIPT=${GROUP_DIR}/post/login
         # FIXME: LbLogin cannot handle the special CMTCONFIG "*-test"
-        . /afs/cern.ch/lhcb/software/releases/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
+        . /cvmfs/lhcb.cern.ch/lib/lhcb/LBSCRIPTS/${LbScriptsVersion}/InstallArea/scripts/LbLogin.sh --no-cache -c ${platform/-test/-opt}
         #    export CMTCONFIG=${platform}
         # FIXME: path to the new gdb should be implicit in the build/run-time
         #        environment
@@ -139,7 +139,7 @@ set_common [--build] [--test]"
     fi
 
     set -xe
-    . ./setup.sh
+    . $WORKSPACE/setup.sh
 
     export SET_COMMON=true
     if [ "${special_config}" == "true" ] ; then

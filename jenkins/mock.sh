@@ -42,7 +42,7 @@ export NODE_NAME=$(hostname)
 # variables that can be overridden
 export slot_build_id=${slot_build_id:-999}
 export WORKSPACE=${WORKSPACE:-$(cd $(dirname $0)/.. ; pwd)}
-export JOB_NAME=${JOB_NAME:-nightly-test-slot-build-platform}
+export JOB_NAME=${JOB_NAME:-nightly-test-slot-build-platform2}
 guessed_label=${platform#*-}
 guessed_label=${guessed_label%%-*}
 export os_label=${os_label:-${guessed_label}}

@@ -33,7 +33,7 @@ from socket import gethostname
 
 ARTIFACTS_URL = 'https://lhcb-archive.cern.ch/artifacts'
 
-CHECK_SSL = True
+CHECK_SSL = False
 
 def urlopen(url):
     '''

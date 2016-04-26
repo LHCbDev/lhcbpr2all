@@ -13,7 +13,6 @@
 . $(dirname $0)/utils.sh
 
 set_common --build
-
 day=$(date +%a)
 deploybase=$(dirname /data/archive/${ARTIFACTS_DIR})
 
@@ -64,5 +63,5 @@ $(dirname $0)/testrunners/${used_test_runner}.sh ${testgroup} ${testenv}
 
 if [ "$JENKINS_MOCK" != "true" ] ; then
   # Clean up
-  rm -rf ${ARTIFACTS_DIR} build
+  echo rm -rf ${ARTIFACTS_DIR} build
 fi

@@ -18,13 +18,19 @@
 # 3- Actually run the collectRunResult command from LHCbPR 
 
 # We unset the LD_LIBRARY_PATH to make sure the LbLogin/SetupProject works
-unset $LD_LIBRARY_PATH
+unset LD_LIBRARY_PATH
 . LbLogin.sh -c x86_64-slc6-gcc48-opt
 . SetupProject.sh LHCbDirac ROOT
 
 # Download the LHCbPRHandlers
-git clone --quiet --depth=1 https://gitlab.cern.ch/lhcb-core/LHCbPR2HD.git
-
+if [ -d LHCbPR2HD ]
+then
+	cd LHCbPR2HD && git pull
+	cd ..
+else
+	git clone --quiet --depth=1 https://gitlab.cern.ch/lhcb-core/LHCbPR2HD.git
+fi
 # Collect the run results...
-python LHCbPR2HD/collectRunResults.py $@
+
+python LHCbPR2HD/collectRunResults.py "$@"
 
