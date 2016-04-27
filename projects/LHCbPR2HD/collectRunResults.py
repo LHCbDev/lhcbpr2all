@@ -50,7 +50,7 @@ def mkdatetime(datestr):
 
 
 def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
-                  appversiondatetime, optname, optcontent, optstandalone, setupname, setupcontent):
+                  appversiondatetime, execname, execcontent, optname, optcontent, optstandalone, setupname, setupcontent):
     """
     This method creates a dictionary with information about the job (like time_start/end etc)
     which will be added to json_results along with the execution results
@@ -67,6 +67,8 @@ def JobDictionary(hostname, starttime, endtime, cmtconfig, appname, appversion,
         'app_name': appname,
         'app_version': appversion,
         'app_version_datetime': appversiondatetime,
+        'exec_name': execname,
+        'exec_content': execcontent,
         'opt_name': optname,
         'opt_content': optcontent,
         'opt_standalone': optstandalone,
@@ -103,6 +105,12 @@ def main():
                         help='Application release/build creation time (2015-10-13 11:00:00 +0200)',
                         type=mkdatetime,
                         required=True)
+    parser.add_argument('--exec-name',
+                        help='Executable name',
+                        required=True)
+    parser.add_argument('--exec-content',
+                        help='Executable command (lb-run, gaudirun.py,...)',
+                        required=True)
     parser.add_argument('--opt-name',
                         help='Option name (PRTEST-COLLISION12-1000, PRTEST-Callgrind-300evts,...)',
                         required=True)
@@ -114,10 +122,10 @@ def main():
                         default=False)
     parser.add_argument('--setup-name',
                         help='Setup name (UsePRConfig, UserAreaPRConfig, ...)',
-                        required=True)
+                        required=False)
     parser.add_argument('--setup-content',
                         help='Setup content ("--no-user-area --use PRConfig", "--use PRConfig", ...)',
-                        required=True)
+                        required=False)
 
     parser.add_argument('-s', '--start-time',
                         dest='startTime', help='The start time of the job.',
@@ -157,6 +165,8 @@ def main():
         options.app_name,
         options.app_version,
         str(options.app_version_datetime),
+        options.exec_name,
+        options.exec_content,
         options.opt_name,
         options.opt_content,
         options.opt_standalone,
