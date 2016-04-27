@@ -206,7 +206,7 @@ class ActiveApplicationViewSet(viewsets.ViewSet):
         """
         result = []
         id_field = 'platform__id'
-        name_field = 'platform__cmtconfig'
+        name_field = 'platform__content'
 
         queryset = (
             Job.objects
@@ -218,11 +218,11 @@ class ActiveApplicationViewSet(viewsets.ViewSet):
             .order_by(name_field)
         )
 
-        for cmtconfig in queryset:
+        for platform in queryset:
             result.append(
-                {"id": cmtconfig[id_field],
-                 "name": cmtconfig[name_field],
-                 "count": cmtconfig["njobs"]
+                {"id": platform[id_field],
+                 "name": platform[name_field],
+                 "count": platform["njobs"]
                  }
             )
 

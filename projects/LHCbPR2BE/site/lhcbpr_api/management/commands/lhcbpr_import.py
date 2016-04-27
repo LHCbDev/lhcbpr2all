@@ -6,7 +6,7 @@ from django.utils.dateparse import parse_datetime
 from lhcbpr_api.models import (
     AddedResult, Application, ApplicationVersion, Option, SetupProject,
     JobDescription, Job, Host, Platform,
-    Attribute, AttributeGroup
+    Attribute, AttributeGroup, Executable
 )
 
 from dateutil import parser
@@ -38,24 +38,42 @@ class Command(BaseCommand):
             version=data['app_version']
         )
 
+        if data["exec_name"]:
+            executable = Executable.objects.filter(name=data["exec_name"])
+            if executable:
+                executable = executable[0]
+            else:
+                executable = Executable.objects.create(
+                    name=data['exec_name'],
+                    content=data['exec_content']
+                )
+        else:
+            executable = None
+
+
+
         option = Option.objects.filter(description=data['opt_name'])
         if option:
             option = option[0]
         else:
             option = Option.objects.create(
                 description=data['opt_name'],
-                content=data['opt_name'],
-                is_standalone=data['opt_standalone']
+                content=data['opt_content'],
+                executable=executable
             )
+        
 
-        setup = SetupProject.objects.filter(description=data['setup_name'])
-        if setup:
-            setup = setup[0]
+        if data['setup_name']:
+            setup = SetupProject.objects.filter(description=data['setup_name'])
+            if setup:
+                setup = setup[0]
+            else:
+                setup = SetupProject.objects.create(
+                    description=data['setup_name'],
+                    content=data['setup_content']
+                )
         else:
-            setup = SetupProject.objects.create(
-                description=data['setup_name'],
-                content=data['setup_content']
-            )
+            setup = None
 
         jd, created = JobDescription.objects.get_or_create(
             application_version=ver,
@@ -75,7 +93,7 @@ class Command(BaseCommand):
         )
 
         platform, _ = Platform.objects.get_or_create(
-            cmtconfig=data['CMTCONFIG']['platform']
+            content=data['CMTCONFIG']['platform']
         )
 
         time_start = parser.parse(data['time_start'])

@@ -33,13 +33,14 @@ class ExecutableSerializer(serializers.HyperlinkedModelSerializer):
             'id', 'name', 'content')
 
 class OptionSerializer(serializers.HyperlinkedModelSerializer):
-    executable = ExecutableSerializer(many=False)
+    executable = ExecutableSerializer(many=False, read_only=True)
+    executable_id = serializers.PrimaryKeyRelatedField(queryset=Executable.objects.all())
     thresholds = AttributeThresholdSerializer(many=True, read_only=True)
 
     class Meta:
         model = Option
         fields = (
-            'id', 'content', 'description', 'executable', 'thresholds')
+            'id', 'content', 'description', 'executable_id','executable', 'thresholds')
 
 
 class SetupProjectSerializer(serializers.HyperlinkedModelSerializer):
