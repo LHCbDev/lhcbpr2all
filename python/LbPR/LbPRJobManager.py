@@ -54,7 +54,6 @@ class JobManager(object):
 
     def getJobOptions(self, options_description):
         ''' Get the list of options from LHCbPR2 '''
-
         resp = urlopen(
             '%s/options/?description=%s' % (self._lhcbpr_api_url,
                                                        options_description), self._check_ssl).read()
@@ -63,8 +62,10 @@ class JobManager(object):
 
     def getSetupOptions(self, setup_description):
         ''' Get the SetupProject options from LHCbPR2 '''
-
-        resp = urlopen('%s/setups/?description=%s' % (self._lhcbpr_api_url,
-                                                                 setup_description), self._check_ssl).read()
-        data = json.loads(resp)
-        return data["results"][0] if data["count"] else None
+        if setup_description:
+            resp = urlopen('%s/setups/?description=%s' % (self._lhcbpr_api_url,
+                                                                     setup_description), self._check_ssl).read()
+            data = json.loads(resp)
+            return data["results"][0] if data["count"] else None
+        else:
+            return None

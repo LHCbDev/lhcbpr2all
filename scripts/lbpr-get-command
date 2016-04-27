@@ -18,6 +18,7 @@ __author__ = 'Ben Couturier <ben.couturier@cern.ch>'
 import LbUtils.Script
 import re
 import sys
+from datetime import datetime
 from LbPR.LbPRJobManager import JobManager
 from LbNightlyTools import Configuration
 
@@ -32,7 +33,13 @@ def getProjectVersionFromConfig(config, project):
     return retval
 
 
+def getSlotDateFromConfig(config):
+    completed = config["completed"]
+    return datetime.strptime(completed, '%Y-%m-%dT%H:%M:%S.%f')
+
+
 class Script(LbUtils.Script.PlainScript):
+
     '''
     Script to create the commands to run a LHCbPR Job
     '''
@@ -48,22 +55,39 @@ class Script(LbUtils.Script.PlainScript):
         self.parser.add_option('-c', '--check-ssl', action='store_true',
                                help='Check SSL certificate.')
         self.parser.add_option('-o', '--output', action='store',
-                               help='output file name ' \
+                               help='output file name '
                                     '[default: runlhcbpr.sh]')
         addBasicOptions(self.parser)
 
     @staticmethod
-    def interpretOptions(options):
+    def interpretOptions(options, app_name, app_version):
         if not options["executable"]:
             return options["content"]
-        
-        return options["executable"].format(options=options["content"])
+
+        return options["executable"]["content"].format(
+            app_name=app_name,
+            app_version=app_version,
+            options=options["content"])
 
     @staticmethod
     def interpretSetup(setup, app_name, app_version):
         if not setup:
-            return ""
+            return ''
+
         return setup["content"].format(app_name=app_name, app_version=app_version)
+
+    @staticmethod
+    def interpretSetupArgs(setupcontent):
+        if setupcontent:
+            return "--setup-name='{setup[description]}' --setup-content='{setup[content]}'".format(
+                setup=setupcontent)
+        return ""
+
+    @staticmethod
+    def interpretExecArgs(options):
+        if not options["executable"]:
+            return ""
+        return "--exec-name='{ex[name]}' --exec-content='{ex[content]}'".format(ex=options["executable"])
 
     def main(self):
         '''
@@ -89,11 +113,12 @@ class Script(LbUtils.Script.PlainScript):
 
         slot_config = self.args[5]
 
-
         # Parsing the slot config to extract relevant information
         self.log.info("Parsing config file %s" % slot_config)
         config = Configuration.load(slot_config)
         project_version = getProjectVersionFromConfig(config, application)
+        slot_completed = getSlotDateFromConfig(config)
+        # print("SASHA", slot_completed)
         self.log.info("Using %s %s", application, project_version)
 
         # Now create the interface with LHCbPR
@@ -105,24 +130,30 @@ class Script(LbUtils.Script.PlainScript):
             # Get the actual options based on description
             setupcontent = manager.getSetupOptions(setup_options)
 
-        except Exception, exc:
+        except Exception as exc:
             self.log.error("Could not get job description options "
                            "from LHCbPR: %s",
                            str(exc))
             raise exc
+
+        runfilename = "runlhcbpr.sh"
+        if self.options.output != None:
+            runfilename = self.options.output
+
+        self.log.warning("Writing file: %s", runfilename)
+
         try:
-            runfilename = "runlhcbpr.sh"
-            if self.options.output != None:
-                runfilename = self.options.output
-
-            self.log.warning("Writing file: %s", runfilename)
-
-
             with open(runfilename, 'w') as runfile:
                 # runfile.write("\n")
-                #lblogin_cmd = ". LbLogin.sh -c %s" % platform
-                setup_cmd = self.interpretSetup(setup=setupcontent, app_name=application, app_version=project_version)
-                run_cmd = self.interpretOptions(optionscontent)
+                # lblogin_cmd = ". LbLogin.sh -c %s" % platform
+                setup_cmd = self.interpretSetup(
+                    setup=setupcontent, app_name=application, app_version=project_version)
+                run_cmd = self.interpretOptions(
+                    options=optionscontent, app_name=application, app_version=project_version)
+                print(run_cmd, optionscontent)
+                setup_args = self.interpretSetupArgs(setupcontent)
+                exec_args = self.interpretExecArgs(optionscontent)
+
 
                 runfile.write('''
 #!/usr/bin/env bash
@@ -133,7 +164,10 @@ class Script(LbUtils.Script.PlainScript):
 set -v
 
 # Setting the CMTPROJECTPATH for the software installed locally
-. build/setupSearchPath.sh
+if [ -f build/setupSearchPath.sh ]; then
+   . build/setupSearchPath.sh
+fi
+export User_release_area=$(pwd)/build
 # Setting the environment and cleanup
 OLDPATH=$PATH
 {setup_cmd}
@@ -154,7 +188,6 @@ echo $LD_LIBRARY_PATH
 # Now running the test itself
 set -o pipefail
 date +"%Y-%m-%d %T %z" > start.txt
-
 {run_cmd} | tee run.log
 PATH=$OLDPATH
 
@@ -165,23 +198,17 @@ echo "==> Return code: $RETCODE"
 
 if [ "$RETCODE" = "0" ] ; then
     echo "Run OK now gathering the results"
-    lbpr-collect -s "`cat start.txt`" -e "`cat end.txt`" -p `hostname` -c `cat platform.txt` --opt-content='{options[content]}' --setup-name='{setup[description]}' --setup-content='{setup[content]}' --opt-name='{options[description]}' -l '{handlers}' --app-name='{app_name}' --app-version='{app_version}' --app-version-datetime="{app_version_datetime}" -a
+    lbpr-collect -s "`cat start.txt`" -e "`cat end.txt`" -p `hostname` -c `cat platform.txt` --opt-content='{options[content]}' {setup_args} {exec_args} --opt-name='{options[description]}' -l '{handlers}' --app-name='{app_name}' --app-version='{app_version}'  --app-version-datetime="{app_version_datetime}" -a
 else
     echo "Non 0 return code - Will NOT gather the results and push to LHCbPR"
 fi
 
 exit $RETCODE
-
-                '''.format(setup_cmd=setup_cmd, run_cmd=run_cmd, options=optionscontent, setup=setupcontent, handlers=handlers, app_name=application, app_version=version, app_version_datetime="2016-04-12 11:14:11 -0400"))
-
-        except Exception, exc:
+                '''.format(setup_cmd=setup_cmd, run_cmd=run_cmd, options=optionscontent, setup_args=setup_args, exec_args=exec_args, handlers=handlers, app_name=application, app_version=version, app_version_datetime=slot_completed.strftime("%Y-%m-%d %H:%M:%S -0400")))
+        except Exception as exc:
             self.log.error("Error generating runfile: %s",
                            str(exc))
             raise exc
-
-
-
-
 
 # __main__
 sys.exit(Script().run())
