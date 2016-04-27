@@ -2,3 +2,5 @@ var/log/**/*.log
 .env
 .private
 *.sublime*
+output/
+var/data/
