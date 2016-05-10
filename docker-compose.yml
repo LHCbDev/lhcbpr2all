@@ -41,7 +41,7 @@ services:
         - lhcbpr2root
     environment:
         APP_HOST: prl-dev
-        APP_SECURE_LOCATION: /secure
+        APP_SECURE_LOCATION: /
     ports:
         - "80:80"
         - "443:443"
