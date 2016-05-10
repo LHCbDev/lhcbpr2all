@@ -41,9 +41,7 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        APP_SERVER_NAME_1: lblhcpr2.cern.ch
-        APP_SERVER_NAME: prl-dev
-
+        APP_HOST: amazurov.cern.ch
     ports:
         - "80:80"
         - "443:443"
