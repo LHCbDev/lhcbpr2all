@@ -48,7 +48,8 @@ INSTALLED_APPS = (
     'fixture_magic',
     'rest_framework',
     'lhcbpr_api',
-    'lhcbpr'  # v1
+    'lhcbpr',  # v1
+    'shibsso',
 )
 # =============================================================================
 MIDDLEWARE_CLASSES = (
@@ -59,6 +60,11 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'shibsso.middleware.ShibSSOMiddleware'
+)
+# =============================================================================
+AUTHENTICATION_BACKENDS = (
+    'shibsso.backends.ShibSSOBackend',
 )
 # =============================================================================
 WSGI_APPLICATION = 'wsgi.application'
@@ -136,6 +142,19 @@ TEMPLATES = [
         'APP_DIRS': True,
     },
 ]
+
+LOGIN_REDIRECT_URL = "/"
+SHIB_SSO_ADMIN = True
+SHIB_SSO_CREATE_ACTIVE = True
+SHIB_SSO_CREATE_STAFF = False
+SHIB_SSO_CREATE_SUPERUSER = False
+SHIB_LOGIN_PATH = '/Shibboleth.sso/?target='
+SHIB_LOGOUT_URL = 'https://login.cern.ch/adfs/ls/?wa=wsignout1.0&returnurl='
+META_EMAIL = 'ADFS_EMAIL'
+META_FIRSTNAME = 'ADFS_FIRSTNAME'
+META_GROUP = 'ADFS_GROUP'
+META_LASTNAME = 'ADFS_LASTNAME'
+META_USERNAME = 'ADFS_LOGIN'
 
 ZIP_DIR = DB_DIR
 JOBS_UPLOAD_DIR = os.path.join(DATA_ROOT, 'jobs')
