@@ -9,6 +9,9 @@ services:
         DJANGO_SERVER_TYPE: gunicorn
         DJANGO_HTTP_PORT: 80
         DJANGO_STATIC_ROOT: /html/api/static
+        MEDIA_ROOT: /lhcbprdata
+    ports:
+        - "81:80"
 
   lhcbpr2root:
     build: projects/LHCbPR2ROOT
@@ -18,7 +21,7 @@ services:
     environment:
         FLASK_SERVER_TYPE: gunicorn
         FLASK_PORT: 80
-        ROOT_DATA: /lhcbprdata
+        ROOT_DATA: /lhcbprdata/jobs
 
   lhcbpr2fe:
     build: projects/lhcbpr2fe
@@ -40,8 +43,8 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        APP_HOST: prl-dev
-        APP_SECURE_LOCATION: /
+        APP_HOST: localhost
+        APP_SECURE_LOCATION: /secure
     ports:
         - "80:80"
         - "443:443"
