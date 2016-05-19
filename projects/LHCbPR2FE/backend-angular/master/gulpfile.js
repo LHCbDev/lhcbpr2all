@@ -196,7 +196,7 @@ gulp.task('styles:app', function() {
 						paths: [source.styles.app.dir]
 				}))
 				.on("error", handleError)
-				.pipe( params.minify ? minifyCSS() : gutil.noop() )
+				.pipe( params.minify ? minifyCSS({processImport: false}) : gutil.noop() )
 				.pipe( params.sourcemaps ? sourcemaps.write('.') : gutil.noop())
 				.pipe(gulp.dest(build.styles));
 });
