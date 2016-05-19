@@ -15,8 +15,6 @@ BASE_DIR = os.path.join(os.path.dirname(__file__), os.pardir)
 DB_DIR = os.path.join(BASE_DIR, 'data')
 STATIC_ROOT = os.getenv('DJANGO_STATIC_ROOT', os.path.join(BASE_DIR, 'static'))
 STATIC_URL = os.getenv('DJANGO_STATIC_URL', '/api/static/')
-
-DATA_ROOT = os.getenv('DATA_ROOT', os.path.join(BASE_DIR, 'data'))
 MEDIA_ROOT = os.getenv('MEDIA_ROOT', os.path.join(BASE_DIR, 'data'))
 MEDIA_URL = '/api/media/'
 ROOT_URLCONF = 'urls'
@@ -44,7 +42,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework_swagger',
-    # 'django_extensions',
+    'django_extensions',
     'fixture_magic',
     'rest_framework',
     'lhcbpr_api',
@@ -157,4 +155,4 @@ META_LASTNAME = 'ADFS_LASTNAME'
 META_USERNAME = 'ADFS_LOGIN'
 
 ZIP_DIR = DB_DIR
-JOBS_UPLOAD_DIR = os.path.join(DATA_ROOT, 'jobs')
+JOBS_UPLOAD_DIR = os.path.join(MEDIA_ROOT, 'jobs')
