@@ -1,6 +1,6 @@
 var/log/**/*.log
 .env
-.private
+.private*
 *.sublime*
 output/
 var/data/
