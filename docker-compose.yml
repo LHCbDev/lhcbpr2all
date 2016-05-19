@@ -6,10 +6,12 @@ services:
         - ./var/data:/lhcbprdata
     env_file: projects/LHCbPR2BE/envs/default.env
     environment:
+        DB_DATABASE: /lhcbprdata/lhcbpr2.sqlite
         DJANGO_SERVER_TYPE: gunicorn
         DJANGO_HTTP_PORT: 80
         DJANGO_STATIC_ROOT: /html/api/static
         MEDIA_ROOT: /lhcbprdata
+
     ports:
         - "81:80"
 
