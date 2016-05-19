@@ -158,9 +158,7 @@ def service():
     files = request.args.get(KEY_FILES, None)
     items = request.args.get(KEY_ITEMS, '')
     folders = request.args.get(KEY_FOLDERS, '')
-    sys.stderr.write('IN0\n')
     if not files:
-        sys.stderr.write('IN1\n')
         abort(404)
 
     # -------------------------------------------------------------------------
