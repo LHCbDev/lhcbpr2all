@@ -22,6 +22,7 @@ def run_gunicorn_server(addr, port):
             return {
                 'bind': '{0}:{1}'.format(addr, port),
                 'workers': 4,
+                'timeout': 300,
                 'accesslog': '-'
             }
 
