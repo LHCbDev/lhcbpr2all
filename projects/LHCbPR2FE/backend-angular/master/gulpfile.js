@@ -211,7 +211,7 @@ gulp.task('styles:app:rtl', function() {
 				}))
 				.on("error", handleError)
 				.pipe(flipcss())
-				.pipe( params.minify ? minifyCSS() : gutil.noop() )
+				.pipe( params.minify ? minifyCSS({processImport: false}) : gutil.noop() )
 				.pipe( sourcemaps ? sourcemaps.write('.') : gutil.noop())
 				.pipe(rename(function(path) {
 						path.basename += "-rtl";
