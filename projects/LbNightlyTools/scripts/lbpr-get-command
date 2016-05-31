@@ -60,13 +60,15 @@ class Script(LbUtils.Script.PlainScript):
         addBasicOptions(self.parser)
 
     @staticmethod
-    def interpretOptions(options, app_name, app_version):
+    def interpretOptions(options, app_name, app_version, platform):
         if not options["executable"]:
             return options["content"]
 
         return options["executable"]["content"].format(
             app_name=app_name,
             app_version=app_version,
+            platform=platform,
+            build="build",
             options=options["content"])
 
     @staticmethod
@@ -149,7 +151,8 @@ class Script(LbUtils.Script.PlainScript):
                 setup_cmd = self.interpretSetup(
                     setup=setupcontent, app_name=application, app_version=project_version)
                 run_cmd = self.interpretOptions(
-                    options=optionscontent, app_name=application, app_version=project_version)
+                    options=optionscontent, app_name=application, app_version=project_version,
+                    platform=platform)
                 print(run_cmd, optionscontent)
                 setup_args = self.interpretSetupArgs(setupcontent)
                 exec_args = self.interpretExecArgs(optionscontent)
