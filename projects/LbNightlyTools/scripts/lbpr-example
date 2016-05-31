@@ -3,14 +3,14 @@
 BASEDIR=$(dirname "$0")
 # export JENKINS_MOCK=true
 # export ARTIFACTS_DIR=build
-export lhcbpr_api_url="https://prl-dev/api"
-export lhcbpr_check_ssl="false"
+export lhcbpr_api_url=${LHCBPR_API_URL:-"https://lblhcbpr2.cern.ch/api"}
+export lhcbpr_check_ssl=${LHCBPR_CHECK_SSL:-"true"}
 
 export testenv='|GeantStandaloneHandler'
 export testgroup='GEANT_RUNHADRONIC'
 export testrunner=lhcbpr
-export slot=lhcb-gauss-dev
-export slot_build_id=883
+export slot=lhcb-gauss-cmake
+export slot_build_id=43
 # export slot=lhcb-gauss-cmake
 # export slot_build_id=9
 # export slot=lhcb-g4r10
