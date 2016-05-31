@@ -151,7 +151,7 @@ def unpack(url, dest):
         else:
             tmpname = os.path.abspath(url)
         log.info('unpacking %s', url)
-        retcode = call(['tar', '-x', '-f', tmpname], cwd=dest)
+        retcode = call(['tar', '--no-same-owner', '-x', '-f', tmpname], cwd=dest)
     finally:
         if tmpfd is not None:
             os.remove(tmpname)
