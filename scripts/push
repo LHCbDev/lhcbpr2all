@@ -4,6 +4,7 @@ git push
 git subtree push --prefix=projects/LHCbPR2BE LHCbPR2BE master
 git subtree push --prefix=projects/LHCbPR2FE LHCbPR2FE  master
 git subtree push --prefix=projects/LHCbPR2ROOT LHCbPR2ROOT  master
+git subtree push --prefix=projects/LbNightlyTools LbNightlyTools  lhcbpr2
 
 git push git@github.com:LHCbDev/lhcbpr2all.git  master
 git subtree push --prefix=projects/LHCbPR2BE git@github.com:LHCbDev/lhcbpr2be.git  master
