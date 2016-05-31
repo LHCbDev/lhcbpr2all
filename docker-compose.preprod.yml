@@ -1,0 +1,54 @@
+version: '2'
+services:
+  lhcbpr2be:
+    build: projects/LHCbPR2BE
+    volumes:
+        - ./var/data:/lhcbprdata
+    env_file: ./.private
+    environment:
+        DB_DATABASE: /lhcbprdata/lhcbpr2.sqlite
+        DJANGO_SERVER_TYPE: gunicorn
+        DJANGO_HTTP_PORT: 80
+        DJANGO_STATIC_ROOT: /html/api/static
+        MEDIA_ROOT: /lhcbprdata
+
+    ports:
+        - "81:80"
+
+  lhcbpr2root:
+    build: projects/LHCbPR2ROOT
+    volumes:
+        - ./var/data:/lhcbprdata:ro
+    env_file: projects/LHCbPR2ROOT/envs/default.env
+    environment:
+        FLASK_SERVER_TYPE: gunicorn
+        FLASK_PORT: 80
+        ROOT_DATA: /lhcbprdata/jobs
+
+  lhcbpr2fe:
+    build: projects/lhcbpr2fe
+    links:
+        - lhcbpr2be
+        - lhcbpr2root
+    environment:
+        FE_DIST_DIR: /usr/share/nginx/www
+        FE_SERVER_TYPE: nginx
+        FE_URL_API: /api
+        FE_URL_ROOT: /root
+  
+  lhcbpr2all:
+    build: .
+    volumes_from:
+        - lhcbpr2be:ro
+    links:
+        - lhcbpr2fe
+        - lhcbpr2be
+        - lhcbpr2root
+    environment:
+        APP_HOST: localhost
+        APP_SECURE_LOCATION: /secure
+    ports:
+        - "80:80"
+        - "443:443"
+
+ 
