@@ -7,6 +7,7 @@ services:
         - ./projects/LHCbPR2BE:/app
     env_file: projects/LHCbPR2BE/envs/default.env
     environment:
+        DB_DATABASE: /lhcbprdata/lhcbpr2test.sqlite
         DATA_ROOT: /lhcbprdata
         DJANGO_HTTP_PORT: 80
     ports:
@@ -19,8 +20,8 @@ services:
         - ./projects/LHCbPR2ROOT:/app
     env_file: projects/LHCbPR2ROOT/envs/default.env
     environment:
-        FLASK_PORT: 80,
-        DEBUG: true,
+        FLASK_PORT: 80
+        DEBUG: "True"
         ROOT_DATA: /lhcbprdata/jobs
     ports:
      - "8081:80" 
@@ -49,8 +50,24 @@ services:
         - lhcbpr2fe
         - lhcbpr2be
         - lhcbpr2root
+    environment:
+        APP_HOST: prl-dev
+        APP_SECURE_LOCATION: /secure
     ports:
         - "80:80"
         - "443:443"
+
+  lhcbpr2night:
+    image: mazurov/cvmfs-lhcb-lhcbpr
+    privileged: true
+    volumes:
+        - ./projects/LbNightlyTools:/app
+    links:
+        - lhcbpr2fe
+    environment:
+        LHCBPR_API_URL: http://lhcbpr2be/api
+        LHCBPR_CHECK_SSL: "false"
+
+    
 
  

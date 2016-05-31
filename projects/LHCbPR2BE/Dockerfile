@@ -11,4 +11,6 @@ ADD data /lhcbprdata
 
 VOLUME ["/lhcbprdata", "/html"]
 
+EXPOSE 80
+
 CMD ["./scripts/runserver"]
