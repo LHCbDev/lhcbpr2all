@@ -68,7 +68,7 @@ class Script(LbUtils.Script.PlainScript):
             app_name=app_name,
             app_version=app_version,
             platform=platform,
-            build="build",
+            build="../build",
             options=options["content"])
 
     @staticmethod
@@ -191,7 +191,14 @@ echo $LD_LIBRARY_PATH
 # Now running the test itself
 set -o pipefail
 date +"%Y-%m-%d %T %z" > start.txt
+if [ -d output ]; then
+  rm -rf output
+fi
+mkdir output
+pushd $(pwd)
+cd output
 {run_cmd} | tee run.log
+popd
 PATH=$OLDPATH
 
 RETCODE=$?
@@ -201,7 +208,7 @@ echo "==> Return code: $RETCODE"
 
 if [ "$RETCODE" = "0" ] ; then
     echo "Run OK now gathering the results"
-    lbpr-collect -s "`cat start.txt`" -e "`cat end.txt`" -p `hostname` -c `cat platform.txt` --opt-content='{options[content]}' {setup_args} {exec_args} --opt-name='{options[description]}' -l '{handlers}' --app-name='{app_name}' --app-version='{app_version}'  --app-version-datetime="{app_version_datetime}" -a
+    lbpr-collect -r output -s "`cat start.txt`" -e "`cat end.txt`" -p `hostname` -c `cat platform.txt` --opt-content='{options[content]}' {setup_args} {exec_args} --opt-name='{options[description]}' -l '{handlers}' --app-name='{app_name}' --app-version='{app_version}'  --app-version-datetime="{app_version_datetime}" -a
 else
     echo "Non 0 return code - Will NOT gather the results and push to LHCbPR"
 fi

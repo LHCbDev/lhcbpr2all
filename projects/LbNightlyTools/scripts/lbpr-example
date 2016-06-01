@@ -6,7 +6,7 @@ BASEDIR=$(dirname "$0")
 export lhcbpr_api_url=${LHCBPR_API_URL:-"https://lblhcbpr2.cern.ch/api"}
 export lhcbpr_check_ssl=${LHCBPR_CHECK_SSL:-"true"}
 
-export testenv='|GeantStandaloneHandler'
+export testenv='|RootFilesHandler'
 export testgroup='GEANT_RUNHADRONIC'
 export testrunner=lhcbpr
 export slot=lhcb-gauss-cmake

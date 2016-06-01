@@ -62,6 +62,7 @@ services:
     privileged: true
     volumes:
         - ./projects/LbNightlyTools:/app
+        - ./projects/LHCbPR2HD:/LHCbPR2HD
     links:
         - lhcbpr2fe
     environment:

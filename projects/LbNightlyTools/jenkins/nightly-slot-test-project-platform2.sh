@@ -37,12 +37,12 @@ else
   submit_opt="--submit --flavour ${flavour}"
   rsync_opt="--rsync-dest lhcb-archive.cern.ch:${deploybase}/${slot_build_id}"
 
-  lbn-install --verbose \
-              --flavour ${input_flavour} \
-              --dest build \
-              --projects ${project} \
-              --platforms ${platform} \
-              ${slot} ${slot_build_id}
+  # lbn-install --verbose \
+  #             --flavour ${input_flavour} \
+  #             --dest build \
+  #             --projects ${project} \
+  #             --platforms ${platform} \
+  #             ${slot} ${slot_build_id}
   prepare_opt="--no-unpack"
   config_file=build/slot-config.json
 fi
