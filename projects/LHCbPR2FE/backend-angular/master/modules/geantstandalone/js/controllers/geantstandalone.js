@@ -55,7 +55,7 @@ App.controller('GeantstandaloneController', function($scope, $log, lhcbprResourc
           $scope.selectedMaterials.forEach(function(material) {
             var file = job.id + '/' + model + '_' + particle + '_' + material + '.root';
             if (!newFiles) newFiles = {};
-            newFiles[file] = job.job_description.application_version.version + ' ' + job.platform.cmtconfig + ' ' + model;
+            newFiles[file] = job.job_description.application_version.version + ' ' + job.platform.content + ' ' + model;
           });
         });
       });
