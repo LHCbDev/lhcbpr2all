@@ -12,21 +12,26 @@ App.directive('rootjs', function($timeout) {
 
     scope.$watch('data', function(value) {
     	if(!value) return;
-    	console.log('data', value.fGraphs.arr);
+    	// console.log('data', value.fGraphs.arr);
       try {
         if (angular.isObject(value)) {
           scope.json = value;
         } else {
-          scope.json = angular.fromJson(value);
+          	scope.json = angular.fromJson(value);
         }
         var pad = element.children()[0];
         var obj = JSROOT.JSONR_unref(scope.json);
-        var canvas = createCanvas(
-        [
-        obj,
-        createLegend(obj)
-        ]
-        );
+        var canvas = null;
+        if (obj._typename != 'TCanvas'){
+        	var primitives = [obj];
+        	if (obj._typename == "TMultiGraph" ){
+        		primitives.push(createLegend(obj));
+        	}
+        	console.log(primitives);
+	        canvas = createCanvas(primitives);
+        } else {
+	        	canvas = obj;
+	      }
         
         pad.innerHTML = "";
         $timeout(function(){JSROOT.draw(pad, canvas)},2);
@@ -265,18 +270,27 @@ App.directive('rootjsserver', function($http) {
     function loaded(data) {
       var graph, mg, color;
       var graphs = [];
+      var others = [];
       color = 1;
       _.forEach(data.data['result'], function(file) {
         _.forEach(file['items'], function(value, key) {
-
-          graph = JSROOT.JSONR_unref(value);
-          graph.fLineColor = color++;
-          graph.fTitle = scope.files[file.root] + ' ' + graph.fTitle;
-          graphs.push(graph);
+        	if(value['_typename'] == 'TGraph' || value['_typename'] == 'TGraphErrors'){
+	          graph = JSROOT.JSONR_unref(value);
+	          graph.fLineColor = color++;
+	          graph.fTitle = scope.files[file.root] + ' ' + graph.fTitle;
+	          graphs.push(graph);
+          } else{
+	          others.push(JSROOT.JSONR_unref(value));
+          }
         });
       });
-      console.log("len", graphs.length);
-      scope.data = JSROOT.CreateTMultiGraph.apply(this, graphs);
+
+      if (others.length > 0){
+      	scope.data = others[0];
+
+      }else{
+      	scope.data = JSROOT.CreateTMultiGraph.apply(this, graphs);
+      }
     }
 
     function error(err) {
