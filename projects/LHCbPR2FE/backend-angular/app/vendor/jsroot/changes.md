@@ -1,5 +1,98 @@
 # JSROOT changelog
 
+## Changes in 4.5.0
+1. Zooming with mouse wheel
+2. Context menus for many different objects attributes are provided
+3. Context menu for every drawn object can be activated via toolbar button 
+4. Support browsing of TTask and derived classes (#40)
+5. Apply user range for drawing TH1/TH2 histograms, also when superimposed (#44) 
+6. Implement scaling factor like x10^3 on the vertical axes 
+7. Provide shortcut buttons for each subpad
+8. Implement simple drawing for TBox, TWbox, TSliderBox classes
+
+## Changes in 4.4.4
+1. Fix - toggling of statbox was not working in all situations 
+2. Fix - for mouse rect zooming use only left mouse button
+3. Fix - correctly draw TH2 with lego option, when histogram has negative bin content
+4. Fix - log axis drawing with no visible ticks 
+
+## Changes in 4.4.3
+1. Fix - wrong selection of TH1 Y axis range when errors are displayed (#44) 
+2. Fix - apply user range for TH1 X-axis zooming (#44)   
+3. Fix - protect against pathological case of 1-bin histogram
+4. Fix - use error plot by default in TH1 only when positive sumw2 entry exists
+5. Fix - for TH2 box draw option draw at least 1px rect for non-empty bin
+6. Fix - support transparency (alpha) in TColor (#45)
+7. Fix - correct tooltip handling for graphs with lines and markers
+8. Fix - interactive zooming in TH2 when doing histogram update  
+
+
+## Changes in 4.4.2
+1. Fix - statistic collection for TH2
+2. Fix - correct handling of empty TList in browser/inspector
+3. Fix - support TFolder in browser/inspector (#40)
+
+
+## Changes in 4.4.1
+1. Fix - colz palette resize when drawing histogram second time
+2. Fix - use embeded in TCanvas color for background color of canvas itself
+3. Fix - rotate too long X axis text labels 
+4. Fix - draw histogram bins on frame boundary
+5. Fix - use alternative color for shapes with default black color  
+6. Fix - correctly handle pcon/pgon shape with rmin==rmax on top or bottom side
+  
+
+## Changes in 4.4
+1. Fix faces orientation for all TGeo shapes. 
+2. Improve TGeoTorus creation - handle all parameters combinations
+3. Implement TGeoCompositeShape, using ThreeCSG.js
+4. Fix problem with color pallete when switch to 3D mode (#28)
+5. Use nested CSS classes to avoid conflicts with other libraries (#29)
+6. Let move and resize TFrame
+7. Improve TH1/TH2 drawings
+   - draw all histograms points in the range (no any skipped bins)
+   - minimize SVG code for drawing (up to factor 100)
+   - gives significant speedup in drawings
+8. SVG code improvement for TGraph, TF1, TAxis drawings
+9. Provide new tooltip kind
+   - created only when needed (minimizing SVG code)
+   - tooltip can be drawn for every object in the frame
+   - touch devices are supported 
+10. Fix - let draw same object on the canvas with different options
+11. Create cached list of known class methods. It can be extended by users. 
+12. Use of cached methods improves binary I/O perfromance by 20%
+13. Support TGaxis
+14. Project now can be obtained via 'bower install jsroot' 
+15. Support 'scat' and 'text' draw options for TH2 
+16. Support in binary I/O zipped buffer bigger than 16M
+17. Correctly handle in binary I/O pointer on TArray object (like in THnSparseArrayChunk)
+
+
+## Changes in 4.3
+1. Implement TGeoCtub, TGeoParaboloid and TGeoHype shapes
+2. Support TGeoTube with Rmin==0 
+3. Exclude empty faces in TGeoArb8  
+4. Improve TGeoSphere creation - handle all parameters combinations  
+5. Introduce JSROOT.cleanup() function to safely clear all drawn objects 
+6. Fix wrong resize method in 'tabs' and 'collapsible' layouts
+7. Fix canvas resize problem (issue #27)
+8. Fix zero-height canvas when draw TGeo in collapsible layout
+9. Fix problem of simultaneous move TGeo drawings and canvas in flexible layout
+ 
+
+## Changes in 4.2
+1. Significant performance improvements in 3D drawings - TGeo/TH2/TH3 
+2. Implement TGeoPara, TGeoGtra, TGeoXtru and TGeoEltu shapes
+3. Optimize (reduce vertices number) for others TGeo shapes 
+4. Correct rotation/translation/scaling of TGeo nodes 
+5. Workaround for axis reflection (not directly supported in three.js) 
+6. Support array of objects in I/O (like in TAxis3D)
+7. Correct reading of multi-dim arrays like Double_t fXY[8][2];
+8. Provide canvas toolbar for actions like savepng or unzoom  
+9. Implement JSROOT.resize() function to let resize drawing after changes in page layout 
+10. Fix error with title display/update 
+ 
+
 ## Changes in 4.1
 1. Introduce object inspector - one could browse object members of any class
 2. Let draw sub-items from TCanvas list of primitives like sub-pad or TLatex
