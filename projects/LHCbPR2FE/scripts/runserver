@@ -13,6 +13,7 @@ if [ $FE_SERVER_TYPE = "dev" ]
 then
    gulp  --output $FE_DIST_DIR --port $FE_PORT --liveport $FE_LIVE_PORT --urlapi $FE_URL_API --urlroot $FE_URL_ROOT 
 else
-   gulp build --output $FE_DIST_DIR --minify --urlapi $FE_URL_API --urlroot $FE_URL_ROOT 
+   sed -i '/url_api/c\"url_api": "'$FE_URL_API'",' $FE_DIST_DIR/app/js/ngConstants.js
+   sed -i '/url_root/c\"url_root": "'$FE_URL_ROOT'"' $FE_DIST_DIR/app/js/ngConstants.js
    /usr/sbin/nginx -g "daemon off;"
 fi

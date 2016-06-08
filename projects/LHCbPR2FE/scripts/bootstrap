@@ -2,3 +2,4 @@
 
 cd backend-angular/master
 npm install && bower install
+gulp build --output ${FE_DIST_DIR} --minify --urlapi $FE_URL_API --urlroot $FE_URL_ROOT

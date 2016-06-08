@@ -1,6 +1,8 @@
 {
   "name": "angle",
   "version": "0.0.0",
+  "repository": "https://github.com/LHCbDev/lhcbpr2fe",
+  "private": true,
   "description": "Angle - Bootstrap Admin App + AngularJS",
   "author": "@themicon_co",
   "dependencies": {},

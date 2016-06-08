@@ -21,8 +21,8 @@
                   span.fa.fa-check
             td {{job.id}}
             td {{job.job_description.application_version.application.name}}
-               {{job.job_description.application_version.version}},
-               {{job.job_description.option.content}}
+               | {{job.job_description.application_version.version}},
+               | {{job.job_description.option.content}}
             td {{job.host.hostname}}, {{job.platform.content}}
             td {{job.time_start | date:'yyyy-MM-dd HH:mm:ss Z'}} / 
-               {{job.time_end | date:'yyyy-MM-dd HH:mm:ss Z'}}
+               | {{job.time_end | date:'yyyy-MM-dd HH:mm:ss Z'}}
