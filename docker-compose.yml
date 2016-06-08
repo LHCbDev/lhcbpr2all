@@ -31,7 +31,6 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        FE_DIST_DIR: /usr/share/nginx/www
         FE_SERVER_TYPE: nginx
         FE_URL_API: /api
         FE_URL_ROOT: /root
