@@ -289,6 +289,7 @@ App.directive('rootjsserver', function($http) {
       	scope.data = others[0];
 
       }else{
+      	console.log("SASHA", graphs);
       	scope.data = JSROOT.CreateTMultiGraph.apply(this, graphs);
       }
     }

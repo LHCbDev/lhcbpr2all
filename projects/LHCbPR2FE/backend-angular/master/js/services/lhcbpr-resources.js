@@ -38,7 +38,8 @@ App.service('lhcbprResources', function(Restangular, BUILD_PARAMS, $rootScope) {
 App.factory('lhcbprResourcesHelper',function(lhcbprResources) {
 
   return {
-    search: search
+    search: search,
+    compare: compare
   };
 
   ////
@@ -48,6 +49,14 @@ App.factory('lhcbprResourcesHelper',function(lhcbprResources) {
       filter['ids'] = params['ids'].join(',');
     }
     return lhcbprResources.all('search-jobs').getList(filter);
+  }
+
+  function compare(job_ids, attr){
+  	var filter = {}
+  	filter['ids'] = job_ids.join(',')
+  	filter['contains'] = attr;
+
+  	return lhcbprResources.all('compare').getList(filter);
   }
 
 });

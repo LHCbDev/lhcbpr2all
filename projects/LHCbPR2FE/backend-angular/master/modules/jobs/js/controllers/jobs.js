@@ -150,7 +150,7 @@ App.controller('JobsListController', ['$scope', '$filter', '$q', 'ngTableParams'
 			var job = $scope.cachedJobs[id];
 			if (job) {
 				var av = job.job_description.application_version;
-				return av.application.name + ' ' + av.version + '(id=' + job.id + ')';
+				return av.application.name + ' ' + av.version + ' ' + job.platform.content + ' (id=' + job.id + ')';
 			} else {
 				return 'undefined';
 			}
