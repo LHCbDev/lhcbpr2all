@@ -1,3 +1,28 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python
+import os
+import os.path
+import json
+import subprocess
 
-docker-compose -f docker-compose.dev.yml up -d $@
+# =============================================================================
+base_dir = os.path.join(os.path.dirname(__file__), os.pardir)
+projects_dir = os.path.join(base_dir, "projects")
+# =============================================================================
+def git(*args):
+    print("*" * 80)
+    print(" ".join(['git'] + list(args)))
+    return subprocess.check_call(['git'] + list(args))
+# =============================================================================   
+if not os.path.exists(projects_dir):
+    os.makedirs(projects_dir)
+# =============================================================================
+
+with open(os.path.join(base_dir, 'project.json')) as project_cfg_file:    
+    project_cfg = json.load(project_cfg_file)
+    for project in project_cfg["projects"]:
+        project_path = os.path.join(projects_dir, project["name"])
+        if os.path.exists(project_path):
+            print("WARNING Directory {} not empty. Could not clone project {}".format(project_path, project["name"]))
+            continue
+        git("clone", "--branch", project.get("branch", "master"), project["url"], project_path)
+

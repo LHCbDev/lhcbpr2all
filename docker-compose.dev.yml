@@ -7,9 +7,10 @@ services:
         - ./projects/LHCbPR2BE:/app
     env_file: projects/LHCbPR2BE/envs/default.env
     environment:
-        DB_DATABASE: /lhcbprdata/lhcbpr2test.sqlite
-        MEDIA_ROOT: /lhcbprdata
+        DB_DATABASE: /lhcbprdata/lhcbpr2dev.sqlite
+        DJANGO_RUN_MIGRATE: "yes"
         DJANGO_HTTP_PORT: 80
+        MEDIA_ROOT: /lhcbprdata
     ports:
      - "8082:80"
 
@@ -51,7 +52,7 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        APP_HOST: prl-dev
+        APP_HOST: localhost
         APP_SECURE_LOCATION: /secure
     ports:
         - "80:80"
@@ -63,9 +64,9 @@ services:
     volumes:
         - ./projects/LbNightlyTools:/app
         - ./projects/LHCbPR2HD:/LHCbPR2HD
-    links:
-        - lhcbpr2fe
+        - ./var/data:/lhcbprdata
     environment:
+        LHCBPR_HANDLERS_PATH: "/LHCbPR2HD"
         LHCBPR_API_URL: http://lhcbpr2be/api
         LHCBPR_CHECK_SSL: "false"
 

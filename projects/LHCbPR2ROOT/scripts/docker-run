@@ -1,7 +1,0 @@
-#!/bin/bash
-
-docker run  --name lhcbpr2root \
-			-d \
-			-p 8081:80 \
-			-v /lhcbprdata:/data:ro \
-			mazurov/cern-root-server
