@@ -2,8 +2,7 @@
 
 ## Prerequisite
 
-* Python >= 2.7
-* [Docker](https://www.docker.com/products/docker)
+* [Docker](https://www.docker.com/products/docker) with docker-compose.
 
 
 ## Bootstrap
@@ -97,6 +96,11 @@ Login into lhcbpr2be container: `docker-compose exec lhcbpr2be bash`
 ## How to develop analysis modules
 
 [LHCBPR2FE](https://gitlab.cern.ch/lhcb-core/LHCbPR2FE/blob/master/documentation/modules-guide.md)
+
+
+## How services work in production
+
+![](media/jenkins.png)
 
 
 
