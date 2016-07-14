@@ -95,7 +95,7 @@ Login into lhcbpr2be container: `docker-compose exec lhcbpr2be bash`
 
 ## How to develop analysis modules
 
-[LHCBPR2FE](https://gitlab.cern.ch/lhcb-core/LHCbPR2FE/blob/master/documentation/modules-guide.md)
+[LHCBPR2FE](https://gitlab.cern.ch/lhcb-core/LHCbPR2FE)
 
 
 ## How services work in production
