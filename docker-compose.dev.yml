@@ -67,8 +67,8 @@ services:
         - ./var/data:/lhcbprdata
     environment:
         LHCBPR_HANDLERS_PATH: "/LHCbPR2HD"
-        LHCBPR_API_URL: http://lhcbpr2be/api
-        LHCBPR_CHECK_SSL: "false"
+        LHCBPR_API_URL: https://lblhcbpr2.cern.ch/api
+        NOSSL: "true"
 
     
 
