@@ -1,3 +1,4 @@
+.vscode
 projects/
 var/log/**/*.log
 .env
