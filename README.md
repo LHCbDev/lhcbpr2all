@@ -100,9 +100,13 @@ Login into lhcbpr2be container: `docker-compose exec lhcbpr2be bash`
 
 ## How services work in production
 
+
 ![](media/jenkins.png)
 
-
+* [Jenkins configuration](https://gitlab.cern.ch/lhcb-core/LHCbNightlyConf/blob/master/test_schedule2.xml)
+* [Test runner (lhcbpr branch)](https://gitlab.cern.ch/lhcb-core/LbNightlyTools/blob/master/jenkins/testrunners/lhcbpr2.sh)
+* [Example of jenkins build](https://lhcb-jenkins.cern.ch/jenkins/job/periodic-slot-tests-poll2/lastBuild/console)
+* [Puppet configuration for host machine](https://gitlab.cern.ch/ai/it-puppet-hostgroup-volhcb/blob/qa/code/manifests/lhcbpr.pp)
 
 
 
