@@ -1,9 +1,65 @@
 # LHCbPR2 Developers Package
 
-## Prerequisite
+## Prerequisites
 
-* [Docker](https://www.docker.com/products/docker) with docker-compose.
+* [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) — to get the lhcbpr2 source
+* [Docker](#docker) — to run applications in the same development environment for every user
+* [Docker Compose](#docker-compose) — defining and running multi-container Docker applications.
 
+
+### Docker
+
+> Docker containers wrap a piece of software in a complete filesystem that
+> contains everything needed to run: code, runtime, system tools, system
+> libraries – anything that can be installed on a server.
+> This guarantees that the software will always run the same,
+> regardless of its environment.
+
+[Installation instructions for different platforms](https://docker.github.io/engine/installation/)
+
+**Requirements:**
+* Docker ≥ 1.12
+
+```sh
+# Check docker version
+$ docker --version
+# Docker version 1.12.3-rc1, build bad4d12, experimental 
+```
+
+At linux, It's recommended to add your  user account to the "docker" group, so you can run
+docker containers without root rights.
+
+```sh
+$ sudo groupadd docker
+$ sudo usermod -aG docker $USER
+```
+
+Don't forget to verify that you can run docker:
+```
+$ docker run hello-world
+```
+If this fails with a message similar to this:
+```
+Cannot connect to the Docker daemon. Is 'docker daemon' running on this host?
+```
+
+### Docker Compose
+
+> Compose is a tool for defining and running multi-container Docker applications.
+
+Compose is preinstalled if you use Docker for Mac or Windows
+
+[Installation instructions](https://docs.docker.com/compose/install/)
+
+**Requirements:**
+* docker-compose ≥ 1.8.1
+
+
+```sh
+# Check docker-compose version
+$ docker-compose --version
+# docker-compose version 1.8.1, build 878cff1
+```
 
 ## Bootstrap
 
