@@ -1,39 +1,43 @@
 version: '2'
 services:
   lhcbpr2be:
-    image: mazurov/lhcbpr2be
+    build: projects/LHCbPR2BE
     volumes:
-        - /lhcbprdata:/lhcbprdata
-    env_file: .private
+        - ./var/data:/lhcbprdata
+    env_file: projects/LHCbPR2BE/envs/default.env
     environment:
+        DB_DATABASE: /lhcbprdata/lhcbpr2prod.sqlite
+        DJANGO_RUN_MIGRATE: "yes"
         DJANGO_SERVER_TYPE: gunicorn
-        DJANGO_HTTP_ADDR: 0.0.0.0
         DJANGO_HTTP_PORT: 80
-        DJANGO_LOG_LEVEL: INFO
-        DATA_ROOT: /lhcbprdata
+        DJANGO_STATIC_ROOT: /html/api/static
+        MEDIA_ROOT: /lhcbprdata
+
+    ports:
+        - "81:80"
 
   lhcbpr2root:
-    image: mazurov/lhcbpr2root
-    volumes_from:
-        - lhcbpr2be:ro
+    build: projects/LHCbPR2ROOT
+    volumes:
+        - ./var/data:/lhcbprdata:ro
+    env_file: projects/LHCbPR2ROOT/envs/default.env
     environment:
         FLASK_SERVER_TYPE: gunicorn
         FLASK_PORT: 80
-        ROOT_DATA: /lhcbprdata
+        ROOT_DATA: /lhcbprdata/jobs
 
   lhcbpr2fe:
-    image: mazurov/lhcbpr2fe
+    build: projects/lhcbpr2fe
     links:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        FE_DIST_DIR: /usr/share/nginx/www
         FE_SERVER_TYPE: nginx
         FE_URL_API: /api
         FE_URL_ROOT: /root
   
   lhcbpr2all:
-    image: mazurov/lhcbpr2all
+    build: .
     volumes_from:
         - lhcbpr2be:ro
     links:
@@ -41,7 +45,8 @@ services:
         - lhcbpr2be
         - lhcbpr2root
     environment:
-        APP_HOST: amazurov.cern.ch
+        APP_HOST: prl-dev
+        APP_SECURE_LOCATION: /secure
     ports:
         - "80:80"
         - "443:443"
