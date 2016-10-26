@@ -3,24 +3,28 @@
     [ 
         {
             "name": "LHCbPR2BE",    
-            "url": "ssh://git@gitlab.cern.ch:7999/lhcb-core/LHCbPR2BE.git"
+            "url": "https://gitlab.cern.ch/lhcb-core/LHCbPR2BE.git"
         },
         {
             "name": "LHCbPR2FE",    
-            "url": "ssh://git@gitlab.cern.ch:7999/lhcb-core/LHCbPR2FE.git"
+            "url": "https://gitlab.cern.ch/lhcb-core/LHCbPR2FE.git"
         },
         {
             "name": "LHCbPR2HD",    
-            "url": "ssh://git@gitlab.cern.ch:7999/lhcb-core/LHCbPR2HD.git"
+            "url": "https://gitlab.cern.ch/lhcb-core/LHCbPR2HD.git"
         },
         {
             "name": "LHCbPR2ROOT",  
-            "url": "ssh://git@gitlab.cern.ch:7999/lhcb-core/LHCbPR2ROOT.git"
+            "url": "https://gitlab.cern.ch/lhcb-core/LHCbPR2ROOT.git"
         },
         {
             "name": "LbNightlyTools",   
-            "url": "ssh://git@gitlab.cern.ch:7999/lhcb-core/LbNightlyTools.git",
+            "url": "https://gitlab.cern.ch/lhcb-core/LbNightlyTools.git",
             "branch": "lhcbpr2"
+        },
+        {
+            "name": "LHCbNightlyConf",   
+            "url": "https://gitlab.cern.ch/lhcb-core/LHCbNightlyConf.git"
         }
     ],
     "docker":{
