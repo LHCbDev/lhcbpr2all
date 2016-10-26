@@ -74,7 +74,14 @@ Clone the following subprojects into `projects` folder:
 *  **LbNightlyTools** - Run tests and call handlers from LHCbPR2HD
 
 
-## Run all services
+## Run All Services
+
+### Run all services in the development environment
+
+`docker-compose up -d` runs development environment from `docker-compose.yml` configuration
+
+### Run all services in the other environment
+You can select another environment, by using the following command:
 
 `docker-compose -f <docker-compose-file.yml>  -p <project-name> up -d`
 
