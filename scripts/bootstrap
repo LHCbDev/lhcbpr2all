@@ -22,7 +22,8 @@ with open(os.path.join(base_dir, 'project.json')) as project_cfg_file:
     for project in project_cfg["projects"]:
         project_path = os.path.join(projects_dir, project["name"])
         if os.path.exists(project_path):
-            print("WARNING Directory {} not empty. Could not clone project {}".format(project_path, project["name"]))
+            print("WARNING Directory {} not empty. Try pull {}".format(project_path, project["name"]))
+            git("-C", project_path, "pull")
             continue
         git("clone", "--branch", project.get("branch", "master"), project["url"], project_path)
 
