@@ -80,9 +80,15 @@ $ docker-compose --version
 
 ## Bootstrap
 
+First, you need to clone this project:
+
+`$> git clone https://gitlab.cern.ch/amazurov/LHCbPR2.git`
+
+, and run bootstrap script
+
 `./scripts/bootstrap`
 
-Clone the following subprojects into `projects` folder:
+, which clone the following subprojects into the `projects` folder:
 
 *  **LHCbPR2BE** - API backend server
 *  **LHCbPR2FE** - Web frontend for API server
@@ -95,7 +101,10 @@ Clone the following subprojects into `projects` folder:
 
 ### Run all services in the development environment
 
-`docker-compose up -d` runs development environment from `docker-compose.yml` configuration
+`docker-compose up -d` 
+
+, runs development environment from `docker-compose.yml` configuration. First run of the command
+can take some time.
 
 ### Run all services in the other environment [optional]
 You can select another environment, by using the following command:
@@ -146,6 +155,13 @@ lhcbpr2dev_lhcbpr2root_1    ./scripts/bootstrap              Up       0.0.0.0:80
 The other status means that something went wrong and you can investigate the problem in logs:
 * Global log for all services: `docker-compose logs -f`
 * Log per service: `docker-compose logs -f <service_name>`, e.g.  `docker-compose logs -f lhcbpr2fe`.
+
+When containers are in the "up" state and application are started in the containers (you can see it when logs does not produce
+any output) you can access lhcbpr web site at the following address:
+
+`https://localhost/`
+
+, you need accept unsigned https certificate.
 
 
 * [docker-compose](https://docs.docker.com/compose/) and [docker](https://docs.docker.com/engine/reference/commandline/cli/) command line documentations.
