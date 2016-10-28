@@ -86,7 +86,10 @@ First, you need to clone this project:
 
 , and run bootstrap script
 
-`./scripts/bootstrap`
+```sh
+$> cd LHCbPR2
+$> ./scripts/bootstrap
+```
 
 , which clone the following subprojects into the `projects` folder:
 
@@ -159,7 +162,7 @@ The other status means that something went wrong and you can investigate the pro
 When containers are in the "up" state and application are started in the containers (you can see it when logs does not produce
 any output) you can access lhcbpr web site at the following address:
 
-`https://localhost/`
+[https://localhost/]()
 
 , you need accept unsigned https certificate.
 
