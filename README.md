@@ -1,5 +1,22 @@
 # LHCbPR2 Developers Package
 
+<!-- TOC -->
+
+- [LHCbPR2 Developers Package](#lhcbpr2-developers-package)
+    - [Prerequisites](#prerequisites)
+        - [Docker](#docker)
+        - [Docker Compose](#docker-compose)
+    - [Bootstrap](#bootstrap)
+    - [Run All Services](#run-all-services)
+        - [Run all services in the development environment](#run-all-services-in-the-development-environment)
+        - [Run all services in the other environment [optional]](#run-all-services-in-the-other-environment-optional)
+    - [Links](#links)
+        - [How to run tests without jenkins](#how-to-run-tests-without-jenkins)
+        - [How to develop analysis modules](#how-to-develop-analysis-modules)
+        - [How services work in production](#how-services-work-in-production)
+
+<!-- /TOC -->
+
 ## Prerequisites
 
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) — to get the lhcbpr2 source
@@ -133,8 +150,9 @@ The other status means that something went wrong and you can investigate the pro
 
 * [docker-compose](https://docs.docker.com/compose/) and [docker](https://docs.docker.com/engine/reference/commandline/cli/) command line documentations.
 
+## Links
 
-## How to run tests without jenkins
+### How to run tests without jenkins
 
 Login into lhcbpr2night container with lhcb cvmfs support:
 `docker-compose run lhcbpr2night bash`
@@ -156,12 +174,12 @@ Login into lhcbpr2be container: `docker-compose exec lhcbpr2be bash`
 ```
 
 
-## How to develop analysis modules
+### How to develop analysis modules
 
 [LHCBPR2FE](https://gitlab.cern.ch/lhcb-core/LHCbPR2FE)
 
 
-## How services work in production
+### How services work in production
 
 
 ![](media/jenkins.png)
