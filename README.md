@@ -131,7 +131,7 @@ COMPOSE_FILE=docker-compose.prod.yml
 
 **In the instruction bellow I will ommit -f and -p options for the docker-compose command.**
 
-**IMPORTANT**: if you docker machine url is not `localhost` then change the `APP_HOST` environment
+**IMPORTANT**: if you docker machine url is not `localhost` (it's used by default) then change the `APP_HOST` environment
 in the corresponding compose configuration (by default the confuguration file is `docker-compose.yml`) for `lhcbpr2all` service, e.g:
 ```
 ...
@@ -149,11 +149,11 @@ After running the command all services should be started and have  **up** state 
 ```
         Name                         Command               State                             Ports
 ------------------------------------------------------------------------------------------------------------------------------
-lhcbpr2dev_lhcbpr2all_1     /usr/local/bin/ep -v /etc/ ...   Up       0.0.0.0:443->443/tcp, 0.0.0.0:80->80/tcp
-lhcbpr2dev_lhcbpr2be_1      ./scripts/runserver              Up       0.0.0.0:8082->80/tcp
-lhcbpr2dev_lhcbpr2fe_1      ./scripts/runserver              Up       0.0.0.0:35729->35729/tcp, 0.0.0.0:8080->80/tcp, 9000/tcp
-lhcbpr2dev_lhcbpr2night_1   /usr/bin/cubied bash             Exit 0
-lhcbpr2dev_lhcbpr2root_1    ./scripts/bootstrap              Up       0.0.0.0:8081->80/tcp
+lhcbpr2_lhcbpr2all_1     /usr/local/bin/ep -v /etc/ ...   Up       0.0.0.0:443->443/tcp, 0.0.0.0:80->80/tcp
+lhcbpr2_lhcbpr2be_1      ./scripts/runserver              Up       0.0.0.0:8082->80/tcp
+lhcbpr2_lhcbpr2fe_1      ./scripts/runserver              Up       0.0.0.0:35729->35729/tcp, 0.0.0.0:8080->80/tcp, 9000/tcp
+lhcbpr2_lhcbpr2night_1   /usr/bin/cubied bash             Exit 0
+lhcbpr2_lhcbpr2root_1    ./scripts/bootstrap              Up       0.0.0.0:8081->80/tcp
 ```
 
 The other status means that something went wrong and you can investigate the problem in logs:
