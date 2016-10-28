@@ -18,7 +18,7 @@
 [Installation instructions for different platforms](https://docker.github.io/engine/installation/)
 
 **Requirements:**
-* Docker ≥ 1.12
+* Docker ≥ 1.10
 
 ```sh
 # Check docker version
@@ -80,7 +80,7 @@ Clone the following subprojects into `projects` folder:
 
 `docker-compose up -d` runs development environment from `docker-compose.yml` configuration
 
-### Run all services in the other environment
+### Run all services in the other environment [optional]
 You can select another environment, by using the following command:
 
 `docker-compose -f <docker-compose-file.yml>  -p <project-name> up -d`
