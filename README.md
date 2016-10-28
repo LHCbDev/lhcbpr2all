@@ -124,14 +124,15 @@ You can select another environment, by using the following command:
 
 **USEFUL:** You can avoid adding `-f` and `-p` options by creating the `.env` file in the root of the project with the following values:
 ```sh
-COMPOSE_PROJECT_NAME=lhcbpr2dev
-COMPOSE_FILE=docker-compose.dev.yml
+COMPOSE_PROJECT_NAME=lhcbpr2prod
+COMPOSE_FILE=docker-compose.prod.yml
 ```
 (change left values to what you need)
 
 **In the instruction bellow I will ommit -f and -p options for the docker-compose command.**
 
-**IMPORTANT**: if you docker machine url is not `localhost` then change the `APP_HOST` environment in the corresponding compose configuration for `lhcbpr2all` service, e.g:
+**IMPORTANT**: if you docker machine url is not `localhost` then change the `APP_HOST` environment
+in the corresponding compose configuration (by default the confuguration file is `docker-compose.yml`) for `lhcbpr2all` service, e.g:
 ```
 ...
 lhcbpr2all:
