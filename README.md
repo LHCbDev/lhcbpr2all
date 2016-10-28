@@ -159,6 +159,20 @@ The other status means that something went wrong and you can investigate the pro
 * Global log for all services: `docker-compose logs -f`
 * Log per service: `docker-compose logs -f <service_name>`, e.g.  `docker-compose logs -f lhcbpr2fe`.
 
+
+Containers are started when they are in the "up" state (ignore lhcbpr2night container) and application in 
+the containers are initilized. You can check that applications are initialized when logs does not produce
+any output and have no errors. Usually you need to see  something like this line after running `docker-compose logs -f`:
+
+```
+...
+lhcbpr2fe_1     | [09:12:52] ************
+lhcbpr2fe_1     | [09:12:52] * All Done * You can start editing your code, LiveReload will update your browser after any change..
+lhcbpr2fe_1     | [09:12:52] ************
+lhcbpr2fe_1     | [09:12:52] Finished 'default' after 842 μs
+...
+```
+
 When containers are in the "up" state and application are started in the containers (you can see it when logs does not produce
 any output) you can access lhcbpr web site at the following address:
 
