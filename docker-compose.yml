@@ -28,7 +28,7 @@ services:
      - "8081:80" 
 
   lhcbpr2fe:
-    build: projects/lhcbpr2fe
+    build: projects/LHCbPR2FE
     links:
         - lhcbpr2be
         - lhcbpr2root
