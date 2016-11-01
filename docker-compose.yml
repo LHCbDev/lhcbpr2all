@@ -38,7 +38,7 @@ services:
         - FE_PORT=80
         - FE_LIVE_PORT=35729
     volumes:
-        - ./projects/lhcbpr2fe:/app
+        - ./projects/LHCbPR2FE:/app
     ports:
         - "8080:80"
   
